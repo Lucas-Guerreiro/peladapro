@@ -1,0 +1,93 @@
+const db = require('../config/database');
+
+exports.criarPartida = async (req, res) => {
+  const { pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b } = req.body;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor') {
+    return res.status(403).json({ error: 'Apenas gestores podem lançar resultados de partidas.' });
+  }
+
+  if (!pelada_id || !time_a_nome || !time_b_nome) {
+    return res.status(400).json({ error: 'Pelada e nomes dos times são obrigatórios.' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO partidas (pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, status)
+      VALUES ($1, $2, $3, $4, $5, 'finalizada')
+      RETURNING id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, status, created_at`;
+    
+    const { rows } = await db.query(query, [
+      pelada_id,
+      time_a_nome,
+      time_b_nome,
+      parseInt(gols_time_a) || 0,
+      parseInt(gols_time_b) || 0
+    ]);
+
+    res.status(201).json({ message: 'Partida salva com sucesso!', partida: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar partida no banco.', detail: err.message });
+  }
+};
+
+exports.listarPartidas = async (req, res) => {
+  const { peladaId } = req.params;
+  try {
+    const query = `
+      SELECT id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, status, created_at
+      FROM partidas
+      WHERE pelada_id = $1
+      ORDER BY created_at ASC`;
+    const { rows } = await db.query(query, [peladaId]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao listar partidas da pelada.', detail: err.message });
+  }
+};
+
+exports.editarPartida = async (req, res) => {
+  const { id } = req.params;
+  const { gols_time_a, gols_time_b } = req.body;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor') {
+    return res.status(403).json({ error: 'Apenas gestores podem editar partidas.' });
+  }
+
+  try {
+    const query = `
+      UPDATE partidas 
+      SET gols_time_a = $1, gols_time_b = $2
+      WHERE id = $3 RETURNING id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b`;
+    const { rows } = await db.query(query, [parseInt(gols_time_a) || 0, parseInt(gols_time_b) || 0, id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Partida não encontrada.' });
+    }
+
+    res.json({ message: 'Partida atualizada com sucesso!', partida: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao editar partida.', detail: err.message });
+  }
+};
+
+exports.deletarPartida = async (req, res) => {
+  const { id } = req.params;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor') {
+    return res.status(403).json({ error: 'Apenas gestores podem deletar partidas.' });
+  }
+
+  try {
+    const { rows } = await db.query('DELETE FROM partidas WHERE id = $1 RETURNING id', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Partida não encontrada.' });
+    }
+    res.json({ message: 'Partida deletada com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao deletar partida.', detail: err.message });
+  }
+};

@@ -1,0 +1,2118 @@
+// ==========================================================================
+// SISTEMA DE GESTÃO DE PELADAS AMADORAS — LOGICA E ESTADOS (app.js)
+// ==========================================================================
+
+// --- CONFIGURAÇÃO DE DADOS DE DEMONSTRAÇÃO (MOCK DATA) ---
+const DEFAULT_GROUPS = [
+  { id: "g1", nome: "Maracanã das Quartas", descricao: "Futebol society toda quarta às 20h", gestor_id: "u-gestor", data_criacao: "2026-01-10T20:00:00Z", ativo: true },
+  { id: "g2", nome: "Sábado de Elite", descricao: "Pelada competitiva de sábado pela manhã", gestor_id: "u-gestor", data_criacao: "2026-02-15T09:00:00Z", ativo: true }
+];
+
+const DEFAULT_PLAYERS = [
+  { id: "p1", nome: "Carlos Henrique (Artilheiro)", data_nascimento: "1994-05-12", cpf: "111.111.111-11", whatsapp: "(61) 99999-1111", goleiro: false, autoavaliacao: 5, ativo: true, saldo: 40.00, gols: 14, partidas: 6, avaliacao_media: 4.8 },
+  { id: "p2", nome: "Marcelo Goleiro", data_nascimento: "1990-08-22", cpf: "222.222.222-22", whatsapp: "(61) 99999-2222", goleiro: true, autoavaliacao: 4, ativo: true, saldo: 20.00, gols: 0, partidas: 8, defesas_porcentagem: 82, avaliacao_media: 4.3 },
+  { id: "p3", nome: "Thiago Silva", data_nascimento: "1988-11-03", cpf: "333.333.333-33", whatsapp: "(61) 99999-3333", goleiro: false, autoavaliacao: 4, ativo: true, saldo: -60.00, gols: 3, partidas: 5, avaliacao_media: 4.1 },
+  { id: "p4", nome: "Bruno Henrique", data_nascimento: "1997-03-14", cpf: "444.444.444-44", whatsapp: "(61) 99999-4444", goleiro: false, autoavaliacao: 5, ativo: true, saldo: -120.00, gols: 12, partidas: 6, avaliacao_media: 4.7 },
+  { id: "p5", nome: "Felipe Melo", data_nascimento: "1985-06-26", cpf: "555.555.555-55", whatsapp: "(61) 99999-5555", goleiro: false, autoavaliacao: 3, ativo: true, saldo: 0.00, gols: 2, partidas: 4, avaliacao_media: 3.5 },
+  { id: "p6", nome: "Victor Cuesta", data_nascimento: "1991-02-09", cpf: "666.666.666-66", whatsapp: "(61) 99999-6666", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 20.00, gols: 1, partidas: 5, avaliacao_media: 4.0 },
+  { id: "p7", nome: "Lucas Piton", data_nascimento: "2000-10-09", cpf: "777.777.777-77", whatsapp: "(61) 99999-7777", goleiro: false, autoavaliacao: 3, ativo: true, saldo: -20.00, gols: 4, partidas: 5, avaliacao_media: 3.8 },
+  { id: "p8", nome: "Gatito Fernandez", data_nascimento: "1989-03-29", cpf: "888.888.888-88", whatsapp: "(61) 99999-8888", goleiro: true, autoavaliacao: 5, ativo: true, saldo: 60.00, gols: 0, partidas: 7, defesas_porcentagem: 88, avaliacao_media: 4.6 },
+  { id: "p9", nome: "Diego Souza", data_nascimento: "1985-05-17", cpf: "999.999.999-99", whatsapp: "(61) 99999-9999", goleiro: false, autoavaliacao: 4, ativo: true, saldo: -40.00, gols: 9, partidas: 4, avaliacao_media: 4.2 },
+  { id: "p10", nome: "Luan Guilherme", data_nascimento: "1993-03-27", cpf: "123.123.123-12", whatsapp: "(61) 99999-1234", goleiro: false, autoavaliacao: 2, ativo: true, saldo: -100.00, gols: 1, partidas: 2, avaliacao_media: 2.8 },
+  { id: "p11", nome: "Giorgian De Arrascaeta", data_nascimento: "1994-06-01", cpf: "987.987.987-98", whatsapp: "(61) 98888-1111", goleiro: false, autoavaliacao: 5, ativo: true, saldo: 40.00, gols: 11, partidas: 6, avaliacao_media: 4.9 },
+  { id: "p12", nome: "Gabriel Barbosa", data_nascimento: "1996-08-30", cpf: "456.456.456-45", whatsapp: "(61) 98888-2222", goleiro: false, autoavaliacao: 5, ativo: true, saldo: -30.00, gols: 10, partidas: 5, avaliacao_media: 4.6 },
+  { id: "p13", nome: "Weverton Goleiro", data_nascimento: "1987-12-13", cpf: "789.789.789-78", whatsapp: "(61) 98888-3333", goleiro: true, autoavaliacao: 5, ativo: true, saldo: 20.00, gols: 0, partidas: 5, defesas_porcentagem: 85, avaliacao_media: 4.7 },
+  { id: "p14", nome: "Gustavo Gómez", data_nascimento: "1993-05-06", cpf: "321.321.321-32", whatsapp: "(61) 98888-4444", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 2, partidas: 5, avaliacao_media: 4.2 },
+  { id: "p15", nome: "Dudu Guerreiro", data_nascimento: "1992-01-07", cpf: "654.654.654-65", whatsapp: "(61) 98888-5555", goleiro: false, autoavaliacao: 4, ativo: true, saldo: -10.00, gols: 5, partidas: 4, avaliacao_media: 4.3 }
+];
+
+const DEFAULT_MATCHDAYS = [
+  { id: "m1", grupo_id: "g1", data: "2026-07-22", horario: "20:00", valor_convocacao: 20.00, status: "agendada" },
+  { id: "m2", grupo_id: "g1", data: "2026-07-15", horario: "20:00", valor_convocacao: 20.00, status: "realizada" },
+  { id: "m3", grupo_id: "g2", data: "2026-07-18", horario: "09:00", valor_convocacao: 25.00, status: "agendada" }
+];
+
+const DEFAULT_CONVOCATIONS = [
+  // Confirmados da pelada futura m1
+  { id: "c1", pelada_id: "m1", jogador_id: "p1", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:00:00Z" },
+  { id: "c2", pelada_id: "m1", jogador_id: "p2", status: "confirmado", forma_pagamento: "pix", data_convocacao: "2026-07-16T18:05:00Z" },
+  { id: "c3", pelada_id: "m1", jogador_id: "p3", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:10:00Z" },
+  { id: "c4", pelada_id: "m1", jogador_id: "p5", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:15:00Z" },
+  { id: "c5", pelada_id: "m1", jogador_id: "p6", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:20:00Z" },
+  { id: "c6", pelada_id: "m1", jogador_id: "p7", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:22:00Z" },
+  { id: "c7", pelada_id: "m1", jogador_id: "p8", status: "confirmado", forma_pagamento: "pix", data_convocacao: "2026-07-16T18:30:00Z" },
+  { id: "c8", pelada_id: "m1", jogador_id: "p9", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:35:00Z" },
+  { id: "c9", pelada_id: "m1", jogador_id: "p11", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:40:00Z" },
+  { id: "c10", pelada_id: "m1", jogador_id: "p12", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:45:00Z" },
+  { id: "c11", pelada_id: "m1", jogador_id: "p13", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:50:00Z" },
+  { id: "c12", pelada_id: "m1", jogador_id: "p14", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T18:55:00Z" },
+  { id: "c13", pelada_id: "m1", jogador_id: "p15", status: "confirmado", forma_pagamento: "saldo", data_convocacao: "2026-07-16T19:00:00Z" }
+];
+
+const DEFAULT_CONFIGS = [
+  { id: "cfg1", grupo_id: "g1", pelada_id: null, criterio_empate: "ambos_permanecem", vitorias_para_sair: 2, regra_saida: "final_fila", jogadores_por_time: 6, quantidade_times: 3, valor_convocacao: 20.00, limite_saldo_negativo: 100.00 },
+  { id: "cfg2", grupo_id: "g2", pelada_id: null, criterio_empate: "vencedor_ultima", vitorias_para_sair: 3, regra_saida: "fora_1_jogo", jogadores_por_time: 5, quantidade_times: 4, valor_convocacao: 25.00, limite_saldo_negativo: 150.00 }
+];
+
+const DEFAULT_FINANCES = [
+  { id: "t1", pelada_id: "m2", jogador_id: "p1", tipo: "convocacao", descricao: "Convocação Carlos Henrique", valor: 20.00, sinal: "credito", data: "2026-07-15T19:50:00Z" },
+  { id: "t2", pelada_id: "m2", jogador_id: "p4", tipo: "convocacao", descricao: "Convocação Bruno Henrique", valor: 20.00, sinal: "credito", data: "2026-07-15T19:52:00Z" },
+  { id: "t3", pelada_id: "m2", jogador_id: null, tipo: "despesa", descricao: "Mensalidade do Campo Society", valor: 150.00, sinal: "debito", data: "2026-07-15T22:30:00Z", categoria: "campo" }
+];
+
+// --- SISTEMA DE INICIALIZAÇÃO DE DADOS ---
+function initDatabase() {
+  if (!localStorage.getItem("groups")) localStorage.setItem("groups", JSON.stringify(DEFAULT_GROUPS));
+  if (!localStorage.getItem("players")) localStorage.setItem("players", JSON.stringify(DEFAULT_PLAYERS));
+  if (!localStorage.getItem("peladas")) localStorage.setItem("peladas", JSON.stringify(DEFAULT_MATCHDAYS));
+  if (!localStorage.getItem("convocations")) localStorage.setItem("convocations", JSON.stringify(DEFAULT_CONVOCATIONS));
+  if (!localStorage.getItem("configs")) localStorage.setItem("configs", JSON.stringify(DEFAULT_CONFIGS));
+  if (!localStorage.getItem("transactions")) localStorage.setItem("transactions", JSON.stringify(DEFAULT_FINANCES));
+  if (!localStorage.getItem("teams")) localStorage.setItem("teams", JSON.stringify([]));
+  if (!localStorage.getItem("matches")) localStorage.setItem("matches", JSON.stringify([]));
+}
+
+// --- ESTADOS GLOBAIS DA SPA ---
+let currentUser = null; // null | Jogador Object | { id: "u-gestor", nome: "Gestor Master", gestor: true }
+let currentGroup = null; // Grupo ativo
+let activeView = "auth"; // auth | player-dashboard | manager-dashboard
+let timerInterval = null;
+let timerSeconds = 0;
+let liveMatch = {
+  teamA: "Time Azul",
+  teamB: "Time Amarelo",
+  scoreA: 0,
+  scoreB: 0,
+  isPlaying: false,
+  rules: "Ambos permanecem | Limite 2 Vitórias"
+};
+
+// Fila de espera simulada para o dia
+let waitingQueue = ["Time Vermelho", "Time Verde"];
+let drawnTeams = []; // Lista de times gerados pelo sorteio
+
+// --- BOOTSTRAP DO APP ---
+document.addEventListener("DOMContentLoaded", () => {
+  initDatabase();
+  initFormMasks();
+  bindEvents();
+  feather.replace();
+
+  // Carregar grupo inicial
+  const groups = JSON.parse(localStorage.getItem("groups"));
+  if (groups && groups.length > 0) {
+    currentGroup = groups[0];
+  }
+  
+  // Renderizar selects de grupos
+  renderGroupSelectors();
+});
+
+// --- RENDERIZADORES DE SELECTS ---
+function renderGroupSelectors() {
+  const groups = JSON.parse(localStorage.getItem("groups"));
+  const globalSelector = document.getElementById("global-group-selector");
+  globalSelector.innerHTML = "";
+  
+  groups.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.id;
+    opt.textContent = g.nome;
+    globalSelector.appendChild(opt);
+  });
+
+  if (currentGroup) {
+    globalSelector.value = currentGroup.id;
+  }
+}
+
+// --- CONFIGURAÇÃO DE MÁSCARAS E VALIDAÇÕES EM TEMPO REAL ---
+function initFormMasks() {
+  const cpfInputs = [document.getElementById("register-cpf"), document.getElementById("athlete-cpf")];
+  const waInputs = [document.getElementById("register-whatsapp"), document.getElementById("athlete-whatsapp")];
+
+  cpfInputs.forEach(input => {
+    if (!input) return;
+    input.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 9) {
+        v = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`;
+      } else if (v.length > 6) {
+        v = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`;
+      } else if (v.length > 3) {
+        v = `${v.slice(0, 3)}.${v.slice(3)}`;
+      }
+      e.target.value = v;
+      validateRegisterForm();
+    });
+  });
+
+  waInputs.forEach(input => {
+    if (!input) return;
+    input.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 6) {
+        v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+      } else if (v.length > 2) {
+        v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+      } else if (v.length > 0) {
+        v = `(${v}`;
+      }
+      e.target.value = v;
+      validateRegisterForm();
+    });
+  });
+
+  // Escutar alterações nos campos para validar botões
+  const regFields = ["register-name", "register-dob", "register-cpf", "register-whatsapp"];
+  regFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", validateRegisterForm);
+  });
+}
+
+// --- VALIDAÇÃO DA TELA DE CADASTRO ---
+let selectedRegisterRating = 0;
+
+function validateRegisterForm() {
+  const name = document.getElementById("register-name").value.trim();
+  const dob = document.getElementById("register-dob").value;
+  const cpf = document.getElementById("register-cpf").value;
+  const whatsapp = document.getElementById("register-whatsapp").value;
+  const btn = document.getElementById("btn-submit-register");
+
+  if (!btn) return;
+
+  // Validar Idade (> 16 anos)
+  let ageValid = false;
+  if (dob) {
+    const birthday = new Date(dob);
+    const ageDifMs = Date.now() - birthday.getTime();
+    const ageDate = new Date(ageDifMs);
+    const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+    ageValid = age >= 16;
+  }
+
+  // CPF completo: 14 caracteres com máscara (000.000.000-00)
+  const cpfValid = cpf.length === 14;
+
+  // WhatsApp completo: 15 caracteres com máscara ((00) 90000-0000)
+  const waValid = whatsapp.length === 15;
+
+  const formValid = name.length >= 3 && ageValid && cpfValid && waValid && selectedRegisterRating > 0;
+  btn.disabled = !formValid;
+}
+
+// --- SISTEMA DE TOASTS ---
+function showToast(message, type = "success") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  
+  let iconName = "check-circle";
+  if (type === "warning") iconName = "alert-triangle";
+  if (type === "error") iconName = "x-octagon";
+
+  toast.innerHTML = `
+    <i data-feather="${iconName}"></i>
+    <span>${message}</span>
+  `;
+
+  container.appendChild(toast);
+  feather.replace();
+
+  // Remover após 4s
+  setTimeout(() => {
+    toast.style.animation = "toastOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards";
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// --- CONTROLE DE NAVEGAÇÃO DE ABAS GERAIS ---
+function setupTabNavigation() {
+  const tabButtons = document.querySelectorAll(".tabs-navigation .tab-btn");
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const parent = btn.parentElement;
+      // Desativar botões irmãos
+      parent.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      // Desativar conteúdos de abas correspondentes
+      const siblingContents = parent.nextElementSibling ? parent.parentElement.querySelectorAll(".tab-content") : document.querySelectorAll(".tab-content");
+      siblingContents.forEach(content => {
+        if (content.parentElement === parent.parentElement || content.id.startsWith("tab-")) {
+          content.classList.remove("active");
+        }
+      });
+
+      // Ativar a aba correspondente
+      const targetId = btn.getAttribute("data-target");
+      const targetContent = document.getElementById(targetId);
+      if (targetContent) {
+        targetContent.classList.add("active");
+        // Trigger para ações específicas da aba
+        onTabActivated(targetId);
+      }
+    });
+  });
+}
+
+function onTabActivated(tabId) {
+  if (tabId === "tab-player-convocacao") {
+    renderPlayerConvocationTab();
+  } else if (tabId === "tab-player-acompanhamento") {
+    renderAcompanhamentoTab();
+  } else if (tabId === "tab-player-ranking" || tabId === "tab-manager-athletes") {
+    renderRankingTab();
+    if (tabId === "tab-manager-athletes") renderManagerAthletesList();
+  } else if (tabId === "tab-player-desempenho") {
+    renderDesempenhoTab();
+  } else if (tabId === "tab-manager-formation") {
+    renderManagerCheckinList();
+    renderDrawnTeams();
+  } else if (tabId === "tab-manager-financeiro") {
+    renderManagerFinanceiroTab();
+  }
+}
+
+// --- EVENT BINDING ---
+function bindEvents() {
+  // Login e Cadastro links
+  document.getElementById("link-goto-register").addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("auth-login-form").classList.add("hidden");
+    document.getElementById("auth-register-form").classList.remove("hidden");
+  });
+
+  document.getElementById("link-goto-login").addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("auth-register-form").classList.add("hidden");
+    document.getElementById("auth-login-form").classList.remove("hidden");
+  });
+
+  // Estrelas de Autoavaliação no Cadastro
+  const regStars = document.querySelectorAll("#register-stars-selector .rating-star");
+  regStars.forEach(star => {
+    star.addEventListener("click", () => {
+      const val = parseInt(star.getAttribute("data-value"));
+      selectedRegisterRating = val;
+      regStars.forEach((s, idx) => {
+        if (idx < val) s.classList.add("active");
+        else s.classList.remove("active");
+      });
+      validateRegisterForm();
+    });
+  });
+
+  // Estrelas de Cadastro/Edição no Modal de Atleta (Gestor)
+  const athleteStars = document.querySelectorAll("#athlete-stars-selector .rating-star");
+  athleteStars.forEach(star => {
+    star.addEventListener("click", () => {
+      const val = parseInt(star.getAttribute("data-value"));
+      document.getElementById("athlete-stars-selector").dataset.value = val;
+      athleteStars.forEach((s, idx) => {
+        if (idx < val) s.classList.add("active");
+        else s.classList.remove("active");
+      });
+    });
+  });
+
+  // Submissão do Cadastro
+  document.getElementById("btn-submit-register").addEventListener("click", handleRegister);
+
+  // Submissão de Login Normal
+  document.getElementById("btn-submit-login").addEventListener("click", handleLogin);
+
+  // Login Rápido
+  document.getElementById("btn-quick-player").addEventListener("click", () => {
+    const players = JSON.parse(localStorage.getItem("players"));
+    currentUser = players[0]; // Seleciona Carlos Henrique
+    showToast(`Logado como jogador: ${currentUser.nome}`);
+    enterDashboard("player");
+  });
+
+  document.getElementById("btn-quick-manager").addEventListener("click", () => {
+    currentUser = { id: "u-gestor", nome: "Gestor Master", gestor: true };
+    showToast("Logado como Gestor");
+    enterDashboard("manager");
+  });
+
+  // Deslogar
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    currentUser = null;
+    document.getElementById("main-header").classList.add("hidden");
+    switchView("auth");
+    showToast("Sessão encerrada.");
+  });
+
+  // Trocar de Grupo no Seletor Global
+  document.getElementById("global-group-selector").addEventListener("change", (e) => {
+    const groups = JSON.parse(localStorage.getItem("groups"));
+    currentGroup = groups.find(g => g.id === e.target.value);
+    showToast(`Grupo alterado: ${currentGroup.nome}`);
+    
+    // Recarregar aba atual
+    const activeTab = document.querySelector(".tabs-navigation .tab-btn.active");
+    if (activeTab) {
+      onTabActivated(activeTab.getAttribute("data-target"));
+    }
+    // Se for jogador, atualizar card
+    if (currentUser && !currentUser.gestor) {
+      updatePlayerCardFIFA();
+    }
+  });
+
+  // Ações de Convocação (Jogador)
+  document.getElementById("btn-join-match").addEventListener("click", () => openPaymentModal());
+  document.getElementById("btn-quick-call").addEventListener("click", () => {
+    // Alterna para aba convocação e abre modal de pagamento
+    const convTabBtn = document.querySelector(".tabs-navigation .tab-btn[data-target='tab-player-convocacao']");
+    if (convTabBtn) convTabBtn.click();
+    openPaymentModal();
+  });
+  document.getElementById("btn-leave-match").addEventListener("click", () => openRemovalModal());
+
+  // Confirmação de Pagamento no Modal
+  document.getElementById("btn-confirm-payment-action").addEventListener("click", handleConfirmPayment);
+  
+  // Mudança do método de pagamento (PIX vs Saldo)
+  document.getElementById("pay-method-pix").addEventListener("change", (e) => {
+    if (e.target.checked) document.getElementById("pix-qr-area").classList.remove("hidden");
+  });
+  document.getElementById("pay-method-balance").addEventListener("change", (e) => {
+    if (e.target.checked) document.getElementById("pix-qr-area").classList.add("hidden");
+  });
+
+  // Confirmação de Remoção no Modal
+  document.getElementById("btn-confirm-removal-action").addEventListener("click", handleConfirmRemoval);
+
+  // Ações do Gestor - Atletas
+  document.getElementById("athlete-search-input").addEventListener("input", debounce((e) => {
+    renderManagerAthletesList(e.target.value);
+  }, 300));
+  
+  document.getElementById("btn-open-add-athlete-modal").addEventListener("click", () => openAthleteModal());
+  document.getElementById("btn-save-athlete").addEventListener("click", handleSaveAthlete);
+
+  // Ações do Gestor - Sorteio
+  document.getElementById("btn-draw-teams").addEventListener("click", () => {
+    openModal("modal-sorteio");
+  });
+  document.getElementById("btn-execute-sorteio").addEventListener("click", handleExecuteSorteio);
+
+  // Ações do Gestor - Cronômetro Partida
+  document.getElementById("btn-timer-toggle").addEventListener("click", toggleLiveTimer);
+  document.getElementById("btn-timer-reset").addEventListener("click", resetLiveTimer);
+  document.getElementById("btn-finish-match").addEventListener("click", handleFinishMatch);
+
+  // Ações do Gestor - Financeiro
+  document.getElementById("btn-open-expense-modal").addEventListener("click", () => openModal("modal-expense"));
+  document.getElementById("btn-save-expense").addEventListener("click", handleSaveExpense);
+
+  // Configurações - Salvar
+  document.getElementById("btn-save-configs").addEventListener("click", handleSaveConfigs);
+
+  // Configurar clique fora do modal para fechar
+  const modals = document.querySelectorAll(".modal-backdrop");
+  modals.forEach(m => {
+    m.addEventListener("click", (e) => {
+      if (e.target === m) closeModal(m.id);
+    });
+  });
+
+  setupTabNavigation();
+}
+
+// --- SWITCH DE ABAS NA TELA DE LOGIN ---
+let currentLoginRole = "player"; // player | manager
+function switchLoginTab(role) {
+  currentLoginRole = role;
+  const tabPlayer = document.getElementById("tab-login-player");
+  const tabManager = document.getElementById("tab-login-manager");
+  const labelId = document.getElementById("label-login-identifier");
+  const inputId = document.getElementById("login-identifier");
+
+  if (role === "player") {
+    tabPlayer.classList.add("active");
+    tabManager.classList.remove("active");
+    labelId.textContent = "E-mail ou CPF";
+    inputId.placeholder = "Digite seu CPF ou E-mail";
+  } else {
+    tabPlayer.classList.remove("active");
+    tabManager.classList.add("active");
+    labelId.textContent = "Código do Gestor ou E-mail";
+    inputId.placeholder = "Digite seu Código de Gestor";
+  }
+}
+
+// --- CONTROLE DE MUDANÇA DE TELA ---
+function switchView(viewId) {
+  activeView = viewId;
+  document.getElementById("view-auth").classList.add("hidden");
+  document.getElementById("view-player-dashboard").classList.add("hidden");
+  document.getElementById("view-manager-dashboard").classList.add("hidden");
+
+  document.getElementById(`view-${viewId}`).classList.remove("hidden");
+}
+
+// --- LOGIN DO USUÁRIO ---
+function handleLogin() {
+  const identifier = document.getElementById("login-identifier").value.trim();
+  const password = document.getElementById("login-password").value;
+
+  if (!identifier) {
+    showToast("Insira o seu identificador para entrar", "error");
+    return;
+  }
+
+  if (currentLoginRole === "player") {
+    const players = JSON.parse(localStorage.getItem("players"));
+    // Buscar por CPF ou E-mail (identificado de forma simples pelo CPF ou similar no mock)
+    const player = players.find(p => p.cpf === identifier || p.nome.toLowerCase().includes(identifier.toLowerCase()));
+    
+    if (player) {
+      if (!player.ativo) {
+        showToast("Este jogador está inativo no sistema.", "error");
+        return;
+      }
+      currentUser = player;
+      showToast(`Bem-vindo, ${player.nome}!`);
+      enterDashboard("player");
+    } else {
+      showToast("Jogador não cadastrado ou dados incorretos.", "error");
+    }
+  } else {
+    // Gestor Simulado
+    if (identifier === "gestor" || identifier === "u-gestor" || identifier.toLowerCase().includes("gestor")) {
+      currentUser = { id: "u-gestor", nome: "Gestor Master", gestor: true };
+      showToast("Painel de Controle do Gestor Acessado!");
+      enterDashboard("manager");
+    } else {
+      showToast("Código de gestor inválido.", "error");
+    }
+  }
+}
+
+// --- REGISTRO DE NOVO JOGADOR ---
+function handleRegister() {
+  const name = document.getElementById("register-name").value.trim();
+  const dob = document.getElementById("register-dob").value;
+  const cpf = document.getElementById("register-cpf").value;
+  const whatsapp = document.getElementById("register-whatsapp").value;
+  const isGk = document.getElementById("register-is-gk").checked;
+
+  const players = JSON.parse(localStorage.getItem("players"));
+
+  // Validar CPF Único
+  if (players.some(p => p.cpf === cpf)) {
+    showToast("Este CPF já está cadastrado no sistema!", "error");
+    return;
+  }
+
+  // Criar Novo Jogador
+  const newPlayer = {
+    id: "p_" + Date.now(),
+    nome: name,
+    data_nascimento: dob,
+    cpf: cpf,
+    whatsapp: whatsapp,
+    goleiro: isGk,
+    autoavaliacao: selectedRegisterRating,
+    ativo: true,
+    saldo: 0.00, // Começa zerado
+    gols: 0,
+    partidas: 0,
+    avaliacao_media: selectedRegisterRating // Média inicial é a autoavaliação
+  };
+
+  players.push(newPlayer);
+  localStorage.setItem("players", JSON.stringify(players));
+
+  showToast("Cadastro criado com sucesso! Faça seu login.");
+  
+  // Limpar formulário de cadastro e voltar para login
+  document.getElementById("register-name").value = "";
+  document.getElementById("register-dob").value = "";
+  document.getElementById("register-cpf").value = "";
+  document.getElementById("register-whatsapp").value = "";
+  document.getElementById("register-is-gk").checked = false;
+  selectedRegisterRating = 0;
+  document.querySelectorAll("#register-stars-selector .rating-star").forEach(s => s.classList.remove("active"));
+  
+  document.getElementById("auth-register-form").classList.add("hidden");
+  document.getElementById("auth-login-form").classList.remove("hidden");
+}
+
+// --- REDIRECIONAR PARA O PAINEL CORRESPONDENTE ---
+function enterDashboard(role) {
+  document.getElementById("main-header").classList.remove("hidden");
+  document.getElementById("header-user-name").textContent = currentUser.nome;
+
+  if (role === "player") {
+    switchView("player-dashboard");
+    updatePlayerCardFIFA();
+    // Ativar aba de convocação inicial
+    document.querySelector(".tabs-navigation .tab-btn[data-target='tab-player-convocacao']").click();
+  } else {
+    switchView("manager-dashboard");
+    // Carregar configurações no gestor
+    loadConfigsInManager();
+    // Ativar aba de atletas inicial
+    document.querySelector(".tabs-navigation .tab-btn[data-target='tab-manager-athletes']").click();
+  }
+}
+
+// --- CARD FIFA DO JOGADOR ---
+function updatePlayerCardFIFA() {
+  const players = JSON.parse(localStorage.getItem("players"));
+  // Recarregar os dados do jogador atualizados do "banco"
+  currentUser = players.find(p => p.id === currentUser.id) || currentUser;
+
+  document.getElementById("player-card-name").textContent = currentUser.nome.split(" ")[0];
+  
+  // Calcular idade
+  if (currentUser.data_nascimento) {
+    const birthday = new Date(currentUser.data_nascimento);
+    const ageDifMs = Date.now() - birthday.getTime();
+    const ageDate = new Date(ageDifMs);
+    const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+    document.getElementById("player-card-age").textContent = age;
+  }
+
+  // Estrelas FIFA
+  const starContainer = document.getElementById("player-card-stars");
+  starContainer.innerHTML = "";
+  for (let i = 0; i < 5; i++) {
+    const star = document.createElement("i");
+    star.className = i < currentUser.autoavaliacao ? "star-filled" : "star-empty";
+    star.innerHTML = "★"; // Caractere visual de estrela
+    starContainer.appendChild(star);
+  }
+
+  // Badge Goleiro
+  const gkBadge = document.getElementById("player-gk-badge");
+  if (currentUser.goleiro) {
+    gkBadge.classList.remove("hidden");
+  } else {
+    gkBadge.classList.add("hidden");
+  }
+
+  // Saldo
+  const balanceCard = document.getElementById("player-card-balance");
+  const balanceValue = document.getElementById("player-balance-value");
+  balanceValue.textContent = `R$ ${currentUser.saldo.toFixed(2).replace(".", ",")}`;
+  
+  if (currentUser.saldo < 0) {
+    balanceCard.classList.add("negative");
+  } else {
+    balanceCard.classList.remove("negative");
+  }
+}
+
+// --- MODAIS DE ABRE/FECHA ---
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.add("active");
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove("active");
+}
+
+// --- CONVOCAÇÃO — DETALHES ---
+let activeSelectedPelada = null;
+
+function renderPlayerConvocationTab() {
+  const peladas = JSON.parse(localStorage.getItem("peladas"));
+  const select = document.getElementById("select-player-pelada");
+  select.innerHTML = "";
+
+  // Filtrar peladas futuras do grupo atual
+  const futurePeladas = peladas.filter(p => p.grupo_id === currentGroup.id && p.status === "agendada");
+
+  if (futurePeladas.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Nenhuma pelada futura agendada";
+    select.appendChild(opt);
+    document.getElementById("player-convocados-list").innerHTML = `
+      <div class="empty-state">
+        <i data-feather="calendar" style="width: 32px; height: 32px;"></i>
+        <p>Sem eventos futuros agendados para este grupo no momento.</p>
+      </div>
+    `;
+    feather.replace();
+    document.getElementById("btn-join-match").disabled = true;
+    document.getElementById("btn-leave-match").disabled = true;
+    return;
+  }
+
+  document.getElementById("btn-join-match").disabled = false;
+  document.getElementById("btn-leave-match").disabled = false;
+
+  futurePeladas.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    // Formatando data
+    const dateFormatted = new Date(p.data + "T00:00:00").toLocaleDateString("pt-BR");
+    opt.textContent = `Pelada - Dia ${dateFormatted} às ${p.horario} (Taxa: R$ ${p.valor_convocacao.toFixed(2)})`;
+    select.appendChild(opt);
+  });
+
+  // Atualizar a lista de convocados com base no primeiro selecionado
+  activeSelectedPelada = futurePeladas[0];
+  renderConvocadosList(activeSelectedPelada.id);
+
+  // Evento select change
+  select.onchange = (e) => {
+    activeSelectedPelada = futurePeladas.find(p => p.id === e.target.value);
+    renderConvocadosList(activeSelectedPelada.id);
+  };
+}
+
+function renderConvocadosList(peladaId) {
+  const convocations = JSON.parse(localStorage.getItem("convocations"));
+  const players = JSON.parse(localStorage.getItem("players"));
+  const listContainer = document.getElementById("player-convocados-list");
+  
+  listContainer.innerHTML = "";
+
+  // Filtrar convocações desta pelada
+  const matchConvs = convocations.filter(c => c.pelada_id === peladaId);
+  
+  // Atualizar badge de contagem
+  const activeCount = matchConvs.filter(c => c.status === "confirmado").length;
+  document.getElementById("convocation-count-badge").textContent = `${activeCount} Confirmados`;
+
+  if (matchConvs.length === 0) {
+    listContainer.innerHTML = `
+      <div class="empty-state">
+        <i data-feather="info" style="width: 24px; height: 24px;"></i>
+        <p>Ainda não há convocados para este jogo. Seja o primeiro!</p>
+      </div>
+    `;
+    feather.replace();
+    return;
+  }
+
+  // Ordenar confirmados primeiro
+  matchConvs.sort((a,b) => {
+    if (a.status === b.status) return 0;
+    return a.status === "confirmado" ? -1 : 1;
+  });
+
+  matchConvs.forEach((c) => {
+    const player = players.find(p => p.id === c.jogador_id);
+    if (!player) return;
+
+    const div = document.createElement("div");
+    div.className = "queue-item";
+    div.style.borderLeftColor = c.status === "confirmado" ? "var(--secondary)" : "var(--danger)";
+    
+    let labelGk = player.goleiro ? "🧤 GK" : "";
+    let ratingStars = "★".repeat(player.autoavaliacao);
+    
+    div.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="pos" style="font-size: 14px; width: auto; font-family: 'Inter'; font-weight: normal; color: var(--text-caption);">${labelGk}</span>
+        <span style="${c.status === 'cortado' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${player.nome}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="player-draft-stars">${ratingStars}</span>
+        <span class="badge-status ${c.status}">${c.status}</span>
+      </div>
+    `;
+    listContainer.appendChild(div);
+  });
+}
+
+// --- MODAL DE PAGAMENTO ---
+function openPaymentModal() {
+  if (!activeSelectedPelada) return;
+
+  const cost = activeSelectedPelada.valor_convocacao;
+  document.getElementById("payment-match-cost").textContent = `R$ ${cost.toFixed(2).replace(".", ",")}`;
+  document.getElementById("payment-my-balance").textContent = `Disponível: R$ ${currentUser.saldo.toFixed(2).replace(".", ",")}`;
+
+  // Verificar se possui limite de saldo negativo
+  const configs = JSON.parse(localStorage.getItem("configs"));
+  const config = configs.find(c => c.grupo_id === currentGroup.id) || { limite_saldo_negativo: 100.00 };
+  const negativeLimit = config.limite_saldo_negativo;
+
+  const willBeNegative = currentUser.saldo - cost < -negativeLimit;
+  const balanceRadio = document.getElementById("pay-method-balance");
+  const balanceLabel = document.getElementById("payment-option-balance-label");
+
+  if (willBeNegative) {
+    balanceRadio.disabled = true;
+    balanceRadio.checked = false;
+    document.getElementById("pay-method-pix").checked = true;
+    document.getElementById("pix-qr-area").classList.remove("hidden");
+    balanceLabel.style.opacity = "0.5";
+    balanceLabel.style.cursor = "not-allowed";
+    showToast("Limite de saldo negativo excedido. Use a opção de PIX.", "warning");
+  } else {
+    balanceRadio.disabled = false;
+    balanceRadio.checked = true;
+    document.getElementById("pay-method-pix").checked = false;
+    document.getElementById("pix-qr-area").classList.add("hidden");
+    balanceLabel.style.opacity = "1";
+    balanceLabel.style.cursor = "pointer";
+  }
+
+  openModal("modal-payment");
+}
+
+// --- CONFIRMAÇÃO DE PAGAMENTO ---
+function handleConfirmPayment() {
+  const method = document.querySelector('input[name="payment-method"]:checked').value;
+  const cost = activeSelectedPelada.valor_convocacao;
+
+  const convocations = JSON.parse(localStorage.getItem("convocations"));
+  const players = JSON.parse(localStorage.getItem("players"));
+  const transactions = JSON.parse(localStorage.getItem("transactions"));
+
+  // Verificar se o jogador já está confirmado nesta pelada
+  const alreadyJoined = convocations.find(c => c.pelada_id === activeSelectedPelada.id && c.jogador_id === currentUser.id && c.status === "confirmado");
+  if (alreadyJoined) {
+    showToast("Você já confirmou presença para esta pelada!", "warning");
+    closeModal("modal-payment");
+    return;
+  }
+
+  // Função para efetivar
+  const executeJoin = () => {
+    // 1. Atualizar ou criar convocação
+    const existingConv = convocations.find(c => c.pelada_id === activeSelectedPelada.id && c.jogador_id === currentUser.id);
+    if (existingConv) {
+      existingConv.status = "confirmado";
+      existingConv.forma_pagamento = method;
+      existingConv.data_convocacao = new Date().toISOString();
+    } else {
+      convocations.push({
+        id: "c_" + Date.now(),
+        pelada_id: activeSelectedPelada.id,
+        jogador_id: currentUser.id,
+        status: "confirmado",
+        forma_pagamento: method,
+        data_convocacao: new Date().toISOString()
+      });
+    }
+
+    // 2. Registrar Finanças se for por Saldo Interno (Debita o saldo do jogador)
+    const playerInDb = players.find(p => p.id === currentUser.id);
+    if (method === "saldo") {
+      playerInDb.saldo -= cost;
+      
+      transactions.push({
+        id: "t_" + Date.now(),
+        pelada_id: activeSelectedPelada.id,
+        jogador_id: currentUser.id,
+        tipo: "convocacao",
+        descricao: `Convocação debitada em saldo: ${currentUser.nome}`,
+        valor: cost,
+        sinal: "credito", // Dinheiro entra no caixa geral da pelada
+        data: new Date().toISOString()
+      });
+    } else {
+      // Se for por PIX, o saldo do jogador não altera, mas o dinheiro vai pro caixa
+      transactions.push({
+        id: "t_" + Date.now(),
+        pelada_id: activeSelectedPelada.id,
+        jogador_id: currentUser.id,
+        tipo: "pagamento_pix",
+        descricao: `Convocação paga via PIX: ${currentUser.nome}`,
+        valor: cost,
+        sinal: "credito",
+        data: new Date().toISOString()
+      });
+    }
+
+    localStorage.setItem("convocations", JSON.stringify(convocations));
+    localStorage.setItem("players", JSON.stringify(players));
+    localStorage.setItem("transactions", JSON.stringify(transactions));
+
+    showToast("Presença confirmada com sucesso!");
+    closeModal("modal-payment");
+    updatePlayerCardFIFA();
+    renderConvocadosList(activeSelectedPelada.id);
+  };
+
+  // Simulação de PIX
+  if (method === "pix") {
+    const confirmBtn = document.getElementById("btn-confirm-payment-action");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Aguardando aprovação do PIX...";
+    
+    setTimeout(() => {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = "Concluir Convocação";
+      executeJoin();
+    }, 2000);
+  } else {
+    executeJoin();
+  }
+}
+
+// --- CANCELAR PRESENÇA / MODAL REMOÇÃO ---
+function openRemovalModal() {
+  if (!activeSelectedPelada) return;
+
+  const convocations = JSON.parse(localStorage.getItem("convocations"));
+  const playerConv = convocations.find(c => c.pelada_id === activeSelectedPelada.id && c.jogador_id === currentUser.id && c.status === "confirmado");
+
+  if (!playerConv) {
+    showToast("Você não está confirmado para esta pelada.", "error");
+    return;
+  }
+
+  // Verificar horário: 2h de limite
+  // Para fins de teste e simulação de horário da pelada (no mock m1 é 2026-07-22 às 20h)
+  const peladaDateTime = new Date(`${activeSelectedPelada.data}T${activeSelectedPelada.horario}:00`);
+  const now = new Date();
+  const timeDiffMs = peladaDateTime.getTime() - now.getTime();
+  const hoursLeft = timeDiffMs / (1000 * 60 * 60);
+
+  const infoDiv = document.getElementById("removal-reimbursement-info");
+  
+  if (hoursLeft >= 2) {
+    infoDiv.style.backgroundColor = "rgba(0, 200, 83, 0.1)";
+    infoDiv.style.color = "var(--success)";
+    infoDiv.innerHTML = `
+      <div style="display: flex; gap: 8px; align-items: start;">
+        <i data-feather="check-circle" style="width: 20px; height: 20px; flex-shrink:0;"></i>
+        <div>
+          <strong>Estorno Permitido!</strong>
+          <span style="display:block; font-size:12px; margin-top:2px;">Faltam mais de 2 horas para o início da pelada (${hoursLeft.toFixed(1)}h restantes). O valor da taxa será estornado ao seu saldo.</span>
+        </div>
+      </div>
+    `;
+  } else {
+    infoDiv.style.backgroundColor = "rgba(255, 23, 68, 0.1)";
+    infoDiv.style.color = "var(--danger)";
+    infoDiv.innerHTML = `
+      <div style="display: flex; gap: 8px; align-items: start;">
+        <i data-feather="alert-triangle" style="width: 20px; height: 20px; flex-shrink:0;"></i>
+        <div>
+          <strong>Sem Estorno Financeiro!</strong>
+          <span style="display:block; font-size:12px; margin-top:2px;">Faltam menos de 2 horas para o início da pelada (${hoursLeft < 0 ? 'Pelada já iniciada' : hoursLeft.toFixed(1) + 'h restantes'}). O valor da taxa de convocação irá diretamente para o Caixa de Multas da pelada.</span>
+        </div>
+      </div>
+    `;
+  }
+
+  openModal("modal-removal");
+  feather.replace();
+}
+
+function handleConfirmRemoval() {
+  const convocations = JSON.parse(localStorage.getItem("convocations"));
+  const players = JSON.parse(localStorage.getItem("players"));
+  const transactions = JSON.parse(localStorage.getItem("transactions"));
+
+  const playerConv = convocations.find(c => c.pelada_id === activeSelectedPelada.id && c.jogador_id === currentUser.id && c.status === "confirmado");
+  
+  if (!playerConv) return;
+
+  const peladaDateTime = new Date(`${activeSelectedPelada.data}T${activeSelectedPelada.horario}:00`);
+  const now = new Date();
+  const timeDiffMs = peladaDateTime.getTime() - now.getTime();
+  const hoursLeft = timeDiffMs / (1000 * 60 * 60);
+
+  const cost = activeSelectedPelada.valor_convocacao;
+  const playerInDb = players.find(p => p.id === currentUser.id);
+
+  if (hoursLeft >= 2) {
+    // Estorno automático
+    playerConv.status = "cortado";
+    playerConv.motivo_remocao = "estorno";
+    playerConv.data_remocao = new Date().toISOString();
+
+    // Se pagou em saldo ou pix, estorna para o saldo do jogador
+    playerInDb.saldo += cost;
+
+    transactions.push({
+      id: "t_" + Date.now(),
+      pelada_id: activeSelectedPelada.id,
+      jogador_id: currentUser.id,
+      tipo: "estorno",
+      descricao: `Reembolso de convocação (Prazo OK): ${currentUser.nome}`,
+      valor: cost,
+      sinal: "debito", // sai do caixa geral
+      data: new Date().toISOString()
+    });
+
+    showToast("Presença cancelada. Valor estornado ao seu saldo!");
+  } else {
+    // Perde a taxa -> Vai para o caixa
+    playerConv.status = "cortado";
+    playerConv.motivo_remocao = "caixa";
+    playerConv.data_remocao = new Date().toISOString();
+
+    // Se o pagamento inicial foi em Pix, o saldo dele não muda, mas a pelada fica com a grana.
+    // Se foi saldo, já foi debitado, apenas mantemos o débito e transferimos como receita de multa definitiva.
+    transactions.push({
+      id: "t_" + Date.now(),
+      pelada_id: activeSelectedPelada.id,
+      jogador_id: currentUser.id,
+      tipo: "caixa",
+      descricao: `Cancelamento fora do prazo (Taxa retida): ${currentUser.nome}`,
+      valor: cost,
+      sinal: "credito", // mantido no caixa
+      data: new Date().toISOString()
+    });
+
+    showToast("Presença cancelada. Taxa retida no caixa da pelada.", "warning");
+  }
+
+  localStorage.setItem("convocations", JSON.stringify(convocations));
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+
+  closeModal("modal-removal");
+  updatePlayerCardFIFA();
+  renderConvocadosList(activeSelectedPelada.id);
+}
+
+// --- ABA ACOMPANHAMENTO (JOGADOR) ---
+function renderAcompanhamentoTab() {
+  const configs = JSON.parse(localStorage.getItem("configs"));
+  const groupConfig = configs.find(c => c.grupo_id === currentGroup.id) || { criterio_empate: "ambos_permanecem", vitorias_para_sair: 2 };
+  
+  let tieText = "";
+  if (groupConfig.criterio_empate === "ambos_permanecem") tieText = "Ambos permanecem";
+  else if (groupConfig.criterio_empate === "vencedor_ultima") tieText = "Fica vencedor anterior";
+  else if (groupConfig.criterio_empate === "time_entrando") tieText = "Fica time entrante";
+  else tieText = "Saem ambos";
+
+  document.getElementById("live-rules-details").textContent = `${tieText} | Limite: ${groupConfig.vitorias_para_sair} Vitórias`;
+  
+  updateAcompanhamentoUI();
+}
+
+function updateAcompanhamentoUI() {
+  document.getElementById("live-team-a-name").textContent = liveMatch.teamA;
+  document.getElementById("live-team-b-name").textContent = liveMatch.teamB;
+  document.getElementById("live-team-a-score").textContent = liveMatch.scoreA;
+  document.getElementById("live-team-b-score").textContent = liveMatch.scoreB;
+
+  // Atualizar Fila de Espera
+  const queueContainer = document.getElementById("live-queue-list");
+  queueContainer.innerHTML = "";
+
+  if (waitingQueue.length === 0) {
+    queueContainer.innerHTML = `<p style="font-size: 13px; color: var(--text-caption); text-align: center;">Nenhum time na fila de espera no momento.</p>`;
+    return;
+  }
+
+  waitingQueue.forEach((teamName, idx) => {
+    const item = document.createElement("div");
+    item.className = "queue-item";
+    
+    // Cor visual sutil para cada time na fila
+    let teamColor = "#00E676";
+    if (teamName.toLowerCase().includes("vermelho")) teamColor = "var(--danger)";
+    if (teamName.toLowerCase().includes("azul")) teamColor = "#2196F3";
+    if (teamName.toLowerCase().includes("amarelo")) teamColor = "#FFC107";
+    if (teamName.toLowerCase().includes("verde")) teamColor = "var(--secondary)";
+
+    item.style.borderLeftColor = teamColor;
+
+    item.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="pos">${idx + 1}º</span>
+        <span>${teamName}</span>
+      </div>
+      <span class="badge-status pendente">Na fila</span>
+    `;
+    queueContainer.appendChild(item);
+  });
+}
+
+// --- POLLING SIMULADO DE ACOMPANHAMENTO (A cada 10s) ---
+let pollingActive = false;
+function startSimulatedPolling() {
+  if (pollingActive) return;
+  pollingActive = true;
+
+  setInterval(() => {
+    // Apenas atualiza se o timer estiver correndo
+    if (liveMatch.isPlaying) {
+      // Simula uma probabilidade sutil de gols
+      const rand = Math.random();
+      if (rand > 0.85) {
+        if (Math.random() > 0.5) {
+          liveMatch.scoreA++;
+          showToast(`GOL do ${liveMatch.teamA}!`);
+        } else {
+          liveMatch.scoreB++;
+          showToast(`GOL do ${liveMatch.teamB}!`);
+        }
+        
+        // Sincronizar com os campos do Gestor caso estejam visíveis
+        const gestorScoreA = document.getElementById("match-control-score-a");
+        const gestorScoreB = document.getElementById("match-control-score-b");
+        if (gestorScoreA) gestorScoreA.textContent = liveMatch.scoreA;
+        if (gestorScoreB) gestorScoreB.textContent = liveMatch.scoreB;
+
+        updateAcompanhamentoUI();
+      }
+    }
+  }, 10000);
+}
+startSimulatedPolling();
+
+// --- TABELAS RANKING ---
+function renderRankingTab() {
+  // Vamos calcular dinamicamente uma classificação baseada em histórico fictício
+  // E também o ranking técnico de jogadores
+  const teamsBody = document.getElementById("ranking-teams-body");
+  if (!teamsBody) return;
+
+  teamsBody.innerHTML = "";
+
+  const mockRanking = [
+    { name: "Time Azul", pontos: 12, jogos: 6, vitorias: 4, sg: 5 },
+    { name: "Time Amarelo", pontos: 9, jogos: 6, vitorias: 3, sg: 2 },
+    { name: "Time Verde", pontos: 7, jogos: 6, vitorias: 2, sg: -1 },
+    { name: "Time Vermelho", pontos: 4, jogos: 6, vitorias: 1, sg: -6 }
+  ];
+
+  mockRanking.forEach((t, idx) => {
+    const tr = document.createElement("tr");
+    
+    let badgeClass = "";
+    if (idx === 0) badgeClass = "ranking-gold";
+    if (idx === 1) badgeClass = "ranking-silver";
+    if (idx === 2) badgeClass = "ranking-bronze";
+
+    tr.innerHTML = `
+      <td>
+        <span class="ranking-badge-top ${badgeClass}">${idx + 1}</span>
+      </td>
+      <td style="font-weight: 600;">${t.name}</td>
+      <td style="text-align: center; font-weight: bold; color: var(--primary);">${t.pontos}</td>
+      <td style="text-align: center;">${t.jogos}</td>
+      <td style="text-align: center;">${t.vitorias}</td>
+      <td style="text-align: center; color: ${t.sg >= 0 ? 'var(--success)' : 'var(--danger)'};">${t.sg > 0 ? '+' : ''}${t.sg}</td>
+    `;
+    teamsBody.appendChild(tr);
+  });
+}
+
+// --- DESEMPENHO TAB ---
+function renderDesempenhoTab() {
+  const players = JSON.parse(localStorage.getItem("players"));
+  
+  // Artilharia (Gols) - Top 10
+  const goalsBody = document.getElementById("performance-goals-body");
+  goalsBody.innerHTML = "";
+  
+  const topGols = [...players].sort((a,b) => b.gols - a.gols).slice(0, 10);
+  topGols.forEach((p, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span style="font-weight: bold;">${idx + 1}º</span></td>
+      <td>${p.nome} ${p.goleiro ? '🧤' : ''}</td>
+      <td style="text-align: center; font-weight: bold; color: var(--accent);">${p.gols}</td>
+    `;
+    goalsBody.appendChild(tr);
+  });
+
+  // Melhores Médias - Top 5
+  const ratingsBody = document.getElementById("performance-ratings-body");
+  ratingsBody.innerHTML = "";
+
+  const topRatings = [...players].sort((a,b) => b.avaliacao_media - a.avaliacao_media).slice(0, 5);
+  topRatings.forEach((p, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span style="font-weight: bold;">${idx + 1}º</span></td>
+      <td>${p.nome}</td>
+      <td style="text-align: center; font-weight: bold; color: var(--warning);">★ ${p.avaliacao_media.toFixed(1)}</td>
+    `;
+    ratingsBody.appendChild(tr);
+  });
+}
+
+// ==================== MÓDULO GESTOR — ATLETAS ====================
+function renderManagerAthletesList(searchQuery = "") {
+  const players = JSON.parse(localStorage.getItem("players"));
+  const container = document.getElementById("athletes-list-container");
+  container.innerHTML = "";
+
+  // Filtrar apenas jogadores que estão no grupo (para o MVP todos aparecem, mas filtramos por busca)
+  const filtered = players.filter(p => {
+    const matchesSearch = p.nome.toLowerCase().includes(searchQuery.toLowerCase()) || p.cpf.includes(searchQuery);
+    return matchesSearch;
+  });
+
+  // Atualizar cabeçalho resumo
+  document.getElementById("summary-athletes-total").textContent = players.length;
+  document.getElementById("summary-athletes-active").textContent = players.filter(p => p.ativo).length;
+  document.getElementById("summary-athletes-debtors").textContent = players.filter(p => p.saldo < 0).length;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i data-feather="users" style="width: 32px; height: 32px;"></i>
+        <p>Nenhum atleta encontrado.</p>
+      </div>
+    `;
+    feather.replace();
+    return;
+  }
+
+  filtered.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card-athlete";
+    if (!p.ativo) {
+      card.style.opacity = "0.5";
+    }
+
+    const initials = p.nome.split(" ").map(n => n[0]).slice(0,2).join("").toUpperCase();
+    const balanceText = p.saldo.toFixed(2).replace(".", ",");
+    const balanceColor = p.saldo >= 0 ? "var(--success)" : "var(--danger)";
+
+    card.innerHTML = `
+      <div class="athlete-info">
+        <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--primary); color: #FFF; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue'; font-size:18px;">
+          ${initials}
+        </div>
+        <div class="athlete-details">
+          <h4>${p.nome} ${p.goleiro ? '🧤' : ''}</h4>
+          <span style="font-size:12px; color: var(--text-caption);">CPF: ${p.cpf} | ⭐ ${p.autoavaliacao} estrelas</span>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap: 24px;">
+        <div style="text-align: right;">
+          <span style="font-size:11px; display:block; text-transform:uppercase; color: var(--text-caption);">Saldo</span>
+          <strong style="color: ${balanceColor}; font-size:15px;">R$ ${balanceText}</strong>
+        </div>
+        <div class="athlete-actions">
+          <button class="btn btn-sm btn-outline" onclick="openAthleteModal('${p.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="toggleAthleteStatus('${p.id}')">${p.ativo ? '🗑️' : '🔄'}</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleAthleteStatus(id) {
+  const players = JSON.parse(localStorage.getItem("players"));
+  const p = players.find(x => x.id === id);
+  if (p) {
+    p.ativo = !p.ativo;
+    localStorage.setItem("players", JSON.stringify(players));
+    showToast(`Status do atleta alterado para ${p.ativo ? 'Ativo' : 'Inativo'}.`);
+    renderManagerAthletesList();
+  }
+}
+
+// --- MODAL CADASTRO/EDIÇÃO ATLETA (GESTOR) ---
+function openAthleteModal(id = "") {
+  const title = document.getElementById("athlete-modal-title");
+  const formId = document.getElementById("athlete-edit-id");
+  const name = document.getElementById("athlete-name");
+  const dob = document.getElementById("athlete-dob");
+  const cpf = document.getElementById("athlete-cpf");
+  const whatsapp = document.getElementById("athlete-whatsapp");
+  const isGk = document.getElementById("athlete-is-gk");
+  const starContainer = document.getElementById("athlete-stars-selector");
+
+  // Reset estrelas
+  document.querySelectorAll("#athlete-stars-selector .rating-star").forEach(s => s.classList.remove("active"));
+  starContainer.dataset.value = 0;
+
+  if (id) {
+    // Editar
+    title.textContent = "Editar Atleta";
+    const players = JSON.parse(localStorage.getItem("players"));
+    const p = players.find(x => x.id === id);
+    
+    formId.value = p.id;
+    name.value = p.nome;
+    dob.value = p.data_nascimento;
+    cpf.value = p.cpf;
+    whatsapp.value = p.whatsapp;
+    isGk.checked = p.goleiro;
+    
+    // Marcar estrelas
+    starContainer.dataset.value = p.autoavaliacao;
+    document.querySelectorAll("#athlete-stars-selector .rating-star").forEach((s, idx) => {
+      if (idx < p.autoavaliacao) s.classList.add("active");
+    });
+  } else {
+    // Novo
+    title.textContent = "Cadastrar Novo Atleta";
+    formId.value = "";
+    name.value = "";
+    dob.value = "";
+    cpf.value = "";
+    whatsapp.value = "";
+    isGk.checked = false;
+  }
+
+  openModal("modal-athlete");
+}
+
+function handleSaveAthlete() {
+  const id = document.getElementById("athlete-edit-id").value;
+  const name = document.getElementById("athlete-name").value.trim();
+  const dob = document.getElementById("athlete-dob").value;
+  const cpf = document.getElementById("athlete-cpf").value;
+  const whatsapp = document.getElementById("athlete-whatsapp").value;
+  const isGk = document.getElementById("athlete-is-gk").checked;
+  const rating = parseInt(document.getElementById("athlete-stars-selector").dataset.value) || 0;
+
+  if (!name || !dob || !cpf || !whatsapp || rating === 0) {
+    showToast("Por favor, preencha todos os campos do atleta.", "error");
+    return;
+  }
+
+  const players = JSON.parse(localStorage.getItem("players"));
+
+  if (id) {
+    // Atualizar
+    const p = players.find(x => x.id === id);
+    p.nome = name;
+    p.data_nascimento = dob;
+    p.cpf = cpf;
+    p.whatsapp = whatsapp;
+    p.goleiro = isGk;
+    p.autoavaliacao = rating;
+    showToast("Atleta atualizado!");
+  } else {
+    // Criar
+    if (players.some(x => x.cpf === cpf)) {
+      showToast("Já existe um atleta cadastrado com este CPF.", "error");
+      return;
+    }
+
+    players.push({
+      id: "p_" + Date.now(),
+      nome: name,
+      data_nascimento: dob,
+      cpf: cpf,
+      whatsapp: whatsapp,
+      goleiro: isGk,
+      autoavaliacao: rating,
+      ativo: true,
+      saldo: 0.00,
+      gols: 0,
+      partidas: 0,
+      avaliacao_media: rating
+    });
+    showToast("Novo atleta cadastrado com sucesso!");
+  }
+
+  localStorage.setItem("players", JSON.stringify(players));
+  closeModal("modal-athlete");
+  renderManagerAthletesList();
+}
+
+// ==================== MÓDULO GESTOR — CONFIGURAÇÕES ====================
+function loadConfigsInManager() {
+  const configs = JSON.parse(localStorage.getItem("configs"));
+  const config = configs.find(c => c.grupo_id === currentGroup.id);
+  if (!config) return;
+
+  // Set radios
+  const radio = document.querySelector(`input[name="config-tie"][value="${config.criterio_empate}"]`);
+  if (radio) radio.checked = true;
+
+  // Steppers
+  document.getElementById("config-wins-val").textContent = config.vitorias_para_sair;
+  document.getElementById("config-players-val").textContent = config.jogadores_por_time;
+  document.getElementById("config-teams-val").textContent = config.quantidade_times;
+
+  // Inputs
+  document.getElementById("config-exit-rule").value = config.regra_saida;
+  document.getElementById("config-convocation-value").value = config.valor_convocacao.toFixed(2);
+  document.getElementById("config-negative-limit").value = config.limite_saldo_negativo.toFixed(2);
+}
+
+function updateConfigStep(type, diff) {
+  const el = document.getElementById(`config-${type}-val`);
+  let val = parseInt(el.textContent);
+  val += diff;
+
+  if (type === "wins" && (val < 2 || val > 3)) return; // Regra: 2 ou 3
+  if (type === "players" && (val < 4 || val > 11)) return; // Regra: 4 a 11
+  if (type === "teams" && (val < 2 || val > 10)) return; // Regra: 2 a 10
+
+  el.textContent = val;
+}
+
+function handleSaveConfigs() {
+  const tie = document.querySelector('input[name="config-tie"]:checked').value;
+  const wins = parseInt(document.getElementById("config-wins-val").textContent);
+  const playersPerTeam = parseInt(document.getElementById("config-players-val").textContent);
+  const qtyTeams = parseInt(document.getElementById("config-teams-val").textContent);
+  const exitRule = document.getElementById("config-exit-rule").value;
+  const cost = parseFloat(document.getElementById("config-convocation-value").value) || 20.00;
+  const negativeLimit = parseFloat(document.getElementById("config-negative-limit").value) || 100.00;
+
+  const configs = JSON.parse(localStorage.getItem("configs"));
+  const config = configs.find(c => c.grupo_id === currentGroup.id);
+  
+  if (config) {
+    config.criterio_empate = tie;
+    config.vitorias_para_sair = wins;
+    config.jogadores_por_time = playersPerTeam;
+    config.quantidade_times = qtyTeams;
+    config.regra_saida = exitRule;
+    config.valor_convocacao = cost;
+    config.limite_saldo_negativo = negativeLimit;
+  }
+
+  localStorage.setItem("configs", JSON.stringify(configs));
+  showToast("Configurações do grupo salvas com sucesso!");
+}
+
+// ==================== MÓDULO GESTOR — FORMAÇÃO E SORTEIO ====================
+let presentPlayers = []; // Lista de IDs de jogadores presentes para o sorteio
+
+function renderManagerCheckinList() {
+  const peladas = JSON.parse(localStorage.getItem("peladas"));
+  const select = document.getElementById("select-manager-pelada");
+  select.innerHTML = "";
+
+  const groupPeladas = peladas.filter(p => p.grupo_id === currentGroup.id && p.status === "agendada");
+
+  if (groupPeladas.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Nenhuma pelada agendada";
+    select.appendChild(opt);
+    document.getElementById("checkin-list-container").innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption);">Sem partidas futuras para check-in.</p>`;
+    return;
+  }
+
+  groupPeladas.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    const dateFormatted = new Date(p.data + "T00:00:00").toLocaleDateString("pt-BR");
+    opt.textContent = `${dateFormatted} às ${p.horario}`;
+    select.appendChild(opt);
+  });
+
+  const activePeladaId = groupPeladas[0].id;
+  updateCheckinPlayersList(activePeladaId);
+
+  select.onchange = (e) => {
+    updateCheckinPlayersList(e.target.value);
+  };
+}
+
+function updateCheckinPlayersList(peladaId) {
+  const convocations = JSON.parse(localStorage.getItem("convocations"));
+  const players = JSON.parse(localStorage.getItem("players"));
+  const container = document.getElementById("checkin-list-container");
+  
+  container.innerHTML = "";
+  presentPlayers = [];
+
+  // Obter convocados
+  const matchConvs = convocations.filter(c => c.pelada_id === peladaId);
+
+  if (matchConvs.length === 0) {
+    container.innerHTML = `<p style="font-size: 13px; text-align: center; color:var(--text-caption);">Sem jogadores na lista de convocação.</p>`;
+    document.getElementById("checkin-count").textContent = "0 Presentes";
+    return;
+  }
+
+  matchConvs.forEach(c => {
+    const p = players.find(x => x.id === c.jogador_id);
+    if (!p) return;
+
+    // Apenas jogadores ativos e não cortados contam
+    if (c.status === "cortado") return;
+
+    // Por padrão no check-in gestor, jogadores confirmados entram como presentes inicialmente
+    const isPresent = c.status === "confirmado";
+    if (isPresent) presentPlayers.push(p.id);
+
+    const div = document.createElement("div");
+    div.style.display = "flex";
+    div.style.justify = "space-between";
+    div.style.alignItems = "center";
+    div.style.padding = "8px 12px";
+    div.style.backgroundColor = "var(--background)";
+    div.style.borderRadius = "8px";
+
+    div.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:13px; font-weight:500;">${p.nome} ${p.goleiro ? '🧤' : ''}</span>
+        <span style="color:var(--warning); font-size:11px;">${"★".repeat(p.autoavaliacao)}</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" class="toggle-input" ${isPresent ? 'checked' : ''} onchange="togglePresenter('${p.id}', this)">
+        <span class="toggle-label"></span>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById("checkin-count").textContent = `${presentPlayers.length} Presentes`;
+}
+
+function togglePresenter(playerId, checkbox) {
+  if (checkbox.checked) {
+    if (!presentPlayers.includes(playerId)) presentPlayers.push(playerId);
+  } else {
+    presentPlayers = presentPlayers.filter(id => id !== playerId);
+  }
+  document.getElementById("checkin-count").textContent = `${presentPlayers.length} Presentes`;
+}
+
+// --- ALGORITMO SNAKE DRAFT DE SORTEIO ---
+function handleExecuteSorteio() {
+  const type = document.querySelector('input[name="sorteio-type"]:checked').value;
+  closeModal("modal-sorteio");
+
+  const players = JSON.parse(localStorage.getItem("players"));
+  const configs = JSON.parse(localStorage.getItem("configs"));
+  const config = configs.find(c => c.grupo_id === currentGroup.id) || { jogadores_por_time: 6, quantidade_times: 3 };
+
+  const playersPerTeam = config.jogadores_por_time;
+  let qtyTeams = config.quantidade_times;
+
+  // Filtrar jogadores da lista de presentes do banco de dados
+  const activePresent = players.filter(p => presentPlayers.includes(p.id));
+
+  if (activePresent.length < 2) {
+    showToast("Número insuficiente de jogadores presentes para o sorteio.", "error");
+    return;
+  }
+
+  // Separar goleiros e jogadores de linha
+  const gkList = activePresent.filter(p => p.goleiro);
+  const fieldList = activePresent.filter(p => !p.goleiro);
+
+  // Inicializar times
+  drawnTeams = [];
+  const teamColors = ["#2196F3", "#FFC107", "#FF1744", "#00C853", "#FF6D00", "#9C27B0", "#E91E63", "#00BCD4", "#795548", "#607D8B"];
+
+  for (let i = 0; i < qtyTeams; i++) {
+    drawnTeams.push({
+      id: `team_${i+1}`,
+      nome: `Time ${getColoName(i)}`,
+      cor: teamColors[i] || "#777",
+      players: []
+    });
+  }
+
+  // 1. DISTRIBUIR GOLEIROS (1 por time aleatoriamente)
+  const shuffledGks = shuffleArray([...gkList]);
+  shuffledGks.forEach((gk, idx) => {
+    if (idx < qtyTeams) {
+      drawnTeams[idx].players.push(gk);
+    } else {
+      // Goleiros extras vão para a lista de campo ou reserva
+      fieldList.push(gk);
+    }
+  });
+
+  // 2. ORDENAR JOGADORES DE CAMPO POR ESTRELAS (Decrescente)
+  // E aplicar uma randomização sutil: embaralhar ligeiramente jogadores de mesmo nível
+  let sortedField = [...fieldList].sort((a, b) => {
+    if (b.autoavaliacao === a.autoavaliacao) {
+      return Math.random() - 0.5; // Embaralha jogadores de mesma estrela
+    }
+    return b.autoavaliacao - a.autoavaliacao;
+  });
+
+  // Randomização de ±1 posição na serpentina
+  // Damos uma leve perturbada na lista ordenada para evitar determinismo puro
+  for (let i = 0; i < sortedField.length - 1; i++) {
+    if (Math.random() < 0.25) { // 25% de chance de trocar vizinho
+      const temp = sortedField[i];
+      sortedField[i] = sortedField[i + 1];
+      sortedField[i + 1] = temp;
+    }
+  }
+
+  // Se a opção for Sorteio B (Necessários), cortamos a lista no tamanho máximo dos times
+  let maxRequired = qtyTeams * playersPerTeam;
+  let remainingPlayers = [];
+
+  if (type === "necessarios" && sortedField.length + gkList.length > maxRequired) {
+    const maxFieldNeeded = maxRequired - Math.min(gkList.length, qtyTeams);
+    remainingPlayers = sortedField.slice(maxFieldNeeded);
+    sortedField = sortedField.slice(0, maxFieldNeeded);
+  }
+
+  // 3. DISTRIBUIÇÃO EM SERPENTINA (Snake Draft)
+  let direction = 1; // 1 = A->D, -1 = D->A
+  let teamIdx = 0;
+
+  sortedField.forEach((player) => {
+    // Acha o time menos cheio que não seja goleiro extra se já tiver GK
+    drawnTeams[teamIdx].players.push(player);
+
+    // Mover o índice
+    teamIdx += direction;
+    if (teamIdx >= qtyTeams) {
+      teamIdx = qtyTeams - 1;
+      direction = -1; // Inverte
+    } else if (teamIdx < 0) {
+      teamIdx = 0;
+      direction = 1; // Inverte
+    }
+  });
+
+  // 4. VALIDAÇÃO TÉCNICA (Média de estrelas deve variar no máx 0.5)
+  // Se falhar a validação, faremos pequenas correções (SWAP) para equilibrar
+  balanceDrawnTeams(playersPerTeam);
+
+  // Guardar times no LocalStorage
+  localStorage.setItem("teams", JSON.stringify(drawnTeams));
+
+  // Alimentar a fila de espera
+  waitingQueue = [];
+  drawnTeams.forEach((t, idx) => {
+    if (idx >= 2) { // 2 primeiros estão em campo, outros na fila
+      waitingQueue.push(t.nome);
+    }
+  });
+
+  // Definir partida ao vivo inicial
+  if (drawnTeams.length >= 2) {
+    liveMatch.teamA = drawnTeams[0].nome;
+    liveMatch.teamB = drawnTeams[1].nome;
+    liveMatch.scoreA = 0;
+    liveMatch.scoreB = 0;
+    liveMatch.isPlaying = false;
+    
+    // Atualizar controle no Gestor
+    document.getElementById("match-control-team-a").textContent = liveMatch.teamA;
+    document.getElementById("match-control-team-b").textContent = liveMatch.teamB;
+    document.getElementById("match-control-score-a").textContent = "0";
+    document.getElementById("match-control-score-b").textContent = "0";
+  }
+
+  showToast("Times sorteados com equilíbrio técnico equilibrado!");
+  renderDrawnTeams();
+  updateAcompanhamentoUI();
+}
+
+function getColoName(idx) {
+  const names = ["Azul", "Amarelo", "Vermelho", "Verde", "Laranja", "Roxo", "Rosa", "Ciano", "Marrom", "Cinza"];
+  return names[idx] || `Equipe ${idx+1}`;
+}
+
+// Algoritmo simples de balanceamento
+function balanceDrawnTeams(playersPerTeam) {
+  let attempts = 0;
+  const getAverage = (team) => {
+    if (team.players.length === 0) return 0;
+    return team.players.reduce((sum, p) => sum + p.autoavaliacao, 0) / team.players.length;
+  };
+
+  while (attempts < 15) {
+    let minTeam = drawnTeams[0];
+    let maxTeam = drawnTeams[0];
+
+    drawnTeams.forEach(t => {
+      if (getAverage(t) < getAverage(minTeam)) minTeam = t;
+      if (getAverage(t) > getAverage(maxTeam)) maxTeam = t;
+    });
+
+    const diff = getAverage(maxTeam) - getAverage(minTeam);
+    if (diff <= 0.5) break; // Sucesso! Diferença menor ou igual a 0.5 estrelas
+
+    // Tentar trocar um jogador de alta avaliação do maxTeam com um de baixa avaliação do minTeam (sem trocar goleiros)
+    let swapped = false;
+    const maxPlayers = maxTeam.players.filter(p => !p.goleiro);
+    const minPlayers = minTeam.players.filter(p => !p.goleiro);
+
+    for (let pMax of maxPlayers) {
+      for (let pMin of minPlayers) {
+        if (pMax.autoavaliacao > pMin.autoavaliacao) {
+          // Efetuar troca temporária e testar se melhora
+          const idxMax = maxTeam.players.indexOf(pMax);
+          const idxMin = minTeam.players.indexOf(pMin);
+          
+          maxTeam.players[idxMax] = pMin;
+          minTeam.players[idxMin] = pMax;
+
+          const newDiff = getAverage(maxTeam) - getAverage(minTeam);
+          if (newDiff < diff) {
+            swapped = true;
+            break;
+          } else {
+            // Desfaz
+            maxTeam.players[idxMax] = pMax;
+            minTeam.players[idxMin] = pMin;
+          }
+        }
+      }
+      if (swapped) break;
+    }
+
+    if (!swapped) break; // Nenhuma troca viável melhorou
+    attempts++;
+  }
+}
+
+// Helper shuffle
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// --- RENDERIZAR TIMES SORTEADOS COM DRAG & DROP ---
+function renderDrawnTeams() {
+  const container = document.getElementById("drawn-teams-container");
+  container.innerHTML = "";
+
+  if (drawnTeams.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <i data-feather="shuffle" style="width: 48px; height: 48px;"></i>
+        <p>Realize o sorteio técnico ao lado para montar as equipes.</p>
+      </div>
+    `;
+    feather.replace();
+    return;
+  }
+
+  drawnTeams.forEach((team) => {
+    const avg = team.players.length ? (team.players.reduce((s,p) => s + p.autoavaliacao, 0) / team.players.length).toFixed(1) : "0.0";
+    const card = document.createElement("div");
+    card.className = "team-draft-card";
+    card.id = `card-team-${team.id}`;
+    card.setAttribute("ondragover", "allowDrop(event)");
+    card.setAttribute("ondragleave", "dragLeave(event)");
+    card.setAttribute("ondrop", `drop(event, '${team.id}')`);
+
+    card.innerHTML = `
+      <div class="team-draft-header">
+        <input type="text" class="team-draft-title-input" value="${team.nome}" onchange="renameTeam('${team.id}', this.value)">
+        <span style="font-size:11px; font-weight:bold; color:var(--text-caption);">Avg: ⭐${avg}</span>
+      </div>
+      <div class="team-draft-players" id="players-list-${team.id}">
+        <!-- Jogadores do Time -->
+      </div>
+    `;
+
+    const playersList = card.querySelector(`#players-list-${team.id}`);
+    team.players.forEach(p => {
+      const pDiv = document.createElement("div");
+      pDiv.className = "player-draft-item";
+      pDiv.draggable = true;
+      pDiv.setAttribute("ondragstart", `drag(event, '${p.id}', '${team.id}')`);
+      
+      pDiv.innerHTML = `
+        <span class="player-draft-name">
+          ${p.nome} ${p.goleiro ? '🧤' : ''}
+        </span>
+        <span class="player-draft-stars">${"★".repeat(p.autoavaliacao)}</span>
+      `;
+      playersList.appendChild(pDiv);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// DRAG AND DROP HANDLERS NATIVER
+let draggedPlayerId = null;
+let draggedFromTeamId = null;
+
+window.drag = function(ev, playerId, teamId) {
+  draggedPlayerId = playerId;
+  draggedFromTeamId = teamId;
+  ev.dataTransfer.setData("text", playerId);
+};
+
+window.allowDrop = function(ev) {
+  ev.preventDefault();
+  const card = ev.currentTarget;
+  card.classList.add("dragover");
+};
+
+window.dragLeave = function(ev) {
+  const card = ev.currentTarget;
+  card.classList.remove("dragover");
+};
+
+window.drop = function(ev, targetTeamId) {
+  ev.preventDefault();
+  const card = ev.currentTarget;
+  card.classList.remove("dragover");
+
+  if (targetTeamId === draggedFromTeamId) return;
+
+  const sourceTeam = drawnTeams.find(t => t.id === draggedFromTeamId);
+  const targetTeam = drawnTeams.find(t => t.id === targetTeamId);
+  const player = sourceTeam.players.find(p => p.id === draggedPlayerId);
+
+  // Mover
+  sourceTeam.players = sourceTeam.players.filter(p => p.id !== draggedPlayerId);
+  targetTeam.players.push(player);
+
+  // Guardar no banco
+  localStorage.setItem("teams", JSON.stringify(drawnTeams));
+
+  // Recalcular médias e re-renderizar
+  renderDrawnTeams();
+  showToast(`${player.nome} movido para ${targetTeam.nome}!`);
+};
+
+window.renameTeam = function(teamId, newName) {
+  const team = drawnTeams.find(t => t.id === teamId);
+  if (team && newName.trim()) {
+    const oldName = team.nome;
+    team.nome = newName.trim();
+    localStorage.setItem("teams", JSON.stringify(drawnTeams));
+    
+    // Atualizar na fila de espera ou placar vivo
+    if (waitingQueue.includes(oldName)) {
+      waitingQueue = waitingQueue.map(n => n === oldName ? team.nome : n);
+    }
+    if (liveMatch.teamA === oldName) {
+      liveMatch.teamA = team.nome;
+      document.getElementById("match-control-team-a").textContent = team.nome;
+    }
+    if (liveMatch.teamB === oldName) {
+      liveMatch.teamB = team.nome;
+      document.getElementById("match-control-team-b").textContent = team.nome;
+    }
+    
+    updateAcompanhamentoUI();
+    showToast(`Time renomeado para ${team.nome}`);
+  }
+};
+
+// --- CONTROLE DE JOGO E CRONÔMETRO AO VIVO ---
+function toggleLiveTimer() {
+  const btn = document.getElementById("btn-timer-toggle");
+  
+  if (liveMatch.isPlaying) {
+    // Pausar
+    clearInterval(timerInterval);
+    liveMatch.isPlaying = false;
+    btn.textContent = "Retomar";
+    btn.className = "btn btn-sm btn-primary";
+    showToast("Cronômetro pausado!");
+  } else {
+    // Iniciar
+    liveMatch.isPlaying = true;
+    btn.textContent = "Pausar";
+    btn.className = "btn btn-sm btn-outline";
+    
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      updateTimerDisplay();
+    }, 1000);
+    showToast("Partida iniciada!");
+  }
+}
+
+function resetLiveTimer() {
+  clearInterval(timerInterval);
+  liveMatch.isPlaying = false;
+  timerSeconds = 0;
+  
+  document.getElementById("btn-timer-toggle").textContent = "Iniciar";
+  document.getElementById("btn-timer-toggle").className = "btn btn-sm btn-primary";
+  
+  updateTimerDisplay();
+  showToast("Cronômetro zerado.");
+}
+
+function updateTimerDisplay() {
+  const min = Math.floor(timerSeconds / 60).toString().padStart(2, "0");
+  const sec = (timerSeconds % 60).toString().padStart(2, "0");
+  const text = `${min}:${sec}`;
+
+  // Atualizar tela do gestor
+  document.getElementById("match-control-timer").textContent = text;
+  
+  // Atualizar tela do jogador (Acompanhamento)
+  const userTimer = document.getElementById("live-match-timer");
+  const userProgressBar = document.getElementById("live-match-timer-progress");
+
+  if (userTimer) userTimer.textContent = text;
+  if (userProgressBar) {
+    // Simula barra de 10 minutos (600s)
+    const pct = Math.min((timerSeconds / 600) * 100, 100);
+    userProgressBar.style.width = `${pct}%`;
+  }
+}
+
+window.updateLiveScore = function(team, diff) {
+  if (team === "a") {
+    liveMatch.scoreA = Math.max(0, liveMatch.scoreA + diff);
+    document.getElementById("match-control-score-a").textContent = liveMatch.scoreA;
+  } else {
+    liveMatch.scoreB = Math.max(0, liveMatch.scoreB + diff);
+    document.getElementById("match-control-score-b").textContent = liveMatch.scoreB;
+  }
+  updateAcompanhamentoUI();
+};
+
+function handleFinishMatch() {
+  if (drawnTeams.length < 2) {
+    showToast("Não há times suficientes configurados para finalizar partidas.", "error");
+    return;
+  }
+
+  const scoreA = liveMatch.scoreA;
+  const scoreB = liveMatch.scoreB;
+
+  showToast(`Partida Encerrada! Resultado: ${liveMatch.teamA} ${scoreA} x ${scoreB} ${liveMatch.teamB}`);
+
+  // Aplicar regras de vitória/empate e rotacionar a fila de espera
+  const configs = JSON.parse(localStorage.getItem("configs"));
+  const config = configs.find(c => c.grupo_id === currentGroup.id) || { criterio_empate: "ambos_permanecem", regra_saida: "final_fila" };
+
+  let winnerName = "";
+  let loserName = "";
+  let isTie = scoreA === scoreB;
+
+  if (!isTie) {
+    winnerName = scoreA > scoreB ? liveMatch.teamA : liveMatch.teamB;
+    loserName = scoreA > scoreB ? liveMatch.teamB : liveMatch.teamA;
+  }
+
+  // Lógica de Rotatividade de Times baseada nas configurações
+  if (isTie) {
+    // Empate
+    const rule = config.criterio_empate;
+    
+    if (rule === "saem_ambos") {
+      // Ambos os times saem, entram dois novos da fila
+      if (waitingQueue.length >= 2) {
+        const nextA = waitingQueue.shift();
+        const nextB = waitingQueue.shift();
+        waitingQueue.push(liveMatch.teamA);
+        waitingQueue.push(liveMatch.teamB);
+        
+        liveMatch.teamA = nextA;
+        liveMatch.teamB = nextB;
+      }
+    } else if (rule === "time_entrando") {
+      // O time que estava no final da fila permanece (não aplicável facilmente a menos que o entrante seja o vencedor)
+      // Rotaciona um time derrotado (geralmente o time que está em campo há mais tempo)
+      const next = waitingQueue.shift();
+      waitingQueue.push(liveMatch.teamB); // B sai
+      liveMatch.teamB = next;
+    } else {
+      // default: ambos permanecem ou gestor decide. Mantemos ambos.
+      showToast("Pela regra, ambos os times permanecem em campo.");
+    }
+  } else {
+    // Vitória de alguém
+    // O perdedor vai para onde a regra de saída mandar
+    const exitRule = config.regra_saida;
+
+    if (waitingQueue.length > 0) {
+      const nextTeam = waitingQueue.shift(); // Próximo time entra
+      
+      if (exitRule === "final_fila") {
+        waitingQueue.push(loserName); // Perdedor vai pro final da fila
+      } else {
+        // fora_1_jogo: vai pro final da fila também na simulação simplificada
+        waitingQueue.push(loserName);
+      }
+
+      // Vencedor continua em campo contra o entrante
+      if (winnerName === liveMatch.teamA) {
+        liveMatch.teamB = nextTeam;
+      } else {
+        liveMatch.teamA = nextTeam;
+      }
+    }
+  }
+
+  // Zerar placar e tempo
+  liveMatch.scoreA = 0;
+  liveMatch.scoreB = 0;
+  resetLiveTimer();
+
+  // Sincronizar UI
+  document.getElementById("match-control-team-a").textContent = liveMatch.teamA;
+  document.getElementById("match-control-team-b").textContent = liveMatch.teamB;
+  document.getElementById("match-control-score-a").textContent = "0";
+  document.getElementById("match-control-score-b").textContent = "0";
+
+  updateAcompanhamentoUI();
+}
+
+// ==================== MÓDULO GESTOR — FINANCEIRO ====================
+function renderManagerFinanceiroTab() {
+  const transactions = JSON.parse(localStorage.getItem("transactions"));
+  const players = JSON.parse(localStorage.getItem("players"));
+
+  // Calcular Balanço Geral
+  let receipts = 0;
+  let expenses = 0;
+
+  transactions.forEach(t => {
+    // Apenas transações do grupo atual
+    // Como no mock simplificamos sem multi-grupo rígido nas transações, filtramos todas do localStorage
+    if (t.sinal === "credito") receipts += t.valor;
+    else expenses += t.valor;
+  });
+
+  const net = receipts - expenses;
+
+  document.getElementById("finances-receipts").textContent = `R$ ${receipts.toFixed(2).replace(".", ",")}`;
+  document.getElementById("finances-expenses").textContent = `R$ ${expenses.toFixed(2).replace(".", ",")}`;
+  
+  const netEl = document.getElementById("finances-net");
+  netEl.textContent = `R$ ${net.toFixed(2).replace(".", ",")}`;
+  netEl.style.color = net >= 0 ? "var(--success)" : "var(--danger)";
+
+  // Renderizar Lista de Transações (Histórico)
+  const transBody = document.getElementById("finances-transactions-body");
+  transBody.innerHTML = "";
+
+  if (transactions.length === 0) {
+    transBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhum lançamento.</td></tr>`;
+  } else {
+    // Mostrar últimos 10
+    [...transactions].reverse().slice(0, 10).forEach(t => {
+      const tr = document.createElement("tr");
+      const dateFormatted = new Date(t.data).toLocaleDateString("pt-BR");
+      const valColor = t.sinal === "credito" ? "var(--success)" : "var(--danger)";
+      const sign = t.sinal === "credito" ? "+" : "-";
+
+      tr.innerHTML = `
+        <td>${dateFormatted}</td>
+        <td>
+          <span style="font-weight: 500; font-size:13px; display:block;">${t.descricao}</span>
+          <span style="font-size:11px; color:var(--text-caption);">${t.tipo}</span>
+        </td>
+        <td style="text-align: right; font-weight: bold; color: ${valColor};">${sign} R$ ${t.valor.toFixed(2)}</td>
+      `;
+      transBody.appendChild(tr);
+    });
+  }
+
+  // Renderizar Balanço de Saldos dos Jogadores
+  const balBody = document.getElementById("finances-athlete-balances-body");
+  balBody.innerHTML = "";
+
+  // Ordenar por maior dívida (saldos mais negativos primeiro)
+  const sortedPlayers = [...players].sort((a,b) => a.saldo - b.saldo);
+
+  sortedPlayers.forEach(p => {
+    const tr = document.createElement("tr");
+    const balanceColor = p.saldo >= 0 ? "var(--success)" : "var(--danger)";
+    
+    // Ação Cobrar se for negativo
+    let btnCobrar = "";
+    if (p.saldo < 0) {
+      const whatsMsg = window.encodeURIComponent(`Olá ${p.nome.split(" ")[0]}! Vimos no Pelada Pro que seu saldo está em R$ ${p.saldo.toFixed(2).replace(".", ",")}. Quando puder, faz o acerto via Pix. Valeu!`);
+      const linkWhats = `https://api.whatsapp.com/send?phone=55${p.whatsapp.replace(/\D/g, "")}&text=${whatsMsg}`;
+      btnCobrar = `
+        <a href="${linkWhats}" target="_blank" class="btn btn-sm btn-outline" style="text-decoration:none; padding:4px 8px; border-color:var(--accent); color:var(--accent); font-size:11px; height:24px;">Cobrar</a>
+      `;
+    }
+
+    tr.innerHTML = `
+      <td style="font-weight: 500;">${p.nome} ${p.goleiro ? '🧤' : ''}</td>
+      <td style="text-align: right; font-weight: bold; color: ${balanceColor};">R$ ${p.saldo.toFixed(2).replace(".", ",")}</td>
+      <td style="text-align: center;">
+        <div style="display:flex; gap:6px; justify-content:center;">
+          ${btnCobrar}
+          <button class="btn btn-sm btn-secondary" onclick="manualFinanceSettlement('${p.id}')" style="font-size:11px; padding:4px 8px; height:24px;">Ajustar</button>
+        </div>
+      </td>
+    `;
+    balBody.appendChild(tr);
+  });
+}
+
+function handleSaveExpense() {
+  const desc = document.getElementById("expense-description").value.trim();
+  const val = parseFloat(document.getElementById("expense-value").value);
+  const cat = document.getElementById("expense-category").value;
+
+  if (!desc || isNaN(val) || val <= 0) {
+    showToast("Preencha a descrição e o valor da despesa corretamente.", "error");
+    return;
+  }
+
+  const transactions = JSON.parse(localStorage.getItem("transactions"));
+  transactions.push({
+    id: "t_" + Date.now(),
+    pelada_id: null,
+    jogador_id: null,
+    tipo: "despesa",
+    descricao: desc,
+    valor: val,
+    sinal: "debito",
+    data: new Date().toISOString(),
+    categoria: cat
+  });
+
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+  
+  // Limpar campos
+  document.getElementById("expense-description").value = "";
+  document.getElementById("expense-value").value = "";
+
+  closeModal("modal-expense");
+  showToast("Despesa registrada com sucesso!");
+  renderManagerFinanceiroTab();
+}
+
+window.manualFinanceSettlement = function(playerId) {
+  const players = JSON.parse(localStorage.getItem("players"));
+  const p = players.find(x => x.id === playerId);
+  if (!p) return;
+
+  const inputAmount = window.prompt(`Ajuste financeiro para ${p.nome}.\nDigite um valor positivo para adicionar créditos, ou negativo para registrar débitos:`, "0");
+  const amt = parseFloat(inputAmount);
+
+  if (isNaN(amt) || amt === 0) return;
+
+  p.saldo += amt;
+
+  // Registrar lançamento manual
+  const transactions = JSON.parse(localStorage.getItem("transactions"));
+  transactions.push({
+    id: "t_" + Date.now(),
+    pelada_id: null,
+    jogador_id: p.id,
+    tipo: "acerto",
+    descricao: `Acerto financeiro manual: ${p.nome}`,
+    valor: Math.abs(amt),
+    sinal: amt > 0 ? "credito" : "debito",
+    data: new Date().toISOString()
+  });
+
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+
+  showToast(`Ajuste de R$ ${amt.toFixed(2)} realizado.`);
+  renderManagerFinanceiroTab();
+};
+
+// --- FUNÇÃO DE DEBOUNCE PARA BUSCA ---
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}

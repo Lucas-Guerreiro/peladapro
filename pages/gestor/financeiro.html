@@ -1,0 +1,68 @@
+<!-- Parcial: Gestão Financeira -->
+<div>
+  <!-- Balanço -->
+  <div class="grid-3" style="margin-bottom: 24px;">
+    <div class="card" style="border-left: 4px solid var(--secondary); padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Receitas</p>
+      <h2 id="finances-receipts" style="font-size: 32px; color: var(--secondary); margin-top: 4px;">R$ 0,00</h2>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger); padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Despesas</p>
+      <h2 id="finances-expenses" style="font-size: 32px; color: var(--danger); margin-top: 4px;">R$ 0,00</h2>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--primary); padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Caixa Geral</p>
+      <h2 id="finances-net" style="font-size: 32px; color: var(--primary); margin-top: 4px;">R$ 0,00</h2>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Transações e Nova Despesa -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 0;">Histórico de Transações</h3>
+        <button id="btn-open-expense-modal" class="btn btn-sm btn-danger">
+          <i data-feather="minus" style="width: 14px; height: 14px;"></i> Registrar Despesa
+        </button>
+      </div>
+      
+      <div class="table-responsive" style="max-height: 400px;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th style="text-align: right;">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="finances-transactions-body">
+            <!-- Dinâmico -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Controle de Saldos dos Jogadores -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 0;">Situação de Saldos</h3>
+        <i data-feather="dollar-sign" style="color: var(--secondary);"></i>
+      </div>
+
+      <div class="table-responsive" style="max-height: 400px;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Atleta</th>
+              <th style="text-align: right;">Saldo</th>
+              <th style="text-align: center; width: 140px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="finances-athlete-balances-body">
+            <!-- Dinâmico -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

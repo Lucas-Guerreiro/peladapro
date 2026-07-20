@@ -1,0 +1,5 @@
+[
+  { "id": "m1", "grupo_id": "g1", "data": "2026-07-22", "horario": "20:00", "valor_convocacao": 20.00, "status": "agendada" },
+  { "id": "m2", "grupo_id": "g1", "data": "2026-07-15", "horario": "20:00", "valor_convocacao": 20.00, "status": "realizada" },
+  { "id": "m3", "grupo_id": "g2", "data": "2026-07-18", "horario": "09:00", "valor_convocacao": 25.00, "status": "agendada" }
+]

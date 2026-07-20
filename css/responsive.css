@@ -1,0 +1,122 @@
+/* ==========================================================================
+   css/responsive.css — Media Queries Centralizadas
+   PeladaPro · Fundacional
+   ========================================================================== */
+
+/* --- TABLET (≤ 1024px) ---------------------------------------------------- */
+@media (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+
+  .score-numbers { font-size: 56px; }
+}
+
+/* --- MOBILE (≤ 768px) ----------------------------------------------------- */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0 16px 32px 16px;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Abas de navegação horizontais com scroll */
+  .tabs-navigation {
+    padding-bottom: 4px;
+  }
+
+  /* Toast centralizado no mobile */
+  .toast-container {
+    top: 16px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 90%;
+  }
+
+  /* Formulário de atleta em coluna */
+  .search-bar-container {
+    flex-direction: column;
+  }
+
+  /* Modal em tela cheia no mobile */
+  .modal-content {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 24px 20px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    max-height: 85vh;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+  }
+
+  /* Placar menor no mobile */
+  .score-numbers { font-size: 56px; }
+  .team-name     { font-size: 22px; }
+
+  /* Card FIFA em full width */
+  .card-fifa {
+    margin-bottom: 16px;
+  }
+
+  /* Header compacto */
+  .main-header {
+    padding: 16px;
+  }
+
+  .brand h1 { font-size: 28px; }
+
+  /* Abas de login */
+  .login-tab-btn { font-size: 16px; }
+
+  /* Ranking compacto */
+  .table-custom th,
+  .table-custom td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Grid de times em 1 coluna */
+  .teams-setup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  h1 { font-size: 36px; }
+  h2 { font-size: 26px; }
+  h3 { font-size: 20px; }
+}
+
+/* --- MOBILE PEQUENO (≤ 480px) ---------------------------------------------- */
+@media (max-width: 480px) {
+  .btn-lg  { height: 48px; padding: 0 24px; font-size: 18px; }
+  .btn-md  { height: 40px; padding: 0 18px; font-size: 16px; }
+
+  .score-numbers { font-size: 48px; }
+
+  .login-card { padding: 24px 20px; }
+
+  .modal-content { padding: 20px 16px; }
+}
+
+/* --- PRINT ---------------------------------------------------------------- */
+@media print {
+  .main-header,
+  .tabs-navigation,
+  .btn,
+  .toast-container,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  body { background: white; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+}

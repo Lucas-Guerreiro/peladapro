@@ -1,0 +1,85 @@
+<!-- components/modals/criar_pelada.html — Modal para criar grupo de pelada e configurar regras padrão -->
+<div class="modal-backdrop text-inter" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+  <div class="card modal-card" style="max-width: 540px; padding: 32px; border-radius: 16px; background: #ffffff; color: #0f172a; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); border: 1px solid rgba(0, 0, 0, 0.08); width: 100%; box-sizing: border-box; animation: scaleUp 0.25s ease-out; max-height: 90vh; overflow-y: auto;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 class="text-inter" style="font-weight: 800; font-size: 20px; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="plus-circle" style="width: 22px; height: 22px; color: #4f46e5;"></i>
+        Criar e Configurar Pelada
+      </h2>
+      <button id="btn-close-criar-pelada" style="border: none; background: transparent; cursor: pointer; font-size: 22px; color: #64748b; line-height: 1;">&times;</button>
+    </div>
+
+    <p class="text-inter" style="font-size: 13px; color: #475569; margin: 0 0 24px; line-height: 1.5;">
+      Defina o nome do grupo e as regras padrão que serão aplicadas para todas as futuras datas criadas.
+    </p>
+
+    <!-- Nome da Pelada -->
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label for="create-pelada-name" class="form-label" style="font-weight: 700;">Nome da Pelada</label>
+      <input type="text" id="create-pelada-name" class="form-control" placeholder="Ex: Pelada de Sexta, Futebol da Firma...">
+    </div>
+
+    <!-- Critério de Empate -->
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label class="form-label" style="font-weight: 700;">Critério de Empate Padrão</label>
+      <select id="create-pelada-tie" class="form-control">
+        <option value="ambos_permanecem" selected>Ambos permanecem em campo</option>
+        <option value="vencedor_ultima">Fica o vencedor da partida anterior</option>
+        <option value="time_entrando">Fica o time que estava entrando</option>
+        <option value="saem_ambos">Saem ambos os times</option>
+        <option value="gestor_manual">Gestor decide manualmente</option>
+      </select>
+    </div>
+
+    <!-- Regra de Saída -->
+    <div class="grid-2" style="gap: 16px; margin-bottom: 20px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="create-pelada-wins" class="form-label" style="font-weight: 700;">Vitórias para Sair</label>
+        <div style="display: flex; gap: 8px; align-items: center; height: 38px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 12px; background: var(--background);">
+          <button id="btn-create-wins-minus" style="border: none; background: transparent; cursor: pointer; font-weight: bold; font-size: 16px; color: #64748b;">-</button>
+          <span id="create-pelada-wins-val" style="flex: 1; text-align: center; font-weight: 700; color: #0f172a;">2</span>
+          <button id="btn-create-wins-plus" style="border: none; background: transparent; cursor: pointer; font-weight: bold; font-size: 16px; color: #64748b;">+</button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="create-pelada-exit-rule" class="form-label" style="font-weight: 700;">Destino do Vencedor</label>
+        <select id="create-pelada-exit-rule" class="form-control">
+          <option value="final_fila" selected>Final da fila</option>
+          <option value="fora_1_jogo">Fica fora por 1 jogo</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Dimensionamento -->
+    <div class="grid-2" style="gap: 16px; margin-bottom: 28px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="create-pelada-players" class="form-label" style="font-weight: 700;">Jogadores por Time</label>
+        <div style="display: flex; gap: 8px; align-items: center; height: 38px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 12px; background: var(--background);">
+          <button id="btn-create-players-minus" style="border: none; background: transparent; cursor: pointer; font-weight: bold; font-size: 16px; color: #64748b;">-</button>
+          <span id="create-pelada-players-val" style="flex: 1; text-align: center; font-weight: 700; color: #0f172a;">7</span>
+          <button id="btn-create-players-plus" style="border: none; background: transparent; cursor: pointer; font-weight: bold; font-size: 16px; color: #64748b;">+</button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="create-pelada-teams" class="form-label" style="font-weight: 700;">Quantidade de Times</label>
+        <div style="display: flex; gap: 8px; align-items: center; height: 38px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 12px; background: var(--background);">
+          <button id="btn-create-teams-minus" style="border: none; background: transparent; cursor: pointer; font-weight: bold; font-size: 16px; color: #64748b;">-</button>
+          <span id="create-pelada-teams-val" style="flex: 1; text-align: center; font-weight: 700; color: #0f172a;">2</span>
+          <button id="btn-create-teams-plus" style="border: none; background: transparent; cursor: pointer; font-weight: bold; font-size: 16px; color: #64748b;">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div style="display: flex; gap: 12px;">
+      <button id="btn-submit-criar-pelada" class="btn btn-primary btn-md" style="flex: 1; font-weight: 700; height: 44px; cursor: pointer;">
+        Criar Pelada e Salvar Regras
+      </button>
+      <button id="btn-cancel-criar-pelada" class="btn btn-outline btn-md" style="flex: 1; font-weight: 700; height: 44px; cursor: pointer;">
+        Cancelar
+      </button>
+    </div>
+    
+  </div>
+</div>

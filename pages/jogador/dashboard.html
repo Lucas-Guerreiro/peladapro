@@ -1,0 +1,119 @@
+<!-- pages/jogador/dashboard.html — Dashboard do Atleta (Módulo Jogador) -->
+
+<!-- NAV DE ABAS INTERNAS -->
+<nav class="tabs-navigation" id="jogador-tabs-nav" style="background: var(--primary); padding: 0 16px; margin-bottom: 0; border-bottom: none;">
+  <button class="tab-btn active" style="color: var(--secondary); border-bottom-color: var(--secondary);"
+    data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    data-name="ranking" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+</nav>
+
+<main style="padding: 20px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- CARD FIFA DO JOGADOR -->
+  <div class="card-fifa" id="player-fifa-card">
+    <div class="card-fifa-header">
+      <span class="sports-font" style="font-size: 20px; letter-spacing: 1px; color: var(--secondary);">PELADA PRO</span>
+      <span id="player-gk-badge" class="badge-gk hidden">🧤 GK</span>
+    </div>
+
+    <div class="card-fifa-profile">
+      <div class="fifa-avatar-container">
+        <img id="player-avatar"
+          src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
+          alt="Avatar" class="fifa-avatar">
+      </div>
+      <div>
+        <h3 id="player-card-name" style="font-size: 26px; line-height: 1; color: #FFF; margin-bottom: 4px;">—</h3>
+        <p class="text-inter" style="font-size: 12px; color: var(--text-caption);">
+          <span id="player-card-age">—</span> ANOS
+        </p>
+        <div id="player-card-stars" class="fifa-stars" style="margin-top: 6px;"></div>
+      </div>
+    </div>
+
+    <div id="player-card-balance" class="card-fifa-balance">
+      <div>
+        <span class="label">Meu Saldo</span>
+      </div>
+      <span id="player-balance-value" class="value">R$ 0,00</span>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-outline-secondary btn-sm" style="flex: 1;"
+        onclick="Router.openModal('atleta', { playerId: Auth.currentUser?.id, mode: 'edit' })">
+        ✏️ Editar Perfil
+      </button>
+      <button class="btn btn-accent btn-md" style="flex: 2;"
+        onclick="Router.navigate('#/jogador/convocacao')">
+        📋 Convocação
+      </button>
+    </div>
+  </div>
+
+  <!-- PRÓXIMAS PELADAS -->
+  <section>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 20px;">📅 Próximas Peladas</h3>
+      <span id="dashboard-group-name" class="text-inter"
+        style="font-size: 12px; color: var(--text-caption); background: var(--background); padding: 4px 10px; border-radius: 20px;">—</span>
+    </div>
+
+    <div id="next-matches-list" class="card" style="padding: 0; overflow: hidden;">
+      <!-- Inserido via JS -->
+      <div class="skeleton" style="height: 52px; margin: 12px; border-radius: 8px;"></div>
+      <div class="skeleton" style="height: 52px; margin: 12px; border-radius: 8px;"></div>
+    </div>
+  </section>
+
+  <!-- PARTIDA ATIVA (ao vivo) -->
+  <section id="live-section">
+    <h3 style="margin: 0 0 12px; font-size: 20px;">⚽ Partida Ao Vivo</h3>
+
+    <div class="live-match-card">
+      <div class="live-badge">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #FFF; display: inline-block;"></span>
+        AO VIVO
+      </div>
+      <div class="scoreboard">
+        <div class="score-team">
+          <div id="live-team-a-indicator" class="team-color-indicator" style="background: #2196F3;"></div>
+          <span id="live-team-a-name" class="team-name">Time A</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span id="live-team-a-score" class="score-numbers">0</span>
+          <span class="score-divider">:</span>
+          <span id="live-team-b-score" class="score-numbers">0</span>
+        </div>
+        <div class="score-team">
+          <div id="live-team-b-indicator" class="team-color-indicator" style="background: #FFC107;"></div>
+          <span id="live-team-b-name" class="team-name">Time B</span>
+        </div>
+      </div>
+
+      <div class="match-timer-container">
+        <div class="match-timer-bar">
+          <div id="live-match-timer-progress" class="match-timer-progress" style="width: 0%;"></div>
+        </div>
+        <div id="live-match-timer" class="match-timer-text">00:00</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILA DE ESPERA -->
+  <section>
+    <h3 style="margin: 0 0 12px; font-size: 20px;">⏳ Fila de Espera</h3>
+    <div id="dashboard-queue-list" class="queue-container" style="margin-bottom: 0;">
+      <div class="queue-list">
+        <!-- Inserido via JS -->
+      </div>
+    </div>
+  </section>
+
+</main>

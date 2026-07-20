@@ -1,0 +1,31 @@
+<!-- Modal: Editar Partida do Histórico -->
+<div class="modal-backdrop" id="modal-editar-partida-backdrop">
+  <div class="modal-content" style="max-width: 400px; padding: 24px;">
+    
+    <div class="modal-header" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <h3 style="margin: 0; font-size: 20px; color: var(--text-heading);">✏️ Editar Placar</h3>
+      <button class="modal-close" id="btn-close-editar-partida">&times;</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Time A -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--background); padding: 12px; border-radius: 8px;">
+        <span id="edit-match-team-a" class="text-inter" style="font-weight: bold; color: var(--secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Time A</span>
+        <input type="number" id="edit-match-score-a" class="form-control" style="width: 70px; text-align: center; font-size: 16px; font-weight: bold;" min="0">
+      </div>
+
+      <!-- Time B -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--background); padding: 12px; border-radius: 8px;">
+        <span id="edit-match-team-b" class="text-inter" style="font-weight: bold; color: var(--accent); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Time B</span>
+        <input type="number" id="edit-match-score-b" class="form-control" style="width: 70px; text-align: center; font-size: 16px; font-weight: bold;" min="0">
+      </div>
+
+      <!-- Ações -->
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button id="btn-cancel-editar-partida" class="btn btn-md btn-outline-secondary" style="flex: 1;">Cancelar</button>
+        <button id="btn-submit-editar-partida" class="btn btn-md btn-primary" style="flex: 2; font-weight: bold;">Salvar Alterações</button>
+      </div>
+    </div>
+
+  </div>
+</div>

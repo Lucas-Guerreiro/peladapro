@@ -1,0 +1,81 @@
+<!-- pages/jogador/convocacao.html — Confirmação de Presença (Módulo Jogador) -->
+
+<!-- NAV DE ABAS INTERNAS -->
+<nav class="tabs-navigation" id="jogador-tabs-nav" style="background: var(--primary); padding: 0 16px; margin-bottom: 0; border-bottom: none;">
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+  <button class="tab-btn active" style="color: var(--secondary); border-bottom-color: var(--secondary);"
+    onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+</nav>
+
+<main style="padding: 20px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+
+  <!-- SELEÇÃO DE PELADA E DATA -->
+  <div class="card" style="display: flex; flex-direction: column; gap: 12px; padding: 20px;">
+    <h3 style="margin: 0; font-size: 20px;">📋 Confirmar Presença</h3>
+
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="select-conv-pelada">Grupo / Pelada</label>
+      <select id="select-conv-pelada" class="form-control">
+        <option value="">▼ Selecione o grupo</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="select-conv-data">Data da Pelada</label>
+      <select id="select-conv-data" class="form-control" disabled style="background: var(--background);">
+        <option value="">Selecione um grupo primeiro</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- LISTA DE CONFIRMADOS -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color);">
+      <h4 class="text-inter" style="margin: 0; font-weight: 700; color: var(--text-heading);">✅ Lista de Convocados</h4>
+      <span id="conv-counter" class="text-inter"
+        style="font-size: 13px; font-weight: 600; background: var(--background); padding: 4px 10px; border-radius: 12px; color: var(--text-caption);">
+        0 / 0
+      </span>
+    </div>
+
+    <div id="confirmed-list" style="max-height: 320px; overflow-y: auto;">
+      <div class="empty-state" style="padding: 32px;">
+        <span style="font-size: 32px;">📋</span>
+        <p class="text-inter" style="font-size: 14px;">Selecione uma pelada acima para ver a lista.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEU STATUS -->
+  <div id="my-status-card" class="card" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <p class="text-inter" style="font-size: 12px; color: var(--text-caption); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Meu Status</p>
+      <span id="my-status-badge" class="badge-status pendente">⏳ Pendente</span>
+    </div>
+    <div style="text-align: right;">
+      <p class="text-inter" style="font-size: 12px; color: var(--text-caption); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Meu Saldo</p>
+      <span id="my-balance-conv" class="sports-font" style="font-size: 22px; color: var(--primary);">R$ 0,00</span>
+    </div>
+  </div>
+
+  <!-- BOTÕES DE AÇÃO -->
+  <div style="display: flex; gap: 12px;">
+    <button id="btn-conv-add" class="btn btn-primary btn-lg" style="flex: 2;">
+      ➕ Confirmar Presença
+    </button>
+    <button id="btn-conv-remove" class="btn btn-danger btn-md" style="flex: 1;">
+      ➖ Cancelar
+    </button>
+  </div>
+
+</main>
+
+<!-- Container de modal injetado pelo router -->
+<div id="modal-container-root"></div>

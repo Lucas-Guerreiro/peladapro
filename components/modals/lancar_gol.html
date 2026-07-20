@@ -1,0 +1,36 @@
+<!-- Modal: Lançar Gol e Assistência -->
+<div class="modal-backdrop" id="modal-lancar-gol-backdrop">
+  <div class="modal-content" style="max-width: 400px; padding: 24px;">
+    
+    <div class="modal-header" style="margin-bottom: 20px;">
+      <h3 id="lancar-gol-modal-title" style="margin: 0; font-size: 20px;">⚽ Lançar Gol</h3>
+      <button class="modal-close" id="btn-close-lancar-gol">&times;</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Autor do Gol -->
+      <div class="form-group">
+        <label for="select-goal-author" class="form-label">Autor do Gol</label>
+        <select id="select-goal-author" class="form-control">
+          <!-- Jogadores inseridos dinamicamente -->
+        </select>
+      </div>
+
+      <!-- Assistência -->
+      <div class="form-group">
+        <label for="select-goal-assist" class="form-label">Assistência (Opcional)</label>
+        <select id="select-goal-assist" class="form-control">
+          <option value="">Nenhuma</option>
+          <!-- Jogadores inseridos dinamicamente -->
+        </select>
+      </div>
+
+      <!-- Ações -->
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button id="btn-cancel-lancar-gol" class="btn btn-md btn-outline-secondary" style="flex: 1;">Cancelar</button>
+        <button id="btn-submit-lancar-gol" class="btn btn-md btn-accent" style="flex: 2; font-weight: bold;">Confirmar Gol</button>
+      </div>
+    </div>
+
+  </div>
+</div>

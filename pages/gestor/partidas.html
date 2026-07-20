@@ -1,0 +1,107 @@
+<!-- Parcial: Controle da Partida e Filas de Espera -->
+<div class="grid-3" style="align-items: start;">
+  
+  <!-- Coluna 1 e 2: Controle da Partida Ativa (Ocupa 2 colunas) -->
+  <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- Card de Controle de Placar e Cronômetro (Design Premium) -->
+    <div class="card" style="background-color: var(--primary); color: #FFF; border: none; padding: 28px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+        <h3 style="color: #FFF; margin: 0; font-size: 20px;">⏱️ Jogo ao Vivo / Placar</h3>
+        <span class="badge-status" id="match-live-status-badge" style="background: var(--secondary); color: var(--primary); font-weight: bold;">AGUARDANDO SORTEIO</span>
+      </div>
+      
+      <div class="grid-3" style="align-items: center; margin-bottom: 24px; gap: 16px;">
+        <!-- Time A (Olho + Placar + Gol) -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+          <!-- Botão Olho -->
+          <button id="btn-view-team-a" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-color: rgba(255,255,255,0.2); background: transparent;">
+            <i data-feather="eye" style="width: 18px; height: 18px; color: #FFF;"></i>
+          </button>
+
+          <!-- Nome e Placar -->
+          <div style="text-align: center;">
+            <h4 style="font-family: 'Bebas Neue'; font-size: 26px; color: var(--secondary); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;" id="match-control-team-a">—</h4>
+            <div id="match-control-team-a-status" style="min-height: 18px; margin-top: 4px;"></div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px;">
+              <button class="btn btn-sm btn-outline-secondary btn-score-adjust" data-team="a" data-diff="-1" style="border-radius: 50%; width: 28px; height: 28px; font-weight: bold; border-color: rgba(255,255,255,0.3); color: #fff; padding: 0; line-height: 1;">-</button>
+              <span id="match-control-score-a" style="font-family: 'Bebas Neue'; font-size: 48px; min-width: 40px; display: inline-block;">0</span>
+              <button class="btn btn-sm btn-outline-secondary btn-score-adjust" data-team="a" data-diff="1" style="border-radius: 50%; width: 28px; height: 28px; font-weight: bold; border-color: var(--secondary); color: var(--secondary); padding: 0; line-height: 1;">+</button>
+            </div>
+          </div>
+
+          <!-- Botão Gol -->
+          <button id="btn-goal-team-a" class="btn btn-sm btn-accent" style="padding: 6px 10px; font-weight: bold; font-size: 11px; border-radius: 8px; border: none; font-family: 'Bebas Neue'; letter-spacing: 0.5px;">
+            GOL
+          </button>
+        </div>
+
+        <!-- Cronômetro Central -->
+        <div style="text-align: center; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); padding: 0 10px;">
+          <span id="match-control-timer" style="font-family: 'Bebas Neue'; font-size: 48px; display: block; letter-spacing: 1px; color: #FFF; margin-bottom: 12px;">00:00</span>
+          <div style="display: flex; justify-content: center; gap: 10px;">
+            <button id="btn-timer-toggle" class="btn btn-sm btn-primary" style="padding: 6px 16px; font-weight: 600;">Iniciar</button>
+            <button id="btn-timer-reset" class="btn btn-sm btn-outline-secondary" style="border-color: rgba(255,255,255,0.3); color: #fff;">Reset</button>
+          </div>
+        </div>
+
+        <!-- Time B (Olho + Placar + Gol) -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+          <!-- Botão Olho -->
+          <button id="btn-view-team-b" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-color: rgba(255,255,255,0.2); background: transparent;">
+            <i data-feather="eye" style="width: 18px; height: 18px; color: #FFF;"></i>
+          </button>
+
+          <!-- Nome e Placar -->
+          <div style="text-align: center;">
+            <h4 style="font-family: 'Bebas Neue'; font-size: 26px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;" id="match-control-team-b">—</h4>
+            <div id="match-control-team-b-status" style="min-height: 18px; margin-top: 4px;"></div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px;">
+              <button class="btn btn-sm btn-outline-secondary btn-score-adjust" data-team="b" data-diff="-1" style="border-radius: 50%; width: 28px; height: 28px; font-weight: bold; border-color: rgba(255,255,255,0.3); color: #fff; padding: 0; line-height: 1;">-</button>
+              <span id="match-control-score-b" style="font-family: 'Bebas Neue'; font-size: 48px; min-width: 40px; display: inline-block;">0</span>
+              <button class="btn btn-sm btn-outline-secondary btn-score-adjust" data-team="b" data-diff="1" style="border-radius: 50%; width: 28px; height: 28px; font-weight: bold; border-color: var(--accent); color: var(--accent); padding: 0; line-height: 1;">+</button>
+            </div>
+          </div>
+
+          <!-- Botão Gol -->
+          <button id="btn-goal-team-b" class="btn btn-sm btn-accent" style="padding: 6px 10px; font-weight: bold; font-size: 11px; border-radius: 8px; border: none; font-family: 'Bebas Neue'; letter-spacing: 0.5px;">
+            GOL
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; width: 100%;">
+        <button id="btn-finish-match" class="btn btn-md btn-secondary" style="flex: 1; border: 2px solid var(--secondary); color: var(--secondary); background: transparent; font-weight: 700;">
+          <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Lançar Resultado (Concluir Jogo)
+        </button>
+      </div>
+    </div>
+
+    <!-- Card de Histórico de Partidas Recentes -->
+    <div class="card" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <h3 style="margin: 0; font-size: 18px; color: var(--text-heading);">⚽ Histórico de Partidas Recentes</h3>
+        <span class="badge-status confirmado" style="font-size: 11px; background: var(--success); color: #FFF;">JOGOS ENCERRADOS</span>
+      </div>
+
+      <!-- Lista de Partidas Recentes -->
+      <div id="recent-matches-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;">
+        <!-- Inserido dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Coluna 3: Fila de Espera dos Times (Ocupa 1 coluna) -->
+  <div class="card" style="grid-column: span 1; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <h3 style="margin: 0; font-size: 18px; color: var(--text-heading);">📋 Fila de Espera</h3>
+      <span id="queue-count" class="badge-status pendente" style="font-size: 11px;">0 Times</span>
+    </div>
+
+    <!-- Lista Vertical da Fila de Espera -->
+    <div id="wait-queue-container" style="display: flex; flex-direction: column; gap: 10px; min-height: 150px;">
+      <!-- Inserido dinamicamente -->
+    </div>
+  </div>
+
+</div>

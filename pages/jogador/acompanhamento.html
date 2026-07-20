@@ -1,0 +1,78 @@
+<!-- pages/jogador/acompanhamento.html — Partida ao Vivo (Módulo Jogador) -->
+
+<!-- NAV DE ABAS INTERNAS -->
+<nav class="tabs-navigation" id="jogador-tabs-nav" style="background: var(--primary); padding: 0 16px; margin-bottom: 0; border-bottom: none;">
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+  <button class="tab-btn active" style="color: var(--secondary); border-bottom-color: var(--secondary);"
+    onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+</nav>
+
+<main style="padding: 20px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- CRONÔMETRO -->
+  <div class="card" style="text-align: center; padding: 24px;">
+    <div class="sports-font" id="acomp-timer-text" style="font-size: 36px; color: var(--primary); letter-spacing: 2px; margin-bottom: 12px;">
+      00:00 / 15:00
+    </div>
+    <div class="match-timer-bar" style="height: 12px;">
+      <div id="acomp-timer-progress" class="match-timer-progress" style="width: 0%;"></div>
+    </div>
+    <p class="text-inter" id="acomp-timer-status"
+      style="margin-top: 8px; font-size: 13px; color: var(--text-caption);">Aguardando início</p>
+  </div>
+
+  <!-- PLACAR AO VIVO -->
+  <div class="live-match-card">
+    <div class="live-badge">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: #FFF; display: inline-block;"></span>
+      AO VIVO
+    </div>
+
+    <div class="scoreboard">
+      <div class="team-card-acomp" id="acomp-team-a" style="flex: 1; padding: 16px; border-radius: 12px; text-align: center; background: rgba(33,150,243,0.2);">
+        <div class="team-name" id="acomp-team-a-name" style="font-size: 22px; margin-bottom: 8px;">Time A</div>
+        <div id="acomp-team-a-players" style="font-size: 11px; opacity: 0.8; line-height: 1.8;">—</div>
+      </div>
+
+      <div style="text-align: center; padding: 0 8px;">
+        <div class="score-numbers" style="font-size: 64px;">
+          <span id="acomp-score-a">0</span>
+          <span style="font-size: 32px; opacity: 0.5; margin: 0 4px;">⚽</span>
+          <span id="acomp-score-b">0</span>
+        </div>
+      </div>
+
+      <div class="team-card-acomp" id="acomp-team-b" style="flex: 1; padding: 16px; border-radius: 12px; text-align: center; background: rgba(255,193,7,0.2);">
+        <div class="team-name" id="acomp-team-b-name" style="font-size: 22px; margin-bottom: 8px;">Time B</div>
+        <div id="acomp-team-b-players" style="font-size: 11px; opacity: 0.8; line-height: 1.8;">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILA DE ESPERA -->
+  <div class="queue-container" style="margin-bottom: 0;">
+    <div class="queue-title">
+      <h3 style="margin: 0; font-size: 18px;">⏳ Fila de Espera</h3>
+      <span class="text-inter" style="font-size: 12px; color: var(--text-caption);" id="acomp-queue-count">—</span>
+    </div>
+    <div id="acomp-queue-list" class="queue-list">
+      <div class="empty-state" style="padding: 24px;">
+        <p class="text-inter" style="font-size: 13px;">Nenhum time na fila.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGRA ATIVA -->
+  <div class="card" style="background: var(--primary); color: #FFF; text-align: center; padding: 16px;">
+    <p class="text-inter" style="font-size: 13px; opacity: 0.7; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Regra Ativa</p>
+    <p id="acomp-rule-text" class="sports-font" style="font-size: 18px; color: var(--secondary);">—</p>
+  </div>
+
+</main>

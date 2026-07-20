@@ -1,0 +1,58 @@
+<!-- Modal: Complemento Cadastral Obrigatório -->
+<div class="modal-backdrop" id="modal-complemento-backdrop" style="display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); z-index: 9999;">
+  <div class="modal-card" style="width: 100%; max-width: 500px; padding: 32px; border-radius: var(--radius-lg); background: var(--card-background); box-shadow: var(--shadow-lg); animation: slideUp 0.3s ease-out;">
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h2 class="text-inter" style="font-size: 24px; font-weight: 800; color: var(--text-heading); margin-bottom: 8px;">Conclua seu Cadastro 🏆</h2>
+      <p class="text-inter" style="font-size: 14px; color: var(--text-caption);">Precisamos de mais algumas informações antes de você entrar em campo.</p>
+    </div>
+
+    <form id="form-complemento-cadastro" onsubmit="event.preventDefault();">
+      
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" for="comp-name">Nome Completo</label>
+        <input type="text" class="form-control" id="comp-name" placeholder="Ex: Carlos Silva" required />
+      </div>
+
+      <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="comp-dob">Data de Nascimento</label>
+          <input type="date" class="form-control" id="comp-dob" required />
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="comp-cpf">CPF</label>
+          <input type="text" class="form-control" id="comp-cpf" placeholder="000.000.000-00" maxlength="14" required />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label" for="comp-whatsapp">WhatsApp</label>
+        <input type="tel" class="form-control" id="comp-whatsapp" placeholder="(11) 99999-9999" maxlength="15" required />
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+        <label class="form-label" style="margin-bottom: 0;">Como você se avalia tecnicamente?</label>
+        <div class="rating-stars" id="comp-stars-selector" style="color: #ccc; display: flex; gap: 8px; justify-content: center;">
+          <span class="comp-rating-star" data-v="1" style="font-size: 32px; cursor: pointer; transition: color 0.2s;" onclick="ComplementoModal.setStars(1)">★</span>
+          <span class="comp-rating-star" data-v="2" style="font-size: 32px; cursor: pointer; transition: color 0.2s;" onclick="ComplementoModal.setStars(2)">★</span>
+          <span class="comp-rating-star" data-v="3" style="font-size: 32px; cursor: pointer; transition: color 0.2s;" onclick="ComplementoModal.setStars(3)">★</span>
+          <span class="comp-rating-star" data-v="4" style="font-size: 32px; cursor: pointer; transition: color 0.2s;" onclick="ComplementoModal.setStars(4)">★</span>
+          <span class="comp-rating-star" data-v="5" style="font-size: 32px; cursor: pointer; transition: color 0.2s;" onclick="ComplementoModal.setStars(5)">★</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px;">
+        <label class="toggle-switch">
+          <input type="checkbox" class="toggle-input" id="comp-is-gk" />
+          <span class="toggle-label"></span>
+          <span class="text-inter" style="font-size: 14px; font-weight: 500; margin-left: 8px; color: var(--text-body);">Sou Goleiro</span>
+        </label>
+      </div>
+
+      <button type="button" id="btn-save-complemento" class="btn btn-primary btn-lg" style="width: 100%;">
+        Salvar & Entrar em Campo ⚽
+      </button>
+
+    </form>
+  </div>
+</div>

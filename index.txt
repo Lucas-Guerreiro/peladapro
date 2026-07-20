@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pelada Pro — Sistema de Gestão de Peladas Amadoras</title>
+  <meta name="description" content="Gerenciamento inteligente de grupos de futebol amador. Sorteio Snake Draft, ranking, autoavaliação e fluxo de caixa.">
+  <link rel="stylesheet" href="style.css">
+  <!-- Feather Icons para ícones lineares consistentes -->
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+
+  <!-- Toast Container para feedbacks imediatos -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <div class="app-container">
+    <!-- Cabeçalho Principal (Oculto na tela de login) -->
+    <header id="main-header" class="main-header hidden">
+      <div class="brand">
+        <i data-feather="users" style="color: var(--secondary); width: 32px; height: 32px;"></i>
+        <h1>Pelada<span>Pro</span></h1>
+      </div>
+      <div class="user-nav-status">
+        <!-- Seletor de Grupo Global -->
+        <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+          <select id="global-group-selector" class="form-control" style="height: 40px; padding: 6px 12px; font-family: 'Bebas Neue'; font-size: 16px;">
+            <!-- Inserido dinamicamente via JS -->
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="header-user-name" style="font-weight: 600; font-size: 14px; color: var(--text-heading);">—</span>
+          <button id="btn-logout" class="btn btn-sm btn-outline" style="border-color: var(--danger); color: var(--danger);">
+            <i data-feather="log-out" style="width: 14px; height: 14px;"></i> Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ==================== TELA DE LOGIN / CADASTRO ==================== -->
+    <main id="view-auth" class="login-container">
+      <div class="card login-card">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <i data-feather="award" style="color: var(--secondary); width: 48px; height: 48px; margin-bottom: 8px;"></i>
+          <h2 style="font-size: 36px; color: var(--primary);">Pelada<span>Pro</span></h2>
+          <p class="text-inter" style="color: var(--text-caption); font-size: 14px;">O gerenciador definitivo para o seu futebol</p>
+        </div>
+
+        <div class="login-tabs">
+          <button id="tab-login-player" class="login-tab-btn active" onclick="switchLoginTab('player')">Jogador</button>
+          <button id="tab-login-manager" class="login-tab-btn" onclick="switchLoginTab('manager')">Gestor</button>
+        </div>
+
+        <!-- Formulário de Entrada -->
+        <div id="auth-login-form">
+          <div class="form-group">
+            <label for="login-identifier" class="form-label" id="label-login-identifier">E-mail ou CPF</label>
+            <input type="text" id="login-identifier" class="form-control" placeholder="Digite seu CPF ou E-mail">
+          </div>
+          <div class="form-group">
+            <label for="login-password" class="form-label">Senha</label>
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••">
+          </div>
+          <button id="btn-submit-login" class="btn btn-md btn-secondary" style="width: 100%; margin-top: 8px;">
+            Entrar
+          </button>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 13px;">
+            <a href="#" id="link-forgot-password" style="color: var(--text-caption); text-decoration: none;">Esqueci minha senha</a>
+            <a href="#" id="link-goto-register" style="color: var(--secondary); font-weight: 600; text-decoration: none;">Criar conta</a>
+          </div>
+
+          <!-- Botões de Demonstração (Facilidade de Teste) -->
+          <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+            <p style="font-size: 11px; text-align: center; color: var(--text-caption); text-transform: uppercase; font-weight: 600; margin-bottom: 10px;">Acesso Rápido de Teste</p>
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-quick-player" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 12px;">Jogador Teste</button>
+              <button id="btn-quick-manager" class="btn btn-sm btn-outline" style="flex: 1; font-size: 12px;">Gestor Teste</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulário de Cadastro (Inicialmente oculto) -->
+        <div id="auth-register-form" class="hidden">
+          <div class="form-group">
+            <label for="register-name" class="form-label">Nome Completo</label>
+            <input type="text" id="register-name" class="form-control" placeholder="Ex: Lucas Silva">
+          </div>
+          <div class="grid-2" style="gap: 16px;">
+            <div class="form-group">
+              <label for="register-dob" class="form-label">Data de Nascimento</label>
+              <input type="date" id="register-dob" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="register-cpf" class="form-label">CPF</label>
+              <input type="text" id="register-cpf" class="form-control" placeholder="000.000.000-00" maxlength="14">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-whatsapp" class="form-label">WhatsApp</label>
+            <input type="text" id="register-whatsapp" class="form-control" placeholder="(00) 00000-0000" maxlength="15">
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <span class="form-label" style="margin-bottom: 0;">Posição: Goleiro?</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="register-is-gk" class="toggle-input">
+              <span class="toggle-label"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+              <label class="form-label" style="margin-bottom: 0;">Autoavaliação</label>
+              <div class="tooltip">
+                <i data-feather="help-circle" style="width: 14px; height: 14px; color: var(--text-caption);"></i>
+                <span class="tooltip-text">A autoavaliação de 1 a 5 estrelas serve para que o algoritmo do sistema possa realizar o sorteio técnico equilibrado dos times.</span>
+              </div>
+            </div>
+            <div id="register-stars-selector" class="rating-stars">
+              <i data-feather="star" class="rating-star" data-value="1"></i>
+              <i data-feather="star" class="rating-star" data-value="2"></i>
+              <i data-feather="star" class="rating-star" data-value="3"></i>
+              <i data-feather="star" class="rating-star" data-value="4"></i>
+              <i data-feather="star" class="rating-star" data-value="5"></i>
+            </div>
+          </div>
+
+          <button id="btn-submit-register" class="btn btn-md btn-primary" style="width: 100%;" disabled>
+            Criar Cadastro
+          </button>
+          
+          <div style="text-align: center; margin-top: 16px; font-size: 13px;">
+            <a href="#" id="link-goto-login" style="color: var(--primary); text-decoration: none;">Voltar para o Login</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== PAINEL DO JOGADOR ==================== -->
+    <main id="view-player-dashboard" class="hidden" style="animation: fadeIn 0.4s ease;">
+      <!-- Dashboard Layout -->
+      <div class="grid-3" style="margin-bottom: 24px; align-items: start;">
+        <!-- Card FIFA -->
+        <div class="card-fifa" id="player-fifa-card" style="grid-column: span 1;">
+          <div class="card-fifa-header">
+            <span class="sports-font" style="font-size: 24px; letter-spacing: 1px; color: var(--secondary);">PELADA PRO</span>
+            <span id="player-gk-badge" class="badge-gk hidden">🧤 GK</span>
+          </div>
+          <div class="card-fifa-profile">
+            <div class="fifa-avatar-container">
+              <img id="player-avatar" src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="fifa-avatar">
+            </div>
+            <div>
+              <h3 id="player-card-name" style="font-size: 28px; line-height: 1; color: #FFF; margin-bottom: 4px;">—</h3>
+              <p class="text-inter" style="font-size: 12px; color: var(--text-caption);"><span id="player-card-age">—</span> ANOS</p>
+              <div id="player-card-stars" class="fifa-stars">
+                <!-- Estrelas inseridas via JS -->
+              </div>
+            </div>
+          </div>
+          <div id="player-card-balance" class="card-fifa-balance">
+            <div>
+              <span class="label">Meu Saldo</span>
+            </div>
+            <span id="player-balance-value" class="value">R$ 0,00</span>
+          </div>
+          <button id="btn-quick-call" class="btn btn-lg btn-accent" style="width: 100%;">
+            <i data-feather="plus-circle" style="width: 20px; height: 20px;"></i> Convocação
+          </button>
+        </div>
+
+        <!-- Conteúdo Principal do Jogador (Abas) -->
+        <div style="grid-column: span 2; display: flex; flex-direction: column;">
+          <!-- Navegação das Abas -->
+          <nav class="tabs-navigation">
+            <button class="tab-btn active" data-target="tab-player-convocacao">Convocação</button>
+            <button class="tab-btn" data-target="tab-player-acompanhamento">Acompanhamento</button>
+            <button class="tab-btn" data-target="tab-player-ranking">Ranking</button>
+            <button class="tab-btn" data-target="tab-player-desempenho">Desempenho</button>
+          </nav>
+
+          <!-- ABA: CONVOCAÇÃO -->
+          <section id="tab-player-convocacao" class="tab-content active">
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 0;">Próximas Peladas</h3>
+                <span id="convocation-count-badge" class="badge-status confirmado" style="font-family: 'Bebas Neue'; font-size: 16px; letter-spacing: 0.5px;">0 Confirmados</span>
+              </div>
+              
+              <div class="form-group">
+                <label for="select-player-pelada" class="form-label">Selecione o Evento</label>
+                <select id="select-player-pelada" class="form-control">
+                  <!-- Inserido dinamicamente -->
+                </select>
+              </div>
+
+              <!-- Lista de Jogadores Confirmados -->
+              <div style="margin-top: 16px;">
+                <h4 class="form-label">Jogadores Convocados</h4>
+                <div id="player-convocados-list" class="queue-list" style="margin-top: 8px; max-height: 300px; overflow-y: auto; padding-right: 4px;">
+                  <!-- Listagem inserida via JS -->
+                </div>
+              </div>
+
+              <!-- Botões de Ação de Convocação -->
+              <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button id="btn-join-match" class="btn btn-md btn-primary" style="flex: 1;">
+                  <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Confirmar Presença
+                </button>
+                <button id="btn-leave-match" class="btn btn-md btn-danger" style="flex: 1;">
+                  <i data-feather="x-circle" style="width: 18px; height: 18px;"></i> Cancelar Presença
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ABA: ACOMPANHAMENTO -->
+          <section id="tab-player-acompanhamento" class="tab-content">
+            <!-- Partida Ao Vivo -->
+            <div class="live-match-card">
+              <div class="live-badge">
+                <i data-feather="activity" style="width: 14px; height: 14px;"></i> Ao Vivo
+              </div>
+              <div class="scoreboard">
+                <div class="score-team">
+                  <div id="live-team-a-indicator" class="team-color-indicator" style="background-color: #2196F3;"></div>
+                  <span id="live-team-a-name" class="team-name">Time A</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                  <span id="live-team-a-score" class="score-numbers">0</span>
+                  <span class="score-divider">:</span>
+                  <span id="live-team-b-score" class="score-numbers">0</span>
+                </div>
+                <div class="score-team">
+                  <div id="live-team-b-indicator" class="team-color-indicator" style="background-color: #FFC107;"></div>
+                  <span id="live-team-b-name" class="team-name">Time B</span>
+                </div>
+              </div>
+              <div class="match-timer-container">
+                <div class="match-timer-bar">
+                  <div id="live-match-timer-progress" class="match-timer-progress" style="width: 0%;"></div>
+                </div>
+                <div id="live-match-timer" class="match-timer-text">00:00</div>
+              </div>
+              <p id="live-match-rules" class="text-inter" style="color: var(--text-caption); font-size: 13px; margin-top: 12px;">
+                Regra ativa: <span id="live-rules-details" style="color: var(--secondary); font-weight: 600;">—</span>
+              </p>
+            </div>
+
+            <!-- Fila de Espera -->
+            <div class="queue-container">
+              <div class="queue-title">
+                <h3 style="margin-bottom: 0; font-size: 20px;">Fila de Espera (Próximos Times)</h3>
+                <i data-feather="list" style="color: var(--text-caption);"></i>
+              </div>
+              <div id="live-queue-list" class="queue-list">
+                <!-- Fila dinâmica -->
+              </div>
+            </div>
+          </section>
+
+          <!-- ABA: RANKING -->
+          <section id="tab-player-ranking" class="tab-content">
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin-bottom: 0;">Classificação dos Times</h3>
+                <i data-feather="trending-up" style="color: var(--secondary);"></i>
+              </div>
+              <div class="table-responsive">
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th style="width: 60px;">Pos</th>
+                      <th>Time</th>
+                      <th style="text-align: center;">P</th>
+                      <th style="text-align: center;">J</th>
+                      <th style="text-align: center;">V</th>
+                      <th style="text-align: center;">SG</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ranking-teams-body">
+                    <!-- Inserido dinamicamente -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ABA: DESEMPENHO -->
+          <section id="tab-player-desempenho" class="tab-content">
+            <div class="grid-2">
+              <!-- Artilharia -->
+              <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h3 style="margin-bottom: 0; font-size: 20px;">Artilharia (Gols)</h3>
+                  <i data-feather="zap" style="color: var(--accent);"></i>
+                </div>
+                <div class="table-responsive">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Jogador</th>
+                        <th style="text-align: center;">Gols</th>
+                      </tr>
+                    </thead>
+                    <tbody id="performance-goals-body">
+                      <!-- Dinâmico -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Melhores do Grupo -->
+              <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h3 style="margin-bottom: 0; font-size: 20px;">Melhores Médias</h3>
+                  <i data-feather="star" style="color: var(--warning);"></i>
+                </div>
+                <div class="table-responsive">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Jogador</th>
+                        <th style="text-align: center;">Nota</th>
+                      </tr>
+                    </thead>
+                    <tbody id="performance-ratings-body">
+                      <!-- Dinâmico -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== PAINEL DO GESTOR ==================== -->
+    <main id="view-manager-dashboard" class="hidden" style="animation: fadeIn 0.4s ease;">
+      <!-- Navegação Superior do Gestor -->
+      <nav class="tabs-navigation" style="margin-bottom: 24px;">
+        <button class="tab-btn active" data-target="tab-manager-athletes">Atletas</button>
+        <button class="tab-btn" data-target="tab-manager-formation">Formação / Sorteio</button>
+        <button class="tab-btn" data-target="tab-manager-financeiro">Financeiro</button>
+        <button class="tab-btn" data-target="tab-manager-config">Configurações</button>
+      </nav>
+
+      <!-- GESTOR - ABA: ATLETAS -->
+      <section id="tab-manager-athletes" class="tab-content active">
+        <!-- Header Resumo Atletas -->
+        <div class="grid-3" style="margin-bottom: 24px;">
+          <div class="card" style="border-left: 4px solid var(--primary); padding: 16px 20px;">
+            <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Total de Atletas</p>
+            <h2 id="summary-athletes-total" style="font-size: 32px; color: var(--primary); margin-top: 4px;">0</h2>
+          </div>
+          <div class="card" style="border-left: 4px solid var(--secondary); padding: 16px 20px;">
+            <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Atletas Ativos</p>
+            <h2 id="summary-athletes-active" style="font-size: 32px; color: var(--secondary); margin-top: 4px;">0</h2>
+          </div>
+          <div class="card" style="border-left: 4px solid var(--danger); padding: 16px 20px;">
+            <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Inadimplentes</p>
+            <h2 id="summary-athletes-debtors" style="font-size: 32px; color: var(--danger); margin-top: 4px;">0</h2>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="search-bar-container">
+            <input type="text" id="athlete-search-input" class="form-control" placeholder="Buscar atleta por nome..." style="flex: 1;">
+            <button id="btn-open-add-athlete-modal" class="btn btn-md btn-primary">
+              <i data-feather="plus" style="width: 18px; height: 18px;"></i> Cadastrar Atleta
+            </button>
+          </div>
+
+          <!-- Lista de Atletas -->
+          <div id="athletes-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Renderizado via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- GESTOR - ABA: FORMAÇÃO E SORTEIO -->
+      <section id="tab-manager-formation" class="tab-content">
+        <div class="grid-3" style="align-items: start;">
+          <!-- Coluna 1: Check-in de Presentes -->
+          <div class="card" style="grid-column: span 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="margin-bottom: 0;">Presença no Dia</h3>
+              <span id="checkin-count" class="badge-status confirmado">0 Presentes</span>
+            </div>
+            
+            <div class="form-group">
+              <label for="select-manager-pelada" class="form-label">Pelada de Referência</label>
+              <select id="select-manager-pelada" class="form-control">
+                <!-- Dinâmico -->
+              </select>
+            </div>
+
+            <!-- Lista de Jogadores Cadastrados no Grupo para Check-in -->
+            <div id="checkin-list-container" style="max-height: 380px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px;">
+              <!-- Check-ins dinâmicos -->
+            </div>
+
+            <button id="btn-draw-teams" class="btn btn-md btn-accent" style="width: 100%; margin-top: 20px;">
+              <i data-feather="shuffle" style="width: 18px; height: 18px;"></i> Sorteio Inteligente
+            </button>
+          </div>
+
+          <!-- Coluna 2 e 3: Times Formados & Painel do Cronômetro -->
+          <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 24px;">
+            <!-- Painel de Controle de Jogo Ativo -->
+            <div class="card" style="background-color: var(--primary); color: #FFF;">
+              <h3 style="color: #FFF; margin-bottom: 16px;">Controle da Partida Ativa</h3>
+              
+              <div class="grid-3" style="align-items: center; margin-bottom: 20px;">
+                <div style="text-align: center;">
+                  <h4 style="font-family: 'Bebas Neue'; font-size: 22px; color: var(--secondary);" id="match-control-team-a">—</h4>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateLiveScore('a', -1)">-</button>
+                    <span id="match-control-score-a" style="font-family: 'Bebas Neue'; font-size: 40px; min-width: 40px;">0</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateLiveScore('a', 1)">+</button>
+                  </div>
+                </div>
+                <div style="text-align: center;">
+                  <span id="match-control-timer" style="font-family: 'Bebas Neue'; font-size: 32px; display: block; margin-bottom: 8px;">00:00</span>
+                  <div style="display: flex; justify-content: center; gap: 8px;">
+                    <button id="btn-timer-toggle" class="btn btn-sm btn-primary">Iniciar</button>
+                    <button id="btn-timer-reset" class="btn btn-sm btn-outline-secondary">Reset</button>
+                  </div>
+                </div>
+                <div style="text-align: center;">
+                  <h4 style="font-family: 'Bebas Neue'; font-size: 22px; color: var(--accent);" id="match-control-team-b">—</h4>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateLiveScore('b', -1)">-</button>
+                    <span id="match-control-score-b" style="font-family: 'Bebas Neue'; font-size: 40px; min-width: 40px;">0</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateLiveScore('b', 1)">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+                <button id="btn-finish-match" class="btn btn-md btn-secondary" style="flex: 1; border: 1px solid var(--secondary); color: var(--secondary);">
+                  <i data-feather="save" style="width: 16px; height: 16px;"></i> Lançar Resultado
+                </button>
+              </div>
+            </div>
+
+            <!-- Grid de Times Gerados -->
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin-bottom: 0;">Times Sorteados</h3>
+                <span style="font-size: 12px; color: var(--text-caption);">Arraste os jogadores para realizar trocas manuais</span>
+              </div>
+              <div id="drawn-teams-container" class="teams-setup-grid">
+                <!-- Inserido dinamicamente via Drag & Drop -->
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                  <i data-feather="shuffle" style="width: 48px; height: 48px;"></i>
+                  <p>Realize o sorteio técnico ao lado para montar as equipes.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GESTOR - ABA: FINANCEIRO -->
+      <section id="tab-manager-financeiro" class="tab-content">
+        <!-- Balanço -->
+        <div class="grid-3" style="margin-bottom: 24px;">
+          <div class="card" style="border-left: 4px solid var(--secondary); padding: 16px 20px;">
+            <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Receitas</p>
+            <h2 id="finances-receipts" style="font-size: 32px; color: var(--secondary); margin-top: 4px;">R$ 0,00</h2>
+          </div>
+          <div class="card" style="border-left: 4px solid var(--danger); padding: 16px 20px;">
+            <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Despesas</p>
+            <h2 id="finances-expenses" style="font-size: 32px; color: var(--danger); margin-top: 4px;">R$ 0,00</h2>
+          </div>
+          <div class="card" style="border-left: 4px solid var(--primary); padding: 16px 20px;">
+            <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Caixa Atual</p>
+            <h2 id="finances-net" style="font-size: 32px; color: var(--primary); margin-top: 4px;">R$ 0,00</h2>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Transações e Nova Despesa -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3 style="margin-bottom: 0;">Lançamentos de Caixa</h3>
+              <button id="btn-open-expense-modal" class="btn btn-sm btn-danger">
+                <i data-feather="minus" style="width: 14px; height: 14px;"></i> Registrar Despesa
+              </button>
+            </div>
+            
+            <div class="table-responsive" style="max-height: 400px;">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="finances-transactions-body">
+                  <!-- Dinâmico -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Controle de Saldos dos Jogadores -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3 style="margin-bottom: 0;">Situação de Saldos</h3>
+              <i data-feather="dollar-sign" style="color: var(--secondary);"></i>
+            </div>
+
+            <div class="table-responsive" style="max-height: 400px;">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Atleta</th>
+                    <th style="text-align: right;">Saldo</th>
+                    <th style="text-align: center; width: 140px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="finances-athlete-balances-body">
+                  <!-- Dinâmico -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GESTOR - ABA: CONFIGURAÇÕES -->
+      <section id="tab-manager-config" class="tab-content">
+        <div class="grid-2" style="align-items: start;">
+          <!-- Card de Empate e Saída -->
+          <div class="card" style="display: flex; flex-direction: column; gap: 24px;">
+            <div>
+              <h3>Critério de Empate</h3>
+              <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin-bottom: 12px;">Selecione o que acontece quando a partida terminar empatada.</p>
+              
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 10px;">
+                  <input type="radio" name="config-tie" value="ambos_permanecem" checked> Ambos permanecem em campo
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 10px;">
+                  <input type="radio" name="config-tie" value="vencedor_ultima"> Fica o vencedor da partida anterior
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 10px;">
+                  <input type="radio" name="config-tie" value="time_entrando"> Fica o time que estava entrando
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 10px;">
+                  <input type="radio" name="config-tie" value="saem_ambos"> Saem ambos os times
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="radio" name="config-tie" value="gestor_manual"> Gestor decide manualmente
+                </label>
+              </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-color);">
+
+            <div>
+              <h3>Regras de Saída</h3>
+              <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">Defina o limite de vitórias e para onde vai o time derrotado.</p>
+              
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <span class="text-inter" style="font-size: 14px; font-weight: 500;">Limite de Vitórias Seguidas</span>
+                <div class="stepper-input">
+                  <button class="stepper-btn" onclick="updateConfigStep('wins', -1)">-</button>
+                  <span class="stepper-value" id="config-wins-val">2</span>
+                  <button class="stepper-btn" onclick="updateConfigStep('wins', 1)">+</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Destino do Time Derrotado</label>
+                <select id="config-exit-rule" class="form-control">
+                  <option value="final_fila">Vai para o final da fila de espera</option>
+                  <option value="fora_1_jogo">Fica fora por 1 jogo obrigatoriamente</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card de Dimensionamento e Valores -->
+          <div class="card" style="display: flex; flex-direction: column; gap: 24px;">
+            <div>
+              <h3>Dimensionamento do Futebol</h3>
+              <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">Configurações para criação e sorteio automático das equipes.</p>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <span class="text-inter" style="font-size: 14px; font-weight: 500;">Jogadores por Time (4 a 11)</span>
+                <div class="stepper-input">
+                  <button class="stepper-btn" onclick="updateConfigStep('players', -1)">-</button>
+                  <span class="stepper-value" id="config-players-val">6</span>
+                  <button class="stepper-btn" onclick="updateConfigStep('players', 1)">+</button>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span class="text-inter" style="font-size: 14px; font-weight: 500;">Quantidade de Times (2 a 10)</span>
+                <div class="stepper-input">
+                  <button class="stepper-btn" onclick="updateConfigStep('teams', -1)">-</button>
+                  <span class="stepper-value" id="config-teams-val">4</span>
+                  <button class="stepper-btn" onclick="updateConfigStep('teams', 1)">+</button>
+                </div>
+              </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-color);">
+
+            <div>
+              <h3>Valores e Finanças</h3>
+              <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">Valores padrão para novas peladas e controle de saldo negativo.</p>
+
+              <div class="form-group">
+                <label for="config-convocation-value" class="form-label">Valor do Evento (Convocação R$)</label>
+                <input type="number" id="config-convocation-value" class="form-control" value="20.00" step="1.00">
+              </div>
+
+              <div class="form-group">
+                <label for="config-negative-limit" class="form-label">Limite de Saldo Negativo (R$)</label>
+                <input type="number" id="config-negative-limit" class="form-control" value="100.00" step="5.00">
+              </div>
+            </div>
+
+            <button id="btn-save-configs" class="btn btn-md btn-secondary" style="width: 100%;">
+              Salvar Configurações
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================== MODAIS GLOBAIS ==================== -->
+    
+    <!-- MODAL 1: Pagamento / Adicionar Presença -->
+    <div id="modal-payment" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="payment-modal-title">Confirmar Convocação</h3>
+          <button class="modal-close" onclick="closeModal('modal-payment')">&times;</button>
+        </div>
+        <p class="text-inter" style="font-size: 14px; color: var(--text-caption); margin-bottom: 20px;">
+          Esta convocação tem o valor de <strong id="payment-match-cost" style="color: var(--primary);">R$ 20,00</strong>. Escolha como deseja pagar:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+          <!-- Opção Saldo -->
+          <label id="payment-option-balance-label" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: var(--transition);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="radio" name="payment-method" id="pay-method-balance" value="saldo" checked>
+              <div>
+                <strong class="text-inter" style="font-size: 15px;">Usar Saldo Interno</strong>
+                <span id="payment-my-balance" style="display: block; font-size: 12px; color: var(--text-caption);">Disponível: R$ 0,00</span>
+              </div>
+            </div>
+          </label>
+          
+          <!-- Opção PIX -->
+          <label style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: var(--transition);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="radio" name="payment-method" id="pay-method-pix" value="pix">
+              <div>
+                <strong class="text-inter" style="font-size: 15px;">Pagar via PIX</strong>
+                <span style="display: block; font-size: 12px; color: var(--text-caption);">Aprovação instantânea</span>
+              </div>
+            </div>
+            <i data-feather="qr-code" style="color: var(--secondary);"></i>
+          </label>
+        </div>
+
+        <div id="pix-qr-area" class="hidden" style="text-align: center; margin-bottom: 20px; background-color: var(--background); padding: 16px; border-radius: 10px;">
+          <p style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">QR CODE PIX SIMULADO</p>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PeladaProPixSimulado" alt="QR Code" style="width: 150px; height: 150px; margin: 0 auto 8px auto; display: block; border-radius: 6px;">
+          <p class="text-inter" style="font-size: 11px; color: var(--text-caption);">Código copia e cola: <code>peladapr-pix-mock-uuid-key</code></p>
+        </div>
+
+        <button id="btn-confirm-payment-action" class="btn btn-md btn-primary" style="width: 100%;">
+          Concluir Convocação
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL 2: Cancelamento / Remover Presença -->
+    <div id="modal-removal" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Cancelar Convocação</h3>
+          <button class="modal-close" onclick="closeModal('modal-removal')">&times;</button>
+        </div>
+        <p class="text-inter" style="font-size: 14px; color: var(--text-heading); margin-bottom: 16px;">
+          Você está solicitando o cancelamento da sua presença para esta pelada.
+        </p>
+
+        <!-- Mensagem de Tempo/Reembolso -->
+        <div id="removal-reimbursement-info" style="padding: 14px; border-radius: 10px; margin-bottom: 20px;">
+          <!-- Inserido dinamicamente via JS (Sucesso ou Multa) -->
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button onclick="closeModal('modal-removal')" class="btn btn-md btn-outline" style="flex: 1;">
+            Voltar
+          </button>
+          <button id="btn-confirm-removal-action" class="btn btn-md btn-danger" style="flex: 1;">
+            Confirmar Saída
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 3: Sorteio de Times -->
+    <div id="modal-sorteio" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Sorteio de Equipes</h3>
+          <button class="modal-close" onclick="closeModal('modal-sorteio')">&times;</button>
+        </div>
+        <p class="text-inter" style="font-size: 14px; color: var(--text-caption); margin-bottom: 20px;">
+          Selecione a modalidade de distribuição dos atletas presentes:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+          <label style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: var(--transition);">
+            <input type="radio" name="sorteio-type" value="todos" checked>
+            <div>
+              <strong class="text-inter" style="font-size: 16px;">Sorteio A: Todos os Presentes</strong>
+              <span style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Distribui todos os atletas marcados como presentes nos times definidos nas configurações.</span>
+            </div>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: var(--transition);">
+            <input type="radio" name="sorteio-type" value="necessarios">
+            <div>
+              <strong class="text-inter" style="font-size: 16px;">Sorteio B: Apenas os Necessários</strong>
+              <span style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Monta apenas os times completos baseados no dimensionamento. Sobressalentes ficam na fila de espera inicial.</span>
+            </div>
+          </label>
+        </div>
+
+        <button id="btn-execute-sorteio" class="btn btn-md btn-accent" style="width: 100%;">
+          Executar Sorteio Snake Draft
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL 4: Cadastrar/Editar Atleta (Gestor) -->
+    <div id="modal-athlete" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="athlete-modal-title">Cadastrar Novo Atleta</h3>
+          <button class="modal-close" onclick="closeModal('modal-athlete')">&times;</button>
+        </div>
+        
+        <input type="hidden" id="athlete-edit-id">
+
+        <div class="form-group">
+          <label for="athlete-name" class="form-label">Nome Completo</label>
+          <input type="text" id="athlete-name" class="form-control" placeholder="Ex: Roberto Carlos">
+        </div>
+
+        <div class="grid-2" style="gap: 16px;">
+          <div class="form-group">
+            <label for="athlete-dob" class="form-label">Nascimento</label>
+            <input type="date" id="athlete-dob" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="athlete-cpf" class="form-label">CPF</label>
+            <input type="text" id="athlete-cpf" class="form-control" placeholder="000.000.000-00" maxlength="14">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="athlete-whatsapp" class="form-label">WhatsApp</label>
+          <input type="text" id="athlete-whatsapp" class="form-control" placeholder="(00) 00000-0000" maxlength="15">
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <span class="form-label" style="margin-bottom: 0;">Posição: Goleiro?</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="athlete-is-gk" class="toggle-input">
+            <span class="toggle-label"></span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Autoavaliação ⭐</label>
+          <div id="athlete-stars-selector" class="rating-stars">
+            <i data-feather="star" class="rating-star" data-value="1"></i>
+            <i data-feather="star" class="rating-star" data-value="2"></i>
+            <i data-feather="star" class="rating-star" data-value="3"></i>
+            <i data-feather="star" class="rating-star" data-value="4"></i>
+            <i data-feather="star" class="rating-star" data-value="5"></i>
+          </div>
+        </div>
+
+        <button id="btn-save-athlete" class="btn btn-md btn-primary" style="width: 100%;">
+          Salvar Cadastro
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL 5: Registrar Despesa (Financeiro) -->
+    <div id="modal-expense" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Registrar Nova Despesa</h3>
+          <button class="modal-close" onclick="closeModal('modal-expense')">&times;</button>
+        </div>
+
+        <div class="form-group">
+          <label for="expense-description" class="form-label">Descrição</label>
+          <input type="text" id="expense-description" class="form-control" placeholder="Ex: Aluguel do Campo Society">
+        </div>
+
+        <div class="grid-2" style="gap: 16px;">
+          <div class="form-group">
+            <label for="expense-value" class="form-label">Valor (R$)</label>
+            <input type="number" id="expense-value" class="form-control" placeholder="0.00" step="5.00">
+          </div>
+          <div class="form-group">
+            <label for="expense-category" class="form-label">Categoria</label>
+            <select id="expense-category" class="form-control">
+              <option value="campo">Campo / Quadra</option>
+              <option value="churrasco">Churrasco</option>
+              <option value="material">Material (Bolas/Coletes)</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btn-save-expense" class="btn btn-md btn-danger" style="width: 100%;">
+          Registrar Despesa
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Carregamento do script de lógica principal -->
+  <script src="app.js"></script>
+</body>
+</html>

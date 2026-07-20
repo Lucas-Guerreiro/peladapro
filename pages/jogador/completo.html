@@ -1,0 +1,81 @@
+<!-- pages/jogador/completo.html — Tela de Complemento de Cadastro Obrigatória -->
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px; font-family: 'Inter', sans-serif;">
+  <div class="card" style="width: 100%; max-width: 520px; padding: 40px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); background: var(--card-background); animation: slideUp 0.3s ease-out;">
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h2 style="font-size: 26px; font-weight: 800; color: var(--text-heading); margin-bottom: 8px;">Quase pronto, Atleta! ⚽</h2>
+      <p style="font-size: 14px; color: var(--text-caption); line-height: 1.5;">
+        Conclua os seus dados cadastrais para ter acesso completo às convocações, sorteios de times e saldo.
+      </p>
+    </div>
+
+    <form id="form-cadastro-completo" onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Nome -->
+      <div class="form-group">
+        <label class="form-label" for="comp-nome" style="font-weight: 600;">Nome Completo</label>
+        <input type="text" class="form-control" id="comp-nome" placeholder="Ex.: Lucas Fernandes" required disabled style="background: var(--background); cursor: not-allowed;" />
+      </div>
+
+      <!-- Senha -->
+      <div class="form-group">
+        <label class="form-label" for="comp-senha" style="font-weight: 600;">Senha</label>
+        <input type="password" class="form-control" id="comp-senha" placeholder="******" value="******" disabled style="background: var(--background); cursor: not-allowed;" />
+      </div>
+
+      <!-- Apelido -->
+      <div class="form-group">
+        <label class="form-label" for="comp-apelido" style="font-weight: 600;">Apelido (Como quer ser chamado em campo)</label>
+        <input type="text" class="form-control" id="comp-apelido" placeholder="Ex.: Carlinhos, Mago" required />
+      </div>
+
+      <!-- CPF e Data de Nascimento lado a lado -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label" for="comp-cpf" style="font-weight: 600;">CPF</label>
+          <input type="text" class="form-control" id="comp-cpf" placeholder="000.000.000-00" required maxlength="14" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="comp-nascimento" style="font-weight: 600;">Data de Nascimento</label>
+          <input type="date" class="form-control" id="comp-nascimento" required />
+        </div>
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="form-group">
+        <label class="form-label" for="comp-whatsapp" style="font-weight: 600;">WhatsApp (com DDD)</label>
+        <input type="text" class="form-control" id="comp-whatsapp" placeholder="(00) 00000-0000" required maxlength="15" />
+      </div>
+
+      <!-- Toggle Posição (Goleiro) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--background); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div>
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-body); display: block; margin-bottom: 2px;">Posição: Goleiro? 🧤</span>
+          <span style="font-size: 12px; color: var(--text-caption);">Ative se você joga no gol</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="comp-goleiro">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Autoavaliação Técnica (Estrelas) -->
+      <div style="text-align: center; padding: 16px; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+        <label class="form-label" style="font-weight: 700; margin-bottom: 8px; display: block;">Sua Autoavaliação Técnica (1 a 5 estrelas)</label>
+        <div style="display: flex; gap: 8px; justify-content: center; font-size: 32px;" id="comp-stars-selector">
+          <span class="comp-rating-star" data-value="1" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+          <span class="comp-rating-star" data-value="2" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+          <span class="comp-rating-star" data-value="3" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+          <span class="comp-rating-star" data-value="4" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+          <span class="comp-rating-star" data-value="5" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+        </div>
+      </div>
+
+      <!-- Botão de Ação -->
+      <button type="button" id="btn-save-cadastro" class="btn btn-secondary btn-lg" style="width: 100%; margin-top: 10px;">
+        Salvar & Entrar em Campo 🚀
+      </button>
+
+    </form>
+  </div>
+</div>

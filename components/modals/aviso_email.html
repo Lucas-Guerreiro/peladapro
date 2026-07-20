@@ -1,0 +1,36 @@
+<!-- components/modals/aviso_email.html — Pop-up de Aviso de Confirmação de E-mail -->
+<div class="modal-backdrop text-inter" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+  <div class="card modal-card" style="max-width: 460px; text-align: center; padding: 40px 32px; border-radius: 16px; background: #ffffff; color: #0f172a; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.08); width: 100%; box-sizing: border-box;">
+    
+    <!-- Ícone de E-mail Pulsante -->
+    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(0, 230, 118, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; color: #00c853;">
+      <i data-feather="mail" style="width: 36px; height: 36px;"></i>
+    </div>
+
+    <!-- Título Principal -->
+    <h2 class="text-inter" style="font-weight: 800; font-size: 24px; color: #0f172a; margin: 0 0 12px; letter-spacing: -0.5px;">Ative sua Conta! 📧</h2>
+    
+    <!-- Texto Informativo -->
+    <p class="text-inter" style="font-size: 14.5px; color: #475569; line-height: 1.6; margin: 0 0 24px;">
+      Enviamos um link de confirmação para o e-mail <strong id="aviso-email-destinatario" style="color: #0f172a; word-break: break-all;">atleta@email.com</strong>.<br>
+      Por favor, clique no link recebido para ativar sua conta e liberar seu acesso ao PeladaPro.
+    </p>
+
+    <!-- Alerta sobre Spam (Padrão e Destacado) -->
+    <div style="background: #fff8f1; border: 1px solid #ffd8a8; border-radius: 12px; padding: 16px; margin-bottom: 28px; text-align: left; display: flex; gap: 12px; align-items: start;">
+      <i data-feather="alert-circle" style="width: 22px; height: 22px; color: #ff922b; flex-shrink: 0; margin-top: 1px;"></i>
+      <div style="flex: 1; box-sizing: border-box;">
+        <strong style="font-size: 13.5px; color: #a61c00; display: block; margin-bottom: 4px;">Não encontrou na Caixa de Entrada?</strong>
+        <p class="text-inter" style="font-size: 12.5px; color: #475569; line-height: 1.5; margin: 0;">
+          Por favor, verifique a sua pasta de <strong>Spam</strong>, <strong>Lixo Eletrônico</strong> ou <strong>Promoções</strong>. Às vezes, o e-mail de ativação pode ser direcionado para lá!
+        </p>
+      </div>
+    </div>
+
+    <!-- Botão de Ação -->
+    <button id="btn-entendi-aviso-email" class="btn btn-secondary btn-lg" style="width: 100%; font-weight: 700; height: 48px; border-radius: 8px; cursor: pointer; border: none; background: #0f172a; color: #ffffff; font-size: 15px; transition: background 0.15s;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
+      Entendi, vou verificar
+    </button>
+    
+  </div>
+</div>

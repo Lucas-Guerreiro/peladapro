@@ -1,0 +1,4 @@
+[
+  { "id": "g1", "nome": "Maracanã das Quartas", "descricao": "Futebol society toda quarta às 20h", "gestor_id": "u-gestor", "data_criacao": "2026-01-10T20:00:00Z", "ativo": true },
+  { "id": "g2", "nome": "Sábado de Elite", "descricao": "Pelada competitiva de sábado pela manhã", "gestor_id": "u-gestor", "data_criacao": "2026-02-15T09:00:00Z", "ativo": true }
+]

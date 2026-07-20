@@ -1,0 +1,129 @@
+<!-- Parcial: Configurações do Grupo -->
+<div class="grid-2 text-inter" style="align-items: start; gap: 24px;">
+  
+  <!-- Coluna da Esquerda (Criação, Agendamento e Locais) -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- Card de Criação e Agendamento -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 24px;">
+      <!-- Painel 1: Criar Nome da Pelada (Grupo) -->
+      <div>
+        <h3 style="margin-top: 0;">⚽ Criar Nova Pelada</h3>
+        <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">
+          Cadastre uma nova pelada. As regras padrão serão configuradas no pop-up a seguir.
+        </p>
+        <div class="form-group">
+          <label for="new-group-name" class="form-label">Nome da Pelada</label>
+          <input type="text" id="new-group-name" class="form-control" placeholder="Ex: Pelada de Sexta, Futebol da Firma...">
+        </div>
+        <button id="btn-create-new-group" class="btn btn-md btn-primary" style="width: 100%;">
+          <i data-feather="plus-circle" style="width: 16px; height: 16px;"></i> Criar Pelada
+        </button>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 8px 0;">
+
+      <!-- Painel 2: Agendar Nova Data -->
+      <div>
+        <h3>📅 Agendar Nova Data</h3>
+        <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">
+          Selecione a pelada, data, local e defina o valor da convocação para notificar os atletas.
+        </p>
+        <div class="form-group">
+          <label for="select-schedule-group" class="form-label">Selecione a Pelada</label>
+          <select id="select-schedule-group" class="form-control">
+            <!-- Populado via JS -->
+          </select>
+        </div>
+        <div class="grid-2" style="gap: 16px; margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="schedule-date" class="form-label">Data</label>
+            <input type="date" id="schedule-date" class="form-control">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="schedule-time" class="form-label">Horário</label>
+            <input type="time" id="schedule-time" class="form-control">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label for="schedule-local" class="form-label">Local</label>
+          <select id="schedule-local" class="form-control">
+            <!-- Populado via JS com os locais criados no CRUD -->
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label for="schedule-value" class="form-label">Valor do Evento (Convocação R$)</label>
+          <input type="number" id="schedule-value" class="form-control" value="20.00" step="0.50">
+        </div>
+        <button id="btn-schedule-match" class="btn btn-md btn-accent" style="width: 100%;">
+          <i data-feather="bell" style="width: 16px; height: 16px;"></i> Agendar & Notificar
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 2: Gerenciar Locais de Pelada (CRUD) -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 20px;">
+      <h3 style="margin: 0;">📍 Gerenciar Locais de Pelada</h3>
+      <p style="font-size: 13px; color: var(--text-caption); margin: 0 0 8px;">
+        Cadastre os locais (quadras/arenas) onde ocorrem os seus jogos.
+      </p>
+      <div class="grid-2" style="gap: 20px; align-items: start;">
+        <div>
+          <h4 id="location-form-title" style="margin-top: 0; font-size: 14px;">➕ Adicionar Local</h4>
+          <input type="hidden" id="edit-location-id" value="">
+          <div class="form-group">
+            <label for="location-name" class="form-label">Nome do Local</label>
+            <input type="text" id="location-name" class="form-control" placeholder="Ex: Arena Soccer Park">
+          </div>
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="location-address" class="form-label">Endereço (opcional)</label>
+            <input type="text" id="location-address" class="form-control" placeholder="Ex: Rua das Flores, 123">
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-save-location" class="btn btn-primary btn-sm" style="flex: 1;">Salvar</button>
+            <button id="btn-cancel-location-edit" class="btn btn-outline btn-sm hidden" style="flex: 1;">Cancelar</button>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin-top: 0; font-size: 14px;">Lista de Locais</h4>
+          <div id="locations-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--background);">
+            <!-- Populado via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Coluna da Direita (Datas Ativas e Dica de Customização) -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- Painel 3: Gerenciar / Excluir Datas Ativas -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+      <h3 style="margin: 0;">📅 Datas Ativas</h3>
+      <p style="font-size: 13px; color: var(--text-caption); margin: 0;">
+        Partidas agendadas da pelada selecionada. Clique no botão de configurações (⚙️) para ajustar as regras daquela data ou na lixeira (🗑️) para excluir.
+      </p>
+      <div id="scheduled-dates-list" style="
+        max-height: 520px; overflow-y: auto;
+        border: 1px solid var(--border-color); border-radius: var(--radius-md);
+        background: var(--background);
+      ">
+        <!-- Populado via JS -->
+      </div>
+
+      <!-- Dica Informativa -->
+      <div style="background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.15); border-radius: var(--radius-md); padding: 16px; margin-top: 8px;">
+        <h4 style="font-size: 13px; font-weight: 700; color: #4f46e5; margin: 0 0 6px; display: flex; align-items: center; gap: 6px;">
+          <i data-feather="info" style="width: 15px; height: 15px; color: #4f46e5;"></i>
+          Dica de Customização
+        </h4>
+        <p style="font-size: 12px; color: var(--text-caption); line-height: 1.5; margin: 0;">
+          Após agendar uma data, você pode configurar critérios de empate ou dimensionamento de times específicos para ela clicando no ícone de engrenagem (⚙️).
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+</div>

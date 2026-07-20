@@ -1,0 +1,88 @@
+<!-- pages/jogador/ranking.html — Classificação e Resultados (Módulo Jogador) -->
+
+<!-- NAV DE ABAS INTERNAS -->
+<nav class="tabs-navigation" id="jogador-tabs-nav" style="background: var(--primary); padding: 0 16px; margin-bottom: 0; border-bottom: none;">
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
+  <button class="tab-btn active" style="color: var(--secondary); border-bottom-color: var(--secondary);"
+    onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
+    onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+</nav>
+
+<main style="padding: 20px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- FILTRO DE PELADA -->
+  <div class="form-group" style="margin-bottom: 0;">
+    <select id="ranking-pelada-filter" class="form-control">
+      <option value="all">📊 Geral (Todas as Peladas)</option>
+    </select>
+  </div>
+
+  <!-- TABELA DE CLASSIFICAÇÃO -->
+  <section>
+    <h3 style="font-size: 20px; margin-bottom: 12px;">🏆 Classificação do Dia</h3>
+    <div class="table-responsive">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th style="width: 48px;">#</th>
+            <th>Time</th>
+            <th style="text-align: center;">P</th>
+            <th style="text-align: center;">J</th>
+            <th style="text-align: center;">V</th>
+            <th style="text-align: center;">SG</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-teams-body">
+          <!-- Inserido via JS -->
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-caption);">
+              Nenhuma partida registrada hoje.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RESULTADOS -->
+  <section>
+    <h3 style="font-size: 20px; margin-bottom: 12px;">📋 Resultados</h3>
+    <div id="ranking-results-list" style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="empty-state" style="padding: 32px; background: var(--surface); border-radius: var(--radius-lg);">
+        <span style="font-size: 32px;">🏟️</span>
+        <p class="text-inter" style="font-size: 14px;">Nenhum resultado registrado ainda.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARTILHARIA DO DIA -->
+  <section>
+    <h3 style="font-size: 20px; margin-bottom: 12px;">⚽ Artilharia</h3>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th style="width: 48px;">#</th>
+            <th>Jogador</th>
+            <th style="text-align: center;">Gols</th>
+            <th style="text-align: center;">Jogos</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-scorers-body">
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-caption);">
+              Sem artilheiros registrados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>

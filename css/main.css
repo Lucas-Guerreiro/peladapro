@@ -1,0 +1,167 @@
+/* ==========================================================================
+   css/main.css — Design System Base
+   PeladaPro · Fundacional
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* --- VARIÁVEIS GLOBAIS (spec + aliases de compatibilidade) -------------- */
+:root {
+  /* Paleta da Especificação */
+  --color-primary:       #0F1B2D;
+  --color-secondary:     #00E676;
+  --color-accent:        #FF6D00;
+  --color-bg:            #F8F9FA;
+  --color-surface:       #FFFFFF;
+  --color-danger:        #FF1744;
+  --color-success:       #00C853;
+  --color-warning:       #FFD600;
+  --color-text-heading:  #1A1A2E;
+  --color-text-body:     #4A4A6A;
+  --color-text-caption:  #9E9EB8;
+  --color-text-white:    #FFFFFF;
+
+  /* Tipografia */
+  --font-display: 'Anton', 'Bebas Neue', sans-serif;
+  --font-body:    'Inter', -apple-system, sans-serif;
+
+  /* Espaçamento */
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+
+  /* Bordas */
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    16px;
+  --radius-xl:    20px;
+  --radius-full:  9999px;
+
+  /* Sombras */
+  --shadow-sm: 0 2px 8px  rgba(15, 27, 45, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 27, 45, 0.12);
+  --shadow-lg: 0 16px 40px rgba(15, 27, 45, 0.18);
+
+  /* Transição */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Aliases de retrocompatibilidade ---- */
+  --primary:          var(--color-primary);
+  --secondary:        var(--color-secondary);
+  --accent:           var(--color-accent);
+  --background:       var(--color-bg);
+  --surface:          var(--color-surface);
+  --danger:           var(--color-danger);
+  --success:          var(--color-success);
+  --warning:          var(--color-warning);
+  --text-heading:     var(--color-text-heading);
+  --text-body:        var(--color-text-body);
+  --text-caption:     var(--color-text-caption);
+  --border-color:     #E0E0E0;
+  --border-focus:     var(--color-secondary);
+  --shadow-fifa:      0 15px 35px rgba(15, 27, 45, 0.25);
+  --border-radius-btn:   var(--radius-md);
+  --border-radius-card:  var(--radius-lg);
+  --border-radius-fifa:  var(--radius-xl);
+  --border-radius-modal: var(--radius-xl);
+  --border-radius-input: var(--radius-sm);
+}
+
+/* --- RESET ---------------------------------------------------------------- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- BASE ----------------------------------------------------------------- */
+body {
+  font-family: var(--font-body);
+  color: var(--color-text-body);
+  background-color: var(--color-bg);
+  line-height: 1.4;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ponto de entrada da SPA */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- TIPOGRAFIA ----------------------------------------------------------- */
+h1, h2, h3, .sports-font {
+  font-family: var(--font-display);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-heading);
+}
+
+h1 { font-size: 48px; line-height: 1.1; }
+h2 { font-size: 32px; line-height: 1.1; }
+h3 { font-size: 24px; line-height: 1.2; }
+
+.text-inter {
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* --- LAYOUT --------------------------------------------------------------- */
+.app-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-12) var(--space-6);
+  flex: 1;
+}
+
+/* --- GRID ----------------------------------------------------------------- */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6); }
+
+/* --- CABEÇALHO PRINCIPAL -------------------------------------------------- */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid rgba(15, 27, 45, 0.08);
+  margin-bottom: var(--space-6);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand h1 { font-size: 36px; color: var(--color-primary); }
+.brand h1 span { color: var(--color-secondary); }
+
+.user-nav-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* --- UTILITÁRIOS ---------------------------------------------------------- */
+.hidden { display: none !important; }
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-6);
+  transition: var(--transition);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}

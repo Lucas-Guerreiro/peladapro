@@ -1,0 +1,34 @@
+<!-- Modal: Sorteio de Times -->
+<div class="modal-backdrop" id="modal-sorteio-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Sorteio de Equipes</h3>
+      <button class="modal-close" id="btn-close-sorteio-modal">&times;</button>
+    </div>
+    <p class="text-inter" style="font-size: 14px; color: var(--text-caption); margin-bottom: 20px;">
+      Selecione a modalidade de distribuição dos atletas presentes:
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+      <label style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: var(--transition);">
+        <input type="radio" name="sorteio-type" value="todos" checked>
+        <div>
+          <strong class="text-inter" style="font-size: 16px;">Sorteio A: Todos os Presentes</strong>
+          <span style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Distribui todos os atletas confirmados presentes nas equipes configuradas.</span>
+        </div>
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: var(--transition);">
+        <input type="radio" name="sorteio-type" value="necessarios">
+        <div>
+          <strong class="text-inter" style="font-size: 16px;">Sorteio B: Apenas Necessários</strong>
+          <span style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Monta apenas os times completos baseados no dimensionamento. Excedentes ficam na fila.</span>
+        </div>
+      </label>
+    </div>
+
+    <button id="btn-execute-sorteio" class="btn btn-md btn-accent" style="width: 100%;">
+      Executar Sorteio Snake Draft
+    </button>
+  </div>
+</div>

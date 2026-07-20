@@ -1,0 +1,36 @@
+<!-- Modal: Confirmação de E-mail OTP -->
+<div class="modal-backdrop" id="modal-otp-backdrop" style="display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); z-index: 9999;">
+  <div class="modal-card" style="width: 100%; max-width: 420px; padding: 32px; border-radius: var(--radius-lg); background: var(--card-background); box-shadow: var(--shadow-lg); animation: slideUp 0.3s ease-out; text-align: center;">
+    
+    <div style="margin-bottom: 24px;">
+      <h2 class="text-inter" style="font-size: 22px; font-weight: 800; color: var(--text-heading); margin-bottom: 8px;">Verifique seu E-mail ✉️</h2>
+      <p class="text-inter" style="font-size: 14px; color: var(--text-caption);">
+        Enviamos um código de 6 dígitos para o e-mail:<br>
+        <strong id="otp-target-email" style="color: var(--text-body);">seu-email@provedor.com</strong>
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;" id="otp-inputs-container">
+      <input type="text" class="form-control otp-digit-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" style="width: 48px; height: 56px; font-size: 24px; text-align: center; font-weight: 700; border-radius: var(--radius-md);" />
+      <input type="text" class="form-control otp-digit-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" style="width: 48px; height: 56px; font-size: 24px; text-align: center; font-weight: 700; border-radius: var(--radius-md);" />
+      <input type="text" class="form-control otp-digit-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" style="width: 48px; height: 56px; font-size: 24px; text-align: center; font-weight: 700; border-radius: var(--radius-md);" />
+      <input type="text" class="form-control otp-digit-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" style="width: 48px; height: 56px; font-size: 24px; text-align: center; font-weight: 700; border-radius: var(--radius-md);" />
+      <input type="text" class="form-control otp-digit-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" style="width: 48px; height: 56px; font-size: 24px; text-align: center; font-weight: 700; border-radius: var(--radius-md);" />
+      <input type="text" class="form-control otp-digit-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" style="width: 48px; height: 56px; font-size: 24px; text-align: center; font-weight: 700; border-radius: var(--radius-md);" />
+    </div>
+
+    <button type="button" id="btn-confirm-otp" class="btn btn-primary btn-lg" style="width: 100%; margin-bottom: 16px;">
+      Confirmar E-mail ⚽
+    </button>
+
+    <p class="text-inter" style="font-size: 13px; color: var(--text-caption);">
+      Não recebeu o código? 
+      <a href="javascript:void(0);" id="btn-resend-otp" style="color: var(--secondary); font-weight: 600; text-decoration: none;">Reenviar Código</a>
+    </p>
+
+    <!-- Botão Fechar / Cancelar -->
+    <button type="button" id="btn-cancel-otp" class="btn btn-sm btn-outline" style="width: 100%; margin-top: 16px; border-color: transparent;">
+      Voltar para o Login
+    </button>
+  </div>
+</div>

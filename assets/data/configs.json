@@ -1,0 +1,4 @@
+[
+  { "id": "cfg1", "grupo_id": "g1", "pelada_id": null, "criterio_empate": "ambos_permanecem", "vitorias_para_sair": 2, "regra_saida": "final_fila", "jogadores_por_time": 6, "quantidade_times": 3, "valor_convocacao": 20.00, "limite_saldo_negativo": 100.00 },
+  { "id": "cfg2", "grupo_id": "g2", "pelada_id": null, "criterio_empate": "vencedor_ultima", "vitorias_para_sair": 3, "regra_saida": "fora_1_jogo", "jogadores_por_time": 5, "quantidade_times": 4, "valor_convocacao": 25.00, "limite_saldo_negativo": 150.00 }
+]

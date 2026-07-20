@@ -1,0 +1,43 @@
+<!-- Parcial: Gestão de Atletas -->
+<div>
+  <!-- Header Resumo Atletas -->
+  <div class="grid-3" style="margin-bottom: 24px;">
+    <div class="card" style="border-left: 4px solid var(--primary); padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Total de Atletas</p>
+      <h2 id="summary-athletes-total" style="font-size: 32px; color: var(--primary); margin-top: 4px;">0</h2>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--secondary); padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Atletas Ativos</p>
+      <h2 id="summary-athletes-active" style="font-size: 32px; color: var(--secondary); margin-top: 4px;">0</h2>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger); padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 600;">Inadimplentes</p>
+      <h2 id="summary-athletes-debtors" style="font-size: 32px; color: var(--danger); margin-top: 4px;">0</h2>
+    </div>
+  </div>
+
+  <!-- Solicitações de Cadastro Pendentes -->
+  <div id="pending-requests-card" class="card hidden" style="margin-bottom: 24px; border-left: 4px solid var(--accent);">
+    <h3 style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+      <i data-feather="user-check" style="width: 20px; height: 20px; color: var(--accent);"></i>
+      Solicitações de Cadastro Pendentes
+    </h3>
+    <div id="pending-requests-list" style="display: flex; flex-direction: column; gap: 12px;">
+      <!-- Renderizado dinamicamente -->
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="search-bar-container">
+      <input type="text" id="athlete-search-input" class="form-control" placeholder="Buscar atleta por nome..." style="flex: 1;">
+      <button id="btn-open-add-athlete-modal" class="btn btn-md btn-primary">
+        <i data-feather="plus" style="width: 18px; height: 18px;"></i> Cadastrar Atleta
+      </button>
+    </div>
+
+    <!-- Lista de Atletas -->
+    <div id="athletes-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+      <!-- Renderizado dinamicamente -->
+    </div>
+  </div>
+</div>
