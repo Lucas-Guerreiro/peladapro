@@ -26,7 +26,7 @@ app.use(helmet({
 // ============================================================
 // 2. CORS — Apenas origens autorizadas
 // ============================================================
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8082,http://localhost:3000')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8082,http://localhost:3000,https://www.thorneios.com.br,https://thorneios.com.br')
   .split(',')
   .map(o => o.trim());
 
