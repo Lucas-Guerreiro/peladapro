@@ -119,7 +119,11 @@ app.use((err, req, res, next) => {
 // ============================================================
 // 8. INICIALIZAÇÃO
 // ============================================================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT} [${process.env.NODE_ENV || 'development'}]`);
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  });
+}
+
+module.exports = app;

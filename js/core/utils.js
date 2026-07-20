@@ -1,7 +1,16 @@
-// ==========================================================================
-// js/core/utils.js — Utilitários Globais
-// PeladaPro · Fundacional
-// ==========================================================================
+// Interceptador para redirecionar chamadas de API locais em produção
+(function() {
+  const originalFetch = window.fetch;
+  window.fetch = function(input, init) {
+    if (typeof input === 'string' && input.startsWith('http://localhost:3000/api')) {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!isLocal) {
+        input = input.replace('http://localhost:3000/api', '/api');
+      }
+    }
+    return originalFetch(input, init);
+  };
+})();
 
 const Utils = {
 
