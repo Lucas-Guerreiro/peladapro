@@ -51,8 +51,10 @@ client_secret*.json
 # Variáveis de ambiente / secrets do backend
 backend/.env
 backend/.env.*
+!backend/.env.example
 .env
 .env.*
+!**/.env.example
 
 # Arquivos de IDE
 .idea/
