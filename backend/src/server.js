@@ -26,15 +26,28 @@ app.use(helmet({
 // ============================================================
 // 2. CORS — Apenas origens autorizadas
 // ============================================================
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8082,http://localhost:3000,https://www.thorneios.com.br,https://thorneios.com.br')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
-  .map(o => o.trim());
+  .map(o => o.trim().toLowerCase().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const defaultOrigins = [
+  'http://localhost:8082',
+  'http://localhost:3000',
+  'https://www.thorneios.com.br',
+  'https://thorneios.com.br'
+];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requisições sem origin (ex: Postman, apps mobile, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    const formattedOrigin = origin.trim().toLowerCase().replace(/\/$/, '');
+    
+    if (defaultOrigins.includes(formattedOrigin) || allowedOrigins.includes(formattedOrigin)) {
+      return callback(null, true);
+    }
+    
     return callback(new Error(`CORS bloqueado para origem: ${origin}`), false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
