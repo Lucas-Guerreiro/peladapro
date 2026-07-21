@@ -268,23 +268,28 @@ exports.googleSupabase = async (req, res) => {
     let usuario;
 
     if (rows.length === 0) {
-      // Registrar novo atleta vindo do Google (já marcado como verificado!)
+      // Registrar novo atleta vindo do Google como pendente de aprovação do gestor (ativo/verificado = false)
       const queryInsert = `
         INSERT INTO usuarios (nome, email, tipo, saldo, gols, partidas, verificado, ativo, senha_hash)
-        VALUES ($1, $2, 'jogador', 0.00, 0, 0, true, true, 'google_oauth_provider')
+        VALUES ($1, $2, 'jogador', 0.00, 0, 0, false, false, 'google_oauth_provider')
         RETURNING *`;
       const insertRes = await db.query(queryInsert, [nome, email.trim().toLowerCase()]);
       usuario = insertRes.rows[0];
-      console.log(`🌱 [Google SignUp] Novo jogador cadastrado via Google OAuth: ${email}`);
+      console.log(`🌱 [Google SignUp] Novo jogador pendente cadastrado via Google OAuth: ${email}`);
     } else {
       usuario = rows[0];
-      // Se a conta já existe, garante que está verificada e ativa
-      if (!usuario.verificado || !usuario.ativo) {
-        await db.query('UPDATE usuarios SET verificado = true, ativo = true WHERE id = $1', [usuario.id]);
-        usuario.verificado = true;
-        usuario.ativo = true;
-      }
-      console.log(`🔑 [Google SignIn] Jogador autenticado via Google OAuth: ${email}`);
+      console.log(`🔑 [Google SignIn] Jogador tentando autenticar via Google OAuth: ${email}`);
+    }
+
+    // Se a conta está pendente de aprovação do gestor
+    if (!usuario.verificado || !usuario.ativo) {
+      console.log(`⚠️ [Google Auth Blocked] Usuário pendente de aprovação do gestor: ${usuario.email}`);
+      return res.json({
+        status: 'aprovacao_pendente',
+        email: usuario.email,
+        nome: usuario.nome,
+        message: 'Seu cadastro via Google foi realizado com sucesso! Aguarde a aprovação do gestor para poder acessar o sistema.'
+      });
     }
 
     // 3. Gerar o JWT do Express para nossa sessão local

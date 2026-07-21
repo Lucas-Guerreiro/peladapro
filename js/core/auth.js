@@ -155,6 +155,13 @@ const Auth = {
         return;
       }
 
+      // Se a conta do Google está pendente de aprovação do gestor
+      if (data.status === 'aprovacao_pendente') {
+        Utils.toast(data.message || 'Cadastro pendente de aprovação pelo gestor.', 'warning');
+        Router.openModal('aviso_aprovacao', { nome: data.nome });
+        return;
+      }
+
       // Salva token local do Express e sincroniza
       localStorage.setItem('token', data.token);
       await this._syncDataFromBackend(data.token);
