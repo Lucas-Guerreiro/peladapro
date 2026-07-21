@@ -281,8 +281,10 @@ exports.googleSupabase = async (req, res) => {
       console.log(`🔑 [Google SignIn] Jogador tentando autenticar via Google OAuth: ${email}`);
     }
 
-    // Se a conta está pendente de aprovação do gestor
-    if (!usuario.verificado || !usuario.ativo) {
+    // Se a conta está pendente de aprovação do gestor e o cadastro já foi completado
+    const cadastroIncompleto = !usuario.nome || !usuario.cpf || !usuario.data_nascimento;
+
+    if (!cadastroIncompleto && (!usuario.verificado || !usuario.ativo)) {
       console.log(`⚠️ [Google Auth Blocked] Usuário pendente de aprovação do gestor: ${usuario.email}`);
       return res.json({
         status: 'aprovacao_pendente',

@@ -299,9 +299,29 @@ var Dashboard = {
         return;
       }
 
-      Utils.toast('Perfil concluído com sucesso! Bem-vindo ao jogo ⚽', 'success');
+      Utils.toast('Perfil concluído com sucesso! Cadastro enviado para aprovação ⚽', 'success');
 
-      // Atualiza o currentUser da sessão local com os novos dados salvos
+      // Se for um novo usuário pendente de aprovação do gestor
+      if (!Auth.currentUser.verificado || !Auth.currentUser.ativo) {
+        const userNome = nome;
+        
+        // Limpa a sessão local de forma silenciosa
+        Auth.currentUser = null;
+        Auth.currentGroup = null;
+        localStorage.removeItem('token');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('currentGroup');
+        localStorage.removeItem('session_expiry');
+
+        // Navega de volta ao login e exibe o modal explicativo
+        Router.navigate('#/login');
+        setTimeout(() => {
+          Router.openModal('aviso_aprovacao', { nome: userNome });
+        }, 300);
+        return;
+      }
+
+      // Caso seja um usuário já ativo atualizando dados, mantém logado e vai para Convocação
       Auth.currentUser = {
         ...Auth.currentUser,
         nome,
@@ -313,7 +333,6 @@ var Dashboard = {
         autoavaliacao
       };
 
-      // Redireciona o jogador para a aba de Convocação
       Router.navigate('#/jogador/convocacao');
 
     } catch (err) {
