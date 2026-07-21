@@ -10,7 +10,8 @@ const Auth = {
 
   // --- Estado -------------------------------------------------------------
   isLoggedIn() {
-    return this.currentUser !== null;
+    if (this.currentUser !== null) return true;
+    return this.checkSavedSession();
   },
 
   setRole(role) {
@@ -226,6 +227,18 @@ const Auth = {
     const myGroup = groups.find(g => String(g.gestor_id) === String(player.id)) || groups[0];
     this.currentGroup = myGroup || null;
 
+    // Salvar no localStorage para manter a sessão no refresh
+    localStorage.setItem('currentUser', JSON.stringify(player));
+    if (this.currentGroup) {
+      localStorage.setItem('currentGroup', JSON.stringify(this.currentGroup));
+    } else {
+      localStorage.removeItem('currentGroup');
+    }
+
+    // Expiração de 12 horas para a sessão
+    const expiryTime = Date.now() + (12 * 60 * 60 * 1000); 
+    localStorage.setItem('session_expiry', String(expiryTime));
+
     Utils.toast(`Bem-vindo, ${player.nome || player.email}! 🏆`, 'success');
 
     if (isGestor) {
@@ -235,11 +248,52 @@ const Auth = {
     }
   },
 
+  checkSavedSession() {
+    try {
+      const token = localStorage.getItem('token');
+      const playerRaw = localStorage.getItem('currentUser');
+      const groupRaw = localStorage.getItem('currentGroup');
+      const expiry = localStorage.getItem('session_expiry');
+
+      if (!token || !playerRaw) {
+        return false;
+      }
+
+      // Se a sessão expirou, desloga automaticamente
+      if (expiry && Date.now() > parseInt(expiry)) {
+        console.log('[Auth] Sessão expirou por tempo de inatividade.');
+        this.logout();
+        return false;
+      }
+
+      // Restaura dados da sessão em memória
+      this.currentUser = JSON.parse(playerRaw);
+      this.currentGroup = groupRaw ? JSON.parse(groupRaw) : null;
+      
+      const isGestor = (this.currentUser.tipo === 'gestor');
+      this.currentUser.gestor = isGestor;
+      this._selectedRole = isGestor ? 'gestor' : 'jogador';
+
+      // Renova a expiração por mais 12 horas a cada interação/refresh do usuário (sessão deslizante)
+      const newExpiry = Date.now() + (12 * 60 * 60 * 1000);
+      localStorage.setItem('session_expiry', String(newExpiry));
+
+      return true;
+    } catch (e) {
+      console.error('[Auth] Falha ao recuperar sessão do localStorage:', e);
+      this.logout();
+      return false;
+    }
+  },
+
   // --- Logout -------------------------------------------------------------
   logout() {
     this.currentUser  = null;
     this.currentGroup = null;
     localStorage.removeItem('token');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('currentGroup');
+    localStorage.removeItem('session_expiry');
     Router.navigate('#/login');
   }
 };
