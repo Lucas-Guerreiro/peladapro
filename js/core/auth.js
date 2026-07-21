@@ -136,8 +136,8 @@ const Auth = {
   // --- Fluxo Real do Google OAuth via Supabase Auth ------------------------
   async loginWithGoogle() {
     Utils.toast('Redirecionando para o Google...', 'info', 1000);
-    // Redireciona o navegador para o provedor de autenticação Google configurado no Supabase
-    window.location.href = 'https://xgsdaavryzhqxkwsonkk.supabase.co/auth/v1/authorize?provider=google&redirect_to=http://localhost:8082/';
+    const redirectUrl = window.location.origin + '/';
+    window.location.href = 'https://xgsdaavryzhqxkwsonkk.supabase.co/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectUrl);
   },
 
   async loginWithGoogleToken(accessToken) {
