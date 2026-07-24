@@ -1,41 +1,1043 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="PeladaPro — Gerencie sua pelada amadora com sorteio inteligente de times, controle financeiro e convocações." />
-  <title>PeladaPro — Gestão de Peladas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PeladaPro — A plataforma definitiva para gerenciar sua pelada de futebol. Sorteio inteligente de equipes, financeiro, presença e ranking dos atletas.">
+  <title>PeladaPro — Eleve o Nível da sua Pelada</title>
 
-  <!-- Design System -->
-  <link rel="stylesheet" href="css/main.css" />
-  <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/responsive.css" />
-
-  <!-- Fontes (Anton + Bebas Neue + Inter) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
+  <!-- Google Fonts: Bebas Neue e Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <!-- Feather Icons -->
-  <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    :root {
+      --background-dark: #0B0E14;
+      --background-card: rgba(18, 24, 38, 0.65);
+      --primary: #00E676; /* Verde Esportivo */
+      --secondary: #8E24AA; /* Roxo Premium */
+      --text-main: #F5F6F9;
+      --text-caption: #90A4AE;
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --font-bebas: 'Bebas Neue', sans-serif;
+      --font-inter: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-inter);
+      background-color: var(--background-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(142, 36, 170, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 230, 118, 0.1) 0%, transparent 40%);
+    }
+
+    /* --- Container Principal --- */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* --- Header --- */
+    header {
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--glass-border);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 14, 20, 0.8);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 80px;
+    }
+
+    .logo {
+      font-family: var(--font-bebas);
+      font-size: 32px;
+      letter-spacing: 1.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(45deg, var(--text-main) 60%, var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo span {
+      color: var(--primary);
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    nav a {
+      color: var(--text-caption);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: var(--font-inter);
+    }
+
+    .btn-outline {
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      background: transparent;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 0 15px rgba(0, 230, 118, 0.2);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, #00B0FF 100%);
+      color: #0B0E14;
+      border: none;
+      box-shadow: 0 4px 20px rgba(0, 230, 118, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0, 230, 118, 0.5);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--secondary) 0%, #E040FB 100%);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 20px rgba(142, 36, 170, 0.3);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(142, 36, 170, 0.5);
+    }
+
+    /* --- Hero Section --- */
+    .hero {
+      padding: 180px 0 100px;
+      text-align: center;
+      position: relative;
+    }
+
+    .badge-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 230, 118, 0.1);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-bebas);
+      font-size: 72px;
+      line-height: 1.05;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--primary) 0%, #00B0FF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      max-width: 680px;
+      margin: 0 auto 40px;
+      font-size: 18px;
+      color: var(--text-caption);
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .hero-actions .btn {
+      padding: 14px 28px;
+      font-size: 16px;
+    }
+
+    /* --- Features Section --- */
+    .features {
+      padding: 80px 0;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-title h2 {
+      font-family: var(--font-bebas);
+      font-size: 48px;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+
+    .section-title p {
+      color: var(--text-caption);
+      font-size: 16px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--background-card);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+      padding: 32px;
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-card.purple::before {
+      background: var(--secondary);
+    }
+
+    .icon-wrapper {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin-bottom: 24px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .feature-card.purple .icon-wrapper {
+      color: #E040FB;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-caption);
+      font-size: 14px;
+    }
+
+    /* --- Pricing Section --- */
+    .pricing {
+      padding: 80px 0;
+      background: radial-gradient(circle at 50% 50%, rgba(142, 36, 170, 0.08) 0%, transparent 60%);
+    }
+
+    .pricing-grid {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 32px;
+      max-width: 900px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+
+    .pricing-card {
+      background: var(--background-card);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      flex: 1;
+      min-width: 290px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .pricing-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    .pricing-card.featured {
+      border: 2px solid var(--primary);
+      box-shadow: 0 8px 30px rgba(0, 230, 118, 0.15);
+      transform: scale(1.03);
+    }
+
+    .pricing-card.featured:hover {
+      box-shadow: 0 12px 40px rgba(0, 230, 118, 0.3);
+    }
+
+    .featured-tag {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: #0B0E14;
+      padding: 4px 16px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .pricing-header h3 {
+      font-family: var(--font-bebas);
+      font-size: 32px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .pricing-header p {
+      color: var(--text-caption);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .price {
+      font-family: var(--font-bebas);
+      font-size: 56px;
+      line-height: 1;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .price span {
+      font-size: 18px;
+      font-family: var(--font-inter);
+      color: var(--text-caption);
+      font-weight: 400;
+    }
+
+    .price-details {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 32px;
+      text-transform: uppercase;
+    }
+
+    .pricing-card.featured .price-details {
+      color: #00B0FF;
+    }
+
+    .features-list {
+      list-style: none;
+      margin-bottom: 40px;
+    }
+
+    .features-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .features-list li i {
+      color: var(--primary);
+      width: 16px;
+      height: 16px;
+    }
+
+    .pricing-card .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+    }
+
+    /* --- Footer --- */
+    footer {
+      border-top: 1px solid var(--glass-border);
+      padding: 40px 0;
+      text-align: center;
+      background: rgba(11, 14, 20, 0.9);
+      color: var(--text-caption);
+      font-size: 13px;
+    }
+
+    footer p {
+      margin-bottom: 8px;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    /* --- Modal de Checkout --- */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 14, 20, 0.85);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #121826;
+      border: 1px solid var(--glass-border);
+      width: 100%;
+      max-width: 480px;
+      border-radius: 20px;
+      padding: 32px;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-backdrop.active .modal-card {
+      transform: translateY(0);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      color: var(--text-caption);
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .modal-close:hover {
+      color: var(--text-main);
+    }
+
+    .modal-card h3 {
+      font-family: var(--font-bebas);
+      font-size: 28px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-card h3 i {
+      color: var(--primary);
+    }
+
+    .modal-card > p {
+      color: var(--text-caption);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-caption);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #0B0E14;
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text-main);
+      font-family: var(--font-inter);
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* --- Área do Pix (Checkout Ativo) --- */
+    .pix-container {
+      display: none;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .qr-placeholder {
+      background: white;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 20px;
+      padding: 10px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-placeholder img {
+      width: 100%;
+      height: 100%;
+    }
+
+    .pix-code-box {
+      background: #0B0E14;
+      border: 1px solid var(--glass-border);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      word-break: break-all;
+      margin-bottom: 16px;
+      max-height: 60px;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    /* --- Tela de Sucesso --- */
+    .success-container {
+      display: none;
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(0, 230, 118, 0.1);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin: 0 auto 20px;
+    }
+
+    .licence-key-box {
+      background: rgba(0, 230, 118, 0.05);
+      border: 1px dashed var(--primary);
+      padding: 16px;
+      border-radius: 10px;
+      font-family: var(--font-bebas);
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--primary);
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .licence-key-box span {
+      display: block;
+      font-size: 10px;
+      font-family: var(--font-inter);
+      color: var(--text-caption);
+      letter-spacing: 0px;
+      margin-top: 4px;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-caption);
+      cursor: pointer;
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .copy-btn:hover {
+      color: var(--primary);
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Ponto de montagem da SPA -->
-  <div id="app"></div>
+  <!-- Header -->
+  <header>
+    <div class="container header-content">
+      <div class="logo">
+        <i data-feather="target" style="stroke-width: 2.5; color: var(--primary);"></i>
+        PELADA<span>PRO</span>
+      </div>
+      <nav>
+        <a href="#beneficios">Benefícios</a>
+        <a href="#planos">Planos</a>
+        <a href="app.html" class="btn btn-outline">
+          <i data-feather="log-in" style="width: 14px; height: 14px;"></i> Entrar no App
+        </a>
+      </nav>
+    </div>
+  </header>
 
-  <!-- Core JS — ordem de dependência: Utils → Api → Auth → Router -->
-  <script src="js/core/utils.js"></script>
-  <script src="js/core/api.js"></script>
-  <script src="js/core/auth.js"></script>
-  <script src="js/core/router.js"></script>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge-hero">
+        <i data-feather="zap" style="width: 12px; height: 12px; fill: var(--primary);"></i>
+        Eleve o nível do seu jogo amador
+      </div>
+      <h1>A GESTÃO DE PELADAS<br>NUNCA FOI TÃO <span>PROFISSIONAL</span></h1>
+      <p>Monte times equilibrados com sorteio inteligente baseado em notas, organize convocações automáticas, controle a caixinha financeira e acompanhe o ranking de gols e avaliações.</p>
+      <div class="hero-actions">
+        <a href="#planos" class="btn btn-primary">Adquirir Acesso</a>
+        <a href="app.html" class="btn btn-outline">Testar Gratuitamente</a>
+      </div>
+    </div>
+  </section>
 
-  <!-- Bootstrap -->
+  <!-- Features Section -->
+  <section class="features" id="beneficios">
+    <div class="container">
+      <div class="section-title">
+        <h2>RECURSOS FEITOS DE PELADEIRO PARA PELADEIRO</h2>
+        <p>Tudo o que você precisa para acabar de vez com a desorganização e as discussões da sua pelada semanal.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="icon-wrapper">
+            <i data-feather="git-commit"></i>
+          </div>
+          <h3>Sorteio Inteligente de Equipes</h3>
+          <p>Nosso algoritmo cruza a nota das estrelas de cada atleta, posições e quantidade de goleiros cadastrados para equilibrar as equipes e evitar jogos desparelhos.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card purple">
+          <div class="icon-wrapper">
+            <i data-feather="check-square"></i>
+          </div>
+          <h3>Confirmações e Fila de Espera</h3>
+          <p>Controle de presença automático! Atletas confirmam presença na rodada e, se estourar o limite de vagas, o sistema organiza uma fila de espera dinâmica.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="icon-wrapper">
+            <i data-feather="dollar-sign"></i>
+          </div>
+          <h3>Extrato e Caixa Financeiro</h3>
+          <p>Lance mensalidades de mensalistas, valores de convocações avulsas e despesas como aluguel de quadra e churrasco. O saldo individual de cada jogador é calculado em tempo real.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card purple">
+          <div class="icon-wrapper">
+            <i data-feather="trending-up"></i>
+          </div>
+          <h3>Estatísticas e Ranking</h3>
+          <p>O jogador pode acompanhar sua artilharia (gols) e notas médias das últimas partidas. Gere competitividade saudável com o ranking dos melhores atletas da temporada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="pricing" id="planos">
+    <div class="container">
+      <div class="section-title">
+        <h2>ESCOLHA O PLANO IDEAL PARA A SUA PELADA</h2>
+        <p>Acesso completo a todas as ferramentas de formação, financeiro e estatísticas. Ativação imediata no Pix.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Plano Mensal -->
+        <div class="pricing-card">
+          <div class="pricing-header">
+            <h3>Plano Mensal</h3>
+            <p>Ideal para peladas casuais ou experimentação.</p>
+            <div class="price">R$ 19,90<span>/mês</span></div>
+            <div class="price-details">Renovação Mensal</div>
+          </div>
+          <ul class="features-list">
+            <li><i data-feather="check"></i> 1 Grupo de Pelada ativo</li>
+            <li><i data-feather="check"></i> Sorteio Inteligente Ilimitado</li>
+            <li><i data-feather="check"></i> Controle Financeiro Completo</li>
+            <li><i data-feather="check"></i> Atletas Ilimitados no Grupo</li>
+            <li><i data-feather="check"></i> Suporte via E-mail</li>
+          </ul>
+          <button class="btn btn-outline" onclick="openCheckout('mensal')">Assinar Mensal</button>
+        </div>
+
+        <!-- Plano Anual -->
+        <div class="pricing-card featured">
+          <div class="featured-tag">Mais Recomendado</div>
+          <div class="pricing-header">
+            <h3>Plano Anual</h3>
+            <p>Para grupos consolidados que jogam o ano todo.</p>
+            <div class="price">R$ 149,90<span>/ano</span></div>
+            <div class="price-details">Economia de 37% ao ano</div>
+          </div>
+          <ul class="features-list">
+            <li><i data-feather="check"></i> 1 Grupo de Pelada ativo</li>
+            <li><i data-feather="check"></i> Sorteio Inteligente Ilimitado</li>
+            <li><i data-feather="check"></i> Controle Financeiro Completo</li>
+            <li><i data-feather="check"></i> Atletas Ilimitados no Grupo</li>
+            <li><i data-feather="check"></i> <strong>Suporte Prioritário</strong></li>
+            <li><i data-feather="check"></i> <strong>Acesso antecipado a novos recursos</strong></li>
+          </ul>
+          <button class="btn btn-secondary" onclick="openCheckout('anual')">Assinar Anual</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 PeladaPro. Todos os direitos reservados.</p>
+      <p>Desenvolvido para peladeiros exigentes. <a href="app.html">Acessar Sistema</a></p>
+    </div>
+  </footer>
+
+  <!-- Modal de Checkout -->
+  <div class="modal-backdrop" id="checkout-modal">
+    <!-- Card Inicial de Dados -->
+    <div class="modal-card" id="card-dados-checkout">
+      <button class="modal-close" onclick="closeCheckout()">
+        <i data-feather="x"></i>
+      </button>
+      <h3>
+        <i data-feather="shopping-cart"></i>
+        Finalizar Assinatura
+      </h3>
+      <p>Preencha os dados abaixo para gerar o seu QR Code Pix de pagamento.</p>
+
+      <form id="form-checkout" onsubmit="processarCheckout(event)">
+        <div class="form-group">
+          <label for="checkout-name">Nome Completo</label>
+          <input type="text" id="checkout-name" class="form-control" placeholder="Ex.: Lucas Guerreiro" required>
+        </div>
+        <div class="form-group">
+          <label for="checkout-email">Seu E-mail Cadastrado</label>
+          <input type="email" id="checkout-email" class="form-control" placeholder="Ex.: atleta@gmail.com" required>
+          <small style="font-size: 11px; color: var(--text-caption); display: block; margin-top: 4px;">
+            A licença será vinculada a este e-mail para ativação automática.
+          </small>
+        </div>
+        <div style="margin-top: 24px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;">
+            Gerar Pix de <span id="checkout-valor-label">R$ 19,90</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Card de Pagamento Pix -->
+    <div class="modal-card" id="card-pix-checkout" style="display: none;">
+      <button class="modal-close" onclick="closeCheckout()">
+        <i data-feather="x"></i>
+      </button>
+      <h3>
+        <i data-feather="credit-card"></i>
+        Pagamento Pix Gerado
+      </h3>
+      <p>Copie o código abaixo ou escaneie o QR Code no seu aplicativo do banco para concluir.</p>
+
+      <div class="pix-container" style="display: block;">
+        <div class="qr-placeholder">
+          <!-- QR Code fictício simulado em imagem SVG estática -->
+          <svg width="160" height="160" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="fill: #0B0E14;">
+            <rect width="100" height="100" fill="white"/>
+            <!-- Padrão fictício de QR Code -->
+            <rect x="5" y="5" width="25" height="25" fill="black"/>
+            <rect x="10" y="10" width="15" height="15" fill="white"/>
+            <rect x="13" y="13" width="9" height="9" fill="black"/>
+            
+            <rect x="70" y="5" width="25" height="25" fill="black"/>
+            <rect x="75" y="10" width="15" height="15" fill="white"/>
+            <rect x="78" y="13" width="9" height="9" fill="black"/>
+            
+            <rect x="5" y="70" width="25" height="25" fill="black"/>
+            <rect x="10" y="75" width="15" height="15" fill="white"/>
+            <rect x="13" y="78" width="9" height="9" fill="black"/>
+            
+            <rect x="40" y="40" width="20" height="20" fill="black"/>
+            <rect x="45" y="45" width="10" height="10" fill="white"/>
+            <rect x="48" y="48" width="4" height="4" fill="black"/>
+            
+            <!-- Pontos aleatórios -->
+            <rect x="35" y="10" width="5" height="15" fill="black"/>
+            <rect x="45" y="5" width="10" height="5" fill="black"/>
+            <rect x="50" y="20" width="15" height="5" fill="black"/>
+            <rect x="15" y="40" width="10" height="10" fill="black"/>
+            <rect x="5" y="55" width="5" height="10" fill="black"/>
+            <rect x="75" y="40" width="15" height="5" fill="black"/>
+            <rect x="85" y="50" width="10" height="15" fill="black"/>
+            <rect x="70" y="80" width="15" height="10" fill="black"/>
+            <rect x="40" y="75" width="20" height="5" fill="black"/>
+            <rect x="45" y="85" width="10" height="10" fill="black"/>
+          </svg>
+        </div>
+
+        <div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">
+          Código Pix Copia e Cola:
+        </div>
+        <div class="pix-code-box" id="pix-code-text">Carregando código...</div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 24px;">
+          <button class="btn btn-outline" onclick="copyPixCode()">
+            <i data-feather="copy" style="width: 14px; height: 14px;"></i> Copiar Código Pix
+          </button>
+          
+          <button class="btn btn-primary" onclick="simularPagamentoAprovado()">
+            <i data-feather="check-circle" style="width: 14px; height: 14px; color: #0B0E14;"></i> Simular Pagamento Aprovado (Testar Fluxo)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card de Sucesso -->
+    <div class="modal-card" id="card-sucesso-checkout" style="display: none;">
+      <button class="modal-close" onclick="closeCheckout()">
+        <i data-feather="x"></i>
+      </button>
+      <div class="success-icon">
+        <i data-feather="check" style="stroke-width: 3; width: 32px; height: 32px;"></i>
+      </div>
+      <h3>Assinatura Ativada!</h3>
+      <p>Seu pagamento foi confirmado com sucesso. O sistema gerou a sua licença de uso do PeladaPro:</p>
+
+      <div class="licence-key-box" id="licence-key-text">
+        PP-MENSAL-XXXX-XXXX
+        <button class="copy-btn" onclick="copyLicenceKey()" title="Copiar Chave">
+          <i data-feather="copy" style="width: 18px; height: 18px;"></i>
+        </button>
+        <span>Chave de Licença Única</span>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 30px;">
+        Esta licença foi vinculada automaticamente ao e-mail <strong id="sucesso-email-label">atleta@gmail.com</strong>. Ao fazer login com esta conta de gestor, seu grupo será ativado na hora!
+      </p>
+
+      <a href="app.html" class="btn btn-secondary" style="width: 100%; padding: 14px;">
+        Acessar o Painel do Gestor <i data-feather="arrow-right" style="width: 16px; height: 16px;"></i>
+      </a>
+    </div>
+  </div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      Router.init();
-    });
-  </script>
+    // Inicializa Feather Icons
+    feather.replace();
 
+    let planoSelecionado = 'mensal';
+    let licencaGerada = '';
+    let emailComprador = '';
+
+    const openCheckout = (plano) => {
+      planoSelecionado = plano;
+      const valor = plano === 'anual' ? 'R$ 149,90' : 'R$ 19,90';
+      document.getElementById('checkout-valor-label').textContent = valor;
+      
+      // Reseta visual dos cards
+      document.getElementById('card-dados-checkout').style.display = 'block';
+      document.getElementById('card-pix-checkout').style.display = 'none';
+      document.getElementById('card-sucesso-checkout').style.display = 'none';
+      
+      document.getElementById('checkout-modal').classList.add('active');
+    };
+
+    const closeCheckout = () => {
+      document.getElementById('checkout-modal').classList.remove('active');
+    };
+
+    const processarCheckout = async (e) => {
+      e.preventDefault();
+      
+      const nome = document.getElementById('checkout-name').value.trim();
+      const email = document.getElementById('checkout-email').value.trim();
+
+      if (!nome || !email) return;
+
+      try {
+        // Altera a URL base dinamicamente para aceitar localhost ou produção
+        const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:3000/api'
+          : '/api';
+
+        const res = await fetch(`${apiBase}/vendas/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, plano: planoSelecionado })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Erro ao gerar checkout.');
+          return;
+        }
+
+        licencaGerada = data.licenca_codigo;
+        emailComprador = data.email_comprador;
+
+        document.getElementById('pix-code-text').textContent = data.qr_code_pix;
+        
+        // Transição de Cards
+        document.getElementById('card-dados-checkout').style.display = 'none';
+        document.getElementById('card-pix-checkout').style.display = 'block';
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao se conectar ao servidor.');
+      }
+    };
+
+    const copyPixCode = () => {
+      const code = document.getElementById('pix-code-text').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('Código Pix copiado com sucesso! Use no app do seu banco.');
+      });
+    };
+
+    const copyLicenceKey = () => {
+      const key = document.getElementById('licence-key-text').firstChild.textContent.trim();
+      navigator.clipboard.writeText(key).then(() => {
+        alert('Chave de licença copiada com sucesso!');
+      });
+    };
+
+    const simularPagamentoAprovado = async () => {
+      try {
+        const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:3000/api'
+          : '/api';
+
+        const res = await fetch(`${apiBase}/vendas/confirmar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email_comprador: emailComprador, licenca_codigo: licencaGerada })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Erro ao confirmar pagamento.');
+          return;
+        }
+
+        document.getElementById('licence-key-text').innerHTML = `
+          ${data.licenca.codigo}
+          <button class="copy-btn" onclick="copyLicenceKey()" title="Copiar Chave">
+            <i data-feather="copy" style="width: 18px; height: 18px;"></i>
+          </button>
+          <span>Chave de Licença Única</span>
+        `;
+        feather.replace();
+
+        document.getElementById('sucesso-email-label').textContent = emailComprador;
+
+        // Transição de Cards
+        document.getElementById('card-pix-checkout').style.display = 'none';
+        document.getElementById('card-sucesso-checkout').style.display = 'block';
+
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao se conectar para confirmar o pagamento.');
+      }
+    };
+  </script>
 </body>
 </html>

@@ -124,6 +124,47 @@
       </div>
     </div>
 
+    <!-- Card de Licenciamento do Grupo -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+      <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="key" style="width: 18px; height: 18px; color: var(--primary);"></i>
+        Licenciamento do Grupo
+      </h3>
+      <p style="font-size: 13px; color: var(--text-caption); margin: 0;">
+        Verifique o status da assinatura deste grupo de pelada ou ative uma nova chave.
+      </p>
+      
+      <div id="license-status-box" style="
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border-color);
+      ">
+        <span>Status da Licença:</span>
+        <span id="license-status-label" style="padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; background: rgba(255,255,255,0.1); color: var(--text-main);">Gratuito</span>
+      </div>
+      <p id="license-expiry-label" style="font-size: 12px; color: var(--text-caption); margin: -4px 0 0; display: none;">
+        Expira em: <span id="license-expiry-date">--/--/----</span>
+      </p>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 4px 0;">
+
+      <div id="license-activation-form">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="license-key-input" class="form-label">Ativar Nova Licença</label>
+          <input type="text" id="license-key-input" class="form-control" placeholder="PP-XXXX-XXXX-XXXX" style="text-align: center; font-family: monospace; letter-spacing: 1px;">
+        </div>
+        <button id="btn-activate-license" class="btn btn-sm btn-primary" style="width: 100%;">
+          Ativar Licença
+        </button>
+      </div>
+    </div>
+
   </div>
 
 </div>

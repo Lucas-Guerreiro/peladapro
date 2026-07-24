@@ -53,6 +53,9 @@ window.App.initConfig = function() {
 
   document.getElementById("btn-save-location").onclick = handleSaveLocation;
   document.getElementById("btn-cancel-location-edit").onclick = handleCancelLocationEdit;
+
+  const btnActivate = document.getElementById("btn-activate-license");
+  if (btnActivate) btnActivate.onclick = handleActivateLicense;
   
   if (window.feather) feather.replace();
 };
@@ -75,6 +78,8 @@ function loadConfigs() {
 
   const exitRuleSelect = document.getElementById("config-exit-rule");
   if (exitRuleSelect) exitRuleSelect.value = config.regra_saida || "final_fila";
+
+  updateLicenseUI();
 }
 
 // --- Carrega os grupos (peladas) do gestor para agendamento ---------------
@@ -453,5 +458,119 @@ async function deleteLocation(id, nome) {
   } catch (err) {
     console.error(err);
     window.App.showToast("Erro ao excluir local.", "error");
+  }
+}
+
+function updateLicenseUI() {
+  const statusLabel = document.getElementById("license-status-label");
+  const expiryLabel = document.getElementById("license-expiry-label");
+  const expiryDate = document.getElementById("license-expiry-date");
+
+  if (!statusLabel) return;
+
+  const config = window.App.currentGroup;
+  if (!config) {
+    statusLabel.textContent = "Nenhum Grupo";
+    statusLabel.style.background = "rgba(255,255,255,0.1)";
+    statusLabel.style.color = "var(--text-main)";
+    if (expiryLabel) expiryLabel.style.display = "none";
+    return;
+  }
+
+  // Verifica se a licença está ativa
+  if (config.licenca_status === 'ativa' && config.licenca_expira_em) {
+    const expDate = new Date(config.licenca_expira_em);
+    
+    // Se a data já passou, está expirada
+    if (expDate < new Date()) {
+      statusLabel.textContent = "Expirada";
+      statusLabel.style.background = "rgba(255, 23, 68, 0.1)";
+      statusLabel.style.color = "var(--danger)";
+      if (expiryLabel) expiryLabel.style.display = "none";
+    } else {
+      statusLabel.textContent = "Ativa";
+      statusLabel.style.background = "rgba(0, 230, 118, 0.1)";
+      statusLabel.style.color = "var(--primary)";
+      
+      if (expiryLabel && expiryDate) {
+        expiryDate.textContent = expDate.toLocaleDateString('pt-BR');
+        expiryLabel.style.display = "block";
+      }
+    }
+  } else {
+    statusLabel.textContent = "Gratuito";
+    statusLabel.style.background = "rgba(255, 214, 0, 0.1)";
+    statusLabel.style.color = "#FFD600";
+    if (expiryLabel) expiryLabel.style.display = "none";
+  }
+}
+
+async function handleActivateLicense() {
+  const keyInput = document.getElementById("license-key-input");
+  if (!keyInput) return;
+
+  const key = keyInput.value.trim();
+  if (!key) {
+    window.App.showToast("Digite o código da licença para ativar.", "warning");
+    return;
+  }
+
+  if (!window.App.currentGroup || !window.App.currentGroup.id) {
+    window.App.showToast("Crie ou selecione uma pelada primeiro.", "warning");
+    return;
+  }
+
+  try {
+    window.App.showToast("Ativando licença...", "info");
+    
+    const token = localStorage.getItem('token');
+    const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:3000/api'
+      : '/api';
+
+    const res = await fetch(`${apiBase}/vendas/ativar-manual`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        grupo_id: window.App.currentGroup.id,
+        codigo_licenca: key
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      window.App.showToast(data.error || "Erro ao ativar licença.", "error");
+      return;
+    }
+
+    window.App.showToast("Licença ativada com sucesso!", "success");
+    keyInput.value = "";
+
+    // Atualiza o grupo ativo em cache
+    window.App.currentGroup.licenca_codigo = data.grupo.licenca_codigo;
+    window.App.currentGroup.licenca_expira_em = data.grupo.licenca_expira_em;
+    window.App.currentGroup.licenca_status = data.grupo.licenca_status;
+
+    // Atualiza o gestorGroups cacheado
+    if (window.App.gestorGroups) {
+      const idx = window.App.gestorGroups.findIndex(g => g.id === window.App.currentGroup.id);
+      if (idx >= 0) {
+        window.App.gestorGroups[idx] = { ...window.App.currentGroup };
+      }
+    }
+
+    // Atualiza o Auth.currentGroup e salva no localStorage
+    if (window.Auth) {
+      window.Auth.currentGroup = { ...window.App.currentGroup };
+      localStorage.setItem('currentGroup', JSON.stringify(window.Auth.currentGroup));
+    }
+
+    updateLicenseUI();
+  } catch (err) {
+    console.error(err);
+    window.App.showToast("Erro ao conectar com o servidor.", "error");
   }
 }

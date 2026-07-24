@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PeladaPro — Gerencie sua pelada amadora com sorteio inteligente de times, controle financeiro e convocações." />
+  <title>PeladaPro — Gestão de Peladas</title>
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <!-- Fontes (Anton + Bebas Neue + Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+
+  <!-- Ponto de montagem da SPA -->
+  <div id="app"></div>
+
+  <!-- Core JS — ordem de dependência: Utils → Api → Auth → Router -->
+  <script src="js/core/utils.js"></script>
+  <script src="js/core/api.js"></script>
+  <script src="js/core/auth.js"></script>
+  <script src="js/core/router.js"></script>
+
+  <!-- Bootstrap -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      Router.init();
+    });
+  </script>
+
+</body>
+</html>
