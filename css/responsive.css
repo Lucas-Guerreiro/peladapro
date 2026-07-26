@@ -68,9 +68,24 @@
     margin-bottom: 16px;
   }
 
-  /* Header compacto */
+  /* Header compacto e responsivo com hambúrguer */
   .main-header {
     padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .main-header .user-nav-status {
+    display: none !important;
+  }
+
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  .tabs-navigation {
+    display: none !important;
   }
 
   .brand h1 { font-size: 28px; }

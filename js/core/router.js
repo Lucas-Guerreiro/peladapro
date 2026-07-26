@@ -162,9 +162,12 @@ const Router = {
     const app = document.getElementById('app');
     const layoutFile = role === 'gestor' ? 'pages/gestor/layout.html' : 'pages/jogador/layout.html';
 
-    // Header fixo do app
+    // Header fixo do app com suporte a menu sanduíche
     const headerHTML = `
       <header class="main-header" id="main-header">
+        <button id="hamburger-menu-btn" class="hamburger-btn">
+          <i data-feather="menu" style="width:24px; height:24px;"></i>
+        </button>
         <div class="brand" style="cursor:pointer" onclick="Router.navigate(Auth.currentUser?.gestor ? '#/gestor/atletas' : '#/jogador/dashboard')">
           <h1>PELADA <span>PRO</span></h1>
         </div>
@@ -174,7 +177,29 @@ const Router = {
           </span>
           <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Sair</button>
         </div>
-      </header>`;
+      </header>
+      
+      <!-- Menu lateral mobile (sanduíche) -->
+      <div id="mobile-sidebar" class="mobile-sidebar">
+        <div class="sidebar-header">
+          <div class="brand">
+            <h1>PELADA <span>PRO</span></h1>
+          </div>
+          <button id="sidebar-close-btn" class="sidebar-close-btn">&times;</button>
+        </div>
+        <div class="sidebar-user-info">
+          <span class="text-inter" id="sidebar-user-name-menu" style="font-size: 14px; font-weight: bold; color: #FFF;">
+            ${Auth.currentUser ? Auth.currentUser.nome : ''}
+          </span>
+        </div>
+        <nav class="sidebar-nav">
+          <!-- Abas de navegação injetadas dinamicamente -->
+        </nav>
+        <div class="sidebar-footer">
+          <button class="btn btn-outline btn-md" style="width:100%" onclick="Auth.logout()">Sair</button>
+        </div>
+      </div>
+      <div id="sidebar-overlay" class="sidebar-overlay"></div>`;
 
     try {
       const res = await fetch(`${layoutFile}?v=${Date.now()}`);
@@ -184,12 +209,68 @@ const Router = {
       app.innerHTML = headerHTML + `<div class="app-container"><p>Erro ao carregar layout.</p></div>`;
     }
 
+    // Configura os handlers do menu mobile
+    const hamburgerBtn = document.getElementById('hamburger-menu-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (hamburgerBtn) hamburgerBtn.onclick = () => this._openMobileSidebar();
+    if (closeBtn) closeBtn.onclick = () => this._closeMobileSidebar();
+    if (overlay) overlay.onclick = () => this._closeMobileSidebar();
+
     // Atualiza nome no header
     const nameEl = document.getElementById('header-user-name');
     if (nameEl && Auth.currentUser) nameEl.textContent = Auth.currentUser.nome;
+    const nameElMenu = document.getElementById('sidebar-user-name-menu');
+    if (nameElMenu && Auth.currentUser) nameElMenu.textContent = Auth.currentUser.nome;
 
     // Bind das abas de navegação
     this._bindTabButtons(role);
+  },
+
+  _openMobileSidebar() {
+    const sidebar = document.getElementById('mobile-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('active');
+  },
+
+  _closeMobileSidebar() {
+    const sidebar = document.getElementById('mobile-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+  },
+
+  _syncMobileSidebar() {
+    const sidebarNav = document.querySelector('.sidebar-nav');
+    if (!sidebarNav) return;
+
+    // Busca o menu de abas ativo (seja no layout do gestor ou na página do jogador)
+    const tabsNav = document.getElementById('jogador-tabs-nav') || document.querySelector('.tabs-navigation');
+    if (!tabsNav) return;
+
+    const tabButtons = tabsNav.querySelectorAll('.tab-btn');
+    sidebarNav.innerHTML = '';
+    
+    tabButtons.forEach(btn => {
+      const clone = btn.cloneNode(true);
+      clone.removeAttribute('style'); // Remove inline do desktop
+      clone.className = 'tab-btn sidebar-tab-btn';
+      
+      if (btn.classList.contains('active')) {
+        clone.classList.add('active');
+      }
+
+      clone.addEventListener('click', () => {
+        btn.click();
+        this._closeMobileSidebar();
+      });
+
+      sidebarNav.appendChild(clone);
+    });
+
+    if (window.feather) feather.replace();
   },
 
   // --- Bind das Abas do Layout -------------------------------------------
@@ -208,6 +289,8 @@ const Router = {
   _afterPageLoad(route) {
     // Ativa ícones Feather se disponível
     if (window.feather) feather.replace();
+    // Sincroniza abas no menu mobile (sidebar)
+    this._syncMobileSidebar();
     // Dispara evento customizado para scripts que escutam
     document.dispatchEvent(new CustomEvent('page:loaded', { detail: { route } }));
   },

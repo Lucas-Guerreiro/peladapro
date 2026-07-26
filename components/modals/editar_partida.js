@@ -10,8 +10,8 @@ window.App.initModalEditar_partida = function(data) {
   const scoreAEl = document.getElementById("edit-match-score-a");
   const scoreBEl = document.getElementById("edit-match-score-b");
 
-  if (teamAEl) teamAEl.textContent = partida.time_a_nome;
-  if (teamBEl) teamBEl.textContent = partida.time_b_nome;
+  if (teamAEl) teamAEl.value = partida.time_a_nome || '';
+  if (teamBEl) teamBEl.value = partida.time_b_nome || '';
   if (scoreAEl) scoreAEl.value = partida.gols_time_a;
   if (scoreBEl) scoreBEl.value = partida.gols_time_b;
 
@@ -25,6 +25,13 @@ window.App.initModalEditar_partida = function(data) {
     btnSubmit.onclick = async () => {
       const golsA = parseInt(scoreAEl.value);
       const golsB = parseInt(scoreBEl.value);
+      const timeANome = teamAEl ? teamAEl.value.trim() : '';
+      const timeBNome = teamBEl ? teamBEl.value.trim() : '';
+
+      if (!timeANome || !timeBNome) {
+        window.App.showToast("Informe nomes válidos para ambos os times.", "warning");
+        return;
+      }
 
       if (isNaN(golsA) || golsA < 0 || isNaN(golsB) || golsB < 0) {
         window.App.showToast("Informe placares válidos maiores ou iguais a 0.", "warning");
@@ -35,7 +42,7 @@ window.App.initModalEditar_partida = function(data) {
       btnSubmit.textContent = "Salvando...";
 
       try {
-        const res = await Api.editarPartida(partida.id, golsA, golsB);
+        const res = await Api.editarPartida(partida.id, golsA, golsB, timeANome, timeBNome);
 
         if (res.error) {
           window.App.showToast(res.error, "error");

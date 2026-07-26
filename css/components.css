@@ -595,3 +595,136 @@
 .stepper-btn { width: 48px; height: 100%; background-color: #FFF; border: none; font-size: 20px; cursor: pointer; transition: var(--transition); color: var(--text-heading); }
 .stepper-btn:hover { background-color: var(--background); }
 .stepper-value { width: 60px; text-align: center; font-family: var(--font-display); font-size: 22px; border-left: 2px solid var(--border-color); border-right: 2px solid var(--border-color); user-select: none; }
+
+/* --- MENU MOBILE SANDUÍCHE (HAMBURGER / DRAWER) --------------------------- */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-heading);
+  cursor: pointer;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 280px;
+  background-color: var(--primary);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(11, 14, 20, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-header .brand h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: #FFFFFF;
+}
+
+.sidebar-header .brand h1 span {
+  color: var(--secondary);
+}
+
+.sidebar-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-caption);
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.sidebar-close-btn:hover {
+  color: #FFFFFF;
+}
+
+.sidebar-user-info {
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-user-info span {
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.sidebar-tab-btn {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  text-transform: uppercase;
+  color: var(--text-caption);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sidebar-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-tab-btn.active {
+  background: rgba(0, 230, 118, 0.08) !important;
+  color: #00E676 !important;
+  border-color: rgba(0, 230, 118, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.05);
+}
+
+.sidebar-footer {
+  padding: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
