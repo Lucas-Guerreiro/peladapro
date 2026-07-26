@@ -1,83 +1,82 @@
 // ==========================================================================
-// pages/jogador/acompanhamento.js — Partida ao Vivo (Módulo Jogador)
+// pages/jogador/acompanhamento.js — Partida ao Vivo (Módulo Jogador Redesign)
 // ==========================================================================
 
 var Acompanhamento = {
 
   _pollingTimer: null,
 
+  // Lista de imagens premium para os avatares mockados de atletas
+  _avatarStock: [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&auto=format&fit=crop&q=80'
+  ],
+
+  // Mapeamento visual das cores dos times (vibrantes e elegantes para HSL/RGB escuro)
   _getTeamTheme: function(teamName) {
     var name = (teamName || '').toLowerCase();
     
     if (name.includes('verm') || name.includes('red')) {
       return {
-        bg: 'rgba(239, 83, 80, 0.15)',
+        bg: 'rgba(239, 83, 80, 0.08)',
         border: '#EF5350',
         text: '#FF8A80'
       };
     }
     if (name.includes('verd') || name.includes('green')) {
       return {
-        bg: 'rgba(102, 187, 106, 0.15)',
+        bg: 'rgba(102, 187, 106, 0.08)',
         border: '#66BB6A',
         text: '#B9F6CA'
       };
     }
     if (name.includes('azul') || name.includes('blue')) {
       return {
-        bg: 'rgba(66, 165, 245, 0.15)',
+        bg: 'rgba(66, 165, 245, 0.08)',
         border: '#42A5F5',
         text: '#82B1FF'
       };
     }
     if (name.includes('amar') || name.includes('yellow')) {
       return {
-        bg: 'rgba(255, 238, 88, 0.12)',
+        bg: 'rgba(255, 238, 88, 0.06)',
         border: '#FFEE58',
         text: '#FFFF8D'
       };
     }
     if (name.includes('branc') || name.includes('white')) {
       return {
-        bg: 'rgba(255, 255, 255, 0.1)',
+        bg: 'rgba(255, 255, 255, 0.05)',
         border: 'rgba(255, 255, 255, 0.6)',
         text: '#FFFFFF'
       };
     }
     if (name.includes('pret') || name.includes('black')) {
       return {
-        bg: 'rgba(33, 33, 33, 0.5)',
+        bg: 'rgba(255, 255, 255, 0.02)',
         border: '#424242',
         text: '#E0E0E0'
       };
     }
-    if (name.includes('laran') || name.includes('orange')) {
-      return {
-        bg: 'rgba(255, 167, 38, 0.15)',
-        border: '#FFA726',
-        text: '#FFD180'
-      };
-    }
-    if (name.includes('cinz') || name.includes('gray') || name.includes('grey')) {
-      return {
-        bg: 'rgba(189, 189, 189, 0.15)',
-        border: '#BDBDBD',
-        text: '#EEEEEE'
-      };
-    }
     
-    // Default para Time A / Time B
+    // Fallback dinâmico para Time A / Time B
     if (name.includes('time a') || name.includes('a')) {
       return {
-        bg: 'rgba(0, 229, 118, 0.1)',
-        border: 'var(--primary)',
-        text: 'var(--primary)'
+        bg: 'rgba(66, 165, 245, 0.08)',
+        border: '#42A5F5',
+        text: '#82B1FF'
       };
     }
     return {
-      bg: 'rgba(142, 36, 170, 0.15)',
-      border: 'var(--secondary)',
-      text: '#E040FB'
+      bg: 'rgba(255, 238, 88, 0.06)',
+      border: '#FFEE58',
+      text: '#FFFF8D'
     };
   },
 
@@ -99,6 +98,7 @@ var Acompanhamento = {
     var timerText = document.getElementById('acomp-timer-text');
     var progress  = document.getElementById('acomp-timer-progress');
     var status    = document.getElementById('acomp-timer-status');
+    var timerDot  = document.getElementById('acomp-timer-dot');
 
     var group   = Auth.currentGroup;
     var configs = Api.getConfigs();
@@ -111,19 +111,21 @@ var Acompanhamento = {
     var s = elapsed % 60;
     var elapsedStr = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
 
-    if (timerText) timerText.textContent = elapsedStr + ' / ' + totalMin + ':00';
+    if (timerText) timerText.textContent = elapsedStr + ' / ' + (totalMin < 10 ? '0' : '') + totalMin + ':00';
     if (progress)  progress.style.width = Math.min(100, (elapsed / totalSecs) * 100) + '%';
 
     if (status) {
       if (!match || !match.timerRunning) {
         status.textContent = elapsed > 0 ? 'Pausado' : 'Aguardando início';
+        if (timerDot) timerDot.className = 'acomp-pulse-dot paused';
       } else {
         status.textContent = 'Partida em andamento';
+        if (timerDot) timerDot.className = 'acomp-pulse-dot';
       }
     }
   },
 
-  // --- Placar e Times ----------------------------------------------------
+  // --- Placar e Times (Com fotos circulares e bordas coloridas) -----------
   renderScore: function() {
     var match = window.App.liveMatch;
     if (!match) return;
@@ -141,48 +143,56 @@ var Acompanhamento = {
     if (teamAName) {
       teamAName.textContent = match.teamA || 'Time A';
       teamAName.style.color = themeA.text;
-      teamAName.style.fontWeight = 'bold';
     }
     var cardA = document.getElementById('acomp-team-a');
     if (cardA) {
       cardA.style.background = themeA.bg;
-      cardA.style.border = '1.5px solid ' + themeA.border;
-      cardA.style.transition = 'all 0.3s ease';
+      cardA.style.border = '1px solid ' + themeA.border;
     }
 
     if (teamBName) {
       teamBName.textContent = match.teamB || 'Time B';
       teamBName.style.color = themeB.text;
-      teamBName.style.fontWeight = 'bold';
     }
     var cardB = document.getElementById('acomp-team-b');
     if (cardB) {
       cardB.style.background = themeB.bg;
-      cardB.style.border = '1.5px solid ' + themeB.border;
-      cardB.style.transition = 'all 0.3s ease';
+      cardB.style.border = '1px solid ' + themeB.border;
     }
 
-    if (scoreA)    scoreA.textContent    = match.scoreA || 0;
-    if (scoreB)    scoreB.textContent    = match.scoreB || 0;
+    if (scoreA) scoreA.textContent = match.scoreA || 0;
+    if (scoreB) scoreB.textContent = match.scoreB || 0;
 
-    // Jogadores dos times
+    // Jogadores dos times com fotos
     var teams   = Api.getTeams();
     var players = Api.getPlayers();
+    var self    = this;
 
-    function getTeamPlayersHTML(teamName) {
+    function getTeamPlayersHTML(teamName, theme) {
       var team = teams.find(function(t) { return t.nome === teamName; });
-      if (!team || !team.players || team.players.length === 0) return '—';
+      if (!team || !team.players || team.players.length === 0) {
+        return '<div style="font-size: 13px; color: var(--text-caption); text-align: center; width: 100%;">—</div>';
+      }
       return team.players.slice(0, 4).map(function(tp) {
         var p = players.find(function(pl) { return pl.id === tp.id; });
-        return p ? p.nome.split(' ')[0] : tp.nome || '?';
-      }).join('<br>');
+        var nome = p ? p.nome.split(' ')[0] : tp.nome || '?';
+        
+        // Atribui uma foto determinística do stock baseada no ID do jogador
+        var fotoIndex = p ? p.id % self._avatarStock.length : 0;
+        var fotoUrl = p && p.foto ? p.foto : self._avatarStock[fotoIndex];
+
+        return '<div class="acomp-player-item">' +
+          '<img class="acomp-player-avatar" src="' + fotoUrl + '" style="border: 1.5px solid ' + theme.border + ';">' +
+          '<span class="acomp-player-name">' + nome + '</span>' +
+        '</div>';
+      }).join('');
     }
 
-    if (teamAPlayers) teamAPlayers.innerHTML = getTeamPlayersHTML(match.teamA);
-    if (teamBPlayers) teamBPlayers.innerHTML = getTeamPlayersHTML(match.teamB);
+    if (teamAPlayers) teamAPlayers.innerHTML = getTeamPlayersHTML(match.teamA, themeA);
+    if (teamBPlayers) teamBPlayers.innerHTML = getTeamPlayersHTML(match.teamB, themeB);
   },
 
-  // --- Fila de Espera ----------------------------------------------------
+  // --- Fila de Espera (Com avatar stack e tags sutis) ---------------------
   renderQueue: function() {
     var listEl   = document.getElementById('acomp-queue-list');
     var countEl  = document.getElementById('acomp-queue-count');
@@ -193,22 +203,43 @@ var Acompanhamento = {
     if (!listEl) return;
 
     if (queue.length === 0) {
-      listEl.innerHTML = '<div class="empty-state" style="padding: 24px;"><p class="text-inter" style="font-size: 13px;">Nenhum time na fila.</p></div>';
+      listEl.innerHTML = '<div class="empty-state" style="padding: 24px; text-align: center;"><p class="text-inter" style="font-size: 13px; color: var(--text-caption);">Nenhum time na fila.</p></div>';
       return;
     }
 
     var self = this;
+    var teams = Api.getTeams();
+    var players = Api.getPlayers();
     var html = '';
+
     queue.forEach(function(name, idx) {
       var theme = self._getTeamTheme(name);
-      html += '<div class="queue-item" style="background: rgba(255,255,255,0.03); margin-bottom: 8px; border-radius: 6px; padding: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-color); border-left: 4px solid ' + theme.border + ';">' +
-        '<div style="display: flex; align-items: center; gap: 12px;">' +
-          '<span class="pos" style="color: ' + theme.text + '; font-weight: bold; font-family: monospace;">' + (idx + 1) + '</span>' +
-          '<span class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-main);">' + name + '</span>' +
+      var teamObj = teams.find(function(t) { return t.nome === name; });
+      
+      // Montagem do avatar stack (máximo 3 fotos)
+      var avatarsHTML = '<div class="acomp-queue-badge-stack">';
+      if (teamObj && teamObj.players && teamObj.players.length > 0) {
+        teamObj.players.slice(0, 3).forEach(function(tp) {
+          var p = players.find(function(pl) { return pl.id === tp.id; });
+          var fotoIndex = p ? p.id % self._avatarStock.length : 0;
+          var fUrl = p && p.foto ? p.foto : self._avatarStock[fotoIndex];
+          avatarsHTML += '<img class="acomp-queue-avatar" src="' + fUrl + '" style="border-color: ' + theme.border + ';">';
+        });
+      } else {
+        avatarsHTML += '<div style="width: 20px; height: 20px; border-radius: 50%; background: ' + theme.bg + '; border: 1.5px solid ' + theme.border + '; display: flex; align-items: center; justify-content: center;"><span style="font-size: 9px; color: ' + theme.text + '; font-weight: bold;">⚽</span></div>';
+      }
+      avatarsHTML += '</div>';
+
+      html += '<div class="acomp-queue-item" style="border-left: 4px solid ' + theme.border + ';">' +
+        '<div class="acomp-queue-team-info">' +
+          '<span class="acomp-queue-pos" style="color: ' + theme.text + ';">' + (idx + 1) + '</span>' +
+          avatarsHTML +
+          '<span class="acomp-queue-team-name">' + name + '</span>' +
         '</div>' +
-        (idx === 0 ? '<span class="text-inter" style="font-size: 10px; font-weight: 700; color: var(--primary); letter-spacing: 0.5px;">PRÓXIMO ▶</span>' : '') +
+        (idx === 0 ? '<span class="acomp-next-badge">PRÓXIMO</span>' : '') +
       '</div>';
     });
+
     listEl.innerHTML = html;
   },
 
@@ -223,14 +254,16 @@ var Acompanhamento = {
 
     var criterios = config && config.criterios_empate ? config.criterios_empate : [];
     var labels    = {
-      gols: 'Time vencedor permanece em campo',
-      vitórias: 'Sai após 2 vitórias consecutivas',
-      tempo: 'Partidas de ' + (config && config.tempo_partida ? config.tempo_partida : 15) + ' minutos'
+      gols: 'REGRA PADRÃO: MAIS GOLS VENCE',
+      vitórias: 'REGRA: SAI APÓS 2 VITÓRIAS CONSECUTIVAS',
+      tempo: 'REGRA: PARTIDAS DE ' + (config && config.tempo_partida ? config.tempo_partida : 15) + ' MINUTOS'
     };
-    ruleEl.textContent = criterios.length > 0 ? (labels[criterios[0]] || criterios[0]) : 'Regra padrão: mais gols vence';
+    
+    var ruleText = criterios.length > 0 ? (labels[criterios[0]] || ('REGRA: ' + criterios[0].toUpperCase())) : 'REGRA PADRÃO: MAIS GOLS VENCE';
+    ruleEl.textContent = ruleText;
   },
 
-  // --- Polling -----------------------------------------------------------
+  // --- Polling de atualização --------------------------------------------
   _startPolling: function() {
     if (Acompanhamento._pollingTimer) clearInterval(Acompanhamento._pollingTimer);
     Acompanhamento._pollingTimer = setInterval(function() {
