@@ -246,7 +246,7 @@ function renderLiveMatchUI() {
     }
   }
 
-  // Renderiza autores dos gols do Time A (alinhado à direita, com botão ✕ para excluir gol acidental)
+  // Renderiza autores dos gols do Time A (alinhado à direita, com assistência 👟 e botão ✕ para excluir gol acidental)
   const goalsAEl = document.getElementById("match-control-team-a-goals");
   if (goalsAEl) {
     const goalsA = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'a' || (g.teamName && teamA && g.teamName.toLowerCase() === teamA.toLowerCase()));
@@ -255,7 +255,8 @@ function renderLiveMatchUI() {
       goalsAEl.innerHTML = "";
     } else {
       goalsAEl.innerHTML = goalsA.map((g, idx) => `
-        <div style="display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-bottom: 2px;">
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-bottom: 2px; flex-wrap: wrap;">
+          ${g.assistNome ? `<span style="font-size:11px; color:#64748B; font-weight:600;">(${g.assistNome} 👟)</span>` : ''}
           <span>${g.autorNome || 'Jogador'}</span>
           <span style="color:#34D399;">⚽</span>
           <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="a" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.2); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold;">✕</button>
@@ -264,7 +265,7 @@ function renderLiveMatchUI() {
     }
   }
 
-  // Renderiza autores dos gols do Time B (alinhado à esquerda, com botão ✕ para excluir gol acidental)
+  // Renderiza autores dos gols do Time B (alinhado à esquerda, com assistência 👟 e botão ✕ para excluir gol acidental)
   const goalsBEl = document.getElementById("match-control-team-b-goals");
   if (goalsBEl) {
     const goalsB = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'b' || (g.teamName && teamB && g.teamName.toLowerCase() === teamB.toLowerCase()));
@@ -273,10 +274,11 @@ function renderLiveMatchUI() {
       goalsBEl.innerHTML = "";
     } else {
       goalsBEl.innerHTML = goalsB.map((g, idx) => `
-        <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-bottom: 2px;">
+        <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-bottom: 2px; flex-wrap: wrap;">
           <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="b" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.2); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold;">✕</button>
           <span style="color:#34D399;">⚽</span>
           <span>${g.autorNome || 'Jogador'}</span>
+          ${g.assistNome ? `<span style="font-size:11px; color:#64748B; font-weight:600;">(${g.assistNome} 👟)</span>` : ''}
         </div>
       `).join('');
     }
@@ -774,7 +776,7 @@ async function renderRecentMatches() {
         <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-heading);">
           ${
             goalsList.length > 0 
-              ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
+              ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome || 'Jogador'}${g.assistNome ? ` <span style="color:#0F172A; font-weight:600;">(Ass: ${g.assistNome} 👟)</span>` : ''} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
               : `<span style="font-size:11px; color:var(--text-caption);">Placar final: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
           }
         </div>

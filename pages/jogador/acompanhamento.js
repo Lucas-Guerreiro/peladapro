@@ -387,20 +387,13 @@ var Acompanhamento = {
         return g.teamKey === 'a' || (g.teamName && match.teamA && g.teamName.toLowerCase() === match.teamA.toLowerCase());
       });
       
-      var tallyA = {};
-      goalsA.forEach(function(g) {
-        var n = g.autorNome || 'Jogador';
-        tallyA[n] = (tallyA[n] || 0) + 1;
-      });
-
-      var htmlA = '';
-      Object.keys(tallyA).forEach(function(nome) {
-        var qtd = tallyA[nome];
-        htmlA += '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">' +
-          '<span>' + nome + '</span>' +
-          '<span style="color: #10B981;">⚽' + (qtd > 1 ? '<sup style="font-size: 9px; background: #10B981; color: #FFF; padding: 0 3px; border-radius: 6px; margin-left: 1px;">' + qtd + '</sup>' : '') + '</span>' +
+      var htmlA = goalsA.map(function(g) {
+        return '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap;">' +
+          (g.assistNome ? '<span style="font-size: 11px; color: #64748B; font-weight: 600;">(' + g.assistNome + ' 👟)</span>' : '') +
+          '<span>' + (g.autorNome || 'Jogador') + '</span>' +
+          '<span style="color: #10B981;">⚽</span>' +
         '</div>';
-      });
+      }).join('');
       goalsAEl.innerHTML = htmlA;
     }
 
@@ -411,20 +404,13 @@ var Acompanhamento = {
         return g.teamKey === 'b' || (g.teamName && match.teamB && g.teamName.toLowerCase() === match.teamB.toLowerCase());
       });
 
-      var tallyB = {};
-      goalsB.forEach(function(g) {
-        var n = g.autorNome || 'Jogador';
-        tallyB[n] = (tallyB[n] || 0) + 1;
-      });
-
-      var htmlB = '';
-      Object.keys(tallyB).forEach(function(nome) {
-        var qtd = tallyB[nome];
-        htmlB += '<div style="display: flex; align-items: center; justify-content: flex-start; gap: 4px;">' +
-          '<span style="color: #10B981;">⚽' + (qtd > 1 ? '<sup style="font-size: 9px; background: #10B981; color: #FFF; padding: 0 3px; border-radius: 6px; margin-left: 1px;">' + qtd + '</sup>' : '') + '</span>' +
-          '<span>' + nome + '</span>' +
+      var htmlB = goalsB.map(function(g) {
+        return '<div style="display: flex; align-items: center; justify-content: flex-start; gap: 4px; flex-wrap: wrap;">' +
+          '<span style="color: #10B981;">⚽</span>' +
+          '<span>' + (g.autorNome || 'Jogador') + '</span>' +
+          (g.assistNome ? '<span style="font-size: 11px; color: #64748B; font-weight: 600;">(' + g.assistNome + ' 👟)</span>' : '') +
         '</div>';
-      });
+      }).join('');
       goalsBEl.innerHTML = htmlB;
     }
   },
@@ -588,7 +574,7 @@ var Acompanhamento = {
           '</div>' +
           '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
             (goalsList.length > 0
-              ? '<div style="display:flex; flex-wrap:wrap; gap:6px;">' + goalsList.map(function(g) { return '<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ' + (g.autorNome || 'Jogador') + ' <span style="color:#64748B; font-size:10px;">(' + (g.teamName || '') + ')</span></span>'; }).join('') + '</div>'
+              ? '<div style="display:flex; flex-wrap:wrap; gap:6px;">' + goalsList.map(function(g) { return '<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ' + (g.autorNome || 'Jogador') + (g.assistNome ? ' <span style="color:#0F172A; font-weight:600;">(Ass: ' + g.assistNome + ' 👟)</span>' : '') + ' <span style="color:#64748B; font-size:10px;">(' + (g.teamName || '') + ')</span></span>'; }).join('') + '</div>'
               : '<span style="font-size:11px; color:#64748B;">Placar final: ' + (p.time_a_nome || 'Time A') + ' ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + ' ' + (p.time_b_nome || 'Time B') + '</span>'
             ) +
           '</div>' +

@@ -77,11 +77,16 @@ window.App.initModalLancar_gol = function(data) {
         const autorObj = players.find(p => String(p.id) === String(autorId));
         const autorNome = autorObj ? (autorObj.apelido || autorObj.nome) : "Jogador";
 
+        const assistObj = assistId ? players.find(p => String(p.id) === String(assistId)) : null;
+        const assistNome = assistObj ? (assistObj.apelido || assistObj.nome) : null;
+
         if (!window.App.liveMatch.goals) window.App.liveMatch.goals = [];
         window.App.liveMatch.goals.push({
           id: Date.now(),
           autorId: autorId,
           autorNome: autorNome,
+          assistId: assistId || null,
+          assistNome: assistNome || null,
           teamKey: teamKey,
           teamName: teamName,
           timeSecs: window.App.liveMatch.timerSeconds
@@ -97,8 +102,6 @@ window.App.initModalLancar_gol = function(data) {
         }
 
         // 4. Feedback visual
-        const assistNome = assistId ? (players.find(p => String(p.id) === String(assistId))?.nome || "") : "";
-        
         let msg = `Gol de ${autorNome}!`;
         if (assistNome) {
           msg += ` Assistência de ${assistNome}.`;
