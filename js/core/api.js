@@ -383,7 +383,7 @@ const Api = {
     return res.json();
   },
 
-  async lancarPartida(peladaId, timeANome, timeBNome, golsTimeA, golsTimeB) {
+  async lancarPartida(peladaId, timeANome, timeBNome, golsTimeA, golsTimeB, autoresGols) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     const res = await fetch('http://localhost:3000/api/partidas', {
@@ -397,7 +397,8 @@ const Api = {
         time_a_nome: timeANome,
         time_b_nome: timeBNome,
         gols_time_a: parseInt(golsTimeA),
-        gols_time_b: parseInt(golsTimeB)
+        gols_time_b: parseInt(golsTimeB),
+        autores_gols: autoresGols ? JSON.stringify(autoresGols) : null
       })
     });
     return res.json();

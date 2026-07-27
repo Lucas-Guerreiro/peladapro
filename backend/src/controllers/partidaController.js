@@ -1,7 +1,7 @@
 const db = require('../config/database');
 
 exports.criarPartida = async (req, res) => {
-  const { pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b } = req.body;
+  const { pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, autores_gols } = req.body;
   const gestorTipo = req.usuarioTipo;
 
   if (gestorTipo !== 'gestor') {
@@ -13,17 +13,20 @@ exports.criarPartida = async (req, res) => {
   }
 
   try {
+    await db.query('ALTER TABLE partidas ADD COLUMN IF NOT EXISTS autores_gols TEXT').catch(() => {});
+
     const query = `
-      INSERT INTO partidas (pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, status)
-      VALUES ($1, $2, $3, $4, $5, 'finalizada')
-      RETURNING id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, status, created_at`;
+      INSERT INTO partidas (pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, autores_gols, status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'finalizada')
+      RETURNING id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, autores_gols, status, created_at`;
     
     const { rows } = await db.query(query, [
       pelada_id,
       time_a_nome,
       time_b_nome,
       parseInt(gols_time_a) || 0,
-      parseInt(gols_time_b) || 0
+      parseInt(gols_time_b) || 0,
+      autores_gols ? String(autores_gols) : null
     ]);
 
     res.status(201).json({ message: 'Partida salva com sucesso!', partida: rows[0] });
@@ -35,8 +38,10 @@ exports.criarPartida = async (req, res) => {
 exports.listarPartidas = async (req, res) => {
   const { peladaId } = req.params;
   try {
+    await db.query('ALTER TABLE partidas ADD COLUMN IF NOT EXISTS autores_gols TEXT').catch(() => {});
+
     const query = `
-      SELECT id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, status, created_at
+      SELECT id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, autores_gols, status, created_at
       FROM partidas
       WHERE pelada_id = $1
       ORDER BY created_at ASC`;

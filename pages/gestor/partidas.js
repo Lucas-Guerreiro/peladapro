@@ -246,6 +246,24 @@ function renderLiveMatchUI() {
     }
   }
 
+  // Renderiza autores dos gols do Time A (alinhado à direita, abaixo do nome do time)
+  const goalsAEl = document.getElementById("match-control-team-a-goals");
+  if (goalsAEl) {
+    const goalsA = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'a' || (g.teamName && teamA && g.teamName.toLowerCase() === teamA.toLowerCase()));
+    const tallyA = {};
+    goalsA.forEach(g => { const n = g.autorNome || 'Jogador'; tallyA[n] = (tallyA[n] || 0) + 1; });
+    goalsAEl.innerHTML = Object.keys(tallyA).map(n => `<div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;"><span>${n}</span><span style="color:#34D399;">⚽${tallyA[n] > 1 ? `<sup style="font-size:9px; background:#34D399; color:#0F172A; padding:0 3px; border-radius:6px; margin-left:1px;">${tallyA[n]}</sup>` : ''}</span></div>`).join('');
+  }
+
+  // Renderiza autores dos gols do Time B (alinhado à esquerda, abaixo do nome do time)
+  const goalsBEl = document.getElementById("match-control-team-b-goals");
+  if (goalsBEl) {
+    const goalsB = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'b' || (g.teamName && teamB && g.teamName.toLowerCase() === teamB.toLowerCase()));
+    const tallyB = {};
+    goalsB.forEach(g => { const n = g.autorNome || 'Jogador'; tallyB[n] = (tallyB[n] || 0) + 1; });
+    goalsBEl.innerHTML = Object.keys(tallyB).map(n => `<div style="display:flex; align-items:center; justify-content:flex-start; gap:4px;"><span style="color:#34D399;">⚽${tallyB[n] > 1 ? `<sup style="font-size:9px; background:#34D399; color:#0F172A; padding:0 3px; border-radius:6px; margin-left:1px;">${tallyB[n]}</sup>` : ''}</span><span>${n}</span></div>`).join('');
+  }
+
   if (badgeEl) {
     if (window.App.liveMatch.isPlaying) {
       badgeEl.textContent = "EM ANDAMENTO";
@@ -439,7 +457,8 @@ async function handleFinishMatch() {
 
   // 1. Gravar a partida finalizada no banco de dados
   try {
-    const res = await Api.lancarPartida(peladaId, teamAName, teamBName, scoreA, scoreB);
+    const goalsDetails = window.App.liveMatch ? (window.App.liveMatch.goals || []) : [];
+    const res = await Api.lancarPartida(peladaId, teamAName, teamBName, scoreA, scoreB, goalsDetails);
     if (res.error) {
       console.error("Erro ao salvar partida:", res.error);
     }
@@ -637,30 +656,46 @@ async function renderRecentMatches() {
     partidas.forEach(p => {
       const item = document.createElement("div");
       item.style.display = "flex";
-      item.style.justifyContent = "space-between";
-      item.style.alignItems = "center";
-      item.style.padding = "10px 14px";
+      item.style.flexDirection = "column";
       item.style.backgroundColor = "var(--background)";
       item.style.borderRadius = "8px";
       item.style.borderLeft = "4px solid var(--success)";
       item.style.marginBottom = "8px";
+      item.style.padding = "10px 14px";
 
       const dateObj = new Date(p.created_at);
       const timeStr = dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+      let goalsList = [];
+      if (p.autores_gols) {
+        try {
+          goalsList = typeof p.autores_gols === 'string' ? JSON.parse(p.autores_gols) : p.autores_gols;
+        } catch(e) {}
+      }
+
       item.innerHTML = `
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="font-size: 11px; background: rgba(0,200,83,0.1); color: var(--success); padding: 2px 8px; border-radius: 6px; font-weight: bold;">FIM</span>
-          <strong class="text-inter" style="font-size:14px; font-family: 'Bebas Neue'; letter-spacing: 0.5px; text-transform: uppercase;">
-            ${p.time_a_nome} <span style="color:var(--secondary); font-size:16px;">${p.gols_time_a}</span> 
-            x 
-            <span style="color:var(--accent); font-size:16px;">${p.gols_time_b}</span> ${p.time_b_nome}
-          </strong>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size: 11px; background: rgba(0,200,83,0.1); color: var(--success); padding: 2px 8px; border-radius: 6px; font-weight: bold;">FIM</span>
+            <strong class="text-inter" style="font-size:14px; font-family: 'Bebas Neue'; letter-spacing: 0.5px; text-transform: uppercase;">
+              ${p.time_a_nome} <span style="color:var(--secondary); font-size:16px;">${p.gols_time_a}</span> 
+              x 
+              <span style="color:var(--accent); font-size:16px;">${p.gols_time_b}</span> ${p.time_b_nome}
+            </strong>
+            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols da partida" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-heading); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
+            <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
+            <span class="text-inter" style="font-size:11px; color:var(--text-caption); margin-left: 4px;">${timeStr}</span>
+          </div>
         </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
-          <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
-          <span class="text-inter" style="font-size:11px; color:var(--text-caption); margin-left: 4px;">${timeStr}</span>
+        <div id="match-goals-list-${p.id}" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-heading);">
+          ${
+            goalsList.length > 0 
+              ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
+              : `<span style="font-size:11px; color:var(--text-caption);">Placar final: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
+          }
         </div>
       `;
       container.appendChild(item);
@@ -675,6 +710,18 @@ async function renderRecentMatches() {
 }
 
 function setupHistoryActions() {
+  // Configura cliques no botão ⚽ Gols
+  const goalButtons = document.querySelectorAll(".btn-toggle-goals");
+  goalButtons.forEach(btn => {
+    btn.onclick = () => {
+      const matchId = btn.getAttribute("data-id");
+      const targetDiv = document.getElementById(`match-goals-list-${matchId}`);
+      if (targetDiv) {
+        const isHidden = targetDiv.style.display === "none";
+        targetDiv.style.display = isHidden ? "block" : "none";
+      }
+    };
+  });
   // Configura cliques de Edição
   const editButtons = document.querySelectorAll(".btn-edit-match");
   editButtons.forEach(btn => {
