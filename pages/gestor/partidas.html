@@ -200,55 +200,66 @@
         </div>
       </div>
 
-      <!-- Placar Central e Times Simétricos -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 12px; background: #F8FAFC; padding: 16px; border-radius: 14px; border: 1px solid #E2E8F0;">
+      <!-- Placar Central e Controle de Placar (Layout Fixo) -->
+      <div style="background: #F8FAFC; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 24px;">
         
-        <!-- Time A (ESQUERDA - Alinhado à Direita) -->
-        <div id="acomp-team-a" style="flex: 1; text-align: right;">
-          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 4px;">
-            <button id="btn-view-team-a" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time A">👁️</button>
-            <h4 class="gestor-team-title" id="match-control-team-a">Time A</h4>
-          </div>
-          <div id="match-control-team-a-status" style="min-height: 16px; margin-bottom: 4px; text-align: right;"></div>
+        <!-- PARTE SUPERIOR FIXA: Nomes, Olho, Botões (- / + / GOL) e Placar 1 x 1 (Nunca move) -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
           
-          <!-- Placar e Botões Time A -->
-          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px;">
-            <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1">-</button>
-            <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
-            <button id="btn-goal-team-a" class="btn-goal-trigger">GOL ⚽</button>
-          </div>
-          
-          <!-- Autores de gols do Time A -->
-          <div id="match-control-team-a-goals" style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A; margin-top: 8px;"></div>
-        </div>
-
-        <!-- PLACAR CENTRAL -->
-        <div style="text-align: center; padding: 0 10px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="gestor-score-num" id="match-control-score-a">0</span>
-            <span class="gestor-score-divider">x</span>
-            <span class="gestor-score-num" id="match-control-score-b">0</span>
-          </div>
-        </div>
-
-        <!-- Time B (DIREITA - Alinhado à Esquerda) -->
-        <div id="acomp-team-b" style="flex: 1; text-align: left;">
-          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 4px;">
-            <h4 class="gestor-team-title" id="match-control-team-b">Time B</h4>
-            <button id="btn-view-team-b" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time B">👁️</button>
-          </div>
-          <div id="match-control-team-b-status" style="min-height: 16px; margin-bottom: 4px; text-align: left;"></div>
-          
-          <!-- Placar e Botões Time B -->
-          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 6px;">
-            <button id="btn-goal-team-b" class="btn-goal-trigger">GOL ⚽</button>
-            <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1">-</button>
-            <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
+          <!-- Time A (ESQUERDA - Alinhado à Direita) -->
+          <div id="acomp-team-a" style="flex: 1; text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 4px;">
+              <button id="btn-view-team-a" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time A">👁️</button>
+              <h4 class="gestor-team-title" id="match-control-team-a" style="margin: 0;">Time A</h4>
+            </div>
+            <div id="match-control-team-a-status" style="min-height: 16px; margin-bottom: 6px; text-align: right;"></div>
+            
+            <!-- Placar e Botões Time A -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+              <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1">-</button>
+              <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
+              <button id="btn-goal-team-a" class="btn-goal-trigger">GOL ⚽</button>
+            </div>
           </div>
 
-          <!-- Autores de gols do Time B -->
-          <div id="match-control-team-b-goals" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A; margin-top: 8px;"></div>
+          <!-- PLACAR CENTRAL (1 x 1 FIXO) -->
+          <div style="text-align: center; padding: 0 10px; display: flex; align-items: center; justify-content: center; min-width: 100px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="gestor-score-num" id="match-control-score-a">0</span>
+              <span class="gestor-score-divider">x</span>
+              <span class="gestor-score-num" id="match-control-score-b">0</span>
+            </div>
+          </div>
+
+          <!-- Time B (DIREITA - Alinhado à Esquerda) -->
+          <div id="acomp-team-b" style="flex: 1; text-align: left; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 4px;">
+              <h4 class="gestor-team-title" id="match-control-team-b" style="margin: 0;">Time B</h4>
+              <button id="btn-view-team-b" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time B">👁️</button>
+            </div>
+            <div id="match-control-team-b-status" style="min-height: 16px; margin-bottom: 6px; text-align: left;"></div>
+            
+            <!-- Placar e Botões Time B -->
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+              <button id="btn-goal-team-b" class="btn-goal-trigger">GOL ⚽</button>
+              <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1">-</button>
+              <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
+            </div>
+          </div>
         </div>
+
+        <!-- PARTE INFERIOR SEPARADA: Lista de Autores de Gols e Assistências (Cresce para baixo sem mover o topo) -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; padding-top: 8px;">
+          <!-- Autores de gols do Time A (alinhado à direita) -->
+          <div id="match-control-team-a-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
+
+          <!-- Espaço em branco central proporcional ao 1x1 -->
+          <div style="min-width: 100px;"></div>
+
+          <!-- Autores de gols do Time B (alinhado à esquerda) -->
+          <div id="match-control-team-b-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
+        </div>
+
       </div>
  
       <!-- Rodapé de Ação: Concluir Partida -->
