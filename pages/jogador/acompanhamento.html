@@ -1,195 +1,355 @@
-<!-- pages/jogador/acompanhamento.html — Partida ao Vivo (Módulo Jogador Redesign) -->
+<!-- pages/jogador/acompanhamento.html — Partida ao Vivo (Módulo Jogador Redesign Responsivo Tema Claro) -->
 
-<!-- ESTILOS EXCLUSIVOS DO REDESIGN MOBILE -->
+<!-- ESTILOS EXCLUSIVOS DO REDESIGN RESPONSIVO TEMA CLARO -->
 <style>
-  /* --- Variáveis e Temas do Redesign --- */
-  .acomp-mobile-container {
-    background-color: #0D1117;
+  /* --- Reset e Wrapper Principal --- */
+  .acomp-web-body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+    min-height: 100vh;
     font-family: 'Inter', -apple-system, sans-serif;
-    color: #F5F6F9;
-    padding: 16px;
-    max-width: 440px;
+    color: #1e293b;
+    padding: 40px 20px;
+    margin-top: -80px; /* Ajuste para preencher o topo */
+  }
+
+  .acomp-center-container {
+    max-width: 520px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-height: calc(100vh - 80px);
   }
 
-  /* --- Abas de Navegação Minimalista --- */
-  .acomp-tabs-nav {
+  /* --- Responsividade Geral --- */
+  @media (max-width: 768px) {
+    .acomp-web-body {
+      padding: 0;
+      background: #f8fafc;
+      margin-top: 0;
+    }
+    .acomp-center-container {
+      max-width: 100%;
+      gap: 16px;
+    }
+  }
+
+  /* --- Topo Desktop --- */
+  .acomp-header-desktop {
     display: flex;
     justify-content: space-between;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 4px;
-    margin-bottom: 8px;
-    backdrop-filter: blur(10px);
+    align-items: center;
+    padding: 16px 24px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 15px rgba(30, 41, 59, 0.02);
   }
 
-  .acomp-tab-btn {
+  .acomp-logo-clear {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .acomp-logo-clear span {
+    color: #0284c7; /* Azul sofisticado */
+  }
+
+  .acomp-user-info-clear {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .acomp-user-name-clear {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .acomp-btn-sair-clear {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .acomp-btn-sair-clear:hover {
+    background: #ef4444;
+    color: #FFFFFF;
+  }
+
+  /* --- Topo Mobile (Menu Hambúrguer) --- */
+  .acomp-header-mobile {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .acomp-header-desktop {
+      display: none;
+    }
+    .acomp-header-mobile {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: #FFFFFF;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+  }
+
+  .acomp-hamburger-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #0f172a;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* --- Menu Dropdown Mobile --- */
+  .acomp-mobile-dropdown {
+    display: none;
+    flex-direction: column;
+    background: #FFFFFF;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 12px 20px 20px;
+    gap: 12px;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    width: 100%;
+    z-index: 99;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  }
+
+  .acomp-mobile-dropdown button {
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 10px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+  }
+
+  .acomp-mobile-dropdown button.active {
+    color: #0284c7;
+    font-weight: 700;
+  }
+
+  .acomp-dropdown-user {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+
+  /* --- Navegação Secundária Desktop --- */
+  .acomp-nav-desktop-clear {
+    display: flex;
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 15px rgba(30, 41, 59, 0.02);
+    justify-content: space-between;
+  }
+
+  @media (max-width: 768px) {
+    .acomp-nav-desktop-clear {
+      display: none;
+    }
+  }
+
+  .acomp-nav-item-clear {
     flex: 1;
     background: transparent;
     border: none;
     padding: 10px 4px;
-    color: #8A99AD;
-    font-size: 11px;
+    color: #64748b;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 10px;
     transition: all 0.2s ease;
     text-align: center;
   }
 
-  .acomp-tab-btn.active {
-    background: rgba(0, 230, 118, 0.08);
-    color: #00E676;
-    box-shadow: 0 2px 10px rgba(0, 230, 118, 0.05);
+  .acomp-nav-item-clear:hover {
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.04);
   }
 
-  /* --- Cards Modernos Glassmorphism --- */
-  .acomp-card {
-    background: rgba(18, 24, 38, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(8px);
-    transition: transform 0.3s, border-color 0.3s;
+  .acomp-nav-item-clear.active {
+    background: rgba(2, 132, 199, 0.08);
+    color: #0284c7;
   }
 
-  /* --- Cronômetro Esportivo Moderno --- */
-  .acomp-timer-wrapper {
+  /* --- Cards Modernos --- */
+  .acomp-card-clear {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);
     display: flex;
     flex-direction: column;
+    transition: transform 0.2s;
+  }
+
+  @media (max-width: 768px) {
+    .acomp-card-clear {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      padding: 20px;
+      box-shadow: none;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  /* --- Cronômetro Moderno --- */
+  .acomp-timer-wrapper-clear {
     align-items: center;
     text-align: center;
   }
 
-  .acomp-timer-time {
-    font-size: 42px;
+  .acomp-timer-time-clear {
+    font-size: 44px;
     font-weight: 300;
     font-family: monospace, sans-serif;
-    color: #FFFFFF;
+    color: #0f172a;
     letter-spacing: 2px;
     margin-bottom: 12px;
     line-height: 1;
   }
 
-  .acomp-progress-container {
+  .acomp-progress-container-clear {
     width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.05);
+    height: 8px;
+    background: #f1f5f9;
     border-radius: 100px;
     overflow: hidden;
     margin-bottom: 12px;
   }
 
-  .acomp-progress-bar {
+  .acomp-progress-bar-clear {
     height: 100%;
-    background: linear-gradient(90deg, #00E676 0%, #00B0FF 100%);
+    background: linear-gradient(90deg, #34d399 0%, #0284c7 100%);
     border-radius: 100px;
     transition: width 0.3s ease;
   }
 
-  .acomp-status-badge {
+  .acomp-status-badge-clear {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #8A99AD;
-    font-weight: 500;
+    color: #64748b;
+    font-weight: 600;
   }
 
-  .acomp-pulse-dot {
+  .acomp-pulse-dot-clear {
     width: 8px;
     height: 8px;
-    background-color: #00E676;
+    background-color: #34d399; /* Verde menta */
     border-radius: 50%;
-    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
-    animation: acomp-pulse 2s infinite;
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+    animation: acomp-pulse-clear 2s infinite;
     display: inline-block;
   }
 
-  .acomp-pulse-dot.paused {
-    background-color: #FF1744;
+  .acomp-pulse-dot-clear.paused {
+    background-color: #f87171;
     animation: none;
     box-shadow: none;
   }
 
-  @keyframes acomp-pulse {
+  @keyframes acomp-pulse-clear {
     0% {
       transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
     }
     70% {
       transform: scale(1);
-      box-shadow: 0 0 0 8px rgba(0, 230, 118, 0);
+      box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
     }
     100% {
       transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
     }
   }
 
-  /* --- Placar Central (Scoreboard) --- */
-  .acomp-score-card {
+  /* --- Scoreboard ao Vivo --- */
+  .acomp-score-card-clear {
     position: relative;
-    padding: 24px 16px;
+    padding: 32px 20px 24px;
   }
 
-  .acomp-live-tag {
+  .acomp-live-tag-clear {
     position: absolute;
     top: 14px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 230, 118, 0.1);
-    border: 1px solid rgba(0, 230, 118, 0.2);
-    color: #00E676;
-    font-size: 9px;
+    background: #d1fae5; /* Fundo verde menta suave */
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    font-size: 10px;
     font-weight: 700;
-    padding: 3px 10px;
+    padding: 3px 12px;
     border-radius: 100px;
     letter-spacing: 1px;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
-  .acomp-live-tag span {
-    width: 5px;
-    height: 5px;
-    background-color: #00E676;
+  .acomp-live-tag-clear span {
+    width: 6px;
+    height: 6px;
+    background-color: #34d399;
     border-radius: 50%;
     display: inline-block;
-    animation: acomp-pulse 1.5s infinite;
+    animation: acomp-pulse-clear 1.5s infinite;
   }
 
-  .acomp-scoreboard-row {
+  .acomp-scoreboard-row-clear {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 12px;
-    gap: 12px;
+    gap: 8px;
   }
 
-  .acomp-team-box {
+  .acomp-team-box-clear {
     flex: 1.2;
-    padding: 16px 12px;
-    border-radius: 14px;
-    text-align: center;
-    min-height: 190px;
+    padding: 16px 10px;
+    border-radius: 16px;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    border: 1px solid rgba(0, 0, 0, 0.03);
   }
 
-  .acomp-team-title {
-    font-size: 16px;
+  .acomp-team-title-clear {
+    font-size: 15px;
     font-weight: 700;
     margin-bottom: 16px;
     max-width: 100%;
@@ -198,38 +358,38 @@
     text-overflow: ellipsis;
   }
 
-  .acomp-players-list {
+  .acomp-players-list-clear {
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
 
-  .acomp-player-item {
+  .acomp-player-item-clear {
     display: flex;
     align-items: center;
     gap: 8px;
-    text-align: left;
+    width: 100%;
   }
 
-  .acomp-player-avatar {
+  .acomp-player-avatar-clear {
     width: 24px;
     height: 24px;
     border-radius: 50%;
     object-fit: cover;
   }
 
-  .acomp-player-name {
+  .acomp-player-name-clear {
     font-size: 12px;
-    font-weight: 500;
-    color: #F5F6F9;
+    font-weight: 600;
+    color: #334155;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 70px;
+    max-width: 80px;
   }
 
-  .acomp-score-display {
+  .acomp-score-display-clear {
     flex: 0.8;
     text-align: center;
     display: flex;
@@ -238,21 +398,21 @@
     gap: 6px;
   }
 
-  .acomp-score-num {
-    font-size: 48px;
+  .acomp-score-num-clear {
+    font-size: 52px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: #0f172a;
     font-family: monospace, sans-serif;
   }
 
-  .acomp-score-divider {
-    font-size: 20px;
-    color: #8A99AD;
-    opacity: 0.4;
+  .acomp-score-divider-clear {
+    font-size: 22px;
+    color: #94a3b8;
+    opacity: 0.5;
   }
 
   /* --- Fila de Espera --- */
-  .acomp-queue-header {
+  .acomp-queue-header-clear {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -260,77 +420,80 @@
     padding: 0 4px;
   }
 
-  .acomp-queue-header h3 {
+  .acomp-queue-header-clear h3 {
     font-size: 15px;
-    font-weight: 600;
-    color: #FFFFFF;
+    font-weight: 700;
+    color: #0f172a;
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .acomp-queue-header span {
+  .acomp-queue-header-clear span {
     font-size: 12px;
-    color: #8A99AD;
+    color: #64748b;
+    font-weight: 600;
   }
 
-  .acomp-queue-items {
+  .acomp-queue-items-clear {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .acomp-queue-item {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+  .acomp-queue-item-clear {
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.04);
     border-radius: 12px;
     padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    box-shadow: 0 4px 10px rgba(30, 41, 59, 0.01);
   }
 
-  .acomp-queue-team-info {
+  .acomp-queue-team-info-clear {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  .acomp-queue-badge-stack {
+  .acomp-queue-badge-stack-clear {
     display: flex;
     align-items: center;
   }
 
-  .acomp-queue-avatar {
+  .acomp-queue-avatar-clear {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 1.5px solid #0D1117;
+    border: 1.5px solid #FFFFFF;
     margin-left: -6px;
     object-fit: cover;
   }
 
-  .acomp-queue-avatar:first-child {
+  .acomp-queue-avatar-clear:first-child {
     margin-left: 0;
   }
 
-  .acomp-queue-pos {
+  .acomp-queue-pos-clear {
     font-family: monospace;
     font-size: 13px;
     font-weight: 700;
-    color: #8A99AD;
+    color: #64748b;
     width: 16px;
   }
 
-  .acomp-queue-team-name {
+  .acomp-queue-team-name-clear {
     font-size: 14px;
     font-weight: 600;
-    color: #F5F6F9;
+    color: #1e293b;
   }
 
-  .acomp-next-badge {
-    background: rgba(0, 230, 118, 0.08);
-    color: #00E676;
+  .acomp-next-badge-clear {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
     font-size: 9px;
     font-weight: 700;
     padding: 3px 8px;
@@ -338,112 +501,142 @@
     letter-spacing: 0.5px;
   }
 
-  /* --- Rodapé: Regra Ativa --- */
-  .acomp-rule-card {
-    background: rgba(142, 36, 170, 0.08);
-    border: 1px solid rgba(142, 36, 170, 0.15);
+  /* --- Regra Ativa --- */
+  .acomp-rule-card-clear {
+    background: #faf5ff; /* Roxo claro */
+    border: 1px solid #f3e8ff;
     border-radius: 12px;
     padding: 12px 16px;
     text-align: center;
   }
 
-  .acomp-rule-title {
+  .acomp-rule-title-clear {
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #E040FB;
+    color: #6b21a8;
     font-weight: 700;
     margin-bottom: 4px;
   }
 
-  .acomp-rule-desc {
+  .acomp-rule-desc-clear {
     font-size: 13px;
-    color: #F5F6F9;
+    color: #581c87;
     font-weight: 600;
   }
 </style>
 
-<!-- NAV DE ABAS INTERNAS -->
-<nav class="tabs-navigation" id="jogador-tabs-nav" style="background: var(--primary); padding: 0 16px; margin-bottom: 0; border-bottom: none;">
-  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
-    onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
-  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
-    onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
-  <button class="tab-btn active" style="color: var(--secondary); border-bottom-color: var(--secondary);"
-    onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
-  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
-    onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
-  <button class="tab-btn" style="color: rgba(255,255,255,0.5);"
-    onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
-</nav>
+<!-- TELA WEB COMPLETA E RESPONSIVA (TEMA CLARO) -->
+<div class="acomp-web-body">
+  <div class="acomp-center-container">
 
-<!-- CONTAINER MOBILE REDESIGN -->
-<div class="acomp-mobile-container">
+    <!-- TOPO DESKTOP -->
+    <header class="acomp-header-desktop">
+      <div class="acomp-logo-clear">
+        <i data-feather="target" style="stroke-width: 2.5; color: #0284c7;"></i>
+        PELADA<span>PRO</span>
+      </div>
+      <div class="acomp-user-info-clear">
+        <span class="acomp-user-name-clear">Lucas Fernandes Guerreiro</span>
+        <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
+      </div>
+    </header>
 
-  <!-- CRONÔMETRO -->
-  <div class="acomp-card acomp-timer-wrapper">
-    <div class="acomp-timer-time" id="acomp-timer-text">00:00 / 15:00</div>
-    <div class="acomp-progress-container">
-      <div id="acomp-timer-progress" class="acomp-progress-bar" style="width: 0%;"></div>
+    <!-- TOPO MOBILE -->
+    <header class="acomp-header-mobile">
+      <div class="acomp-logo-clear">
+        <i data-feather="target" style="stroke-width: 2.5; color: #0284c7;"></i>
+        PELADA<span>PRO</span>
+      </div>
+      <button class="acomp-hamburger-btn" onclick="Acompanhamento.toggleMobileMenu()">☰</button>
+      
+      <!-- DROPDOWN MOBILE INTERATIVO -->
+      <div class="acomp-mobile-dropdown" id="acomp-mobile-dropdown">
+        <div class="acomp-dropdown-user">Lucas Fernandes Guerreiro</div>
+        <button onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+        <button onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+        <button class="active">Acompanhamento</button>
+        <button onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+        <button onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+        <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.06); margin: 8px 0;">
+        <button class="acomp-btn-sair-clear" onclick="Auth.logout()" style="width: 100%; text-align: center;">SAIR</button>
+      </div>
+    </header>
+
+    <!-- ABAS DESKTOP -->
+    <nav class="acomp-nav-desktop-clear">
+      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+      <button class="acomp-nav-item-clear active">Acompanhamento</button>
+      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+    </nav>
+
+    <!-- CRONÔMETRO -->
+    <div class="acomp-card-clear acomp-timer-wrapper-clear">
+      <div class="acomp-timer-time-clear" id="acomp-timer-text">00:00 / 15:00</div>
+      <div class="acomp-progress-container-clear">
+        <div id="acomp-timer-progress" class="acomp-progress-bar-clear" style="width: 0%;"></div>
+      </div>
+      <div class="acomp-status-badge-clear">
+        <span id="acomp-timer-dot" class="acomp-pulse-dot-clear paused"></span>
+        <span id="acomp-timer-status">Aguardando início</span>
+      </div>
     </div>
-    <div class="acomp-status-badge">
-      <span id="acomp-timer-dot" class="acomp-pulse-dot paused"></span>
-      <span id="acomp-timer-status">Aguardando início</span>
-    </div>
-  </div>
 
-  <!-- SCOREBOARD AO VIVO -->
-  <div class="acomp-card acomp-score-card">
-    <div class="acomp-live-tag">
-      <span></span>AO VIVO
-    </div>
+    <!-- SCOREBOARD AO VIVO -->
+    <div class="acomp-card-clear acomp-score-card-clear">
+      <div class="acomp-live-tag-clear">
+        <span></span>AO VIVO
+      </div>
 
-    <div class="acomp-scoreboard-row">
-      <!-- TIME A -->
-      <div class="acomp-team-box" id="acomp-team-a">
-        <div class="acomp-team-title" id="acomp-team-a-name">Time A</div>
-        <div class="acomp-players-list" id="acomp-team-a-players">
-          <!-- Populado via JS -->
+      <div class="acomp-scoreboard-row-clear">
+        <!-- TIME AZUL -->
+        <div class="acomp-team-box-clear" id="acomp-team-a">
+          <div class="acomp-team-title-clear" id="acomp-team-a-name">Time Azul</div>
+          <div class="acomp-players-list-clear" id="acomp-team-a-players">
+            <!-- Populado via JS -->
+          </div>
+        </div>
+
+        <!-- PLACAR CENTRAL -->
+        <div class="acomp-score-display-clear">
+          <span class="acomp-score-num-clear" id="acomp-score-a">0</span>
+          <span class="acomp-score-divider-clear">x</span>
+          <span class="acomp-score-num-clear" id="acomp-score-b">0</span>
+        </div>
+
+        <!-- TIME AMARELO -->
+        <div class="acomp-team-box-clear" id="acomp-team-b">
+          <div class="acomp-team-title-clear" id="acomp-team-b-name">Time Amarelo</div>
+          <div class="acomp-players-list-clear" id="acomp-team-b-players">
+            <!-- Populado via JS -->
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- PLACAR CENTRAL -->
-      <div class="acomp-score-display">
-        <span class="acomp-score-num" id="acomp-score-a">0</span>
-        <span class="acomp-score-divider">x</span>
-        <span class="acomp-score-num" id="acomp-score-b">0</span>
+    <!-- FILA DE ESPERA -->
+    <div class="acomp-queue-wrapper-clear">
+      <div class="acomp-queue-header-clear">
+        <h3>
+          <i data-feather="list" style="width: 16px; height: 16px; color: #64748b;"></i>
+          Fila de Espera
+        </h3>
+        <span id="acomp-queue-count">—</span>
       </div>
-
-      <!-- TIME B -->
-      <div class="acomp-team-box" id="acomp-team-b">
-        <div class="acomp-team-title" id="acomp-team-b-name">Time B</div>
-        <div class="acomp-players-list" id="acomp-team-b-players">
-          <!-- Populado via JS -->
-        </div>
+      <div class="acomp-queue-items-clear" id="acomp-queue-list">
+        <!-- Populado via JS -->
       </div>
     </div>
-  </div>
 
-  <!-- FILA DE ESPERA -->
-  <div class="acomp-queue-wrapper">
-    <div class="acomp-queue-header">
-      <h3>
-        <i data-feather="list" style="width: 16px; height: 16px; color: #8A99AD;"></i>
-        Fila de Espera
-      </h3>
-      <span id="acomp-queue-count">—</span>
+    <!-- REGRA ATIVA -->
+    <div class="acomp-rule-card-clear">
+      <div class="acomp-rule-title-clear">Regra Ativa</div>
+      <div class="acomp-rule-desc-clear" id="acomp-rule-text">REGRA PADRÃO: MAIS GOLS VENCE</div>
     </div>
-    <div class="acomp-queue-items" id="acomp-queue-list">
-      <!-- Populado via JS -->
-    </div>
-  </div>
 
-  <!-- REGRA ATIVA -->
-  <div class="acomp-rule-card">
-    <div class="acomp-rule-title">Regra Ativa</div>
-    <div class="acomp-rule-desc" id="acomp-rule-text">REGRA PADRÃO: MAIS GOLS VENCE</div>
   </div>
-
 </div>
 
 <script>
