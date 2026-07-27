@@ -561,11 +561,12 @@ var Acompanhamento = {
         return (b.numero_jogo || b.id || 0) - (a.numero_jogo || a.id || 0);
       });
 
-      var html = '';
-      partidas.forEach(function(p) {
+      var totalPartidas = partidas.length;
+      partidas.forEach(function(p, idx) {
+        var numJogo = p.numero_jogo || p.id || (totalPartidas - idx);
         html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #F8FAFC; border-radius: 8px; border-left: 4px solid #10B981;">' +
           '<div style="display: flex; align-items: center; gap: 8px;">' +
-            '<span style="font-size: 11px; font-weight: bold; background: #E2E8F0; color: #475569; padding: 2px 6px; border-radius: 4px;">#' + p.numero_jogo + '</span>' +
+            '<span style="font-size: 11px; font-weight: bold; background: #E2E8F0; color: #475569; padding: 2px 6px; border-radius: 4px;">#' + numJogo + '</span>' +
             '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_a_nome || 'Time A') + '</span>' +
           '</div>' +
           '<div style="font-size: 15px; font-weight: 800; color: #0F172A; font-family: monospace;">' +
