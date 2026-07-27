@@ -201,3 +201,36 @@ exports.atualizarPresenca = async (req, res) => {
     res.status(500).json({ error: 'Erro ao registrar presença', detail: err.message });
   }
 };
+
+exports.desconvocarPorGestor = async (req, res) => {
+  const gestorTipo = req.usuarioTipo;
+  if (gestorTipo !== 'gestor') {
+    return res.status(403).json({ error: 'Apenas gestores podem desconvocar atletas.' });
+  }
+
+  const { pelada_id, usuario_id } = req.body;
+  if (!pelada_id || !usuario_id) {
+    return res.status(400).json({ error: 'pelada_id e usuario_id são obrigatórios.' });
+  }
+
+  try {
+    // Verifica se existe a convocação
+    const { rows: check } = await db.query(
+      'SELECT id FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
+      [pelada_id, usuario_id]
+    );
+    if (check.length === 0) {
+      return res.status(404).json({ error: 'Convocação não encontrada.' });
+    }
+
+    // Remove a convocação completamente
+    await db.query(
+      'DELETE FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
+      [pelada_id, usuario_id]
+    );
+
+    res.json({ message: 'Atleta desconvocado com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao desconvocar atleta.', detail: err.message });
+  }
+};

@@ -241,20 +241,63 @@ async function updateCheckinPlayersList(peladaId) {
       div.style.marginBottom = "8px";
 
       div.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:13px; font-weight:500;">${c.nome} ${c.goleiro ? '🧤' : ''}</span>
-          <span style="color:var(--warning); font-size:11px;">${"★".repeat(parseInt(c.autoavaliacao) || 3)}</span>
+        <div style="display:flex; align-items:center; gap:8px; flex:1;">
+          <span style="font-size:13px; font-weight:500;">${c.apelido || c.nome} ${c.goleiro ? '🧤' : ''}</span>
+          <span style="color:var(--warning); font-size:11px;">${'★'.repeat(parseInt(c.autoavaliacao) || 3)}</span>
         </div>
-        <label class="toggle-switch">
-          <input type="checkbox" class="toggle-input" ${c.presenca ? 'checked' : ''} onchange="togglePresenter('${c.id}', this)">
-          <span class="toggle-label"></span>
-        </label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label class="toggle-switch">
+            <input type="checkbox" class="toggle-input" ${c.presenca ? 'checked' : ''} onchange="togglePresenter('${c.id}', this)">
+            <span class="toggle-label"></span>
+          </label>
+          <button title="Desconvocar atleta" onclick="desconvocarAtleta('${c.id}', '${c.apelido || c.nome}')" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
+        </div>
       `;
       container.appendChild(div);
     });
 
     localStorage.setItem("players", JSON.stringify(playersLocais));
     document.getElementById("checkin-count").textContent = `${window.App.presentPlayers.length} Presentes`;
+
+    // Wiring dos botões de lote
+    const btnAll = document.getElementById("btn-presence-all");
+    const btnNone = document.getElementById("btn-presence-none");
+
+    if (btnAll) {
+      btnAll.onclick = async () => {
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) { window.App.showToast("Selecione uma pelada primeiro.", "error"); return; }
+        btnAll.disabled = true;
+        btnAll.textContent = "Aguarde...";
+        let ok = 0;
+        for (const c of confirmados) {
+          try {
+            const res = await Api.atualizarPresenca(peladaId, c.id, true);
+            if (!res.error) ok++;
+          } catch(e) { /* ignora erros individuais */ }
+        }
+        window.App.showToast(`Presença confirmada para ${ok} atleta(s)!`, "success");
+        await updateCheckinPlayersList(peladaId);
+      };
+    }
+
+    if (btnNone) {
+      btnNone.onclick = async () => {
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) { window.App.showToast("Selecione uma pelada primeiro.", "error"); return; }
+        btnNone.disabled = true;
+        btnNone.textContent = "Aguarde...";
+        let ok = 0;
+        for (const c of confirmados) {
+          try {
+            const res = await Api.atualizarPresenca(peladaId, c.id, false);
+            if (!res.error) ok++;
+          } catch(e) { /* ignora erros individuais */ }
+        }
+        window.App.showToast(`Presença limpa para ${ok} atleta(s).`, "info");
+        await updateCheckinPlayersList(peladaId);
+      };
+    }
 
   } catch (err) {
     console.error("[Formacao] Erro ao carregar convocados da pelada:", err);
@@ -303,6 +346,34 @@ async function togglePresenter(playerId, checkbox) {
     checkbox.checked = !checkbox.checked; // desfaz a seleção
   } finally {
     checkbox.disabled = false;
+  }
+}
+
+async function desconvocarAtleta(atletaId, atletaNome) {
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!peladaId) { window.App.showToast("Selecione uma pelada primeiro.", "error"); return; }
+  if (!confirm(`Desconvocar ${atletaNome} desta pelada?\nEle sairá da lista e não participará do sorteio.`)) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:3000/api/convocacoes/desconvocar", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({
+        pelada_id: parseInt(peladaId),
+        usuario_id: parseInt(atletaId)
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      window.App.showToast(data.error || "Erro ao desconvocar atleta.", "error");
+      return;
+    }
+    window.App.showToast(`${atletaNome} desconvocado com sucesso.`, "success");
+    await updateCheckinPlayersList(peladaId);
+  } catch (err) {
+    console.error("[desconvocarAtleta]", err);
+    window.App.showToast("Erro ao conectar no servidor.", "error");
   }
 }
 

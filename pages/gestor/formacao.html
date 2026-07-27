@@ -3,9 +3,14 @@
   
   <!-- Coluna 1: Check-in de Presentes -->
   <div class="card" style="grid-column: span 1; padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
       <h3 style="margin: 0; font-size: 18px; color: var(--text-heading);">Presença no Dia</h3>
       <span id="checkin-count" class="badge-status confirmado" style="font-size: 11px;">0 Presentes</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px;">
+      <button id="btn-presence-all" class="btn btn-sm" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; color: #1e3a8a; background: #e0f2fe; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Confirmar Todos</button>
+      <button id="btn-presence-none" class="btn btn-sm" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Limpar Todos</button>
     </div>
     
     <div class="form-group" style="margin-bottom: 16px;">
