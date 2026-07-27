@@ -380,29 +380,52 @@ var Acompanhamento = {
       }).join('');
     }
 
-    if (teamAPlayers) teamAPlayers.innerHTML = getTeamPlayersHTML(match.teamA, themeA, false);
-    if (teamBPlayers) teamBPlayers.innerHTML = getTeamPlayersHTML(match.teamB, themeB, true);
+    // Renderiza lista de autores de gols do Time A (Abaixo do nome, alinhado à DIREITA)
+    var goalsAEl = document.getElementById('acomp-team-a-goals');
+    if (goalsAEl) {
+      var goalsA = (match.goals || []).filter(function(g) {
+        return g.teamKey === 'a' || (g.teamName && match.teamA && g.teamName.toLowerCase() === match.teamA.toLowerCase());
+      });
+      
+      var tallyA = {};
+      goalsA.forEach(function(g) {
+        var n = g.autorNome || 'Jogador';
+        tallyA[n] = (tallyA[n] || 0) + 1;
+      });
 
-    // Feed de gols ao vivo registrados nesta partida
-    var goalsFeedEl = document.getElementById('acomp-live-goals-feed');
-    if (goalsFeedEl) {
-      var goals = match.goals || [];
-      if (goals.length === 0) {
-        goalsFeedEl.style.display = 'none';
-        goalsFeedEl.innerHTML = '';
-      } else {
-        goalsFeedEl.style.display = 'block';
-        var goalsHTML = '<div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">⚽ Gols desta partida:</div>' +
-          '<div style="display: flex; flex-wrap: wrap; gap: 8px;">' +
-          goals.map(function(g) {
-            var badgeTheme = self._getTeamTheme(g.teamName);
-            return '<span style="background: #FFFFFF; border: 1px solid ' + badgeTheme.border + '; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; color: #0F172A; display: inline-flex; align-items: center; gap: 6px;">' +
-              '⚽ <strong>' + (g.autorNome || 'Jogador') + '</strong> <span style="font-size: 10px; color: #64748b;">(' + (g.teamName || 'Time') + ')</span>' +
-            '</span>';
-          }).join('') +
-          '</div>';
-        goalsFeedEl.innerHTML = goalsHTML;
-      }
+      var htmlA = '';
+      Object.keys(tallyA).forEach(function(nome) {
+        var qtd = tallyA[nome];
+        htmlA += '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">' +
+          '<span>' + nome + '</span>' +
+          '<span style="color: #10B981;">⚽' + (qtd > 1 ? '<sup style="font-size: 9px; background: #10B981; color: #FFF; padding: 0 3px; border-radius: 6px; margin-left: 1px;">' + qtd + '</sup>' : '') + '</span>' +
+        '</div>';
+      });
+      goalsAEl.innerHTML = htmlA;
+    }
+
+    // Renderiza lista de autores de gols do Time B (Abaixo do nome, alinhado à ESQUERDA)
+    var goalsBEl = document.getElementById('acomp-team-b-goals');
+    if (goalsBEl) {
+      var goalsB = (match.goals || []).filter(function(g) {
+        return g.teamKey === 'b' || (g.teamName && match.teamB && g.teamName.toLowerCase() === match.teamB.toLowerCase());
+      });
+
+      var tallyB = {};
+      goalsB.forEach(function(g) {
+        var n = g.autorNome || 'Jogador';
+        tallyB[n] = (tallyB[n] || 0) + 1;
+      });
+
+      var htmlB = '';
+      Object.keys(tallyB).forEach(function(nome) {
+        var qtd = tallyB[nome];
+        htmlB += '<div style="display: flex; align-items: center; justify-content: flex-start; gap: 4px;">' +
+          '<span style="color: #10B981;">⚽' + (qtd > 1 ? '<sup style="font-size: 9px; background: #10B981; color: #FFF; padding: 0 3px; border-radius: 6px; margin-left: 1px;">' + qtd + '</sup>' : '') + '</span>' +
+          '<span>' + nome + '</span>' +
+        '</div>';
+      });
+      goalsBEl.innerHTML = htmlB;
     }
   },
 
