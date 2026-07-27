@@ -149,7 +149,7 @@ var Acompanhamento = {
 
     var elapsed = Math.max(0, totalSecs - remaining);
 
-    if (timerText) timerText.textContent = remainingStr + ' / ' + (totalMin < 10 ? '0' : '') + totalMin + ':00';
+    if (timerText) timerText.textContent = remainingStr;
     if (progress)  progress.style.width = Math.min(100, Math.max(0, (elapsed / totalSecs) * 100)) + '%';
 
     if (status) {
