@@ -21,9 +21,6 @@ var Dashboard = {
 
     this.renderPlayerData();
     this.renderNextMatches();
-    this.renderLiveMatch();
-    this.renderQueueList();
-    this._startPolling();
   },
 
   // --- Dados do jogador logado -------------------------------------------
@@ -128,70 +125,6 @@ var Dashboard = {
     });
 
     listEl.innerHTML = html;
-  },
-
-  // --- Partida ao vivo ----------------------------------------------------
-  renderLiveMatch: function() {
-    var match = window.App.liveMatch;
-    if (!match) return;
-
-    var teamAName  = document.getElementById('live-team-a-name');
-    var teamBName  = document.getElementById('live-team-b-name');
-    var scoreA     = document.getElementById('live-team-a-score');
-    var scoreB     = document.getElementById('live-team-b-score');
-    var timerEl    = document.getElementById('live-match-timer');
-    var progressEl = document.getElementById('live-match-timer-progress');
-
-    if (teamAName)  teamAName.textContent  = match.teamA || 'Time A';
-    if (teamBName)  teamBName.textContent  = match.teamB || 'Time B';
-    if (scoreA)     scoreA.textContent     = match.scoreA || 0;
-    if (scoreB)     scoreB.textContent     = match.scoreB || 0;
-
-    var configs = Api.getConfigs();
-    var group   = Auth.currentGroup;
-    var config  = group ? configs.find(function(c) { return c.grupo_id === group.id; }) : null;
-    var matchMinutes = (config && config.tempo_partida) ? config.tempo_partida : 15;
-
-    var totalSecs = matchMinutes * 60;
-    var remaining = match.timerSeconds || 0;
-    var elapsed = Math.max(0, totalSecs - remaining);
-
-    if (timerEl)    timerEl.textContent    = Dashboard._formatTimer(remaining);
-    if (progressEl) progressEl.style.width = Math.min(100, (elapsed / totalSecs) * 100) + '%';
-  },
-
-  // --- Fila de espera -----------------------------------------------------
-  renderQueueList: function() {
-    var containerEl = document.getElementById('dashboard-queue-list');
-    if (!containerEl) return;
-
-    var queue = window.App.waitingQueue || [];
-    var listEl = containerEl.querySelector('.queue-list');
-    if (!listEl) return;
-
-    if (queue.length === 0) {
-      listEl.innerHTML = '<p class="text-inter" style="text-align: center; font-size: 13px; color: var(--text-caption); padding: 16px;">Nenhum time na fila.</p>';
-      return;
-    }
-
-    var html = '';
-    queue.forEach(function(name, idx) {
-      html += '<div class="queue-item">' +
-        '<span class="pos">' + (idx + 1) + '</span>' +
-        '<span class="text-inter" style="font-size: 14px; font-weight: 600;">' + name + '</span>' +
-        (idx === 0 ? '<span class="text-inter" style="font-size: 11px; color: var(--success); font-weight: 700;">PRÓXIMO</span>' : '') +
-      '</div>';
-    });
-    listEl.innerHTML = html;
-  },
-
-  // --- Polling de atualização ao vivo (a cada 5s) -------------------------
-  _startPolling: function() {
-    if (Dashboard._pollingTimer) clearInterval(Dashboard._pollingTimer);
-    Dashboard._pollingTimer = setInterval(function() {
-      Dashboard.renderLiveMatch();
-      Dashboard.renderQueueList();
-    }, 5000);
   },
 
   // --- Utilitário de timer ------------------------------------------------
