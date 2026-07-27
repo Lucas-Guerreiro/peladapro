@@ -336,15 +336,24 @@ function toggleLiveTimer() {
         saveLiveMatchState(); // Persiste os segundos em tempo real no banco
         updateTimerDisplay();
       } else {
-        window.App.liveMatch.timerSeconds = 0;
+        // Tempo esgotado: para o intervalo e reseta para o tempo padrão
         clearInterval(timerInterval);
+        timerInterval = null;
         window.App.liveMatch.isPlaying = false;
-        
+
+        // Recarrega o tempo configurado para a próxima partida
+        const groupConfigs = window.Api.getConfigs() || [];
+        const currentGrp = window.Auth.currentGroup;
+        const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+        const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
+        window.App.liveMatch.timerSeconds = durationMin * 60;
+
         btn.textContent = "Iniciar";
         btn.className = "btn btn-sm btn-primary";
         
         playAlarmSound(); // Soa o alarme sonoro
         saveLiveMatchState();
+        updateTimerDisplay();
         renderLiveMatchUI();
         window.App.showToast("Tempo Encerrado!", "success");
       }
@@ -356,8 +365,9 @@ function toggleLiveTimer() {
   renderLiveMatchUI();
 }
 
-function resetLiveTimer() {
+function resetLiveTimer(silent = false) {
   clearInterval(timerInterval);
+  timerInterval = null;
   window.App.liveMatch.isPlaying = false;
   
   // Reseta para o tempo padrão configurado para o grupo
@@ -376,7 +386,7 @@ function resetLiveTimer() {
   saveLiveMatchState();
   updateTimerDisplay();
   renderLiveMatchUI();
-  window.App.showToast("Cronômetro resetado.");
+  if (!silent) window.App.showToast("Cronômetro resetado.");
 }
 
 function updateTimerDisplay() {
@@ -541,10 +551,10 @@ async function handleFinishMatch() {
     }
   }
 
-  // Reset de placar e cronômetro
+  // Para o cronômetro, reseta placar e volta ao tempo configurado (silent = sem toast extra)
   window.App.liveMatch.scoreA = 0;
   window.App.liveMatch.scoreB = 0;
-  resetLiveTimer();
+  resetLiveTimer(true);
 
   // Persiste a fila e o estado ao vivo no localStorage
   saveLiveMatchState();
