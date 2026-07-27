@@ -35,7 +35,7 @@ var Dashboard = {
     // Idade
     var age = Utils.calcAge(user.data_nascimento);
     var ageEl = document.getElementById('player-card-age');
-    if (ageEl) ageEl.textContent = typeof age === 'number' ? age : '—';
+    if (ageEl) ageEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
     // Foto
     var avatarEl = document.getElementById('player-avatar');

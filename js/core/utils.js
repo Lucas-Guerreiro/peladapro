@@ -123,9 +123,18 @@ const Utils = {
 
   // --- Calcular idade -----------------------------------------------------
   calcAge(dob) {
-    if (!dob) return '—';
-    const diff = Date.now() - new Date(dob + 'T00:00:00').getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    if (!dob) return null;
+    // Aceita tanto '1990-05-15' quanto '1990-05-15T00:00:00.000Z'
+    var dateStr = String(dob).split('T')[0]; // pega apenas a parte da data
+    var parts = dateStr.split('-');
+    if (parts.length < 3) return null;
+    var birth = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    if (isNaN(birth.getTime())) return null;
+    var today = new Date();
+    var age = today.getFullYear() - birth.getFullYear();
+    var m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= 0 ? age : null;
   }
 };
 
