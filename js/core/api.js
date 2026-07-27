@@ -461,6 +461,24 @@ const Api = {
     }
   },
 
+  async listarDatasDoGrupo(grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    try {
+      const res = await fetch(`http://localhost:3000/api/peladas/grupo/${grupoId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch(e) {
+      console.warn('[Api] Erro ao listar datas do grupo:', e);
+      return [];
+    }
+  },
+
   async editarPartida(partidaId, golsA, golsB, timeANome, timeBNome) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };

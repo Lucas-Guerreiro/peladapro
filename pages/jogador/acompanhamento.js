@@ -59,13 +59,33 @@ var Acompanhamento = {
     if (!select) return;
 
     var currentGroup = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    if (!currentGroup) {
+      try {
+        var groupRaw = localStorage.getItem('currentGroup');
+        if (groupRaw) currentGroup = JSON.parse(groupRaw);
+      } catch(e) {}
+    }
+    if (!currentGroup) {
+      try {
+        var groups = Api.getGroups ? Api.getGroups() : [];
+        if (groups && groups.length > 0) currentGroup = groups[0];
+      } catch(e) {}
+    }
+
     if (!currentGroup || !currentGroup.id) {
       select.innerHTML = '<option value="">Nenhum grupo ativo</option>';
       return;
     }
 
     try {
-      var peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+      var peladas = [];
+      if (Api.listarDatasDoGrupo) {
+        peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+      }
+      if (!peladas || peladas.length === 0) {
+        peladas = Api.getPeladas ? Api.getPeladas().filter(function(p) { return String(p.grupo_id) === String(currentGroup.id); }) : [];
+      }
+
       if (!peladas || peladas.length === 0) {
         select.innerHTML = '<option value="">Nenhuma pelada agendada</option>';
         return;
