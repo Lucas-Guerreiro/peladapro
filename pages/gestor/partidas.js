@@ -4,6 +4,55 @@
 
 var timerInterval = null;
 
+// Centraliza a criação do loop de contagem regressiva.
+// Garante que jamais coexistam dois intervalos ao mesmo tempo.
+function startTimerLoop() {
+  // Mata qualquer intervalo anterior antes de criar um novo
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  const btn = document.getElementById("btn-timer-toggle");
+
+  timerInterval = setInterval(() => {
+    if (!window.App.liveMatch.isPlaying) {
+      // Se o estado mudou para pausado (ex: resetLiveTimer chamou clearInterval mas
+      // algum tick já estava enfileirado), simplesmente ignora.
+      return;
+    }
+
+    if (window.App.liveMatch.timerSeconds > 0) {
+      window.App.liveMatch.timerSeconds--;
+      saveLiveMatchState();
+      updateTimerDisplay();
+    } else {
+      // Tempo esgotado
+      clearInterval(timerInterval);
+      timerInterval = null;
+      window.App.liveMatch.isPlaying = false;
+
+      // Restaura o tempo configurado para a próxima partida
+      const groupConfigs = window.Api.getConfigs() || [];
+      const currentGrp = window.Auth.currentGroup;
+      const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+      const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
+      window.App.liveMatch.timerSeconds = durationMin * 60;
+
+      if (btn) {
+        btn.textContent = "Iniciar";
+        btn.className = "btn btn-sm btn-primary";
+      }
+
+      playAlarmSound();
+      saveLiveMatchState();
+      updateTimerDisplay();
+      renderLiveMatchUI();
+      window.App.showToast("Tempo Encerrado!", "success");
+    }
+  }, 1000);
+}
+
 window.App.initPartidas = function() {
   const activePelada = window.App.activePelada || {};
   const isFinished = activePelada.status === "finalizada";
@@ -72,36 +121,13 @@ window.App.initPartidas = function() {
       };
     }
 
-    // Restaura o loop de contagem regressiva se a partida estiver ativamente rodando no estado global
+    // Restaura o loop de contagem regressiva se a partida estava rodando ao sair da página
     if (window.App.liveMatch.isPlaying) {
-      if (timerInterval) clearInterval(timerInterval);
-      
       if (btnToggle) {
         btnToggle.textContent = "Pausar";
         btnToggle.className = "btn btn-sm btn-outline-secondary";
       }
-
-      timerInterval = setInterval(() => {
-        if (window.App.liveMatch.timerSeconds > 0) {
-          window.App.liveMatch.timerSeconds--;
-          saveLiveMatchState(); // Persiste os segundos restantes no banco
-          updateTimerDisplay();
-        } else {
-          window.App.liveMatch.timerSeconds = 0;
-          clearInterval(timerInterval);
-          window.App.liveMatch.isPlaying = false;
-          
-          if (btnToggle) {
-            btnToggle.textContent = "Iniciar";
-            btnToggle.className = "btn btn-sm btn-primary";
-          }
-          
-          playAlarmSound(); // Soa o alarme do apito final
-          saveLiveMatchState();
-          renderLiveMatchUI();
-          window.App.showToast("Tempo Encerrado!", "success");
-        }
-      }, 1000);
+      startTimerLoop(); // usa a função centralizada para evitar duplo interval
     }
 
     const adjustButtons = document.querySelectorAll(".btn-score-adjust");
@@ -309,15 +335,20 @@ function renderWaitingQueue() {
 function toggleLiveTimer() {
   const btn = document.getElementById("btn-timer-toggle");
   if (!btn) return;
-  
+
   if (window.App.liveMatch.isPlaying) {
+    // --- PAUSAR ---
     clearInterval(timerInterval);
+    timerInterval = null;
     window.App.liveMatch.isPlaying = false;
     btn.textContent = "Retomar";
     btn.className = "btn btn-sm btn-primary";
+    saveLiveMatchState();
+    renderLiveMatchUI();
     window.App.showToast("Jogo Pausado!");
   } else {
-    // Se o tempo estiver zerado ou abaixo, recomeça com o tempo padrão configurado para o grupo
+    // --- INICIAR / RETOMAR ---
+    // Se o tempo acabou, recarrega o tempo padrão
     if (window.App.liveMatch.timerSeconds <= 0) {
       const groupConfigs = window.Api.getConfigs() || [];
       const currentGrp = window.Auth.currentGroup;
@@ -329,40 +360,13 @@ function toggleLiveTimer() {
     window.App.liveMatch.isPlaying = true;
     btn.textContent = "Pausar";
     btn.className = "btn btn-sm btn-outline-secondary";
-    
-    timerInterval = setInterval(() => {
-      if (window.App.liveMatch.timerSeconds > 0) {
-        window.App.liveMatch.timerSeconds--;
-        saveLiveMatchState(); // Persiste os segundos em tempo real no banco
-        updateTimerDisplay();
-      } else {
-        // Tempo esgotado: para o intervalo e reseta para o tempo padrão
-        clearInterval(timerInterval);
-        timerInterval = null;
-        window.App.liveMatch.isPlaying = false;
 
-        // Recarrega o tempo configurado para a próxima partida
-        const groupConfigs = window.Api.getConfigs() || [];
-        const currentGrp = window.Auth.currentGroup;
-        const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
-        const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
-        window.App.liveMatch.timerSeconds = durationMin * 60;
+    startTimerLoop(); // usa a função centralizada — nunca duplica intervalos
 
-        btn.textContent = "Iniciar";
-        btn.className = "btn btn-sm btn-primary";
-        
-        playAlarmSound(); // Soa o alarme sonoro
-        saveLiveMatchState();
-        updateTimerDisplay();
-        renderLiveMatchUI();
-        window.App.showToast("Tempo Encerrado!", "success");
-      }
-    }, 1000);
+    saveLiveMatchState();
+    renderLiveMatchUI();
     window.App.showToast("Jogo Iniciado!");
   }
-
-  saveLiveMatchState();
-  renderLiveMatchUI();
 }
 
 function resetLiveTimer(silent = false) {
