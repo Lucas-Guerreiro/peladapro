@@ -6,93 +6,36 @@ var Acompanhamento = {
 
   _pollingTimer: null,
 
-  // Lista de imagens premium para os avatares mockados de atletas
-  _avatarStock: [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&auto=format&fit=crop&q=80'
-  ],
-
   // Mapeamento visual das cores dos times (fundo branco puro com bordas finas coloridas)
   _getTeamTheme: function(teamName) {
     var name = (teamName || '').toLowerCase().trim();
     
-    // Se o time contiver A ou Azul
     if (name === 'a' || name.endsWith(' a') || name.includes('azul') || name.includes('blue')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#BAE6FD',
-        text: '#0284C7'
-      };
+      return { bg: '#FFFFFF', border: '#BAE6FD', text: '#0284C7' };
     }
-    // Se o time contiver B ou Amarelo
     if (name === 'b' || name.endsWith(' b') || name.includes('amar') || name.includes('yellow')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#FEF08A',
-        text: '#D97706'
-      };
+      return { bg: '#FFFFFF', border: '#FEF08A', text: '#D97706' };
     }
-    // Se o time contiver C ou Vermelho
     if (name === 'c' || name.endsWith(' c') || name.includes('verm') || name.includes('red')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#FCA5A5',
-        text: '#EF4444'
-      };
+      return { bg: '#FFFFFF', border: '#FCA5A5', text: '#EF4444' };
     }
-    // Se o time contiver D ou Verde
     if (name === 'd' || name.endsWith(' d') || name.includes('verd') || name.includes('green')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#86EFAC',
-        text: '#10B981'
-      };
+      return { bg: '#FFFFFF', border: '#86EFAC', text: '#10B981' };
     }
-    // Time E (Laranja)
     if (name === 'e' || name.endsWith(' e') || name.includes('laranja') || name.includes('orange')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#FED7AA',
-        text: '#EA580C'
-      };
+      return { bg: '#FFFFFF', border: '#FED7AA', text: '#EA580C' };
     }
-    // Time F (Roxo)
     if (name === 'f' || name.endsWith(' f') || name.includes('roxo') || name.includes('purple')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#E9D5FF',
-        text: '#9333EA'
-      };
+      return { bg: '#FFFFFF', border: '#E9D5FF', text: '#9333EA' };
     }
-    // Time G (Rosa)
     if (name === 'g' || name.endsWith(' g') || name.includes('rosa') || name.includes('pink')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#FBCFE8',
-        text: '#DB2777'
-      };
+      return { bg: '#FFFFFF', border: '#FBCFE8', text: '#DB2777' };
     }
-    // Time H (Ciano)
     if (name === 'h' || name.endsWith(' h') || name.includes('ciano') || name.includes('cyan')) {
-      return {
-        bg: '#FFFFFF',
-        border: '#A5F3FC',
-        text: '#0891B2'
-      };
+      return { bg: '#FFFFFF', border: '#A5F3FC', text: '#0891B2' };
     }
 
-    // Fallback padrão se não bater
-    return {
-      bg: '#FFFFFF',
-      border: '#E2E8F0',
-      text: '#475569'
-    };
+    return { bg: '#FFFFFF', border: '#E2E8F0', text: '#475569' };
   },
 
   init: function() {
@@ -101,10 +44,19 @@ var Acompanhamento = {
   },
 
   render: function() {
+    // Sincroniza em tempo real a partir do localStorage
+    try {
+      var rawMatch = localStorage.getItem("liveMatch");
+      if (rawMatch) window.App.liveMatch = JSON.parse(rawMatch);
+      var rawQueue = localStorage.getItem("waitingQueue");
+      if (rawQueue) window.App.waitingQueue = JSON.parse(rawQueue);
+    } catch(e) {}
+
     this.renderTimer();
     this.renderScore();
     this.renderQueue();
     this.renderRule();
+    this.renderRecentMatches();
   },
 
   // --- Cronômetro --------------------------------------------------------
@@ -116,9 +68,9 @@ var Acompanhamento = {
     var timerDot  = document.getElementById('acomp-timer-dot');
 
     var group   = Auth.currentGroup;
-    var configs = Api.getConfigs();
+    var configs = Api.getConfigs ? Api.getConfigs() : [];
     var config  = group ? configs.find(function(c) { return c.grupo_id === group.id; }) : null;
-    var totalSecs = (config && config.tempo_partida) ? config.tempo_partida * 60 : 900; // 15min default
+    var totalSecs = (config && config.tempo_partida) ? config.tempo_partida * 60 : 480; // Default 8 minutos
 
     var remaining = match ? (match.timerSeconds || 0) : 0;
     var totalMin = Math.floor(totalSecs / 60);
@@ -129,20 +81,24 @@ var Acompanhamento = {
     var elapsed = Math.max(0, totalSecs - remaining);
 
     if (timerText) timerText.textContent = remainingStr + ' / ' + (totalMin < 10 ? '0' : '') + totalMin + ':00';
-    if (progress)  progress.style.width = Math.min(100, (elapsed / totalSecs) * 100) + '%';
+    if (progress)  progress.style.width = Math.min(100, Math.max(0, (elapsed / totalSecs) * 100)) + '%';
 
     if (status) {
-      if (!match || !match.timerRunning) {
-        status.textContent = elapsed > 0 ? 'Pausado' : 'Aguardando início';
+      var isRunning = match && (match.isPlaying || match.timerRunning);
+      if (isRunning) {
+        status.textContent = 'EM ANDAMENTO';
+        if (timerDot) timerDot.className = 'acomp-pulse-dot-clear';
+      } else if (remaining > 0 && remaining < totalSecs) {
+        status.textContent = 'PAUSADO';
         if (timerDot) timerDot.className = 'acomp-pulse-dot-clear paused';
       } else {
-        status.textContent = 'Partida em andamento';
-        if (timerDot) timerDot.className = 'acomp-pulse-dot-clear';
+        status.textContent = 'PRONTO PARA INICIAR';
+        if (timerDot) timerDot.className = 'acomp-pulse-dot-clear paused';
       }
     }
   },
 
-  // --- Placar e Times (Com fotos e alinhamentos simétricos) --------------
+  // --- Placar e Times ---------------------------------------------------
   renderScore: function() {
     var match = window.App.liveMatch;
     if (!match) return;
@@ -180,9 +136,37 @@ var Acompanhamento = {
     if (scoreA) scoreA.textContent = match.scoreA || 0;
     if (scoreB) scoreB.textContent = match.scoreB || 0;
 
-    // Jogadores dos times
-    var teams   = Api.getTeams();
-    var players = Api.getPlayers();
+    // Alertas de vitórias consecutivas
+    var peladaAtiva = window.App.activePelada || {};
+    var grupoAtivo  = Auth.currentGroup || {};
+    var winsLimit   = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
+    var winsA = match.consecutiveWinsA || 0;
+    var winsB = match.consecutiveWinsB || 0;
+
+    var statusAEl = document.getElementById('acomp-team-a-status');
+    var statusBEl = document.getElementById('acomp-team-b-status');
+
+    if (statusAEl) {
+      statusAEl.innerHTML = '';
+      if (winsA === winsLimit - 1 && winsA > 0) {
+        statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
+      } else if (winsA > 0) {
+        statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsA + (winsA === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+      }
+    }
+
+    if (statusBEl) {
+      statusBEl.innerHTML = '';
+      if (winsB === winsLimit - 1 && winsB > 0) {
+        statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
+      } else if (winsB > 0) {
+        statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsB + (winsB === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+      }
+    }
+
+    // Jogadores dos dois times
+    var teams   = Api.getTeams ? Api.getTeams() : [];
+    var players = Api.getPlayers ? Api.getPlayers() : [];
     var self    = this;
 
     function getTeamPlayersHTML(teamName, theme, isRightAligned) {
@@ -190,22 +174,24 @@ var Acompanhamento = {
       if (!team || !team.players || team.players.length === 0) {
         return '<div style="font-size: 13px; color: #64748b; text-align: center; width: 100%;">—</div>';
       }
-      return team.players.slice(0, 4).map(function(tp) {
+      return team.players.map(function(tp) {
         var p = players.find(function(pl) { return pl.id === tp.id; });
-        var nome = p ? (p.apelido || p.nome.split(' ')[0]) : tp.nome || '?';
-        
-        var fotoIndex = p ? p.id % self._avatarStock.length : 0;
-        var fotoUrl = p && p.foto ? p.foto : self._avatarStock[fotoIndex];
+        var nome = p ? (p.apelido || p.nome) : (tp.apelido || tp.nome || '?');
+        var isGoleiro = p ? p.goleiro : tp.goleiro;
+
+        var avatarHTML = p && p.foto 
+          ? '<img class="acomp-player-avatar-clear" src="' + p.foto + '" style="border: 1.5px solid ' + theme.border + ';">'
+          : '<div style="width: 24px; height: 24px; border-radius: 50%; background: ' + theme.bg + '; border: 1.5px solid ' + theme.border + '; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: ' + theme.text + ';">' + nome.charAt(0).toUpperCase() + '</div>';
 
         if (isRightAligned) {
           return '<div class="acomp-player-item-clear" style="justify-content: flex-end; text-align: right; gap: 8px;">' +
-            '<span class="acomp-player-name-clear">' + nome + '</span>' +
-            '<img class="acomp-player-avatar-clear" src="' + fotoUrl + '" style="border: 1.5px solid ' + theme.border + ';">' +
+            '<span class="acomp-player-name-clear">' + nome + (isGoleiro ? ' 🧤' : '') + '</span>' +
+            avatarHTML +
           '</div>';
         } else {
           return '<div class="acomp-player-item-clear" style="gap: 8px;">' +
-            '<img class="acomp-player-avatar-clear" src="' + fotoUrl + '" style="border: 1.5px solid ' + theme.border + ';">' +
-            '<span class="acomp-player-name-clear">' + nome + '</span>' +
+            avatarHTML +
+            '<span class="acomp-player-name-clear">' + nome + (isGoleiro ? ' 🧤' : '') + '</span>' +
           '</div>';
         }
       }).join('');
@@ -215,38 +201,42 @@ var Acompanhamento = {
     if (teamBPlayers) teamBPlayers.innerHTML = getTeamPlayersHTML(match.teamB, themeB, true);
   },
 
-  // --- Fila de Espera (Com avatar stack e tags de ordem) ------------------
+  // --- Fila de Espera ----------------------------------------------------
   renderQueue: function() {
     var listEl   = document.getElementById('acomp-queue-list');
     var countEl  = document.getElementById('acomp-queue-count');
     var queue    = window.App.waitingQueue || [];
 
-    if (countEl) countEl.textContent = queue.length + ' time(s)';
+    if (countEl) countEl.textContent = queue.length + (queue.length === 1 ? ' time' : ' times');
 
     if (!listEl) return;
 
     if (queue.length === 0) {
-      listEl.innerHTML = '<div class="empty-state" style="padding: 24px; text-align: center;"><p class="text-inter" style="font-size: 13px; color: #64748b;">Nenhum time na fila.</p></div>';
+      listEl.innerHTML = '<div class="empty-state" style="padding: 24px; text-align: center;"><p class="text-inter" style="font-size: 13px; color: #64748b;">Nenhum time na fila de espera.</p></div>';
       return;
     }
 
     var self = this;
-    var teams = Api.getTeams();
-    var players = Api.getPlayers();
+    var teams = Api.getTeams ? Api.getTeams() : [];
+    var players = Api.getPlayers ? Api.getPlayers() : [];
     var html = '';
 
     queue.forEach(function(name, idx) {
       var theme = self._getTeamTheme(name);
       var teamObj = teams.find(function(t) { return t.nome === name; });
       
-      // Montagem do avatar stack (máximo 3 fotos)
       var avatarsHTML = '<div class="acomp-queue-badge-stack-clear">';
       if (teamObj && teamObj.players && teamObj.players.length > 0) {
-        teamObj.players.slice(0, 3).forEach(function(tp) {
+        teamObj.players.slice(0, 4).forEach(function(tp) {
           var p = players.find(function(pl) { return pl.id === tp.id; });
-          var fotoIndex = p ? p.id % self._avatarStock.length : 0;
-          var fUrl = p && p.foto ? p.foto : self._avatarStock[fotoIndex];
-          avatarsHTML += '<img class="acomp-queue-avatar-clear" src="' + fUrl + '" style="border-color: ' + theme.border + ';">';
+          var nome = p ? (p.apelido || p.nome) : (tp.apelido || tp.nome || '?');
+          var fUrl = p && p.foto ? p.foto : null;
+
+          if (fUrl) {
+            avatarsHTML += '<img class="acomp-queue-avatar-clear" src="' + fUrl + '" style="border-color: ' + theme.border + ';">';
+          } else {
+            avatarsHTML += '<div class="acomp-queue-avatar-clear" style="background: ' + theme.bg + '; border-color: ' + theme.border + '; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: ' + theme.text + ';">' + nome.charAt(0).toUpperCase() + '</div>';
+          }
         });
       } else {
         avatarsHTML += '<div style="width: 20px; height: 20px; border-radius: 50%; background: ' + theme.bg + '; border: 1.5px solid ' + theme.border + '; display: flex; align-items: center; justify-content: center;"><span style="font-size: 9px; color: ' + theme.text + '; font-weight: bold;">⚽</span></div>';
@@ -266,32 +256,83 @@ var Acompanhamento = {
     listEl.innerHTML = html;
   },
 
+  // --- Histórico de Partidas Recentes ------------------------------------
+  renderRecentMatches: async function() {
+    var container = document.getElementById('acomp-recent-matches');
+    if (!container) return;
+
+    var peladas = Api.getPeladas ? Api.getPeladas() : [];
+    var peladaAtiva = window.App.activePelada || peladas.find(function(p) { return p.status !== 'finalizada'; }) || peladas[0];
+    var peladaId = peladaAtiva ? peladaAtiva.id : null;
+
+    if (!peladaId) {
+      container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:12px 0;">Nenhuma partida ativa.</p>';
+      return;
+    }
+
+    try {
+      var partidas = await Api.listarPartidas(peladaId);
+      if (!partidas || partidas.length === 0) {
+        container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:12px 0;">Nenhuma partida encerrada ainda.</p>';
+        return;
+      }
+
+      var html = '';
+      partidas.forEach(function(p) {
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #F8FAFC; border-radius: 8px; border-left: 4px solid #10B981;">' +
+          '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<span style="font-size: 11px; font-weight: bold; background: #E2E8F0; color: #475569; padding: 2px 6px; border-radius: 4px;">#' + p.numero_jogo + '</span>' +
+            '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_a_nome || 'Time A') + '</span>' +
+          '</div>' +
+          '<div style="font-size: 15px; font-weight: 800; color: #0F172A; font-family: monospace;">' +
+            (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) +
+          '</div>' +
+          '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_b_nome || 'Time B') + '</span>' +
+          '</div>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+    } catch(e) {
+      console.error('[Acompanhamento] Erro ao listar partidas recentes:', e);
+    }
+  },
+
   // --- Regra Ativa -------------------------------------------------------
   renderRule: function() {
     var ruleEl = document.getElementById('acomp-rule-text');
     if (!ruleEl) return;
 
     var group   = Auth.currentGroup;
-    var configs = Api.getConfigs();
+    var configs = Api.getConfigs ? Api.getConfigs() : [];
     var config  = group ? configs.find(function(c) { return c.grupo_id === group.id; }) : null;
 
     var criterios = config && config.criterios_empate ? config.criterios_empate : [];
     var labels    = {
       gols: 'REGRA PADRÃO: MAIS GOLS VENCE',
       vitórias: 'REGRA: SAI APÓS 2 VITÓRIAS CONSECUTIVAS',
-      tempo: 'REGRA: PARTIDAS DE ' + (config && config.tempo_partida ? config.tempo_partida : 15) + ' MINUTOS'
+      tempo: 'REGRA: PARTIDAS DE ' + (config && config.tempo_partida ? config.tempo_partida : 8) + ' MINUTOS'
     };
     
     var ruleText = criterios.length > 0 ? (labels[criterios[0]] || ('REGRA: ' + criterios[0].toUpperCase())) : 'REGRA PADRÃO: MAIS GOLS VENCE';
     ruleEl.textContent = ruleText;
   },
 
-  // --- Polling de atualização --------------------------------------------
+  // --- Polling & Eventos -------------------------------------------------
   _startPolling: function() {
     if (Acompanhamento._pollingTimer) clearInterval(Acompanhamento._pollingTimer);
     Acompanhamento._pollingTimer = setInterval(function() {
       Acompanhamento.render();
-    }, 3000);
+    }, 2000);
+
+    window.removeEventListener('storage', Acompanhamento._onStorageChange);
+    window.addEventListener('storage', Acompanhamento._onStorageChange);
+  },
+
+  _onStorageChange: function(e) {
+    if (e.key === 'liveMatch' || e.key === 'waitingQueue' || e.key === 'teams') {
+      Acompanhamento.render();
+    }
   }
 };
 
