@@ -1,6 +1,290 @@
-<!-- pages/jogador/layout.html — Container do Módulo Jogador -->
-<!-- As abas de navegação são renderizadas dentro de cada página (dashboard, convocacao, etc.) -->
-<div id="jogador-page-container" style="min-height: 80vh;">
-  <!-- Conteúdo injetado pelo Router -->
-  <div id="player-tab-content-container"></div>
+<!-- pages/jogador/layout.html — Layout Unificado do Jogador -->
+<style>
+  /* Ocultar o cabeçalho global antigo do router */
+  #main-header, .main-header {
+    display: none !important;
+  }
+
+  /* --- Reset e Wrapper Principal --- */
+  .acomp-web-body {
+    background: linear-gradient(135deg, #F0F4F8 0%, #E2E8F0 100%);
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #1E293B;
+    padding: 40px 20px;
+    margin: 0;
+  }
+
+  .acomp-center-container {
+    max-width: 540px; /* Largura ajustada para acomodar o menu com respiro */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* --- Responsividade Geral --- */
+  @media (max-width: 768px) {
+    .acomp-web-body {
+      padding: 0;
+      background: #F8FAFC;
+    }
+    .acomp-center-container {
+      max-width: 100%;
+      gap: 16px;
+    }
+  }
+
+  /* --- Cabeçalho Unificado Desktop (Card Único) --- */
+  .acomp-header-unified-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .acomp-header-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .acomp-logo-clear {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .acomp-logo-clear span {
+    color: #0284C7; /* Azul sofisticado */
+  }
+
+  .acomp-user-info-clear {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .acomp-user-name-clear {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .acomp-btn-sair-clear {
+    background: rgba(239, 68, 68, 0.08);
+    color: #EF4444;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .acomp-btn-sair-clear:hover {
+    background: #EF4444;
+    color: #FFFFFF;
+  }
+
+  .acomp-nav-desktop-clear {
+    display: flex;
+    gap: 4px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    padding-top: 12px;
+    justify-content: space-between;
+  }
+
+  /* Ajuste no estilo dos botões das abas */
+  .acomp-nav-item-clear {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px 2px;
+    color: #64748B;
+    font-size: 11px; /* Diminuído ligeiramente para garantir encaixe perfeito */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .acomp-nav-item-clear:hover {
+    color: #0284C7;
+    background: rgba(2, 132, 199, 0.04);
+  }
+
+  .acomp-nav-item-clear.active {
+    background: rgba(2, 132, 199, 0.08);
+    color: #0284C7;
+  }
+
+  /* --- Cabeçalho Unificado Mobile --- */
+  .acomp-header-mobile-unified {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .acomp-header-unified-card {
+      display: none;
+    }
+    .acomp-header-mobile-unified {
+      display: flex;
+      flex-direction: column;
+      background: #FFFFFF;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 12px 20px;
+    }
+    .acomp-header-mobile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+  }
+
+  .acomp-hamburger-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #0F172A;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+
+  /* --- Menu Dropdown Mobile --- */
+  .acomp-mobile-dropdown {
+    display: none;
+    flex-direction: column;
+    background: #FFFFFF;
+    padding: 12px 0 8px;
+    gap: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    margin-top: 12px;
+  }
+
+  .acomp-mobile-dropdown button {
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 10px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+  }
+
+  .acomp-mobile-dropdown button.active {
+    color: #0284C7;
+    font-weight: 700;
+  }
+
+  .acomp-dropdown-user {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 4px;
+    padding: 0 4px;
+  }
+</style>
+
+<div class="acomp-web-body">
+  <div class="acomp-center-container">
+
+    <!-- CABEÇALHO UNIFICADO DESKTOP -->
+    <header class="acomp-header-unified-card">
+      <div class="acomp-header-row1">
+        <div class="acomp-logo-clear">
+          <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 22px; height: 22px;"></i>
+          PELADA<span>PRO</span>
+        </div>
+        <div class="acomp-user-info-clear">
+          <span class="acomp-user-name-clear" id="layout-user-name-desktop">Lucas Fernandes Guerreiro</span>
+          <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
+        </div>
+      </div>
+      
+      <nav class="acomp-nav-desktop-clear">
+        <button class="acomp-nav-item-clear tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="ranking" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+      </nav>
+    </header>
+
+    <!-- CABEÇALHO UNIFICADO MOBILE -->
+    <header class="acomp-header-mobile-unified">
+      <div class="acomp-header-mobile-row">
+        <div class="acomp-logo-clear">
+          <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 20px; height: 20px;"></i>
+          PELADA<span>PRO</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
+          <button class="acomp-hamburger-btn" onclick="AcompanhamentoGlobal.toggleMobileMenu()">☰</button>
+        </div>
+      </div>
+      
+      <div class="acomp-mobile-dropdown" id="acomp-mobile-dropdown">
+        <div class="acomp-dropdown-user" id="layout-user-name-mobile">Lucas Fernandes Guerreiro</div>
+        <button class="tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+        <button class="tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+        <button class="tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
+        <button class="tab-btn" data-name="ranking" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+        <button class="tab-btn" data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+      </div>
+    </header>
+
+    <!-- PONTO DE INJEÇÃO DAS PÁGINAS INDIVIDUAIS -->
+    <div id="player-tab-content-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%;"></div>
+
+  </div>
 </div>
+
+<script>
+  if (window.feather) feather.replace();
+
+  // Namespace global para controle do layout unificado do jogador
+  window.AcompanhamentoGlobal = {
+    toggleMobileMenu: function() {
+      var dropdown = document.getElementById('acomp-mobile-dropdown');
+      if (!dropdown) return;
+      if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+        dropdown.style.display = 'flex';
+      } else {
+        dropdown.style.display = 'none';
+      }
+    },
+    renderUserInfo: function() {
+      var user = window.Auth && window.Auth.currentUser;
+      var nomeExibir = user ? (user.nome || user.email) : 'Lucas Fernandes Guerreiro';
+      
+      var nameDesktop = document.getElementById('layout-user-name-desktop');
+      if (nameDesktop) nameDesktop.textContent = nomeExibir;
+
+      var nameMobile = document.getElementById('layout-user-name-mobile');
+      if (nameMobile) nameMobile.textContent = nomeExibir;
+    }
+  };
+
+  // Executar renderização inicial de usuário
+  AcompanhamentoGlobal.renderUserInfo();
+</script>

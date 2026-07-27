@@ -69,11 +69,6 @@ var Acompanhamento = {
   init: function() {
     this.render();
     this._startPolling();
-    this.renderUserInfo();
-    
-    // Garantir que o dropdown mobile inicie fechado
-    var dropdown = document.getElementById('acomp-mobile-dropdown');
-    if (dropdown) dropdown.style.display = 'none';
   },
 
   render: function() {
@@ -81,30 +76,6 @@ var Acompanhamento = {
     this.renderScore();
     this.renderQueue();
     this.renderRule();
-  },
-
-  // --- Renderização Dinâmica do Nome do Usuário ---
-  renderUserInfo: function() {
-    var user = window.Auth && window.Auth.currentUser;
-    var nomeExibir = user ? (user.nome || user.email) : 'Lucas Fernandes Guerreiro';
-    
-    // Atualiza nos cabeçalhos desktop e mobile
-    var nameDesktop = document.querySelector('.acomp-user-name-clear');
-    if (nameDesktop) nameDesktop.textContent = nomeExibir;
-
-    var nameMobile = document.querySelector('.acomp-dropdown-user');
-    if (nameMobile) nameMobile.textContent = nomeExibir;
-  },
-
-  // --- Controle do Menu Hambúrguer (Mobile) ---
-  toggleMobileMenu: function() {
-    var dropdown = document.getElementById('acomp-mobile-dropdown');
-    if (!dropdown) return;
-    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-      dropdown.style.display = 'flex';
-    } else {
-      dropdown.style.display = 'none';
-    }
   },
 
   // --- Cronômetro --------------------------------------------------------
