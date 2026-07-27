@@ -556,6 +556,11 @@ var Acompanhamento = {
         return;
       }
 
+      // Ordena do jogo mais recente (#N) para o mais antigo (#1)
+      partidas.sort(function(a, b) {
+        return (b.numero_jogo || b.id || 0) - (a.numero_jogo || a.id || 0);
+      });
+
       var html = '';
       partidas.forEach(function(p) {
         html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #F8FAFC; border-radius: 8px; border-left: 4px solid #10B981;">' +

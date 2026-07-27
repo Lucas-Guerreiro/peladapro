@@ -631,6 +631,9 @@ async function renderRecentMatches() {
       return;
     }
 
+    // Ordena do jogo mais recente (#N) para o mais antigo (#1)
+    partidas.sort((a, b) => (b.numero_jogo || b.id || 0) - (a.numero_jogo || a.id || 0));
+
     partidas.forEach(p => {
       const item = document.createElement("div");
       item.style.display = "flex";
