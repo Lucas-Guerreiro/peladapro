@@ -71,7 +71,7 @@ window.App.initModalAtleta = function(data = {}) {
       apelido.value = p.apelido || "";
       if (email) {
         email.value = p.email || "";
-        email.disabled = true;
+        email.disabled = false;
       }
       if (p.data_nascimento) {
         dob.value = p.data_nascimento.substring(0, 10);
