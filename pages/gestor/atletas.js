@@ -142,7 +142,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
         </div>
         <div class="athlete-details">
           <h4>${p.nome} ${p.goleiro ? '🧤' : ''}</h4>
-          <span style="font-size:12px; color: var(--text-caption);">CPF: ${p.cpf || 'Não preenchido'} | ⭐ ${estrelasText}</span>
+          <span style="font-size:12px; color: var(--text-caption);">E-mail: ${p.email} | CPF: ${p.cpf || 'Não preenchido'} | ⭐ ${estrelasText}</span>
         </div>
       </div>
       <div style="display:flex; align-items:center; gap: 24px;">

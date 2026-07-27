@@ -7,6 +7,7 @@ window.App.initModalAtleta = function(data = {}) {
   const formId = document.getElementById("athlete-edit-id");
   const name = document.getElementById("athlete-name");
   const apelido = document.getElementById("athlete-apelido");
+  const email = document.getElementById("athlete-email");
   const dob = document.getElementById("athlete-dob");
   const cpf = document.getElementById("athlete-cpf");
   const whatsapp = document.getElementById("athlete-whatsapp");
@@ -68,6 +69,10 @@ window.App.initModalAtleta = function(data = {}) {
       formId.value = p.id;
       name.value = p.nome || "";
       apelido.value = p.apelido || "";
+      if (email) {
+        email.value = p.email || "";
+        email.disabled = true;
+      }
       if (p.data_nascimento) {
         dob.value = p.data_nascimento.substring(0, 10);
       } else {
@@ -95,6 +100,10 @@ window.App.initModalAtleta = function(data = {}) {
     formId.value = "";
     name.value = "";
     apelido.value = "";
+    if (email) {
+      email.value = "";
+      email.disabled = false;
+    }
     dob.value = "";
     cpf.value = "";
     whatsapp.value = "";
@@ -131,6 +140,7 @@ async function handleSaveAthlete(photoPreview) {
   const id = document.getElementById("athlete-edit-id").value;
   const name = document.getElementById("athlete-name").value.trim();
   const apelido = document.getElementById("athlete-apelido").value.trim();
+  const email = document.getElementById("athlete-email").value.trim();
   const dob = document.getElementById("athlete-dob").value;
   const cpf = document.getElementById("athlete-cpf").value;
   const whatsapp = document.getElementById("athlete-whatsapp").value;
@@ -146,7 +156,7 @@ async function handleSaveAthlete(photoPreview) {
     }
   }
 
-  if (!name || !dob || !cpf || !whatsapp || rating === 0) {
+  if (!name || !email || !dob || !cpf || !whatsapp || rating === 0) {
     window.App.showToast("Por favor, preencha todos os campos obrigatórios.", "error");
     return;
   }
@@ -231,34 +241,55 @@ async function handleSaveAthlete(photoPreview) {
       window.App.showToast("Atleta atualizado!");
     }
   } else {
-    if (players.some(x => x.cpf === cpf)) {
-      window.App.showToast("CPF já cadastrado.", "error");
+    // Sincronização direta com o backend para criação de novo atleta
+    try {
+      window.App.showToast("Salvando atleta no banco...", "info");
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.App.showToast("Sessão expirada ou inválida. Por favor, faça login novamente.", "error");
+        return;
+      }
+
+      const res = await fetch('http://localhost:3000/api/usuarios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nome: name,
+          apelido: apelido,
+          email: email,
+          cpf: cpf,
+          data_nascimento: dob,
+          whatsapp: whatsapp,
+          goleiro: isGk,
+          autoavaliacao: rating,
+          foto: photoVal || undefined
+        })
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        window.App.showToast(responseData.error || "Erro ao cadastrar atleta no banco.", "error");
+        return;
+      }
+
+      window.App.showToast("Atleta cadastrado com sucesso!", "success");
+
+      // Recarrega a lista de atletas sincronizada do backend no front
+      if (window.App.syncAthletesList) {
+        await window.App.syncAthletesList();
+      }
+
+      window.App.closeModal();
+      return;
+    } catch (err) {
+      console.error(err);
+      window.App.showToast("Erro ao conectar no servidor para cadastrar atleta.", "error");
       return;
     }
-
-    const newPlayer = {
-      id: "p_" + Date.now(),
-      nome: name,
-      apelido: apelido,
-      data_nascimento: dob,
-      cpf: cpf,
-      whatsapp: whatsapp,
-      goleiro: isGk,
-      autoavaliacao: rating,
-      ativo: true,
-      saldo: 0.00,
-      gols: 0,
-      partidas: 0,
-      avaliacao_media: rating
-    };
-
-    if (photoVal) {
-      newPlayer.foto = photoVal;
-      newPlayer.photo = photoVal;
-    }
-
-    players.push(newPlayer);
-    window.App.showToast("Atleta cadastrado com sucesso!");
   }
 
   localStorage.setItem("players", JSON.stringify(players));
