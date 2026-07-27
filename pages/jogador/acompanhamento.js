@@ -91,13 +91,15 @@ var Acompanhamento = {
     var config  = group ? configs.find(function(c) { return c.grupo_id === group.id; }) : null;
     var totalSecs = (config && config.tempo_partida) ? config.tempo_partida * 60 : 900; // 15min default
 
-    var elapsed = match ? (match.timerSeconds || 0) : 0;
+    var remaining = match ? (match.timerSeconds || 0) : 0;
     var totalMin = Math.floor(totalSecs / 60);
-    var m = Math.floor(elapsed / 60);
-    var s = elapsed % 60;
-    var elapsedStr = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    var remainingStr = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
 
-    if (timerText) timerText.textContent = elapsedStr + ' / ' + (totalMin < 10 ? '0' : '') + totalMin + ':00';
+    var elapsed = Math.max(0, totalSecs - remaining);
+
+    if (timerText) timerText.textContent = remainingStr + ' / ' + (totalMin < 10 ? '0' : '') + totalMin + ':00';
     if (progress)  progress.style.width = Math.min(100, (elapsed / totalSecs) * 100) + '%';
 
     if (status) {

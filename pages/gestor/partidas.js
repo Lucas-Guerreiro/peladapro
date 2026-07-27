@@ -39,6 +39,68 @@ window.App.initPartidas = function() {
     const btnFinishDay = document.getElementById("btn-finish-pelada-day");
     if (btnFinishDay) btnFinishDay.onclick = handleFinishPeladaDay;
 
+    // Configuração do seletor de tempo retroativo
+    const selectDuration = document.getElementById("select-timer-duration");
+    if (selectDuration) {
+      // Obter configuração de duração da pelada ativa ou padrão
+      const groupConfigs = window.Api.getConfigs() || [];
+      const currentGrp = window.Auth.currentGroup;
+      const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+      const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
+      
+      // Pré-seleciona a duração
+      selectDuration.value = durationMin.toString();
+
+      // Inicializa os segundos se estiver zerado
+      if (!window.App.liveMatch.isPlaying && (window.App.liveMatch.timerSeconds === 0 || window.App.liveMatch.timerSeconds === 8 * 60)) {
+        window.App.liveMatch.timerSeconds = durationMin * 60;
+      }
+
+      selectDuration.onchange = () => {
+        if (!window.App.liveMatch.isPlaying) {
+          window.App.liveMatch.timerSeconds = parseInt(selectDuration.value) * 60;
+          saveLiveMatchState();
+          updateTimerDisplay();
+          renderLiveMatchUI();
+        } else {
+          window.App.showToast("Não é possível alterar a duração com o cronômetro rodando!", "warning");
+          selectDuration.value = Math.round(window.App.liveMatch.timerSeconds / 60).toString();
+        }
+      };
+    }
+
+    // Restaura o loop de contagem regressiva se a partida estiver ativamente rodando no estado global
+    if (window.App.liveMatch.isPlaying) {
+      if (timerInterval) clearInterval(timerInterval);
+      
+      if (btnToggle) {
+        btnToggle.textContent = "Pausar";
+        btnToggle.className = "btn btn-sm btn-outline-secondary";
+      }
+
+      timerInterval = setInterval(() => {
+        if (window.App.liveMatch.timerSeconds > 0) {
+          window.App.liveMatch.timerSeconds--;
+          saveLiveMatchState(); // Persiste os segundos restantes no banco
+          updateTimerDisplay();
+        } else {
+          window.App.liveMatch.timerSeconds = 0;
+          clearInterval(timerInterval);
+          window.App.liveMatch.isPlaying = false;
+          
+          if (btnToggle) {
+            btnToggle.textContent = "Iniciar";
+            btnToggle.className = "btn btn-sm btn-primary";
+          }
+          
+          playAlarmSound(); // Soa o alarme do apito final
+          saveLiveMatchState();
+          renderLiveMatchUI();
+          window.App.showToast("Tempo Encerrado!", "success");
+        }
+      }, 1000);
+    }
+
     const adjustButtons = document.querySelectorAll(".btn-score-adjust");
     adjustButtons.forEach(btn => {
       btn.onclick = () => {
@@ -252,14 +314,35 @@ function toggleLiveTimer() {
     btn.className = "btn btn-sm btn-primary";
     window.App.showToast("Jogo Pausado!");
   } else {
+    // Se o tempo estiver zerado ou abaixo, recomeça com o valor do seletor
+    if (window.App.liveMatch.timerSeconds <= 0) {
+      const selectDuration = document.getElementById("select-timer-duration");
+      const durationMin = selectDuration ? parseInt(selectDuration.value) : 8;
+      window.App.liveMatch.timerSeconds = durationMin * 60;
+    }
+
     window.App.liveMatch.isPlaying = true;
     btn.textContent = "Pausar";
     btn.className = "btn btn-sm btn-outline-secondary";
     
     timerInterval = setInterval(() => {
-      window.App.liveMatch.timerSeconds++;
-      saveLiveMatchState(); // Persiste os segundos em tempo real
-      updateTimerDisplay();
+      if (window.App.liveMatch.timerSeconds > 0) {
+        window.App.liveMatch.timerSeconds--;
+        saveLiveMatchState(); // Persiste os segundos em tempo real no banco
+        updateTimerDisplay();
+      } else {
+        window.App.liveMatch.timerSeconds = 0;
+        clearInterval(timerInterval);
+        window.App.liveMatch.isPlaying = false;
+        
+        btn.textContent = "Iniciar";
+        btn.className = "btn btn-sm btn-primary";
+        
+        playAlarmSound(); // Soa o alarme sonoro
+        saveLiveMatchState();
+        renderLiveMatchUI();
+        window.App.showToast("Tempo Encerrado!", "success");
+      }
     }, 1000);
     window.App.showToast("Jogo Iniciado!");
   }
@@ -271,7 +354,11 @@ function toggleLiveTimer() {
 function resetLiveTimer() {
   clearInterval(timerInterval);
   window.App.liveMatch.isPlaying = false;
-  window.App.liveMatch.timerSeconds = 0;
+  
+  // Reseta para o valor escolhido no select
+  const selectDuration = document.getElementById("select-timer-duration");
+  const durationMin = selectDuration ? parseInt(selectDuration.value) : 8;
+  window.App.liveMatch.timerSeconds = durationMin * 60;
   
   const btnToggle = document.getElementById("btn-timer-toggle");
   if (btnToggle) {
@@ -606,5 +693,36 @@ async function handleFinishPeladaDay() {
   } catch (err) {
     console.error("[handleFinishPeladaDay]", err);
     window.App.showToast("Erro ao encerrar rodada no banco.", "error");
+  }
+}
+
+// Soa um alarme sonoro eletrônico (3 bips de apito) usando a Web Audio API nativa
+function playAlarmSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+    
+    // Toca 3 bips eletrônicos em sequência rápida
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.type = 'sine'; // Tom limpo senoidal
+      osc.frequency.setValueAtTime(800, now + (i * 0.4)); // Frequência do bip (Nota Sol 5)
+      
+      gainNode.gain.setValueAtTime(0, now + (i * 0.4));
+      gainNode.gain.linearRampToValueAtTime(0.8, now + (i * 0.4) + 0.05); // Fade in rápido
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.4) + 0.35); // Fade out suave
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start(now + (i * 0.4));
+      osc.stop(now + (i * 0.4) + 0.35);
+    }
+  } catch (e) {
+    console.warn("[playAlarmSound] Falha ao reproduzir áudio do alarme:", e);
   }
 }

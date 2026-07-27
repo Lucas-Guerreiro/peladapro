@@ -152,8 +152,12 @@ var Dashboard = {
     var config  = group ? configs.find(function(c) { return c.grupo_id === group.id; }) : null;
     var matchMinutes = (config && config.tempo_partida) ? config.tempo_partida : 15;
 
-    if (timerEl)    timerEl.textContent    = Dashboard._formatTimer(match.timerSeconds || 0);
-    if (progressEl) progressEl.style.width = Math.min(100, ((match.timerSeconds || 0) / (matchMinutes * 60)) * 100) + '%';
+    var totalSecs = matchMinutes * 60;
+    var remaining = match.timerSeconds || 0;
+    var elapsed = Math.max(0, totalSecs - remaining);
+
+    if (timerEl)    timerEl.textContent    = Dashboard._formatTimer(remaining);
+    if (progressEl) progressEl.style.width = Math.min(100, (elapsed / totalSecs) * 100) + '%';
   },
 
   // --- Fila de espera -----------------------------------------------------
