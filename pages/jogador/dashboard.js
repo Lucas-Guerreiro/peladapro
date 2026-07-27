@@ -34,6 +34,7 @@ var Dashboard = {
 
     // Idade
     var age = Utils.calcAge(user.data_nascimento);
+    console.log('[Dashboard] data_nascimento:', user.data_nascimento, '→ idade calculada:', age);
     var ageEl = document.getElementById('player-card-age');
     if (ageEl) ageEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 

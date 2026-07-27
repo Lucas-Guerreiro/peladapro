@@ -124,17 +124,30 @@ const Utils = {
   // --- Calcular idade -----------------------------------------------------
   calcAge(dob) {
     if (!dob) return null;
-    // Aceita tanto '1990-05-15' quanto '1990-05-15T00:00:00.000Z'
-    var dateStr = String(dob).split('T')[0]; // pega apenas a parte da data
-    var parts = dateStr.split('-');
-    if (parts.length < 3) return null;
-    var birth = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    if (isNaN(birth.getTime())) return null;
-    var today = new Date();
-    var age = today.getFullYear() - birth.getFullYear();
-    var m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age >= 0 ? age : null;
+    try {
+      var dateStr;
+      // Se já é um objeto Date
+      if (dob instanceof Date) {
+        dateStr = dob.getFullYear() + '-' + String(dob.getMonth() + 1).padStart(2,'0') + '-' + String(dob.getDate()).padStart(2,'0');
+      } else {
+        // Garante string e pega apenas a parte AAAA-MM-DD
+        dateStr = String(dob).substring(0, 10);
+      }
+      var parts = dateStr.split('-');
+      if (parts.length < 3) return null;
+      var y = parseInt(parts[0], 10);
+      var mo = parseInt(parts[1], 10) - 1;
+      var d = parseInt(parts[2], 10);
+      if (isNaN(y) || isNaN(mo) || isNaN(d)) return null;
+      var birth = new Date(y, mo, d);
+      var today = new Date();
+      var age = today.getFullYear() - birth.getFullYear();
+      var m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return (age >= 0 && age < 150) ? age : null;
+    } catch(e) {
+      return null;
+    }
   }
 };
 
