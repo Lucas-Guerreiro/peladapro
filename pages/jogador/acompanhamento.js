@@ -561,10 +561,13 @@ var Acompanhamento = {
         return (b.numero_jogo || b.id || 0) - (a.numero_jogo || a.id || 0);
       });
 
+      window.App.openGoalPanels = window.App.openGoalPanels || {};
+
       var html = '';
       var totalPartidas = partidas.length;
       partidas.forEach(function(p, idx) {
         var numJogo = p.numero_jogo || p.id || (totalPartidas - idx);
+        var isOpen = !!window.App.openGoalPanels[p.id];
 
         var goalsList = [];
         if (p.autores_gols) {
@@ -583,7 +586,7 @@ var Acompanhamento = {
             '</div>' +
             '<button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>' +
           '</div>' +
-          '<div id="acomp-match-goals-list-' + p.id + '" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
+          '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
             (goalsList.length > 0
               ? '<div style="display:flex; flex-wrap:wrap; gap:6px;">' + goalsList.map(function(g) { return '<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ' + (g.autorNome || 'Jogador') + ' <span style="color:#64748B; font-size:10px;">(' + (g.teamName || '') + ')</span></span>'; }).join('') + '</div>'
               : '<span style="font-size:11px; color:#64748B;">Placar final: ' + (p.time_a_nome || 'Time A') + ' ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + ' ' + (p.time_b_nome || 'Time B') + '</span>'
@@ -597,9 +600,12 @@ var Acompanhamento = {
       container.querySelectorAll('.acomp-btn-toggle-goals').forEach(function(btn) {
         btn.onclick = function() {
           var matchId = btn.getAttribute('data-id');
+          window.App.openGoalPanels = window.App.openGoalPanels || {};
+          window.App.openGoalPanels[matchId] = !window.App.openGoalPanels[matchId];
+
           var targetDiv = document.getElementById('acomp-match-goals-list-' + matchId);
           if (targetDiv) {
-            targetDiv.style.display = targetDiv.style.display === 'none' ? 'block' : 'none';
+            targetDiv.style.display = window.App.openGoalPanels[matchId] ? 'block' : 'none';
           }
         };
       });

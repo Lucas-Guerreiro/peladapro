@@ -246,23 +246,74 @@ function renderLiveMatchUI() {
     }
   }
 
-  // Renderiza autores dos gols do Time A (alinhado à direita, abaixo do nome do time)
+  // Renderiza autores dos gols do Time A (alinhado à direita, com botão ✕ para excluir gol acidental)
   const goalsAEl = document.getElementById("match-control-team-a-goals");
   if (goalsAEl) {
     const goalsA = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'a' || (g.teamName && teamA && g.teamName.toLowerCase() === teamA.toLowerCase()));
-    const tallyA = {};
-    goalsA.forEach(g => { const n = g.autorNome || 'Jogador'; tallyA[n] = (tallyA[n] || 0) + 1; });
-    goalsAEl.innerHTML = Object.keys(tallyA).map(n => `<div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;"><span>${n}</span><span style="color:#34D399;">⚽${tallyA[n] > 1 ? `<sup style="font-size:9px; background:#34D399; color:#0F172A; padding:0 3px; border-radius:6px; margin-left:1px;">${tallyA[n]}</sup>` : ''}</span></div>`).join('');
+    
+    if (goalsA.length === 0) {
+      goalsAEl.innerHTML = "";
+    } else {
+      goalsAEl.innerHTML = goalsA.map((g, idx) => `
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-bottom: 2px;">
+          <span>${g.autorNome || 'Jogador'}</span>
+          <span style="color:#34D399;">⚽</span>
+          <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="a" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.2); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold;">✕</button>
+        </div>
+      `).join('');
+    }
   }
 
-  // Renderiza autores dos gols do Time B (alinhado à esquerda, abaixo do nome do time)
+  // Renderiza autores dos gols do Time B (alinhado à esquerda, com botão ✕ para excluir gol acidental)
   const goalsBEl = document.getElementById("match-control-team-b-goals");
   if (goalsBEl) {
     const goalsB = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'b' || (g.teamName && teamB && g.teamName.toLowerCase() === teamB.toLowerCase()));
-    const tallyB = {};
-    goalsB.forEach(g => { const n = g.autorNome || 'Jogador'; tallyB[n] = (tallyB[n] || 0) + 1; });
-    goalsBEl.innerHTML = Object.keys(tallyB).map(n => `<div style="display:flex; align-items:center; justify-content:flex-start; gap:4px;"><span style="color:#34D399;">⚽${tallyB[n] > 1 ? `<sup style="font-size:9px; background:#34D399; color:#0F172A; padding:0 3px; border-radius:6px; margin-left:1px;">${tallyB[n]}</sup>` : ''}</span><span>${n}</span></div>`).join('');
+    
+    if (goalsB.length === 0) {
+      goalsBEl.innerHTML = "";
+    } else {
+      goalsBEl.innerHTML = goalsB.map((g, idx) => `
+        <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-bottom: 2px;">
+          <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="b" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.2); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold;">✕</button>
+          <span style="color:#34D399;">⚽</span>
+          <span>${g.autorNome || 'Jogador'}</span>
+        </div>
+      `).join('');
+    }
   }
+
+  // Bind dos cliques nos botões ✕ para excluir gol lançado acidentalmente
+  document.querySelectorAll(".btn-delete-live-goal").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const goalId = btn.getAttribute("data-goal-id");
+      const teamKey = btn.getAttribute("data-team-key");
+
+      let goals = window.App.liveMatch.goals || [];
+      const matchIdx = goals.findIndex(g => String(g.id || '') === String(goalId));
+      if (matchIdx !== -1) {
+        goals.splice(matchIdx, 1);
+      } else {
+        const teamGoals = goals.filter(g => g.teamKey === teamKey);
+        const gToRemove = teamGoals[parseInt(goalId)];
+        if (gToRemove) {
+          goals = goals.filter(g => g !== gToRemove);
+        }
+      }
+
+      window.App.liveMatch.goals = goals;
+      if (teamKey === 'a') {
+        window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) - 1);
+      } else {
+        window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) - 1);
+      }
+
+      if (window.App.updateAcompanhamentoUI) {
+        window.App.updateAcompanhamentoUI();
+      }
+      renderLiveMatchUI();
+    };
+  });
 
   if (badgeEl) {
     if (window.App.liveMatch.isPlaying) {
@@ -653,7 +704,10 @@ async function renderRecentMatches() {
     // Ordena do jogo mais recente (#N) para o mais antigo (#1)
     partidas.sort((a, b) => (b.numero_jogo || b.id || 0) - (a.numero_jogo || a.id || 0));
 
+    window.App.openGoalPanels = window.App.openGoalPanels || {};
+
     partidas.forEach(p => {
+      const isOpen = !!window.App.openGoalPanels[p.id];
       const item = document.createElement("div");
       item.style.display = "flex";
       item.style.flexDirection = "column";
@@ -690,7 +744,7 @@ async function renderRecentMatches() {
             <span class="text-inter" style="font-size:11px; color:var(--text-caption); margin-left: 4px;">${timeStr}</span>
           </div>
         </div>
-        <div id="match-goals-list-${p.id}" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-heading);">
+        <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-heading);">
           ${
             goalsList.length > 0 
               ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
@@ -710,15 +764,17 @@ async function renderRecentMatches() {
 }
 
 function setupHistoryActions() {
-  // Configura cliques no botão ⚽ Gols
+  // Configura cliques no botão ⚽ Gols com persistência no estado openGoalPanels
   const goalButtons = document.querySelectorAll(".btn-toggle-goals");
   goalButtons.forEach(btn => {
     btn.onclick = () => {
       const matchId = btn.getAttribute("data-id");
+      window.App.openGoalPanels = window.App.openGoalPanels || {};
+      window.App.openGoalPanels[matchId] = !window.App.openGoalPanels[matchId];
+
       const targetDiv = document.getElementById(`match-goals-list-${matchId}`);
       if (targetDiv) {
-        const isHidden = targetDiv.style.display === "none";
-        targetDiv.style.display = isHidden ? "block" : "none";
+        targetDiv.style.display = window.App.openGoalPanels[matchId] ? "block" : "none";
       }
     };
   });
