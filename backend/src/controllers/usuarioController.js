@@ -246,7 +246,7 @@ exports.criarPorGestor = async (req, res) => {
 
     const query = `
       INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, foto, verificado, ativo, gols, partidas, avaliacao_media)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, 0.00, $9, $10, true, true, 0, 0, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, 0.00, $9, $10, true, true, 0, 0, $11)
       RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado`;
 
     const { rows } = await db.query(query, [
@@ -259,7 +259,8 @@ exports.criarPorGestor = async (req, res) => {
       autoavaliacao !== undefined ? parseInt(autoavaliacao) : 3,
       !!goleiro,
       apelido ? apelido.trim() : nome.split(' ')[0],
-      foto || null
+      foto || null,
+      autoavaliacao !== undefined ? parseFloat(autoavaliacao) : 3.0
     ]);
 
     res.status(201).json({ message: 'Atleta cadastrado com sucesso!', usuario: rows[0] });
