@@ -6,8 +6,13 @@
     
     <!-- Card de Controle de Placar e Cronômetro (Design Premium Claro) -->
     <div class="card" style="background-color: var(--primary); color: #FFF; border: none; padding: 28px; font-family: 'Inter', sans-serif !important;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
-        <h3 style="color: #FFF; margin: 0; font-size: 20px; font-weight: 700;">⏱️ Jogo ao Vivo / Placar</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <h3 style="color: #FFF; margin: 0; font-size: 20px; font-weight: 700;">⏱️ Jogo ao Vivo / Placar</h3>
+          <select id="partidas-select-pelada-date" class="form-control" style="background: rgba(255,255,255,0.15); color: #FFF; border: 1px solid rgba(255,255,255,0.3); font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; max-width: 260px;">
+            <option value="">Carregando datas...</option>
+          </select>
+        </div>
         <span class="badge-status" id="match-live-status-badge" style="background: var(--secondary); color: var(--primary); font-weight: bold;">AGUARDANDO SORTEIO</span>
       </div>
       

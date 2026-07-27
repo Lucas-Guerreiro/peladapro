@@ -54,7 +54,58 @@ var Acompanhamento = {
     }) || null;
   },
 
+  initPeladaSelect: async function() {
+    var select = document.getElementById("acomp-select-pelada-date");
+    if (!select) return;
+
+    var currentGroup = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    if (!currentGroup || !currentGroup.id) {
+      select.innerHTML = '<option value="">Nenhum grupo ativo</option>';
+      return;
+    }
+
+    try {
+      var peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+      if (!peladas || peladas.length === 0) {
+        select.innerHTML = '<option value="">Nenhuma pelada agendada</option>';
+        return;
+      }
+
+      select.innerHTML = peladas.map(function(p) {
+        var dataFmt = window.Utils ? window.Utils.formatDate(p.data) : p.data;
+        var label = dataFmt + (p.horario ? ' às ' + p.horario : '') + ' (' + (p.status || 'agendada') + ')';
+        return '<option value="' + p.id + '">' + label + '</option>';
+      }).join('');
+
+      var activePelada = peladas[0];
+      if (window.App.activePelada) {
+        var found = peladas.find(function(p) { return String(p.id) === String(window.App.activePelada.id); });
+        if (found) activePelada = found;
+      }
+
+      window.App.activePelada = activePelada;
+      try { localStorage.setItem("activePelada", JSON.stringify(activePelada)); } catch(e) {}
+      select.value = activePelada.id;
+
+      var self = this;
+      select.onchange = async function() {
+        var selectedId = select.value;
+        var found = peladas.find(function(p) { return String(p.id) === String(selectedId); });
+        if (found) {
+          window.App.activePelada = found;
+          try { localStorage.setItem("activePelada", JSON.stringify(found)); } catch(e) {}
+          await self._fetchServerLiveState();
+          self.render();
+        }
+      };
+    } catch(e) {
+      console.error('[Acompanhamento] Erro ao carregar datas das peladas:', e);
+      select.innerHTML = '<option value="">Erro ao carregar datas</option>';
+    }
+  },
+
   init: async function() {
+    await this.initPeladaSelect();
     await this._fetchServerLiveState();
     this.render();
     this._startPolling();

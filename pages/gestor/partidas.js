@@ -54,6 +54,8 @@ function startTimerLoop() {
 }
 
 window.App.initPartidas = function() {
+  initPartidasPeladaSelect();
+
   const activePelada = window.App.activePelada || {};
   const isFinished = activePelada.status === "finalizada";
 
@@ -756,5 +758,57 @@ function playAlarmSound() {
     }
   } catch (e) {
     console.warn("[playAlarmSound] Falha ao reproduzir áudio do alarme:", e);
+  }
+}
+
+async function initPartidasPeladaSelect() {
+  const select = document.getElementById("partidas-select-pelada-date");
+  if (!select) return;
+
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  if (!currentGroup || !currentGroup.id) {
+    select.innerHTML = `<option value="">Nenhum grupo ativo</option>`;
+    return;
+  }
+
+  try {
+    const peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+    if (!peladas || peladas.length === 0) {
+      select.innerHTML = `<option value="">Nenhuma pelada agendada</option>`;
+      return;
+    }
+
+    select.innerHTML = peladas.map(p => {
+      const dataFmt = window.Utils ? window.Utils.formatDate(p.data) : p.data;
+      const label = `${dataFmt} ${p.horario ? 'às ' + p.horario : ''} (${p.status || 'agendada'})`;
+      return `<option value="${p.id}">${label}</option>`;
+    }).join('');
+
+    let activePelada = peladas[0];
+    if (window.App.activePelada) {
+      const found = peladas.find(p => String(p.id) === String(window.App.activePelada.id));
+      if (found) activePelada = found;
+    }
+
+    window.App.activePelada = activePelada;
+    localStorage.setItem("activePelada", JSON.stringify(activePelada));
+    select.value = activePelada.id;
+
+    select.onchange = async () => {
+      const selectedId = select.value;
+      const found = peladas.find(p => String(p.id) === String(selectedId));
+      if (found) {
+        window.App.activePelada = found;
+        localStorage.setItem("activePelada", JSON.stringify(found));
+        saveLiveMatchState();
+        renderLiveMatchUI();
+        renderWaitingQueue();
+        await renderRecentMatches();
+        window.App.showToast(`Pelada selecionada: ${window.Utils ? window.Utils.formatDate(found.data) : found.data}`);
+      }
+    };
+  } catch(e) {
+    console.error('[Partidas] Erro ao carregar datas das peladas:', e);
+    select.innerHTML = `<option value="">Erro ao carregar datas</option>`;
   }
 }
