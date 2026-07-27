@@ -20,49 +20,78 @@ var Acompanhamento = {
 
   // Mapeamento visual das cores dos times (fundo branco puro com bordas finas coloridas)
   _getTeamTheme: function(teamName) {
-    var name = (teamName || '').toLowerCase();
+    var name = (teamName || '').toLowerCase().trim();
     
-    if (name.includes('verm') || name.includes('red')) {
-      return {
-        bg: '#FFFFFF', // Fundo branco unificado
-        border: '#FCA5A5',
-        text: '#EF4444'
-      };
-    }
-    if (name.includes('verd') || name.includes('green')) {
-      return {
-        bg: '#FFFFFF', // Fundo branco unificado
-        border: '#86EFAC',
-        text: '#10B981'
-      };
-    }
-    if (name.includes('azul') || name.includes('blue')) {
-      return {
-        bg: '#FFFFFF', // Fundo branco unificado
-        border: '#BAE6FD',
-        text: '#0284C7'
-      };
-    }
-    if (name.includes('amar') || name.includes('yellow')) {
-      return {
-        bg: '#FFFFFF', // Fundo branco unificado
-        border: '#FEF08A',
-        text: '#D97706'
-      };
-    }
-    
-    // Fallback dinâmico para Time A / Time B
-    if (name.includes('time a') || name.includes('a')) {
+    // Se o time contiver A ou Azul
+    if (name === 'a' || name.endsWith(' a') || name.includes('azul') || name.includes('blue')) {
       return {
         bg: '#FFFFFF',
         border: '#BAE6FD',
         text: '#0284C7'
       };
     }
+    // Se o time contiver B ou Amarelo
+    if (name === 'b' || name.endsWith(' b') || name.includes('amar') || name.includes('yellow')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#FEF08A',
+        text: '#D97706'
+      };
+    }
+    // Se o time contiver C ou Vermelho
+    if (name === 'c' || name.endsWith(' c') || name.includes('verm') || name.includes('red')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#FCA5A5',
+        text: '#EF4444'
+      };
+    }
+    // Se o time contiver D ou Verde
+    if (name === 'd' || name.endsWith(' d') || name.includes('verd') || name.includes('green')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#86EFAC',
+        text: '#10B981'
+      };
+    }
+    // Time E (Laranja)
+    if (name === 'e' || name.endsWith(' e') || name.includes('laranja') || name.includes('orange')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#FED7AA',
+        text: '#EA580C'
+      };
+    }
+    // Time F (Roxo)
+    if (name === 'f' || name.endsWith(' f') || name.includes('roxo') || name.includes('purple')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#E9D5FF',
+        text: '#9333EA'
+      };
+    }
+    // Time G (Rosa)
+    if (name === 'g' || name.endsWith(' g') || name.includes('rosa') || name.includes('pink')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#FBCFE8',
+        text: '#DB2777'
+      };
+    }
+    // Time H (Ciano)
+    if (name === 'h' || name.endsWith(' h') || name.includes('ciano') || name.includes('cyan')) {
+      return {
+        bg: '#FFFFFF',
+        border: '#A5F3FC',
+        text: '#0891B2'
+      };
+    }
+
+    // Fallback padrão se não bater
     return {
       bg: '#FFFFFF',
-      border: '#FEF08A',
-      text: '#D97706'
+      border: '#E2E8F0',
+      text: '#475569'
     };
   },
 

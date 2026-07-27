@@ -17,7 +17,7 @@ const Api = {
     dbVersion:    'pp_db_version'
   },
 
-  DB_VERSION: 3,
+  DB_VERSION: 4,
 
   // --- Helpers privados ---------------------------------------------------
   _get(key) {
@@ -156,11 +156,28 @@ const Api = {
         { id: 'g1', nome: 'Pelada dos Campeões', gestor_id: 'gest1', ativo: true }
       ],
       players: [
-        { id: 'gest1', nome: 'Carlos Henrique', cpf: '111.222.333-44', data_nascimento: '1990-05-15', goleiro: false, autoavaliacao: 4, ativo: true, saldo: 50.00, gols: 12, partidas: 30, avaliacao_media: 4.0 },
-        { id: 'p2',    nome: 'Rodrigo Silva',    cpf: '222.333.444-55', data_nascimento: '1988-03-22', goleiro: true,  autoavaliacao: 3, ativo: true, saldo: 0.00,  gols: 0,  partidas: 25, avaliacao_media: 3.0 },
-        { id: 'p3',    nome: 'Marcelo Andrade',  cpf: '333.444.555-66', data_nascimento: '1992-08-10', goleiro: false, autoavaliacao: 5, ativo: true, saldo: 25.00, gols: 20, partidas: 28, avaliacao_media: 5.0 },
-        { id: 'p4',    nome: 'Fernando Costa',   cpf: '444.555.666-77', data_nascimento: '1995-01-30', goleiro: false, autoavaliacao: 3, ativo: true, saldo: -15.00,gols: 5,  partidas: 18, avaliacao_media: 3.0 },
-        { id: 'p5',    nome: 'Bruno Mendes',     cpf: '555.666.777-88', data_nascimento: '1993-11-05', goleiro: false, autoavaliacao: 4, ativo: true, saldo: 100.00,gols: 8,  partidas: 22, avaliacao_media: 4.0 }
+        { id: "p1", nome: "Erivan", data_nascimento: "1992-05-12", cpf: "111.111.111-01", whatsapp: "(61) 99999-1001", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p2", nome: "Leda", data_nascimento: "1994-08-22", cpf: "111.111.111-02", whatsapp: "(61) 99999-1002", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p3", nome: "Levy", data_nascimento: "1990-11-03", cpf: "111.111.111-03", whatsapp: "(61) 99999-1003", goleiro: true, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, defesas_porcentagem: 80, avaliacao_media: 4.0 },
+        { id: "p4", nome: "David Araújo", data_nascimento: "1995-03-14", cpf: "111.111.111-04", whatsapp: "(61) 99999-1004", goleiro: false, autoavaliacao: 5, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 5.0 },
+        { id: "p5", nome: "Sangar", data_nascimento: "1991-06-26", cpf: "111.111.111-05", whatsapp: "(61) 99999-1005", goleiro: false, autoavaliacao: 3, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 3.0 },
+        { id: "p6", nome: "Netto", data_nascimento: "1993-02-09", cpf: "111.111.111-06", whatsapp: "(61) 99999-1006", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p7", nome: "Ewerton", data_nascimento: "1996-10-09", cpf: "111.111.111-07", whatsapp: "(61) 99999-1007", goleiro: false, autoavaliacao: 3, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 3.0 },
+        { id: "p8", nome: "Andrew", data_nascimento: "1997-03-29", cpf: "111.111.111-08", whatsapp: "(61) 99999-1008", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p9", nome: "Josimar", data_nascimento: "1989-05-17", cpf: "111.111.111-09", whatsapp: "(61) 99999-1009", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p10", nome: "Linconl", data_nascimento: "1995-03-27", cpf: "111.111.111-10", whatsapp: "(61) 99999-1010", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p11", nome: "Madson", data_nascimento: "1993-06-01", cpf: "111.111.111-11", whatsapp: "(61) 99999-1011", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p12", nome: "Darlan", data_nascimento: "1994-08-30", cpf: "111.111.111-12", whatsapp: "(61) 99999-1012", goleiro: false, autoavaliacao: 4, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 4.0 },
+        { id: "p13", nome: "Lobo", data_nascimento: "1988-12-13", cpf: "111.111.111-13", whatsapp: "(61) 99999-1013", goleiro: false, autoavaliacao: 5, ativo: true, saldo: 0.00, gols: 0, partidas: 0, avaliacao_media: 5.0 },
+        { id: "p14", nome: "Elia", "data_nascimento": "1993-05-06", "cpf": "111.111.111-14", "whatsapp": "(61) 99999-1014", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p15", nome: "Dhárcio", "data_nascimento": "1992-01-07", "cpf": "111.111.111-15", "whatsapp": "(61) 99999-1015", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p16", nome: "Arthur", "data_nascimento": "1997-09-12", "cpf": "111.111.111-16", "whatsapp": "(61) 99999-1016", "goleiro": true, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "defesas_porcentagem": 81, "avaliacao_media": 4.0 },
+        { id: "p17", nome: "Kaio", "data_nascimento": "1998-04-18", "cpf": "111.111.111-17", "whatsapp": "(61) 99999-1017", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p18", nome: "Cleber Bindá", "data_nascimento": "1991-07-22", "cpf": "111.111.111-18", "whatsapp": "(61) 99999-1018", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p19", nome: "Victor Silva", "data_nascimento": "1995-12-05", "cpf": "111.111.111-19", "whatsapp": "(61) 99999-1019", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p20", nome: "Weslley", "data_nascimento": "1996-03-11", "cpf": "111.111.111-20", "whatsapp": "(61) 99999-1020", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p21", nome: "F Abbade", "data_nascimento": "1990-06-19", "cpf": "111.111.111-21", "whatsapp": "(61) 99999-1021", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 },
+        { id: "p22", nome: "ícaro", "data_nascimento": "1993-08-25", "cpf": "111.111.111-22", "whatsapp": "(61) 99999-1022", "goleiro": false, "autoavaliacao": 4, "ativo": true, "saldo": 0.00, "gols": 0, "partidas": 0, "avaliacao_media": 4.0 }
       ],
       peladas: [
         { id: 'pel1', grupo_id: 'g1', data: new Date().toISOString().split('T')[0], horario: '20:00', status: 'agendada', local: 'Arena Indoor Norte', max_jogadores: 14 }

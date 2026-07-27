@@ -214,8 +214,8 @@ function handleExecuteSorteio() {
 }
 
 function getColoName(idx) {
-  const names = ["Azul", "Amarelo", "Vermelho", "Verde", "Laranja", "Roxo", "Rosa", "Ciano", "Marrom", "Cinza"];
-  return names[idx] || `Equipe ${idx+1}`;
+  const names = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
+  return names[idx] || `${idx+1}`;
 }
 
 function balanceDrawnTeams(drawnTeams) {
