@@ -180,13 +180,82 @@ window.App.initPartidas = function() {
     }
   }
 
+  window.App.updateAcompanhamentoUI = function() {
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    if (peladaId && window.Api && window.Api.atualizarLiveState) {
+      let teams = [];
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+      window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+    }
+    renderLiveMatchUI();
+    renderWaitingQueue();
+    renderRecentMatches();
+  };
+
   renderLiveMatchUI();
   renderWaitingQueue();
   renderRecentMatches(); // Carrega o histórico de minijogos salvos do banco de dados
 
+  // Inicia polling e escuta de eventos em tempo real
+  startGestorPolling();
+
   // Inicializar ícones Feather
   if (window.feather) feather.replace();
 };
+
+var gestorPollingInterval = null;
+
+function startGestorPolling() {
+  if (gestorPollingInterval) {
+    clearInterval(gestorPollingInterval);
+    gestorPollingInterval = null;
+  }
+
+  // Polling do backend a cada 1000ms para sync instantâneo entre gestor e atleta
+  gestorPollingInterval = setInterval(async () => {
+    const activePelada = window.App.activePelada;
+    const peladaId = activePelada ? activePelada.id : null;
+
+    if (peladaId && window.Api && window.Api.obterLiveState) {
+      try {
+        const res = await window.Api.obterLiveState(peladaId);
+        if (res && res.state) {
+          if (res.state.liveMatch) {
+            window.App.liveMatch = res.state.liveMatch;
+            localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+          }
+          if (res.state.waitingQueue) {
+            window.App.waitingQueue = res.state.waitingQueue;
+            localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
+          }
+          if (res.state.teams) {
+            localStorage.setItem("teams", JSON.stringify(res.state.teams));
+          }
+        }
+      } catch (err) {}
+    }
+
+    renderLiveMatchUI();
+    renderWaitingQueue();
+    renderRecentMatches();
+  }, 1000);
+
+  window.removeEventListener('storage', onGestorStorageChange);
+  window.addEventListener('storage', onGestorStorageChange);
+}
+
+function onGestorStorageChange(e) {
+  if (e.key === 'liveMatch' || e.key === 'waitingQueue' || e.key === 'teams' || e.key === 'activePelada') {
+    try {
+      if (e.key === 'liveMatch' && e.newValue) window.App.liveMatch = JSON.parse(e.newValue);
+      if (e.key === 'waitingQueue' && e.newValue) window.App.waitingQueue = JSON.parse(e.newValue);
+      if (e.key === 'activePelada' && e.newValue) window.App.activePelada = JSON.parse(e.newValue);
+    } catch(err) {}
+    renderLiveMatchUI();
+    renderWaitingQueue();
+    renderRecentMatches();
+  }
+}
 
 function renderLiveMatchUI() {
   const teamA = window.App.liveMatch.teamA || "Time A";
