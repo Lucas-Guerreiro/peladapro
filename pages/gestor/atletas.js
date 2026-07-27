@@ -43,8 +43,8 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
   // 1. Filtrar pendentes (verificado === false) e cadastrados/aprovados (verificado === true)
   // Mostramos apenas registros do tipo 'jogador' para ocultar a conta do próprio gestor
-  const pendingPlayers = players.filter(p => p.verificado === false && p.tipo === 'jogador');
-  const approvedPlayers = players.filter(p => p.verificado === true && p.tipo === 'jogador');
+  const pendingPlayers = players.filter(p => p.verificado === false && (p.tipo === 'jogador' || p.tipo === 'gestor'));
+  const approvedPlayers = players.filter(p => p.verificado === true && (p.tipo === 'jogador' || p.tipo === 'gestor'));
 
   // 2. Renderizar as solicitações pendentes no topo
   const pendingCard = document.getElementById("pending-requests-card");

@@ -258,7 +258,7 @@ const Api = {
       const players = this.getPlayers();
       const convocacoesLocais = this.getConvocations();
       players.forEach(p => {
-        if (p.ativo && p.tipo !== 'gestor') {
+        if (p.ativo && (p.tipo === 'jogador' || p.tipo === 'gestor')) {
           convocacoesLocais.push({
             id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
             pelada_id: novaPelada.id,
