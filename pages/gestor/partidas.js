@@ -742,9 +742,15 @@ async function handleFinishMatch() {
     // Persiste a fila e o estado ao vivo no localStorage
     saveLiveMatchState();
 
-    // Sincroniza o novo estado no banco de dados e espera a conclusão
+    // Re-renderiza a interface do Gestor imediatamente
+    renderLiveMatchUI();
+    renderWaitingQueue();
+
+    // Sincroniza o novo estado no banco de dados e atualiza histórico recente
     if (window.App.updateAcompanhamentoUI) {
       await window.App.updateAcompanhamentoUI();
+    } else {
+      await renderRecentMatches();
     }
   } catch (err) {
     console.error("[handleFinishMatch] Erro ao concluir partida:", err);

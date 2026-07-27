@@ -389,8 +389,8 @@ var Acompanhamento = {
       
       var htmlA = goalsA.map(function(g) {
         return '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap;">' +
-          (g.assistNome ? '<span style="font-size: 11px; color: #64748B; font-weight: 600;">(' + g.assistNome + ' 👟)</span>' : '') +
-          '<span>' + (g.autorNome || 'Jogador') + '</span>' +
+          (g.assistNome ? '<span style="font-size: 11px; color: #64748B; font-weight: 600; background: #F1F5F9; padding: 1px 6px; border-radius: 4px;">' + g.assistNome + ' 👟</span>' : '') +
+          '<span style="font-weight: 700; color: #0F172A;">' + (g.autorNome || 'Jogador') + '</span>' +
           '<span style="color: #10B981;">⚽</span>' +
         '</div>';
       }).join('');
@@ -407,8 +407,8 @@ var Acompanhamento = {
       var htmlB = goalsB.map(function(g) {
         return '<div style="display: flex; align-items: center; justify-content: flex-start; gap: 4px; flex-wrap: wrap;">' +
           '<span style="color: #10B981;">⚽</span>' +
-          '<span>' + (g.autorNome || 'Jogador') + '</span>' +
-          (g.assistNome ? '<span style="font-size: 11px; color: #64748B; font-weight: 600;">(' + g.assistNome + ' 👟)</span>' : '') +
+          '<span style="font-weight: 700; color: #0F172A;">' + (g.autorNome || 'Jogador') + '</span>' +
+          (g.assistNome ? '<span style="font-size: 11px; color: #64748B; font-weight: 600; background: #F1F5F9; padding: 1px 6px; border-radius: 4px;">' + g.assistNome + ' 👟</span>' : '') +
         '</div>';
       }).join('');
       goalsBEl.innerHTML = htmlB;
