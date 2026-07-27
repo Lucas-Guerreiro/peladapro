@@ -65,7 +65,7 @@ body {
 
 /* Títulos Esportivos */
 h1, h2, h3, .sports-font {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   color: var(--text-heading);
@@ -131,7 +131,7 @@ h3 {
   gap: 8px;
   font-weight: 600;
   text-transform: uppercase;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 16px;
   letter-spacing: 0.8px;
   border: none;
@@ -305,7 +305,7 @@ h3 {
   color: #FFF;
   padding: 4px 8px;
   border-radius: 6px;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   letter-spacing: 0.5px;
   display: inline-flex;
@@ -335,7 +335,7 @@ h3 {
 }
 
 .card-fifa-balance .value {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 24px;
 }
 
@@ -565,7 +565,7 @@ h3 {
 
 .tab-btn {
   padding: 12px 20px;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 20px;
   letter-spacing: 0.5px;
   color: var(--text-caption);
@@ -652,7 +652,7 @@ h3 {
   background: none;
   border: none;
   padding: 10px;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 18px;
   text-transform: uppercase;
   color: var(--text-body);
@@ -683,7 +683,7 @@ h3 {
 .live-badge {
   background-color: var(--danger);
   color: #FFF;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   padding: 4px 12px;
   border-radius: 20px;
@@ -725,13 +725,13 @@ h3 {
 }
 
 .team-name {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 28px;
   letter-spacing: 0.5px;
 }
 
 .score-numbers {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 72px;
   line-height: 1;
   letter-spacing: 2px;
@@ -740,7 +740,7 @@ h3 {
 }
 
 .score-divider {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 48px;
   color: var(--text-caption);
 }
@@ -769,7 +769,7 @@ h3 {
 }
 
 .match-timer-text {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 20px;
   letter-spacing: 0.5px;
 }
@@ -810,7 +810,7 @@ h3 {
 }
 
 .queue-item .pos {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 20px;
   color: var(--text-caption);
   width: 24px;
@@ -838,7 +838,7 @@ h3 {
 .table-custom th {
   background-color: var(--primary);
   color: #FFF;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 18px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -864,7 +864,7 @@ h3 {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: bold;
 }
@@ -906,7 +906,7 @@ h3 {
 }
 
 .team-draft-title-input {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 20px;
   border: none;
   background: none;
@@ -1120,7 +1120,7 @@ h3 {
 .stepper-value {
   width: 60px;
   text-align: center;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 22px;
   border-left: 2px solid var(--border-color);
   border-right: 2px solid var(--border-color);

@@ -66,7 +66,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
         item.innerHTML = `
           <div class="athlete-info">
-            <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--accent); color: #FFF; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue'; font-size:18px;">
+            <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--accent); color: #FFF; display:flex; align-items:center; justify-content:center; font-family: 'Inter', sans-serif; font-size:18px;">
               ${initials}
             </div>
             <div class="athlete-details">
@@ -137,7 +137,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
     card.innerHTML = `
       <div class="athlete-info">
-        <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--primary); color: #FFF; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue'; font-size:18px;">
+        <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--primary); color: #FFF; display:flex; align-items:center; justify-content:center; font-family: 'Inter', sans-serif; font-size:18px;">
           ${initials}
         </div>
         <div class="athlete-details">

@@ -84,7 +84,7 @@ window.App.initModalEditar_partida = function(data) {
                 item.innerHTML = `
                   <div style="display:flex; align-items:center; gap:12px;">
                     <span style="font-size: 11px; background: rgba(0,200,83,0.1); color: var(--success); padding: 2px 8px; border-radius: 6px; font-weight: bold;">FIM</span>
-                    <strong class="text-inter" style="font-size:14px; font-family: 'Bebas Neue'; letter-spacing: 0.5px; text-transform: uppercase;">
+                    <strong class="text-inter" style="font-size:14px; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">
                       ${p.time_a_nome} <span style="color:var(--secondary); font-size:16px;">${p.gols_time_a}</span> 
                       x 
                       <span style="color:var(--accent); font-size:16px;">${p.gols_time_b}</span> ${p.time_b_nome}
