@@ -152,13 +152,13 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
         </div>
         <div class="athlete-actions">
           <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}">✏️</button>
-          <button class="btn btn-sm btn-danger btn-toggle-status" data-id="${p.id}">${p.ativo ? '🗑️' : '🔄'}</button>
+          <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}">🗑️</button>
         </div>
       </div>
     `;
     
     card.querySelector(".btn-edit-athlete").onclick = () => window.App.openModal("atleta", { id: p.id });
-    card.querySelector(".btn-toggle-status").onclick = () => toggleAthleteStatus(p.id);
+    card.querySelector(".btn-delete-athlete").onclick = () => deleteAthlete(p.id, p.nome);
 
     container.appendChild(card);
   });
@@ -221,13 +221,32 @@ async function rejectAthlete(id, nome) {
   }
 }
 
-function toggleAthleteStatus(id) {
-  const players = JSON.parse(localStorage.getItem("players")) || [];
-  const p = players.find(x => x.id === id);
-  if (p) {
-    p.ativo = !p.ativo;
-    localStorage.setItem("players", JSON.stringify(players));
-    window.App.renderManagerAthletesList();
+async function deleteAthlete(id, nome) {
+  if (!confirm(`Deseja realmente excluir permanentemente o atleta ${nome}?`)) return;
+
+  try {
+    Utils.toast("Excluindo atleta do banco...", "info");
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+      method: "DELETE",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      Utils.toast(data.error || "Erro ao excluir atleta.", "error");
+      return;
+    }
+
+    Utils.toast("Atleta excluído com sucesso!", "success");
+    await window.App.syncAthletesList();
+  } catch (err) {
+    console.error(err);
+    Utils.toast("Erro ao se conectar ao servidor.", "error");
   }
 }
 
