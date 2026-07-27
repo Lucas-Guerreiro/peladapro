@@ -67,15 +67,36 @@ window.App.initModalLancar_gol = function(data) {
           return;
         }
 
-        // 2. Incrementa o placar local na partida ativa
+        // 2. Incrementa o placar local na partida ativa e grava a lista de autores de gols
         if (teamKey === "a") {
           window.App.liveMatch.scoreA = Math.max(0, window.App.liveMatch.scoreA + 1);
         } else {
           window.App.liveMatch.scoreB = Math.max(0, window.App.liveMatch.scoreB + 1);
         }
 
-        // 3. Feedback visual
-        const autorNome = players.find(p => String(p.id) === String(autorId))?.nome || "Jogador";
+        const autorObj = players.find(p => String(p.id) === String(autorId));
+        const autorNome = autorObj ? (autorObj.apelido || autorObj.nome) : "Jogador";
+
+        if (!window.App.liveMatch.goals) window.App.liveMatch.goals = [];
+        window.App.liveMatch.goals.push({
+          id: Date.now(),
+          autorId: autorId,
+          autorNome: autorNome,
+          teamKey: teamKey,
+          teamName: teamName,
+          timeSecs: window.App.liveMatch.timerSeconds
+        });
+
+        // 3. Persiste no localStorage e envia ao backend em tempo real
+        localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (peladaId && window.Api && window.Api.atualizarLiveState) {
+          let teams = [];
+          try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+          window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+        }
+
+        // 4. Feedback visual
         const assistNome = assistId ? (players.find(p => String(p.id) === String(assistId))?.nome || "") : "";
         
         let msg = `Gol de ${autorNome}!`;
@@ -84,10 +105,10 @@ window.App.initModalLancar_gol = function(data) {
         }
         window.App.showToast(msg, "success");
 
-        // 4. Fecha o modal
+        // 5. Fecha o modal
         window.App.closeModal();
 
-        // 5. Atualiza a UI do placar na aba de Partidas e no Acompanhamento
+        // 6. Atualiza a UI do placar na aba de Partidas e no Acompanhamento
         if (window.App.initPartidas) {
           // Atualiza os placares sem recarregar tudo
           const scoreAEl = document.getElementById("match-control-score-a");

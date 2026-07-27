@@ -320,6 +320,26 @@ var Acompanhamento = {
 
     var self = this;
 
+    // Escuta dos botões de Olho para ver escalação dos times
+    var btnViewA = document.getElementById('acomp-btn-view-team-a');
+    if (btnViewA) {
+      btnViewA.onclick = function() {
+        var teamObj = self._findTeam(match.teamA, teams) || { nome: match.teamA, players: [] };
+        if (window.App && window.App.openModal) {
+          window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
+        }
+      };
+    }
+    var btnViewB = document.getElementById('acomp-btn-view-team-b');
+    if (btnViewB) {
+      btnViewB.onclick = function() {
+        var teamObj = self._findTeam(match.teamB, teams) || { nome: match.teamB, players: [] };
+        if (window.App && window.App.openModal) {
+          window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
+        }
+      };
+    }
+
     function getTeamPlayersHTML(teamName, theme, isRightAligned) {
       var team = self._findTeam(teamName, teams);
       if (!team || !team.players || team.players.length === 0) {
@@ -330,19 +350,31 @@ var Acompanhamento = {
         var nome = tp.apelido || tp.nome || (p ? (p.apelido || p.nome) : '?');
         var isGoleiro = tp.goleiro || (p && p.goleiro);
 
+        // Calcula quantos gols este atleta marcou na partida ao vivo
+        var playerGoals = (match.goals || []).filter(function(g) {
+          return String(g.autorId) === String(tp.id) || 
+                 String(g.autorId) === String(p ? p.id : '') ||
+                 (g.autorNome && tp.nome && g.autorNome.toLowerCase() === tp.nome.toLowerCase()) ||
+                 (g.autorNome && tp.apelido && g.autorNome.toLowerCase() === tp.apelido.toLowerCase());
+        }).length;
+
+        var goalBadgeHTML = playerGoals > 0 
+          ? '<span style="color: #10B981; font-weight: 800; margin-left: 4px;" title="' + playerGoals + ' gol(s)">⚽' + (playerGoals > 1 ? '<span style="font-size: 10px; background: #10B981; color: #FFF; padding: 0 4px; border-radius: 8px; margin-left: 2px;">' + playerGoals + '</span>' : '') + '</span>' 
+          : '';
+
         var avatarHTML = (p && p.foto) 
           ? '<img class="acomp-player-avatar-clear" src="' + p.foto + '" style="border: 1.5px solid ' + theme.border + ';">'
           : '<div style="width: 24px; height: 24px; border-radius: 50%; background: ' + theme.bg + '; border: 1.5px solid ' + theme.border + '; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: ' + theme.text + ';">' + nome.charAt(0).toUpperCase() + '</div>';
 
         if (isRightAligned) {
           return '<div class="acomp-player-item-clear" style="justify-content: flex-end; text-align: right; gap: 8px;">' +
-            '<span class="acomp-player-name-clear">' + nome + (isGoleiro ? ' 🧤' : '') + '</span>' +
+            '<span class="acomp-player-name-clear">' + goalBadgeHTML + ' ' + nome + (isGoleiro ? ' 🧤' : '') + '</span>' +
             avatarHTML +
           '</div>';
         } else {
           return '<div class="acomp-player-item-clear" style="gap: 8px;">' +
             avatarHTML +
-            '<span class="acomp-player-name-clear">' + nome + (isGoleiro ? ' 🧤' : '') + '</span>' +
+            '<span class="acomp-player-name-clear">' + nome + (isGoleiro ? ' 🧤' : '') + ' ' + goalBadgeHTML + '</span>' +
           '</div>';
         }
       }).join('');
@@ -350,6 +382,28 @@ var Acompanhamento = {
 
     if (teamAPlayers) teamAPlayers.innerHTML = getTeamPlayersHTML(match.teamA, themeA, false);
     if (teamBPlayers) teamBPlayers.innerHTML = getTeamPlayersHTML(match.teamB, themeB, true);
+
+    // Feed de gols ao vivo registrados nesta partida
+    var goalsFeedEl = document.getElementById('acomp-live-goals-feed');
+    if (goalsFeedEl) {
+      var goals = match.goals || [];
+      if (goals.length === 0) {
+        goalsFeedEl.style.display = 'none';
+        goalsFeedEl.innerHTML = '';
+      } else {
+        goalsFeedEl.style.display = 'block';
+        var goalsHTML = '<div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">⚽ Gols desta partida:</div>' +
+          '<div style="display: flex; flex-wrap: wrap; gap: 8px;">' +
+          goals.map(function(g) {
+            var badgeTheme = self._getTeamTheme(g.teamName);
+            return '<span style="background: #FFFFFF; border: 1px solid ' + badgeTheme.border + '; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; color: #0F172A; display: inline-flex; align-items: center; gap: 6px;">' +
+              '⚽ <strong>' + (g.autorNome || 'Jogador') + '</strong> <span style="font-size: 10px; color: #64748b;">(' + (g.teamName || 'Time') + ')</span>' +
+            '</span>';
+          }).join('') +
+          '</div>';
+        goalsFeedEl.innerHTML = goalsHTML;
+      }
+    }
   },
 
   // --- Fila de Espera ----------------------------------------------------
@@ -411,12 +465,23 @@ var Acompanhamento = {
           '<span class="acomp-queue-pos-clear" style="color: ' + theme.text + ';">' + (idx + 1) + '</span>' +
           avatarsHTML +
           '<span class="acomp-queue-team-name-clear">' + name + '</span>' +
+          '<button class="acomp-btn-view-queue" data-team="' + name + '" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 2px 6px; cursor: pointer; font-size: 11px; margin-left: 6px;" title="Ver escalação do ' + name + '">👁️</button>' +
         '</div>' +
         (idx === 0 ? '<span class="acomp-next-badge-clear">PRÓXIMO ➜</span>' : '') +
       '</div>';
     });
 
     listEl.innerHTML = html;
+
+    listEl.querySelectorAll('.acomp-btn-view-queue').forEach(function(btn) {
+      btn.onclick = function() {
+        var tName = btn.getAttribute('data-team');
+        var teamObj = self._findTeam(tName, teams) || { nome: tName, players: [] };
+        if (window.App && window.App.openModal) {
+          window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
+        }
+      };
+    });
   },
 
   // --- Histórico de Partidas Recentes ------------------------------------

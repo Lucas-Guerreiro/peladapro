@@ -557,9 +557,10 @@ async function handleFinishMatch() {
     }
   }
 
-  // Para o cronômetro, reseta placar e volta ao tempo configurado (silent = sem toast extra)
+  // Para o cronômetro, reseta placar e autores de gols e volta ao tempo configurado
   window.App.liveMatch.scoreA = 0;
   window.App.liveMatch.scoreB = 0;
+  window.App.liveMatch.goals = [];
   resetLiveTimer(true);
 
   // Persiste a fila e o estado ao vivo no localStorage

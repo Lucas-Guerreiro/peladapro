@@ -355,7 +355,10 @@
   <div class="acomp-scoreboard-row-clear">
     <!-- TIME A -->
     <div class="acomp-team-box-clear" id="acomp-team-a">
-      <div class="acomp-team-title-clear" id="acomp-team-a-name">Time A</div>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+        <div class="acomp-team-title-clear" id="acomp-team-a-name">Time A</div>
+        <button id="acomp-btn-view-team-a" style="border: 1px solid #CBD5E1; background: #F8FAFC; border-radius: 6px; padding: 2px 6px; cursor: pointer; font-size: 12px;" title="Ver escalação do Time A">👁️</button>
+      </div>
       <div id="acomp-team-a-status" style="min-height: 16px; margin-bottom: 8px; text-align: center;"></div>
       <div class="acomp-players-list-clear" id="acomp-team-a-players">
         <!-- Populado via JS -->
@@ -371,12 +374,20 @@
 
     <!-- TIME B -->
     <div class="acomp-team-box-clear" id="acomp-team-b">
-      <div class="acomp-team-title-clear" id="acomp-team-b-name">Time B</div>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+        <div class="acomp-team-title-clear" id="acomp-team-b-name">Time B</div>
+        <button id="acomp-btn-view-team-b" style="border: 1px solid #CBD5E1; background: #F8FAFC; border-radius: 6px; padding: 2px 6px; cursor: pointer; font-size: 12px;" title="Ver escalação do Time B">👁️</button>
+      </div>
       <div id="acomp-team-b-status" style="min-height: 16px; margin-bottom: 8px; text-align: center;"></div>
       <div class="acomp-players-list-clear" id="acomp-team-b-players">
         <!-- Populado via JS -->
       </div>
     </div>
+  </div>
+
+  <!-- GOLS REGISTRADOS NA PARTIDA AO VIVO -->
+  <div id="acomp-live-goals-feed" style="margin-top: 14px; padding: 10px 14px; background: #F8FAFC; border-radius: 8px; border: 1px solid #E2E8F0; display: none;">
+    <!-- Populado via JS em tempo real -->
   </div>
 </div>
 
