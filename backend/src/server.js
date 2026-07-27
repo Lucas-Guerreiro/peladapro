@@ -60,19 +60,20 @@ app.use(cors({
 // 3. RATE LIMITING — Proteção contra força bruta e flood
 // ============================================================
 
-// Limite geral: 200 requisições por 15 minutos por IP
+// Limite geral: 3000 requisições por 15 minutos por IP (ignora chamadas de /live)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 3000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path && req.path.includes('/live'),
   message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' }
 });
 
-// Limite restrito para login/registro: 10 tentativas por 15 minutos
+// Limite restrito para login/registro: 30 tentativas por 15 minutos
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Muitas tentativas de autenticação. Aguarde 15 minutos.' }
