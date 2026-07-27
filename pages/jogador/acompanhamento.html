@@ -1,15 +1,20 @@
-<!-- pages/jogador/acompanhamento.html — Partida ao Vivo (Módulo Jogador Redesign Responsivo Tema Claro) -->
+<!-- pages/jogador/acompanhamento.html — Partida ao Vivo (Módulo Jogador Redesign Unificado Tema Claro) -->
 
-<!-- ESTILOS EXCLUSIVOS DO REDESIGN RESPONSIVO TEMA CLARO -->
+<!-- ESTILOS EXCLUSIVOS DO REDESIGN RESPONSIVO TEMA CLARO UNIFICADO -->
 <style>
+  /* Ocultar o cabeçalho global antigo injetado pelo roteador */
+  #main-header, .main-header {
+    display: none !important;
+  }
+
   /* --- Reset e Wrapper Principal --- */
   .acomp-web-body {
-    background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, #F0F4F8 0%, #E2E8F0 100%);
     min-height: 100vh;
     font-family: 'Inter', -apple-system, sans-serif;
-    color: #1e293b;
+    color: #1E293B;
     padding: 40px 20px;
-    margin-top: -80px; /* Ajuste para preencher o topo */
+    margin-top: 0;
   }
 
   .acomp-center-container {
@@ -24,8 +29,7 @@
   @media (max-width: 768px) {
     .acomp-web-body {
       padding: 0;
-      background: #f8fafc;
-      margin-top: 0;
+      background: #F8FAFC;
     }
     .acomp-center-container {
       max-width: 100%;
@@ -33,30 +37,36 @@
     }
   }
 
-  /* --- Topo Desktop --- */
-  .acomp-header-desktop {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
+  /* --- Cabeçalho Unificado Desktop (Card Único) --- */
+  .acomp-header-unified-card {
     background: #FFFFFF;
     border-radius: 16px;
     border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0 4px 15px rgba(30, 41, 59, 0.02);
+    box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .acomp-header-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .acomp-logo-clear {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 26px;
     letter-spacing: 1px;
-    color: #0f172a;
+    color: #0F172A;
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
   .acomp-logo-clear span {
-    color: #0284c7; /* Azul sofisticado */
+    color: #0284C7; /* Azul sofisticado */
   }
 
   .acomp-user-info-clear {
@@ -73,9 +83,9 @@
 
   .acomp-btn-sair-clear {
     background: rgba(239, 68, 68, 0.08);
-    color: #ef4444;
+    color: #EF4444;
     border: none;
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 8px;
     font-size: 11px;
     font-weight: 700;
@@ -84,29 +94,67 @@
   }
 
   .acomp-btn-sair-clear:hover {
-    background: #ef4444;
+    background: #EF4444;
     color: #FFFFFF;
   }
 
-  /* --- Topo Mobile (Menu Hambúrguer) --- */
-  .acomp-header-mobile {
+  .acomp-nav-desktop-clear {
+    display: flex;
+    gap: 4px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    padding-top: 12px;
+  }
+
+  .acomp-nav-item-clear {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px 4px;
+    color: #64748B;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .acomp-nav-item-clear:hover {
+    color: #0284C7;
+    background: rgba(2, 132, 199, 0.04);
+  }
+
+  .acomp-nav-item-clear.active {
+    background: rgba(2, 132, 199, 0.08);
+    color: #0284C7;
+  }
+
+  /* --- Cabeçalho Unificado Mobile --- */
+  .acomp-header-mobile-unified {
     display: none;
   }
 
   @media (max-width: 768px) {
-    .acomp-header-desktop {
+    .acomp-header-unified-card {
       display: none;
     }
-    .acomp-header-mobile {
+    .acomp-header-mobile-unified {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
+      flex-direction: column;
       background: #FFFFFF;
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       position: sticky;
       top: 0;
       z-index: 100;
+      padding: 12px 20px;
+    }
+    .acomp-header-mobile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
     }
   }
 
@@ -114,9 +162,10 @@
     background: transparent;
     border: none;
     font-size: 24px;
-    color: #0f172a;
+    color: #0F172A;
     cursor: pointer;
     padding: 4px;
+    line-height: 1;
   }
 
   /* --- Menu Dropdown Mobile --- */
@@ -124,15 +173,10 @@
     display: none;
     flex-direction: column;
     background: #FFFFFF;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 12px 20px 20px;
-    gap: 12px;
-    position: absolute;
-    top: 64px;
-    left: 0;
-    width: 100%;
-    z-index: 99;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    padding: 12px 0 8px;
+    gap: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    margin-top: 12px;
   }
 
   .acomp-mobile-dropdown button {
@@ -147,64 +191,22 @@
   }
 
   .acomp-mobile-dropdown button.active {
-    color: #0284c7;
+    color: #0284C7;
     font-weight: 700;
   }
 
   .acomp-dropdown-user {
     font-size: 13px;
     font-weight: 700;
-    color: #0f172a;
+    color: #0F172A;
     margin-bottom: 4px;
-  }
-
-  /* --- Navegação Secundária Desktop --- */
-  .acomp-nav-desktop-clear {
-    display: flex;
-    background: #FFFFFF;
-    border-radius: 16px;
-    padding: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0 4px 15px rgba(30, 41, 59, 0.02);
-    justify-content: space-between;
-  }
-
-  @media (max-width: 768px) {
-    .acomp-nav-desktop-clear {
-      display: none;
-    }
-  }
-
-  .acomp-nav-item-clear {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 10px 4px;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-    text-align: center;
-  }
-
-  .acomp-nav-item-clear:hover {
-    color: #0284c7;
-    background: rgba(2, 132, 199, 0.04);
-  }
-
-  .acomp-nav-item-clear.active {
-    background: rgba(2, 132, 199, 0.08);
-    color: #0284c7;
+    padding: 0 4px;
   }
 
   /* --- Cards Modernos --- */
   .acomp-card-clear {
     background: #FFFFFF;
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 24px;
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);
@@ -234,7 +236,7 @@
     font-size: 44px;
     font-weight: 300;
     font-family: monospace, sans-serif;
-    color: #0f172a;
+    color: #0F172A;
     letter-spacing: 2px;
     margin-bottom: 12px;
     line-height: 1;
@@ -243,7 +245,7 @@
   .acomp-progress-container-clear {
     width: 100%;
     height: 8px;
-    background: #f1f5f9;
+    background: #F1F5F9;
     border-radius: 100px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -251,7 +253,7 @@
 
   .acomp-progress-bar-clear {
     height: 100%;
-    background: linear-gradient(90deg, #34d399 0%, #0284c7 100%);
+    background: linear-gradient(90deg, #34D399 0%, #0284C7 100%);
     border-radius: 100px;
     transition: width 0.3s ease;
   }
@@ -261,14 +263,14 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #64748b;
+    color: #64748B;
     font-weight: 600;
   }
 
   .acomp-pulse-dot-clear {
     width: 8px;
     height: 8px;
-    background-color: #34d399; /* Verde menta */
+    background-color: #34D399; /* Verde menta */
     border-radius: 50%;
     box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
     animation: acomp-pulse-clear 2s infinite;
@@ -276,7 +278,7 @@
   }
 
   .acomp-pulse-dot-clear.paused {
-    background-color: #f87171;
+    background-color: #F87171;
     animation: none;
     box-shadow: none;
   }
@@ -296,10 +298,11 @@
     }
   }
 
-  /* --- Scoreboard ao Vivo --- */
+  /* --- Scoreboard ao Vivo (Fundo Claro) --- */
   .acomp-score-card-clear {
     position: relative;
     padding: 32px 20px 24px;
+    background: #FFFFFF;
   }
 
   .acomp-live-tag-clear {
@@ -307,9 +310,9 @@
     top: 14px;
     left: 50%;
     transform: translateX(-50%);
-    background: #d1fae5; /* Fundo verde menta suave */
-    border: 1px solid #a7f3d0;
-    color: #065f46;
+    background: #D1FAE5; /* Fundo verde menta suave */
+    border: 1px solid #A7F3D0;
+    color: #065F46;
     font-size: 10px;
     font-weight: 700;
     padding: 3px 12px;
@@ -323,7 +326,7 @@
   .acomp-live-tag-clear span {
     width: 6px;
     height: 6px;
-    background-color: #34d399;
+    background-color: #34D399;
     border-radius: 50%;
     display: inline-block;
     animation: acomp-pulse-clear 1.5s infinite;
@@ -345,7 +348,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 1px solid rgba(0, 0, 0, 0.03);
+    background: #FFFFFF; /* Fundo branco unificado */
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .acomp-team-title-clear {
@@ -382,7 +386,7 @@
   .acomp-player-name-clear {
     font-size: 12px;
     font-weight: 600;
-    color: #334155;
+    color: #1E293B;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -401,13 +405,13 @@
   .acomp-score-num-clear {
     font-size: 52px;
     font-weight: 800;
-    color: #0f172a;
+    color: #1E293B; /* Cor escura solicitada */
     font-family: monospace, sans-serif;
   }
 
   .acomp-score-divider-clear {
     font-size: 22px;
-    color: #94a3b8;
+    color: #94A3B8;
     opacity: 0.5;
   }
 
@@ -423,7 +427,7 @@
   .acomp-queue-header-clear h3 {
     font-size: 15px;
     font-weight: 700;
-    color: #0f172a;
+    color: #0F172A;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -431,7 +435,7 @@
 
   .acomp-queue-header-clear span {
     font-size: 12px;
-    color: #64748b;
+    color: #64748B;
     font-weight: 600;
   }
 
@@ -442,7 +446,7 @@
   }
 
   .acomp-queue-item-clear {
-    background: #FFFFFF;
+    background: #FFFFFF; /* Fundo branco unificado */
     border: 1px solid rgba(0, 0, 0, 0.04);
     border-radius: 12px;
     padding: 14px 16px;
@@ -480,20 +484,20 @@
     font-family: monospace;
     font-size: 13px;
     font-weight: 700;
-    color: #64748b;
+    color: #64748B;
     width: 16px;
   }
 
   .acomp-queue-team-name-clear {
     font-size: 14px;
     font-weight: 600;
-    color: #1e293b;
+    color: #1E293B;
   }
 
   .acomp-next-badge-clear {
-    background: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
+    background: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #A7F3D0;
     font-size: 9px;
     font-weight: 700;
     padding: 3px 8px;
@@ -502,55 +506,69 @@
   }
 
   /* --- Regra Ativa --- */
-  .acomp-rule-card-clear {
-    background: #faf5ff; /* Roxo claro */
-    border: 1px solid #f3e8ff;
-    border-radius: 12px;
-    padding: 12px 16px;
-    text-align: center;
-  }
-
   .acomp-rule-title-clear {
+    display: inline-block;
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #6b21a8;
+    color: #6B21A8;
+    background: #FAF5FF;
+    border: 1px solid #F3E8FF;
+    padding: 3px 8px;
+    border-radius: 6px;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
   }
 
   .acomp-rule-desc-clear {
     font-size: 13px;
-    color: #581c87;
-    font-weight: 600;
+    color: #1E293B; /* Destaque escuro solicitado */
+    font-weight: 700;
   }
 </style>
 
-<!-- TELA WEB COMPLETA E RESPONSIVA (TEMA CLARO) -->
+<!-- TELA WEB COMPLETA E RESPONSIVA (TEMA CLARO UNIFICADO) -->
 <div class="acomp-web-body">
   <div class="acomp-center-container">
 
-    <!-- TOPO DESKTOP -->
-    <header class="acomp-header-desktop">
-      <div class="acomp-logo-clear">
-        <i data-feather="target" style="stroke-width: 2.5; color: #0284c7;"></i>
-        PELADA<span>PRO</span>
+    <!-- CABEÇALHO UNIFICADO DESKTOP -->
+    <header class="acomp-header-unified-card">
+      <!-- Linha 1: Logotipo, Usuário e Sair -->
+      <div class="acomp-header-row1">
+        <div class="acomp-logo-clear">
+          <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 22px; height: 22px;"></i>
+          PELADA<span>PRO</span>
+        </div>
+        <div class="acomp-user-info-clear">
+          <span class="acomp-user-name-clear">Lucas Fernandes Guerreiro</span>
+          <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
+        </div>
       </div>
-      <div class="acomp-user-info-clear">
-        <span class="acomp-user-name-clear">Lucas Fernandes Guerreiro</span>
-        <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
-      </div>
+      
+      <!-- Linha 2: Abas de Navegação -->
+      <nav class="acomp-nav-desktop-clear">
+        <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
+        <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
+        <button class="acomp-nav-item-clear active">Acompanhamento</button>
+        <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
+        <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
+      </nav>
     </header>
 
-    <!-- TOPO MOBILE -->
-    <header class="acomp-header-mobile">
-      <div class="acomp-logo-clear">
-        <i data-feather="target" style="stroke-width: 2.5; color: #0284c7;"></i>
-        PELADA<span>PRO</span>
+    <!-- CABEÇALHO UNIFICADO MOBILE -->
+    <header class="acomp-header-mobile-unified">
+      <div class="acomp-header-mobile-row">
+        <div class="acomp-logo-clear">
+          <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 20px; height: 20px;"></i>
+          PELADA<span>PRO</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
+          <button class="acomp-hamburger-btn" onclick="Acompanhamento.toggleMobileMenu()">☰</button>
+        </div>
       </div>
-      <button class="acomp-hamburger-btn" onclick="Acompanhamento.toggleMobileMenu()">☰</button>
       
-      <!-- DROPDOWN MOBILE INTERATIVO -->
+      <!-- MENU HAMBÚRGUER EXPANSÍVEL (MOBILE) -->
       <div class="acomp-mobile-dropdown" id="acomp-mobile-dropdown">
         <div class="acomp-dropdown-user">Lucas Fernandes Guerreiro</div>
         <button onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
@@ -558,19 +576,8 @@
         <button class="active">Acompanhamento</button>
         <button onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
         <button onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
-        <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.06); margin: 8px 0;">
-        <button class="acomp-btn-sair-clear" onclick="Auth.logout()" style="width: 100%; text-align: center;">SAIR</button>
       </div>
     </header>
-
-    <!-- ABAS DESKTOP -->
-    <nav class="acomp-nav-desktop-clear">
-      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
-      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
-      <button class="acomp-nav-item-clear active">Acompanhamento</button>
-      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
-      <button class="acomp-nav-item-clear" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
-    </nav>
 
     <!-- CRONÔMETRO -->
     <div class="acomp-card-clear acomp-timer-wrapper-clear">
@@ -620,7 +627,7 @@
     <div class="acomp-queue-wrapper-clear">
       <div class="acomp-queue-header-clear">
         <h3>
-          <i data-feather="list" style="width: 16px; height: 16px; color: #64748b;"></i>
+          <i data-feather="list" style="width: 16px; height: 16px; color: #64748B;"></i>
           Fila de Espera
         </h3>
         <span id="acomp-queue-count">—</span>
@@ -630,8 +637,8 @@
       </div>
     </div>
 
-    <!-- REGRA ATIVA -->
-    <div class="acomp-rule-card-clear">
+    <!-- REGRA ATIVA (RODAPÉ) -->
+    <div class="acomp-card-clear" style="text-align: center; padding: 16px;">
       <div class="acomp-rule-title-clear">Regra Ativa</div>
       <div class="acomp-rule-desc-clear" id="acomp-rule-text">REGRA PADRÃO: MAIS GOLS VENCE</div>
     </div>

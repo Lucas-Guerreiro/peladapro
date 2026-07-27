@@ -18,51 +18,51 @@ var Acompanhamento = {
     'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&auto=format&fit=crop&q=80'
   ],
 
-  // Mapeamento visual das cores dos times (paleta de tons claros pastel com bordas vivas)
+  // Mapeamento visual das cores dos times (fundo branco puro com bordas finas coloridas)
   _getTeamTheme: function(teamName) {
     var name = (teamName || '').toLowerCase();
     
     if (name.includes('verm') || name.includes('red')) {
       return {
-        bg: '#FEF2F2', // Vermelho claro suave
+        bg: '#FFFFFF', // Fundo branco unificado
         border: '#FCA5A5',
-        text: '#DC2626'
+        text: '#EF4444'
       };
     }
     if (name.includes('verd') || name.includes('green')) {
       return {
-        bg: '#F0FDF4', // Verde menta claro suave
+        bg: '#FFFFFF', // Fundo branco unificado
         border: '#86EFAC',
-        text: '#16A34A'
+        text: '#10B981'
       };
     }
     if (name.includes('azul') || name.includes('blue')) {
       return {
-        bg: '#F0F9FF', // Azul gelo claro suave
+        bg: '#FFFFFF', // Fundo branco unificado
         border: '#BAE6FD',
         text: '#0284C7'
       };
     }
     if (name.includes('amar') || name.includes('yellow')) {
       return {
-        bg: '#FEFCE8', // Amarelo claro suave
+        bg: '#FFFFFF', // Fundo branco unificado
         border: '#FEF08A',
-        text: '#CA8A04'
+        text: '#D97706'
       };
     }
     
     // Fallback dinâmico para Time A / Time B
     if (name.includes('time a') || name.includes('a')) {
       return {
-        bg: '#F0F9FF',
+        bg: '#FFFFFF',
         border: '#BAE6FD',
         text: '#0284C7'
       };
     }
     return {
-      bg: '#FEFCE8',
+      bg: '#FFFFFF',
       border: '#FEF08A',
-      text: '#CA8A04'
+      text: '#D97706'
     };
   },
 
