@@ -180,16 +180,16 @@ window.App.initPartidas = function() {
     }
   }
 
-  window.App.updateAcompanhamentoUI = function() {
+  window.App.updateAcompanhamentoUI = async function() {
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
     if (peladaId && window.Api && window.Api.atualizarLiveState) {
       let teams = [];
       try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
-      window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+      await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
     }
     renderLiveMatchUI();
     renderWaitingQueue();
-    renderRecentMatches();
+    await renderRecentMatches();
   };
 
   renderLiveMatchUI();
@@ -213,13 +213,15 @@ function startGestorPolling() {
 
   // Polling do backend a cada 1000ms para sync instantâneo entre gestor e atleta
   gestorPollingInterval = setInterval(async () => {
+    if (window.App.isFinishingMatch) return;
+
     const activePelada = window.App.activePelada;
     const peladaId = activePelada ? activePelada.id : null;
 
     if (peladaId && window.Api && window.Api.obterLiveState) {
       try {
         const res = await window.Api.obterLiveState(peladaId);
-        if (res && res.state) {
+        if (res && res.state && !window.App.isFinishingMatch) {
           if (res.state.liveMatch) {
             window.App.liveMatch = res.state.liveMatch;
             localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
@@ -235,9 +237,11 @@ function startGestorPolling() {
       } catch (err) {}
     }
 
-    renderLiveMatchUI();
-    renderWaitingQueue();
-    renderRecentMatches();
+    if (!window.App.isFinishingMatch) {
+      renderLiveMatchUI();
+      renderWaitingQueue();
+      renderRecentMatches();
+    }
   }, 1000);
 
   window.removeEventListener('storage', onGestorStorageChange);
@@ -585,160 +589,168 @@ function updateLiveScore(team, diff) {
 }
 
 async function handleFinishMatch() {
-  const teams = JSON.parse(localStorage.getItem("teams")) || [];
-  if (teams.length < 2) {
-    window.App.showToast("Sorteie os times antes de finalizar partidas.", "error");
-    return;
-  }
-
-  const scoreA = window.App.liveMatch.scoreA;
-  const scoreB = window.App.liveMatch.scoreB;
-  const teamAName = window.App.liveMatch.teamA;
-  const teamBName = window.App.liveMatch.teamB;
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-
-  if (!peladaId) {
-    window.App.showToast("Nenhuma pelada selecionada.", "error");
-    return;
-  }
-
-  window.App.showToast(`Fim de Jogo! ${teamAName} ${scoreA} x ${scoreB} ${teamBName}`);
-
-  // 1. Gravar a partida finalizada no banco de dados
+  window.App.isFinishingMatch = true;
   try {
-    const goalsDetails = window.App.liveMatch ? (window.App.liveMatch.goals || []) : [];
-    const res = await Api.lancarPartida(peladaId, teamAName, teamBName, scoreA, scoreB, goalsDetails);
-    if (res.error) {
-      console.error("Erro ao salvar partida:", res.error);
+    const teams = JSON.parse(localStorage.getItem("teams")) || [];
+    if (teams.length < 2) {
+      window.App.showToast("Sorteie os times antes de finalizar partidas.", "error");
+      window.App.isFinishingMatch = false;
+      return;
+    }
+
+    const scoreA = window.App.liveMatch.scoreA;
+    const scoreB = window.App.liveMatch.scoreB;
+    const teamAName = window.App.liveMatch.teamA;
+    const teamBName = window.App.liveMatch.teamB;
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+
+    if (!peladaId) {
+      window.App.showToast("Nenhuma pelada selecionada.", "error");
+      window.App.isFinishingMatch = false;
+      return;
+    }
+
+    window.App.showToast(`Fim de Jogo! ${teamAName} ${scoreA} x ${scoreB} ${teamBName}`);
+
+    // 1. Gravar a partida finalizada no banco de dados
+    try {
+      const goalsDetails = window.App.liveMatch ? (window.App.liveMatch.goals || []) : [];
+      const res = await Api.lancarPartida(peladaId, teamAName, teamBName, scoreA, scoreB, goalsDetails);
+      if (res.error) {
+        console.error("Erro ao salvar partida:", res.error);
+      }
+    } catch (err) {
+      console.error("Erro na requisição de salvar partida:", err);
+    }
+
+    // Busca as configurações da pelada ativa
+    const peladaAtiva = window.App.activePelada || {};
+    const grupoAtivo = window.App.currentGroup || {};
+    const winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
+    const exitRule = peladaAtiva.regra_saida || grupoAtivo.regra_saida || "final_fila";
+    const tieRule = peladaAtiva.criterio_empate || grupoAtivo.criterio_empate || "ambos_permanecem";
+
+    let isTie = scoreA === scoreB;
+    let winner = isTie ? null : (scoreA > scoreB ? teamAName : teamBName);
+    let loser = isTie ? null : (scoreA > scoreB ? teamBName : teamAName);
+
+    // Inicializa vitórias consecutivas caso não existam
+    window.App.liveMatch.consecutiveWinsA = window.App.liveMatch.consecutiveWinsA || 0;
+    window.App.liveMatch.consecutiveWinsB = window.App.liveMatch.consecutiveWinsB || 0;
+
+    if (isTie) {
+      // Em caso de empate, zera o contador do time que sair
+      if (tieRule === "saem_ambos") {
+        window.App.liveMatch.consecutiveWinsA = 0;
+        window.App.liveMatch.consecutiveWinsB = 0;
+
+        if (window.App.waitingQueue.length >= 2) {
+          const nextA = window.App.waitingQueue.shift();
+          const nextB = window.App.waitingQueue.shift();
+          window.App.waitingQueue.push(teamAName, teamBName);
+          window.App.liveMatch.teamA = nextA;
+          window.App.liveMatch.teamB = nextB;
+        }
+      } else if (tieRule === "time_entrando") {
+        // Time B (ou o que estava desafiando) sai, o que estava na fila entra no lugar dele
+        window.App.liveMatch.consecutiveWinsB = 0;
+        if (window.App.waitingQueue.length > 0) {
+          const next = window.App.waitingQueue.shift();
+          window.App.waitingQueue.push(teamBName);
+          window.App.liveMatch.teamB = next;
+        }
+      }
+    } else {
+      // Incrementa o contador do vencedor e zera o do perdedor
+      if (winner === teamAName) {
+        window.App.liveMatch.consecutiveWinsA++;
+        window.App.liveMatch.consecutiveWinsB = 0;
+      } else {
+        window.App.liveMatch.consecutiveWinsB++;
+        window.App.liveMatch.consecutiveWinsA = 0;
+      }
+
+      const currentWins = winner === teamAName ? window.App.liveMatch.consecutiveWinsA : window.App.liveMatch.consecutiveWinsB;
+
+      // Se o vencedor bateu o limite de vitórias permitidas seguidas
+      if (currentWins >= winsLimit) {
+        window.App.showToast(`O ${winner} atingiu o limite de ${winsLimit} vitórias consecutivas e vai sair para revezamento!`, "info");
+        
+        // Zera o contador do vencedor que está saindo
+        if (winner === teamAName) {
+          window.App.liveMatch.consecutiveWinsA = 0;
+        } else {
+          window.App.liveMatch.consecutiveWinsB = 0;
+        }
+
+        // Ambos os times saem de campo!
+        if (window.App.waitingQueue.length >= 2) {
+          const nextA = window.App.waitingQueue.shift();
+          const nextB = window.App.waitingQueue.shift();
+
+          // 1. O derrotado sempre vai para o final da fila de espera
+          window.App.waitingQueue.push(loser);
+
+          // 2. O vencedor limitado depende da regra_saida ('fora_1_jogo' ou 'final_fila')
+          if (exitRule === "fora_1_jogo") {
+            // Vai para a primeira fila (início da fila) para entrar no próximo jogo
+            window.App.waitingQueue.unshift(winner);
+          } else {
+            // Vai para o final da fila
+            window.App.waitingQueue.push(winner);
+          }
+
+          window.App.liveMatch.teamA = nextA;
+          window.App.liveMatch.teamB = nextB;
+        } else if (window.App.waitingQueue.length === 1) {
+          // Se só tem 1 time na fila de espera, ele entra no lugar do derrotado. O vencedor (limite) e perdedor saem.
+          const next = window.App.waitingQueue.shift();
+          window.App.waitingQueue.push(loser);
+          
+          if (exitRule === "fora_1_jogo") {
+            window.App.waitingQueue.unshift(winner);
+          } else {
+            window.App.waitingQueue.push(winner);
+          }
+
+          if (winner === teamAName) {
+            window.App.liveMatch.teamB = next;
+          } else {
+            window.App.liveMatch.teamA = next;
+          }
+        }
+      } else {
+        // Fluxo normal de vitória: Vencedor continua, perdedor sai
+        if (window.App.waitingQueue.length > 0) {
+          const nextTeam = window.App.waitingQueue.shift();
+          window.App.waitingQueue.push(loser);
+          if (winner === teamAName) {
+            window.App.liveMatch.teamB = nextTeam;
+          } else {
+            window.App.liveMatch.teamA = nextTeam;
+          }
+        }
+      }
+    }
+
+    // Para o cronômetro, reseta placar e autores de gols e volta ao tempo configurado
+    window.App.liveMatch.scoreA = 0;
+    window.App.liveMatch.scoreB = 0;
+    window.App.liveMatch.goals = [];
+    resetLiveTimer(true);
+
+    // Persiste a fila e o estado ao vivo no localStorage
+    saveLiveMatchState();
+
+    // Sincroniza o novo estado no banco de dados e espera a conclusão
+    if (window.App.updateAcompanhamentoUI) {
+      await window.App.updateAcompanhamentoUI();
     }
   } catch (err) {
-    console.error("Erro na requisição de salvar partida:", err);
+    console.error("[handleFinishMatch] Erro ao concluir partida:", err);
+  } finally {
+    window.App.isFinishingMatch = false;
   }
-
-  // Busca as configurações da pelada ativa
-  const peladaAtiva = window.App.activePelada || {};
-  const grupoAtivo = window.App.currentGroup || {};
-  const winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
-  const exitRule = peladaAtiva.regra_saida || grupoAtivo.regra_saida || "final_fila";
-  const tieRule = peladaAtiva.criterio_empate || grupoAtivo.criterio_empate || "ambos_permanecem";
-
-  let isTie = scoreA === scoreB;
-  let winner = isTie ? null : (scoreA > scoreB ? teamAName : teamBName);
-  let loser = isTie ? null : (scoreA > scoreB ? teamBName : teamAName);
-
-  // Inicializa vitórias consecutivas caso não existam
-  window.App.liveMatch.consecutiveWinsA = window.App.liveMatch.consecutiveWinsA || 0;
-  window.App.liveMatch.consecutiveWinsB = window.App.liveMatch.consecutiveWinsB || 0;
-
-  if (isTie) {
-    // Em caso de empate, zera o contador do time que sair
-    if (tieRule === "saem_ambos") {
-      window.App.liveMatch.consecutiveWinsA = 0;
-      window.App.liveMatch.consecutiveWinsB = 0;
-
-      if (window.App.waitingQueue.length >= 2) {
-        const nextA = window.App.waitingQueue.shift();
-        const nextB = window.App.waitingQueue.shift();
-        window.App.waitingQueue.push(teamAName, teamBName);
-        window.App.liveMatch.teamA = nextA;
-        window.App.liveMatch.teamB = nextB;
-      }
-    } else if (tieRule === "time_entrando") {
-      // Time B (ou o que estava desafiando) sai, o que estava na fila entra no lugar dele
-      window.App.liveMatch.consecutiveWinsB = 0;
-      if (window.App.waitingQueue.length > 0) {
-        const next = window.App.waitingQueue.shift();
-        window.App.waitingQueue.push(teamBName);
-        window.App.liveMatch.teamB = next;
-      }
-    }
-  } else {
-    // Incrementa o contador do vencedor e zera o do perdedor
-    if (winner === teamAName) {
-      window.App.liveMatch.consecutiveWinsA++;
-      window.App.liveMatch.consecutiveWinsB = 0;
-    } else {
-      window.App.liveMatch.consecutiveWinsB++;
-      window.App.liveMatch.consecutiveWinsA = 0;
-    }
-
-    const currentWins = winner === teamAName ? window.App.liveMatch.consecutiveWinsA : window.App.liveMatch.consecutiveWinsB;
-
-    // Se o vencedor bateu o limite de vitórias permitidas seguidas
-    if (currentWins >= winsLimit) {
-      window.App.showToast(`O ${winner} atingiu o limite de ${winsLimit} vitórias consecutivas e vai sair para revezamento!`, "info");
-      
-      // Zera o contador do vencedor que está saindo
-      if (winner === teamAName) {
-        window.App.liveMatch.consecutiveWinsA = 0;
-      } else {
-        window.App.liveMatch.consecutiveWinsB = 0;
-      }
-
-      // Ambos os times saem de campo!
-      if (window.App.waitingQueue.length >= 2) {
-        const nextA = window.App.waitingQueue.shift();
-        const nextB = window.App.waitingQueue.shift();
-
-        // 1. O derrotado sempre vai para o final da fila de espera
-        window.App.waitingQueue.push(loser);
-
-        // 2. O vencedor limitado depende da regra_saida ('fora_1_jogo' ou 'final_fila')
-        if (exitRule === "fora_1_jogo") {
-          // Vai para a primeira fila (início da fila) para entrar no próximo jogo
-          window.App.waitingQueue.unshift(winner);
-        } else {
-          // Vai para o final da fila
-          window.App.waitingQueue.push(winner);
-        }
-
-        window.App.liveMatch.teamA = nextA;
-        window.App.liveMatch.teamB = nextB;
-      } else if (window.App.waitingQueue.length === 1) {
-        // Se só tem 1 time na fila de espera, ele entra no lugar do derrotado. O vencedor (limite) e perdedor saem.
-        const next = window.App.waitingQueue.shift();
-        window.App.waitingQueue.push(loser);
-        
-        if (exitRule === "fora_1_jogo") {
-          window.App.waitingQueue.unshift(winner);
-        } else {
-          window.App.waitingQueue.push(winner);
-        }
-
-        if (winner === teamAName) {
-          window.App.liveMatch.teamB = next;
-        } else {
-          window.App.liveMatch.teamA = next;
-        }
-      }
-    } else {
-      // Fluxo normal de vitória: Vencedor continua, perdedor sai
-      if (window.App.waitingQueue.length > 0) {
-        const nextTeam = window.App.waitingQueue.shift();
-        window.App.waitingQueue.push(loser);
-        if (winner === teamAName) {
-          window.App.liveMatch.teamB = nextTeam;
-        } else {
-          window.App.liveMatch.teamA = nextTeam;
-        }
-      }
-    }
-  }
-
-  // Para o cronômetro, reseta placar e autores de gols e volta ao tempo configurado
-  window.App.liveMatch.scoreA = 0;
-  window.App.liveMatch.scoreB = 0;
-  window.App.liveMatch.goals = [];
-  resetLiveTimer(true);
-
-  // Persiste a fila e o estado ao vivo no localStorage
-  saveLiveMatchState();
-
-  renderLiveMatchUI();
-  renderWaitingQueue();
-  await renderRecentMatches(); // Atualiza o histórico na tela gestor
-
-  window.App.updateAcompanhamentoUI();
 }
 
 async function renderRecentMatches() {
