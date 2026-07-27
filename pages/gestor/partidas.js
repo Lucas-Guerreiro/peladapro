@@ -576,7 +576,46 @@ async function renderRecentMatches() {
   const container = document.getElementById("recent-matches-container");
   if (!container) return;
 
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  // 1. Tenta pegar de window.App.activePelada
+  let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+
+  // 2. Se nulo, tenta pegar do valor do select de data da pelada na tela
+  if (!peladaId) {
+    const select = document.getElementById("partidas-select-pelada-date");
+    if (select && select.value) {
+      peladaId = select.value;
+    }
+  }
+
+  // 3. Se nulo, tenta pegar do localStorage
+  if (!peladaId) {
+    try {
+      const raw = localStorage.getItem("activePelada");
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj && obj.id) peladaId = obj.id;
+      }
+    } catch(e) {}
+  }
+
+  // 4. Se ainda nulo, busca a pelada ativa do grupo via API
+  if (!peladaId) {
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    if (currentGroup && currentGroup.id && window.Api && window.Api.listarDatasDoGrupo) {
+      try {
+        const peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+        if (Array.isArray(peladas) && peladas.length > 0) {
+          const active = peladas.find(p => p.status !== 'finalizada') || peladas[0];
+          if (active) {
+            peladaId = active.id;
+            window.App.activePelada = active;
+            localStorage.setItem("activePelada", JSON.stringify(active));
+          }
+        }
+      } catch(e) {}
+    }
+  }
+
   if (!peladaId) {
     container.innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Selecione uma pelada de referência.</p>`;
     return;
@@ -586,7 +625,7 @@ async function renderRecentMatches() {
     const partidas = await Api.listarPartidas(peladaId);
     container.innerHTML = "";
 
-    if (partidas.length === 0) {
+    if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
       container.innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Nenhuma partida finalizada nesta pelada ainda.</p>`;
       return;
     }
@@ -793,6 +832,7 @@ async function initPartidasPeladaSelect() {
     window.App.activePelada = activePelada;
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
+    await renderRecentMatches();
 
     select.onchange = async () => {
       const selectedId = select.value;

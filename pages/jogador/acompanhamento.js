@@ -407,6 +407,13 @@ var Acompanhamento = {
     var peladaId = window.App.activePelada ? window.App.activePelada.id : null;
 
     if (!peladaId) {
+      var select = document.getElementById("acomp-select-pelada-date");
+      if (select && select.value) {
+        peladaId = select.value;
+      }
+    }
+
+    if (!peladaId) {
       try {
         var rawPelada = localStorage.getItem("activePelada");
         if (rawPelada) {
