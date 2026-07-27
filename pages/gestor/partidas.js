@@ -666,6 +666,9 @@ function setupHistoryActions() {
 function saveLiveMatchState() {
   localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
   localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+  if (window.App.activePelada) {
+    localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+  }
 }
 
 async function handleFinishPeladaDay() {

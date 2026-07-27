@@ -153,6 +153,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     }
 
     window.App.activePelada = activePelada;
+    localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
 
     // Sincroniza o select de status da rodada

@@ -101,6 +101,10 @@ const Api = {
     this.saveTransactions(list);
   },
 
+  // --- Players ------------------------------------------------------------
+  getPlayers()       { return this._get(this.KEYS.players) || []; },
+  savePlayers(data)  { this._set(this.KEYS.players, data); },
+
   // --- Teams --------------------------------------------------------------
   getTeams()       { return this._get(this.KEYS.teams) || []; },
   saveTeams(data)  { this._set(this.KEYS.teams, data); },
