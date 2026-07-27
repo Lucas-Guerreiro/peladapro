@@ -468,6 +468,9 @@
   background-color: var(--surface);
   border-bottom: 1px solid rgba(15,27,45,0.08);
   box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 /* --- LIVE MATCH ----------------------------------------------------------- */
@@ -606,6 +609,8 @@
   padding: 8px;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 101;
 }
 
 .mobile-sidebar {

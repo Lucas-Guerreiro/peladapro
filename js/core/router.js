@@ -291,8 +291,31 @@ const Router = {
     if (window.feather) feather.replace();
     // Sincroniza abas no menu mobile (sidebar)
     this._syncMobileSidebar();
+    // Re-vincula o botão hamburger a cada navegação (garante que sempre funcione)
+    this._bindHamburgerBtn();
     // Dispara evento customizado para scripts que escutam
     document.dispatchEvent(new CustomEvent('page:loaded', { detail: { route } }));
+  },
+
+  // --- Vincula botão hamburger (chamado em toda navegação) -----------------
+  _bindHamburgerBtn() {
+    const hamburgerBtn = document.getElementById('hamburger-menu-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (hamburgerBtn) {
+      // Remove listener anterior para evitar duplicação
+      hamburgerBtn.onclick = null;
+      hamburgerBtn.onclick = () => this._openMobileSidebar();
+    }
+    if (closeBtn) {
+      closeBtn.onclick = null;
+      closeBtn.onclick = () => this._closeMobileSidebar();
+    }
+    if (overlay) {
+      overlay.onclick = null;
+      overlay.onclick = () => this._closeMobileSidebar();
+    }
   },
 
   // --- Modal --------------------------------------------------------------
