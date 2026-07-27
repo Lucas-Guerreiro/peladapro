@@ -132,7 +132,7 @@ var Ranking = {
     scorers.forEach(function(p, idx) {
       html += '<tr>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: 600;">' + p.nome + (p.goleiro ? ' 🧤' : '') + '</td>' +
+        '<td style="font-weight: 600;">' + (p.apelido || p.nome) + (p.goleiro ? ' 🧤' : '') + '</td>' +
         '<td style="text-align: center; font-weight: 700; color: var(--secondary);">' + (p.gols || 0) + ' ⚽</td>' +
         '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +
       '</tr>';

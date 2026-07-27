@@ -192,7 +192,7 @@ var Acompanhamento = {
       }
       return team.players.slice(0, 4).map(function(tp) {
         var p = players.find(function(pl) { return pl.id === tp.id; });
-        var nome = p ? p.nome.split(' ')[0] : tp.nome || '?';
+        var nome = p ? (p.apelido || p.nome.split(' ')[0]) : tp.nome || '?';
         
         var fotoIndex = p ? p.id % self._avatarStock.length : 0;
         var fotoUrl = p && p.foto ? p.foto : self._avatarStock[fotoIndex];

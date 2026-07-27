@@ -61,7 +61,7 @@ var Desempenho = {
       html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || idx + 1) + '</td>' +
         '<td style="font-weight: ' + (isMe ? '700' : '600') + '; color: ' + (isMe ? 'var(--secondary)' : 'var(--text-heading)') + ';">' +
-          p.nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
+          (p.apelido || p.nome) + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
         '</td>' +
         '<td style="text-align: center; font-weight: 700; color: var(--primary);">' + (p.gols || 0) + ' ⚽</td>' +
         '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +
@@ -97,7 +97,7 @@ var Desempenho = {
       var isMe = Auth.currentUser && p.id === Auth.currentUser.id;
       html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || idx + 1) + '</td>' +
-        '<td style="font-weight: 600;">' + p.nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</td>' +
+        '<td style="font-weight: 600;">' + (p.apelido || p.nome) + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</td>' +
         '<td style="text-align: center; color: var(--warning); font-weight: 700;">' + Utils.starsHTML(Math.round(rating)) + ' ' + rating.toFixed(1) + '</td>' +
         '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +
       '</tr>';
@@ -127,7 +127,7 @@ var Desempenho = {
       html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || idx + 1) + '</td>' +
         '<td style="font-weight: 600;">' +
-          p.nome + ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' +
+          (p.apelido || p.nome) + ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' +
           (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
         '</td>' +
         '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +

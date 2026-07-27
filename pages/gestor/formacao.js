@@ -364,7 +364,7 @@ window.App.renderDrawnTeams = function() {
       
       pDiv.innerHTML = `
         <span class="player-draft-name">
-          ${p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}
+          ${p.apelido || p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}
         </span>
         <span class="player-draft-stars">${"★".repeat(parseInt(p.autoavaliacao) || 3)}</span>
       `;

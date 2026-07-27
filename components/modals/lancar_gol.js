@@ -21,7 +21,7 @@ window.App.initModalLancar_gol = function(data) {
     players.forEach(p => {
       const opt = document.createElement("option");
       opt.value = p.id;
-      opt.textContent = `${p.nome} ${p.goleiro ? '🧤' : ''}`;
+      opt.textContent = `${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}`;
       authorSelect.appendChild(opt);
     });
   }
@@ -32,7 +32,7 @@ window.App.initModalLancar_gol = function(data) {
     players.forEach(p => {
       const opt = document.createElement("option");
       opt.value = p.id;
-      opt.textContent = `${p.nome} ${p.goleiro ? '🧤' : ''}`;
+      opt.textContent = `${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}`;
       assistSelect.appendChild(opt);
     });
   }

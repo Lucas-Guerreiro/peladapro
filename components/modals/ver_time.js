@@ -30,7 +30,7 @@ window.App.initModalVer_time = function(data) {
 
       div.innerHTML = `
         <span class="text-inter" style="font-size: 14px; font-weight: 500; color: var(--text-heading);">
-          ${p.nome} ${p.goleiro ? '🧤' : ''}
+          ${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}
         </span>
         <span style="color: var(--warning); font-size: 11px;">
           ${"★".repeat(parseInt(p.autoavaliacao) || 3)}

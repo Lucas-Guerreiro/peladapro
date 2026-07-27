@@ -156,8 +156,8 @@ async function handleSaveAthlete(photoPreview) {
     }
   }
 
-  if (!name || !email || !dob || !cpf || !whatsapp || rating === 0) {
-    window.App.showToast("Por favor, preencha todos os campos obrigatórios.", "error");
+  if (!name || !email) {
+    window.App.showToast("Por favor, preencha o Nome Completo e o E-mail.", "error");
     return;
   }
 
