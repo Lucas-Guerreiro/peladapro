@@ -39,33 +39,36 @@ window.App.initPartidas = function() {
     const btnFinishDay = document.getElementById("btn-finish-pelada-day");
     if (btnFinishDay) btnFinishDay.onclick = handleFinishPeladaDay;
 
-    // Configuração do seletor de tempo retroativo
-    const selectDuration = document.getElementById("select-timer-duration");
-    if (selectDuration) {
-      // Obter configuração de duração da pelada ativa ou padrão
+    // Configuração dos botões de ajuste de minutos (+1 / -1)
+    const btnTimerMinus = document.getElementById("btn-timer-minus");
+    const btnTimerPlus = document.getElementById("btn-timer-plus");
+
+    // Inicialização de segurança do tempo da partida se estiver zerado
+    if (!window.App.liveMatch.isPlaying && window.App.liveMatch.timerSeconds === 0) {
       const groupConfigs = window.Api.getConfigs() || [];
       const currentGrp = window.Auth.currentGroup;
       const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
       const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
-      
-      // Pré-seleciona a duração
-      selectDuration.value = durationMin.toString();
+      window.App.liveMatch.timerSeconds = durationMin * 60;
+    }
 
-      // Inicializa os segundos se estiver zerado
-      if (!window.App.liveMatch.isPlaying && (window.App.liveMatch.timerSeconds === 0 || window.App.liveMatch.timerSeconds === 8 * 60)) {
-        window.App.liveMatch.timerSeconds = durationMin * 60;
-      }
+    if (btnTimerMinus) {
+      btnTimerMinus.onclick = () => {
+        window.App.liveMatch.timerSeconds = Math.max(0, (window.App.liveMatch.timerSeconds || 0) - 60);
+        saveLiveMatchState();
+        updateTimerDisplay();
+        renderLiveMatchUI();
+        window.App.showToast("Subtraído 1 minuto do jogo.", "info");
+      };
+    }
 
-      selectDuration.onchange = () => {
-        if (!window.App.liveMatch.isPlaying) {
-          window.App.liveMatch.timerSeconds = parseInt(selectDuration.value) * 60;
-          saveLiveMatchState();
-          updateTimerDisplay();
-          renderLiveMatchUI();
-        } else {
-          window.App.showToast("Não é possível alterar a duração com o cronômetro rodando!", "warning");
-          selectDuration.value = Math.round(window.App.liveMatch.timerSeconds / 60).toString();
-        }
+    if (btnTimerPlus) {
+      btnTimerPlus.onclick = () => {
+        window.App.liveMatch.timerSeconds = (window.App.liveMatch.timerSeconds || 0) + 60;
+        saveLiveMatchState();
+        updateTimerDisplay();
+        renderLiveMatchUI();
+        window.App.showToast("Adicionado 1 minuto ao jogo.", "info");
       };
     }
 
@@ -314,10 +317,12 @@ function toggleLiveTimer() {
     btn.className = "btn btn-sm btn-primary";
     window.App.showToast("Jogo Pausado!");
   } else {
-    // Se o tempo estiver zerado ou abaixo, recomeça com o valor do seletor
+    // Se o tempo estiver zerado ou abaixo, recomeça com o tempo padrão configurado para o grupo
     if (window.App.liveMatch.timerSeconds <= 0) {
-      const selectDuration = document.getElementById("select-timer-duration");
-      const durationMin = selectDuration ? parseInt(selectDuration.value) : 8;
+      const groupConfigs = window.Api.getConfigs() || [];
+      const currentGrp = window.Auth.currentGroup;
+      const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+      const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
       window.App.liveMatch.timerSeconds = durationMin * 60;
     }
 
@@ -355,9 +360,11 @@ function resetLiveTimer() {
   clearInterval(timerInterval);
   window.App.liveMatch.isPlaying = false;
   
-  // Reseta para o valor escolhido no select
-  const selectDuration = document.getElementById("select-timer-duration");
-  const durationMin = selectDuration ? parseInt(selectDuration.value) : 8;
+  // Reseta para o tempo padrão configurado para o grupo
+  const groupConfigs = window.Api.getConfigs() || [];
+  const currentGrp = window.Auth.currentGroup;
+  const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+  const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
   window.App.liveMatch.timerSeconds = durationMin * 60;
   
   const btnToggle = document.getElementById("btn-timer-toggle");

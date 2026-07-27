@@ -36,21 +36,18 @@
           </button>
         </div>
  
-        <!-- Cronômetro Central (Retroativo) -->
-        <div style="text-align: center; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); padding: 0 10px; display: flex; flex-direction: column; align-items: center;">
-          <span id="match-control-timer" style="font-family: 'Inter', sans-serif !important; font-size: 44px; font-weight: 800; display: block; letter-spacing: 1.5px; color: #FFF; margin-bottom: 8px; line-height: 1;">08:00</span>
+        <!-- Cronômetro Central (Retroativo com Ajuste de Minutos) -->
+        <div style="text-align: center; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); padding: 0 10px; display: flex; flex-direction: column; align-items: center; min-width: 150px;">
           
-          <!-- Seletor de Tempo Retroativo -->
-          <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-            <label for="select-timer-duration" style="font-size: 11px; opacity: 0.8; font-weight: 700;">TEMPO:</label>
-            <select id="select-timer-duration" style="width: auto; height: 26px; padding: 0 6px; font-size: 12px; font-weight: 700; border-radius: 6px; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
-              <option value="5" style="color:#1E293B;">5 Minutos</option>
-              <option value="8" style="color:#1E293B;" selected>8 Minutos</option>
-              <option value="10" style="color:#1E293B;">10 Minutos</option>
-              <option value="12" style="color:#1E293B;">12 Minutos</option>
-              <option value="15" style="color:#1E293B;">15 Minutos</option>
-              <option value="20" style="color:#1E293B;">20 Minutos</option>
-            </select>
+          <!-- Controles de Ajuste de Minutos (-1 / +1) -->
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; margin-top: 4px;">
+            <!-- Botão -1 Minuto -->
+            <button id="btn-timer-minus" class="btn btn-sm btn-outline-secondary" style="border-radius: 50%; width: 28px; height: 28px; font-weight: bold; border-color: rgba(255,255,255,0.3); color: #fff; padding: 0; line-height: 1; font-size: 13px;" title="Subtrair 1 minuto">-1</button>
+            
+            <span id="match-control-timer" style="font-family: 'Inter', sans-serif !important; font-size: 38px; font-weight: 800; display: block; letter-spacing: 1px; color: #FFF; line-height: 1;">08:00</span>
+            
+            <!-- Botão +1 Minuto -->
+            <button id="btn-timer-plus" class="btn btn-sm btn-outline-secondary" style="border-radius: 50%; width: 28px; height: 28px; font-weight: bold; border-color: rgba(255,255,255,0.3); color: #fff; padding: 0; line-height: 1; font-size: 13px;" title="Somar 1 minuto">+1</button>
           </div>
 
           <div style="display: flex; justify-content: center; gap: 10px; width: 100%;">
