@@ -269,3 +269,59 @@ exports.criarPorGestor = async (req, res) => {
     res.status(500).json({ error: 'Erro ao cadastrar atleta.', detail: err.message });
   }
 };
+
+exports.atualizarPorGestor = async (req, res) => {
+  const gestorTipo = req.usuarioTipo;
+  const { id } = req.params;
+
+  if (gestorTipo !== 'gestor') {
+    return res.status(403).json({ error: 'Apenas gestores podem atualizar outros atletas.' });
+  }
+
+  const { nome, apelido, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto } = req.body;
+
+  if (!nome) {
+    return res.status(400).json({ error: 'O nome é obrigatório.' });
+  }
+
+  try {
+    // Verificar se o atleta existe
+    const { rows: userCheck } = await db.query('SELECT id FROM usuarios WHERE id = $1', [id]);
+    if (userCheck.length === 0) {
+      return res.status(404).json({ error: 'Atleta não encontrado.' });
+    }
+
+    // Verificar se CPF já existe em outro usuário (se fornecido)
+    if (cpf && cpf.trim()) {
+      const { rows: cpfCheck } = await db.query('SELECT id FROM usuarios WHERE cpf = $1 AND id <> $2', [cpf.trim(), id]);
+      if (cpfCheck.length > 0) {
+        return res.status(400).json({ error: 'Este CPF já está cadastrado em outro atleta.' });
+      }
+    }
+
+    // Atualizar no banco PostgreSQL
+    const query = `
+      UPDATE usuarios 
+      SET nome = $1, apelido = $2, cpf = $3, data_nascimento = $4, whatsapp = $5, goleiro = $6, autoavaliacao = $7, foto = $8, avaliacao_media = $9
+      WHERE id = $10
+      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado`;
+
+    const { rows } = await db.query(query, [
+      nome.trim(),
+      apelido ? apelido.trim() : nome.split(' ')[0],
+      cpf ? cpf.trim() : null,
+      data_nascimento || null,
+      whatsapp || null,
+      !!goleiro,
+      autoavaliacao !== undefined ? parseInt(autoavaliacao) : 3,
+      foto || null,
+      autoavaliacao !== undefined ? parseFloat(autoavaliacao) : 3.0,
+      id
+    ]);
+
+    res.json({ message: 'Atleta atualizado com sucesso!', usuario: rows[0] });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar atleta.', detail: err.message });
+  }
+};

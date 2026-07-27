@@ -225,20 +225,52 @@ async function handleSaveAthlete(photoPreview) {
   const players = JSON.parse(localStorage.getItem("players")) || [];
 
   if (id) {
-    const p = players.find(x => x.id === id);
-    if (p) {
-      p.nome = name;
-      p.apelido = apelido;
-      p.data_nascimento = dob;
-      p.cpf = cpf;
-      p.whatsapp = whatsapp;
-      p.goleiro = isGk;
-      p.autoavaliacao = rating;
-      if (photoVal) {
-        p.foto = photoVal;
-        p.photo = photoVal;
+    try {
+      window.App.showToast("Atualizando atleta no banco...", "info");
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.App.showToast("Sessão expirada ou inválida. Por favor, faça login novamente.", "error");
+        return;
       }
-      window.App.showToast("Atleta atualizado!");
+
+      const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nome: name,
+          apelido: apelido,
+          cpf: cpf,
+          data_nascimento: dob,
+          whatsapp: whatsapp,
+          goleiro: isGk,
+          autoavaliacao: rating,
+          foto: photoVal || undefined
+        })
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        window.App.showToast(responseData.error || "Erro ao atualizar atleta no banco.", "error");
+        return;
+      }
+
+      window.App.showToast("Atleta atualizado com sucesso!", "success");
+
+      // Recarrega a lista de atletas sincronizada do backend no front
+      if (window.App.syncAthletesList) {
+        await window.App.syncAthletesList();
+      }
+
+      window.App.closeModal();
+      return;
+    } catch (err) {
+      console.error(err);
+      window.App.showToast("Erro ao conectar no servidor para atualizar atleta.", "error");
+      return;
     }
   } else {
     // Sincronização direta com o backend para criação de novo atleta
