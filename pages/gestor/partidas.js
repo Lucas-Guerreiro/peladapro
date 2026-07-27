@@ -669,6 +669,14 @@ function saveLiveMatchState() {
   if (window.App.activePelada) {
     localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
   }
+
+  // Envia atualização em tempo real para a API do backend
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (peladaId && window.Api && window.Api.atualizarLiveState) {
+    let teams = [];
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+  }
 }
 
 async function handleFinishPeladaDay() {

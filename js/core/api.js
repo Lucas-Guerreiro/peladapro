@@ -428,6 +428,39 @@ const Api = {
     return res.json();
   },
 
+  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch(`http://localhost:3000/api/peladas/${peladaId}/live`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ liveMatch, waitingQueue, teams })
+      });
+      return res.json();
+    } catch(e) {
+      return { error: e.message };
+    }
+  },
+
+  async obterLiveState(peladaId) {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+      const res = await fetch(`http://localhost:3000/api/peladas/${peladaId}/live`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      return res.json();
+    } catch(e) {
+      return null;
+    }
+  },
+
   async editarPartida(partidaId, golsA, golsB, timeANome, timeBNome) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };

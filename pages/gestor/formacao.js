@@ -560,9 +560,14 @@ function criarTimeManual() {
     window.App.waitingQueue.push(novoTime.nome);
   }
 
-  // 3. Persiste o estado do jogo ao vivo e fila no localStorage
+  // 3. Persiste o estado do jogo ao vivo e fila no localStorage e servidor
   localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
   localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+  
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (peladaId && window.Api && window.Api.atualizarLiveState) {
+    window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+  }
 
   // 4. Atualiza a UI
   window.App.renderDrawnTeams();

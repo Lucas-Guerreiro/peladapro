@@ -296,3 +296,36 @@ exports.atualizarStatus = async (req, res) => {
   }
 };
 
+// Armazena em memória o estado do jogo ao vivo por pelada_id para sincronização multi-dispositivo
+const liveStateMap = new Map();
+
+exports.atualizarLiveState = async (req, res) => {
+  const { id } = req.params;
+  const { liveMatch, waitingQueue, teams } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: 'ID da pelada é obrigatório' });
+  }
+
+  const existing = liveStateMap.get(String(id)) || {};
+  const updatedState = {
+    liveMatch: liveMatch || existing.liveMatch || {},
+    waitingQueue: waitingQueue || existing.waitingQueue || [],
+    teams: teams || existing.teams || [],
+    updatedAt: Date.now()
+  };
+
+  liveStateMap.set(String(id), updatedState);
+  res.json({ message: 'Estado ao vivo atualizado com sucesso', state: updatedState });
+};
+
+exports.obterLiveState = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ error: 'ID da pelada é obrigatório' });
+  }
+
+  const state = liveStateMap.get(String(id)) || null;
+  res.json({ state, serverTime: Date.now() });
+};
+

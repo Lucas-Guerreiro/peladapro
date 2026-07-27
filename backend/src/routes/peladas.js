@@ -10,5 +10,7 @@ router.get('/grupo/:grupoId', authMiddleware, peladaController.listarDatasDoGrup
 router.delete('/:id', authMiddleware, peladaController.deletarData);
 router.put('/:id/config', authMiddleware, peladaController.atualizarConfigPartida);
 router.put('/:id/status', authMiddleware, peladaController.atualizarStatus);
+router.post('/:id/live', authMiddleware, peladaController.atualizarLiveState);
+router.get('/:id/live', authMiddleware, peladaController.obterLiveState);
 
 module.exports = router;

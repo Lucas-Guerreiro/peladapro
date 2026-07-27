@@ -5,6 +5,7 @@
 var Acompanhamento = {
 
   _pollingTimer: null,
+  _localTimer: null,
 
   // Mapeamento visual das cores dos times (fundo branco puro com bordas finas coloridas)
   _getTeamTheme: function(teamName) {
@@ -53,13 +54,64 @@ var Acompanhamento = {
     }) || null;
   },
 
-  init: function() {
+  init: async function() {
+    await this._fetchServerLiveState();
     this.render();
     this._startPolling();
   },
 
+  _fetchServerLiveState: async function() {
+    var peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+
+    if (!peladaId) {
+      try {
+        var rawPelada = localStorage.getItem("activePelada");
+        if (rawPelada) {
+          var pObj = JSON.parse(rawPelada);
+          if (pObj && pObj.id) peladaId = pObj.id;
+        }
+      } catch(e) {}
+    }
+
+    if (!peladaId) {
+      var group = (Auth && Auth.currentGroup) || window.App.currentGroup;
+      if (group && group.id && Api.listarDatasDoGrupo) {
+        try {
+          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          if (Array.isArray(peladasGroup) && peladasGroup.length > 0) {
+            var active = peladasGroup.find(function(p) { return p.status !== 'finalizada'; }) || peladasGroup[0];
+            if (active) {
+              peladaId = active.id;
+              window.App.activePelada = active;
+              try { localStorage.setItem("activePelada", JSON.stringify(active)); } catch(e) {}
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    if (peladaId && Api.obterLiveState) {
+      try {
+        var res = await Api.obterLiveState(peladaId);
+        if (res && res.state) {
+          if (res.state.liveMatch) {
+            window.App.liveMatch = res.state.liveMatch;
+            localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+          }
+          if (res.state.waitingQueue) {
+            window.App.waitingQueue = res.state.waitingQueue;
+            localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
+          }
+          if (res.state.teams) {
+            localStorage.setItem("teams", JSON.stringify(res.state.teams));
+          }
+        }
+      } catch(e) {}
+    }
+  },
+
   render: function() {
-    // Sincroniza em tempo real a partir do localStorage
+    // Sincroniza fallback em tempo real a partir do localStorage
     try {
       var rawMatch = localStorage.getItem("liveMatch");
       if (rawMatch) window.App.liveMatch = JSON.parse(rawMatch);
@@ -383,9 +435,29 @@ var Acompanhamento = {
   // --- Polling & Eventos -------------------------------------------------
   _startPolling: function() {
     if (Acompanhamento._pollingTimer) clearInterval(Acompanhamento._pollingTimer);
-    Acompanhamento._pollingTimer = setInterval(function() {
+    if (Acompanhamento._localTimer) clearInterval(Acompanhamento._localTimer);
+
+    // Fetch inicial do servidor
+    Acompanhamento._fetchServerLiveState().then(function() {
       Acompanhamento.render();
-    }, 1500);
+    });
+
+    // Polling do backend a cada 1000ms para sync multi-dispositivo instantâneo
+    Acompanhamento._pollingTimer = setInterval(async function() {
+      await Acompanhamento._fetchServerLiveState();
+      Acompanhamento.render();
+    }, 1000);
+
+    // Loop do cronômetro local para decremento fluido do relógio a cada segundo
+    Acompanhamento._localTimer = setInterval(function() {
+      var match = window.App.liveMatch;
+      if (match && (match.isPlaying || match.timerRunning)) {
+        if (match.timerSeconds > 0) {
+          match.timerSeconds--;
+          Acompanhamento.renderTimer();
+        }
+      }
+    }, 1000);
 
     window.removeEventListener('storage', Acompanhamento._onStorageChange);
     window.addEventListener('storage', Acompanhamento._onStorageChange);
