@@ -471,6 +471,33 @@ function updateTimerDisplay() {
 
   const controlTimer = document.getElementById("match-control-timer");
   if (controlTimer) controlTimer.textContent = text;
+
+  // Atualiza barra de progresso e badges de status do gestor (unificado com o atleta)
+  const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const configs = window.Api && window.Api.getConfigs ? window.Api.getConfigs() : [];
+  const config = group ? configs.find(c => c.grupo_id === group.id) : null;
+  const totalSecs = (config && config.tempo_partida) ? config.tempo_partida * 60 : 480;
+
+  const elapsed = Math.max(0, totalSecs - s);
+  const progressBar = document.getElementById("gestor-timer-progress");
+  if (progressBar) {
+    progressBar.style.width = `${Math.min(100, Math.max(0, (elapsed / totalSecs) * 100))}%`;
+  }
+
+  const timerDot = document.getElementById("gestor-timer-dot");
+  const timerStatusText = document.getElementById("gestor-timer-status-text");
+  if (timerStatusText) {
+    if (window.App.liveMatch.isPlaying) {
+      timerStatusText.textContent = "EM ANDAMENTO";
+      if (timerDot) timerDot.className = "gestor-pulse-dot";
+    } else if (s > 0 && s < totalSecs) {
+      timerStatusText.textContent = "PAUSADO";
+      if (timerDot) timerDot.className = "gestor-pulse-dot paused";
+    } else {
+      timerStatusText.textContent = "PRONTO PARA INICIAR";
+      if (timerDot) timerDot.className = "gestor-pulse-dot paused";
+    }
+  }
 }
 
 function updateLiveScore(team, diff) {
