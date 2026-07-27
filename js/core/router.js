@@ -293,6 +293,10 @@ const Router = {
     this._syncMobileSidebar();
     // Re-vincula o botão hamburger a cada navegação (garante que sempre funcione)
     this._bindHamburgerBtn();
+    // Sincroniza info e menus do layout do atleta se existir
+    if (window.AcompanhamentoGlobal) {
+      window.AcompanhamentoGlobal.renderUserInfo();
+    }
     // Dispara evento customizado para scripts que escutam
     document.dispatchEvent(new CustomEvent('page:loaded', { detail: { route } }));
   },
@@ -430,4 +434,31 @@ window.App = {
   initModalLancar_gol:          () => {},
   initModalVer_time:            () => {},
   initModalEditar_partida:      () => {}
+};
+
+// Namespace global para controle do layout unificado do jogador (Atleta)
+window.AcompanhamentoGlobal = {
+  toggleMobileMenu: function() {
+    const dropdown = document.getElementById('acomp-mobile-dropdown');
+    if (!dropdown) return;
+    if (dropdown.style.display === 'flex') {
+      dropdown.style.display = 'none';
+    } else {
+      dropdown.style.display = 'flex';
+    }
+  },
+  closeMobileMenu: function() {
+    const dropdown = document.getElementById('acomp-mobile-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+  },
+  renderUserInfo: function() {
+    const user = window.Auth && window.Auth.currentUser;
+    const nomeExibir = user ? (user.apelido || user.nome || user.email) : 'Atleta';
+    
+    const nameDesktop = document.getElementById('layout-user-name-desktop');
+    if (nameDesktop) nameDesktop.textContent = nomeExibir;
+
+    const nameMobile = document.getElementById('layout-user-name-mobile');
+    if (nameMobile) nameMobile.textContent = nomeExibir;
+  }
 };
