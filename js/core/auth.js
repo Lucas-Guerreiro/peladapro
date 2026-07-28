@@ -188,6 +188,17 @@ const Auth = {
     }
   },
 
+  hasDualRole() {
+    if (!this.currentUser) return false;
+    return this.currentUser.tipo === 'ambos' || this.currentUser.tipo === 'duplo';
+  },
+
+  toggleRole() {
+    const current = this._selectedRole || 'jogador';
+    const nextRole = current === 'gestor' ? 'jogador' : 'gestor';
+    this.selectRole(nextRole);
+  },
+
   selectRole(role) {
     this._selectedRole = role;
     if (this.currentUser) {
