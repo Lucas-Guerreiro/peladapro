@@ -4,13 +4,15 @@ const db = require('../config/database');
 exports.enviarComprovante = async (req, res) => {
   const { pelada_id, e2e_id, valor, beneficiario_nome, comprovante_url } = req.body;
   const usuario_id = req.usuarioId;
-  const atleta_email = req.usuarioEmail;
+  let atleta_email = req.usuarioEmail;
 
   if (!e2e_id || !valor) {
     return res.status(400).json({ error: 'Código de Autenticação/E2E do Pix e valor são obrigatórios.' });
   }
 
-  const cleanE2E = String(e2e_id).trim().toUpperCase();
+  // Garantir limite de caracteres para evitar estouro de VARCHAR no PostgreSQL
+  const cleanE2E = String(e2e_id).trim().toUpperCase().substring(0, 100);
+  const cleanBeneficiario = beneficiario_nome ? String(beneficiario_nome).trim().substring(0, 200) : null;
   const valorNum = parseFloat(valor);
 
   if (isNaN(valorNum) || valorNum <= 0) {
@@ -22,6 +24,16 @@ exports.enviarComprovante = async (req, res) => {
   try {
     client = await db.pool.connect();
     await client.query('BEGIN');
+
+    // Se atleta_email não veio no token JWT, busca na tabela usuarios
+    if (!atleta_email) {
+      const uRes = await client.query('SELECT email FROM usuarios WHERE id = $1', [usuario_id]);
+      if (uRes.rows.length > 0 && uRes.rows[0].email) {
+        atleta_email = uRes.rows[0].email;
+      } else {
+        atleta_email = `atleta_${usuario_id}@peladapro.com`;
+      }
+    }
 
     // a. Trava de Duplicidade pelo E2E ID do Pix
     const checkE2E = await client.query('SELECT id, status FROM comprovantes_pix WHERE e2e_id = $1', [cleanE2E]);
@@ -39,7 +51,7 @@ exports.enviarComprovante = async (req, res) => {
       atleta_email,
       cleanE2E,
       valorNum,
-      beneficiario_nome || null,
+      cleanBeneficiario,
       comprovante_url || null
     ]);
 
@@ -50,11 +62,12 @@ exports.enviarComprovante = async (req, res) => {
       WHERE id = $2 RETURNING saldo`;
     const userRes = await client.query(updateSaldo, [valorNum, usuario_id]);
 
-    // d. Registrar transação de crédito Pix
+    // d. Registrar transação de crédito Pix (limitando a descrição a 140 chars max para VARCHAR(150))
+    const descTx = `Recarga Pix (Autenticação ${cleanE2E})`.substring(0, 140);
     await client.query(`
       INSERT INTO transacoes (usuario_id, valor, tipo, descricao)
       VALUES ($1, $2, 'credito', $3)`,
-      [usuario_id, valorNum, `Recarga Pix (Autenticação ${cleanE2E})`]
+      [usuario_id, valorNum, descTx]
     );
 
     await client.query('COMMIT');
