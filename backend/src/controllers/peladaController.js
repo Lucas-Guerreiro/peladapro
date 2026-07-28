@@ -296,7 +296,7 @@ exports.atualizarStatus = async (req, res) => {
   }
 };
 
-// Armazena em memória o estado do jogo ao vivo por pelada_id para sincronização multi-dispositivo
+// Armazena em memória o estado do jogo ao vivo por pelada_id para cache rápido
 const liveStateMap = new Map();
 
 exports.atualizarLiveState = async (req, res) => {
@@ -307,16 +307,33 @@ exports.atualizarLiveState = async (req, res) => {
     return res.status(400).json({ error: 'ID da pelada é obrigatório' });
   }
 
-  const existing = liveStateMap.get(String(id)) || {};
-  const updatedState = {
-    liveMatch: liveMatch || existing.liveMatch || {},
-    waitingQueue: waitingQueue || existing.waitingQueue || [],
-    teams: teams || existing.teams || [],
-    updatedAt: Date.now()
-  };
+  try {
+    // 1. Busca estado anterior do banco de dados
+    const selectRes = await db.query('SELECT live_state FROM peladas WHERE id = $1', [id]);
+    let existing = {};
+    if (selectRes.rows.length > 0 && selectRes.rows[0].live_state) {
+      try { existing = JSON.parse(selectRes.rows[0].live_state) || {}; } catch(e) {}
+    }
 
-  liveStateMap.set(String(id), updatedState);
-  res.json({ message: 'Estado ao vivo atualizado com sucesso', state: updatedState });
+    const updatedState = {
+      liveMatch: liveMatch !== undefined ? liveMatch : (existing.liveMatch || {}),
+      waitingQueue: waitingQueue !== undefined ? waitingQueue : (existing.waitingQueue || []),
+      teams: (teams && Array.isArray(teams) && teams.length > 0) ? teams : (existing.teams || []),
+      updatedAt: Date.now()
+    };
+
+    const stateJson = JSON.stringify(updatedState);
+
+    // 2. Persiste o estado ao vivo (incluindo os times sorteados) no PostgreSQL
+    await db.query('UPDATE peladas SET live_state = $1 WHERE id = $2', [stateJson, id]);
+
+    // Atualiza cache em memória
+    liveStateMap.set(String(id), updatedState);
+
+    res.json({ message: 'Estado ao vivo atualizado com sucesso no banco de dados', state: updatedState });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar estado ao vivo no banco', detail: err.message });
+  }
 };
 
 exports.obterLiveState = async (req, res) => {
@@ -325,7 +342,23 @@ exports.obterLiveState = async (req, res) => {
     return res.status(400).json({ error: 'ID da pelada é obrigatório' });
   }
 
-  const state = liveStateMap.get(String(id)) || null;
-  res.json({ state, serverTime: Date.now() });
+  try {
+    let state = liveStateMap.get(String(id)) || null;
+
+    // Se nulo no cache da função, busca diretamente no banco PostgreSQL
+    if (!state) {
+      const selectRes = await db.query('SELECT live_state FROM peladas WHERE id = $1', [id]);
+      if (selectRes.rows.length > 0 && selectRes.rows[0].live_state) {
+        try {
+          state = JSON.parse(selectRes.rows[0].live_state);
+          if (state) liveStateMap.set(String(id), state);
+        } catch(e) {}
+      }
+    }
+
+    res.json({ state, serverTime: Date.now() });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao consultar estado ao vivo no banco', detail: err.message });
+  }
 };
 
