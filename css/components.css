@@ -832,3 +832,65 @@
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* --- TOGGLE SWITCH DE PERFIL NO HEADER (SOMENTE DUPLO ACESSO) ------------ */
+.role-toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  background: #E2E8F0;
+  border-radius: 20px;
+  padding: 3px;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  border: 1.5px solid #CBD5E1;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.role-toggle-switch:hover {
+  border-color: #94A3B8;
+  transform: scale(1.02);
+}
+
+.role-toggle-option {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 4px 10px;
+  z-index: 2;
+  transition: color 0.2s ease;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.role-toggle-switch.is-jogador .role-opt-jogador {
+  color: #FFFFFF;
+}
+
+.role-toggle-switch.is-gestor .role-opt-gestor {
+  color: #FFFFFF;
+}
+
+.role-toggle-slider {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 16px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+  z-index: 1;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.role-toggle-switch.is-jogador .role-toggle-slider {
+  transform: translateX(0);
+  background-color: #059669;
+}
+
+.role-toggle-switch.is-gestor .role-toggle-slider {
+  transform: translateX(100%);
+  background-color: #0284C7;
+}

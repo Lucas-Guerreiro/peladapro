@@ -172,7 +172,10 @@ const Router = {
     const app = document.getElementById('app');
     const layoutFile = role === 'gestor' ? 'pages/gestor/layout.html' : 'pages/jogador/layout.html';
 
-    // Header fixo do app com suporte a menu sanduíche
+    const isDual = Auth.hasDualRole();
+    const activeRole = Auth._selectedRole || (Auth.currentUser?.gestor ? 'gestor' : 'jogador');
+
+    // Header fixo do app com suporte a menu sanduíche e Toggle Switch de Perfil (Exclusivo para tipo 'ambos')
     const headerHTML = `
       <header class="main-header" id="main-header">
         <button id="hamburger-menu-btn" class="hamburger-btn">
@@ -181,13 +184,23 @@ const Router = {
         <div class="brand" style="cursor:pointer" onclick="Router.navigate(Auth.currentUser?.gestor ? '#/gestor/atletas' : '#/jogador/dashboard')">
           <h1>PELADA <span>PRO</span></h1>
         </div>
-        <div class="user-nav-status" style="display:flex; align-items:center; gap:8px;">
+        <div class="user-nav-status" style="display:flex; align-items:center; gap:10px;">
+          <!-- Toggle Switch de Perfil (Apenas para cadastro tipo 'ambos') -->
+          ${isDual ? `
+            <div 
+              class="role-toggle-switch ${activeRole === 'gestor' ? 'is-gestor' : 'is-jogador'}" 
+              onclick="Auth.toggleRole()"
+              title="Clique para alternar entre perfil de Gestor e Jogador"
+            >
+              <span class="role-toggle-option role-opt-jogador">⚽ Jogador</span>
+              <span class="role-toggle-option role-opt-gestor">🏆 Gestor</span>
+              <div class="role-toggle-slider"></div>
+            </div>
+          ` : ''}
+
           <span class="text-inter" style="font-size:14px; color:var(--text-caption); font-weight:600" id="header-user-name">
             ${Auth.currentUser ? Auth.currentUser.nome : ''}
           </span>
-          <button class="btn btn-outline btn-sm" title="Alternar entre perfil Gestor e Jogador" onclick="Auth.openProfileSelection()" style="padding: 0 10px; font-size:12px;">
-            🔄 Perfil
-          </button>
           <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Sair</button>
         </div>
       </header>
@@ -209,7 +222,11 @@ const Router = {
           <!-- Abas de navegação injetadas dinamicamente -->
         </nav>
         <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:10px;">
-          <button class="btn btn-outline btn-md" style="width:100%" onclick="Auth.openProfileSelection()">🔄 Alternar Perfil</button>
+          ${isDual ? `
+            <button class="btn btn-outline btn-md" style="width:100%; border-color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; font-size:14px;" onclick="Auth.toggleRole()">
+              🔄 Alternar para Modo ${activeRole === 'gestor' ? 'Jogador ⚽' : 'Gestor 🏆'}
+            </button>
+          ` : ''}
           <button class="btn btn-outline btn-md" style="width:100%" onclick="Auth.logout()">Sair</button>
         </div>
       </div>

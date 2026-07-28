@@ -221,6 +221,21 @@ const Auth = {
     }
   },
 
+  // Verifica se o usuário logado possui cadastro de duplo acesso ('ambos')
+  hasDualRole() {
+    const u = this.currentUser;
+    if (!u) return false;
+    return (u.tipo === 'ambos') || (u.tem_duplo_acesso === true) || (u.duplo === true);
+  },
+
+  // Alterna o perfil ativo entre Gestor e Jogador
+  toggleRole() {
+    if (!this.currentUser) return;
+    const currentRole = this._selectedRole || (this.currentUser.gestor ? 'gestor' : 'jogador');
+    const targetRole = (currentRole === 'gestor') ? 'jogador' : 'gestor';
+    this.selectRole(targetRole);
+  },
+
   // Abrir Tela de Seleção de Perfil para trocar entre Gestor e Jogador
   openProfileSelection() {
     Router.navigate('#/selecionar-perfil');
