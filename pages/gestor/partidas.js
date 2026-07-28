@@ -667,16 +667,17 @@ function resetLiveTimer(silent = false) {
 }
 
 function updateTimerDisplay() {
-  const min = Math.floor(window.App.liveMatch.timerSeconds / 60).toString().padStart(2, "0");
-  const sec = (window.App.liveMatch.timerSeconds % 60).toString().padStart(2, "0");
+  const s = (window.App && window.App.liveMatch && window.App.liveMatch.timerSeconds !== undefined) ? window.App.liveMatch.timerSeconds : 480;
+  const min = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
   const text = `${min}:${sec}`;
 
   const controlTimer = document.getElementById("match-control-timer");
   if (controlTimer) controlTimer.textContent = text;
 
   // Atualiza barra de progresso e badges de status do gestor (unificado com o atleta)
-  const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-  const configs = window.Api && window.Api.getConfigs ? window.Api.getConfigs() : [];
+  const group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+  const configs = (window.Api && window.Api.getConfigs) ? window.Api.getConfigs() : [];
   const config = group ? configs.find(c => c.grupo_id === group.id) : null;
   const totalSecs = (config && config.tempo_partida) ? config.tempo_partida * 60 : 480;
 
@@ -689,7 +690,7 @@ function updateTimerDisplay() {
   const timerDot = document.getElementById("gestor-timer-dot");
   const timerStatusText = document.getElementById("gestor-timer-status-text");
   if (timerStatusText) {
-    if (window.App.liveMatch.isPlaying) {
+    if (window.App && window.App.liveMatch && window.App.liveMatch.isPlaying) {
       timerStatusText.textContent = "EM ANDAMENTO";
       if (timerDot) timerDot.className = "gestor-pulse-dot";
     } else if (s > 0 && s < totalSecs) {
