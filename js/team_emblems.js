@@ -1,0 +1,104 @@
+// ==========================================================================
+// js/team_emblems.js — Emblemas SVG dos Times
+// 10 shields de futebol variados. Atribuição por índice fixo.
+// ==========================================================================
+
+window.TeamEmblems = (function() {
+
+  // Paleta de cores para cada emblema
+  var EMBLEM_THEMES = [
+    { bg: '#1565C0', accent: '#FFD600', border: '#0D47A1' },   // 0 Azul + Dourado
+    { bg: '#2E7D32', accent: '#FFFFFF', border: '#1B5E20' },   // 1 Verde + Branco
+    { bg: '#C62828', accent: '#FFD600', border: '#B71C1C' },   // 2 Vermelho + Dourado
+    { bg: '#212121', accent: '#FFD600', border: '#000000' },   // 3 Preto + Dourado
+    { bg: '#6A1B9A', accent: '#E1BEE7', border: '#4A148C' },   // 4 Roxo + Lilas
+    { bg: '#E65100', accent: '#FFFFFF', border: '#BF360C' },   // 5 Laranja + Branco
+    { bg: '#0D47A1', accent: '#90CAF9', border: '#01579B' },   // 6 Azul Marinho + Celeste
+    { bg: '#F9A825', accent: '#212121', border: '#F57F17' },   // 7 Dourado + Preto
+    { bg: '#37474F', accent: '#ECEFF1', border: '#263238' },   // 8 Cinza + Branco
+    { bg: '#880E4F', accent: '#F8BBD9', border: '#560027' },   // 9 Vinho + Rosa
+  ];
+
+  // Gera SVG de shield com o tema fornecido
+  function buildShieldSVG(theme, index) {
+    var bg = theme.bg;
+    var accent = theme.accent;
+    var border = theme.border;
+
+    var decorations = [
+      // 0 - Faixa horizontal + estrela no topo
+      '<line x1="10" y1="34" x2="54" y2="34" stroke="' + accent + '" stroke-width="4"/><polygon points="32,12 34.5,19 42,19 36,23.5 38.5,31 32,26.5 25.5,31 28,23.5 22,19 29.5,19" fill="' + accent + '"/>',
+      // 1 - Faixa vertical + bola
+      '<rect x="29" y="10" width="6" height="44" fill="' + accent + '" opacity="0.5"/><circle cx="32" cy="32" r="9" fill="none" stroke="' + accent + '" stroke-width="2.5"/>',
+      // 2 - Cruz + bola
+      '<line x1="10" y1="32" x2="54" y2="32" stroke="' + accent + '" stroke-width="4"/><line x1="32" y1="12" x2="32" y2="54" stroke="' + accent + '" stroke-width="4"/><circle cx="32" cy="32" r="7" fill="' + bg + '" stroke="' + accent + '" stroke-width="2"/>',
+      // 3 - Estrela grande
+      '<polygon points="32,10 35.5,22 48,22 38,30 41.5,42 32,34 22.5,42 26,30 16,22 28.5,22" fill="' + accent + '"/>',
+      // 4 - Ondas diagonais + circulo
+      '<line x1="10" y1="22" x2="54" y2="42" stroke="' + accent + '" stroke-width="5" opacity="0.6"/><line x1="10" y1="32" x2="54" y2="52" stroke="' + accent + '" stroke-width="3" opacity="0.4"/><circle cx="32" cy="32" r="8" fill="none" stroke="' + accent + '" stroke-width="2.5"/>',
+      // 5 - Relampago
+      '<polygon points="36,10 26,30 33,30 28,54 42,28 35,28" fill="' + accent + '"/>',
+      // 6 - Losango
+      '<polygon points="32,14 48,32 32,50 16,32" fill="none" stroke="' + accent + '" stroke-width="3"/><polygon points="32,20 44,32 32,44 20,32" fill="' + accent + '" opacity="0.35"/>',
+      // 7 - Trofeu
+      '<rect x="27" y="38" width="10" height="5" fill="' + accent + '"/><rect x="23" y="43" width="18" height="3" fill="' + accent + '"/><path d="M20,14 Q20,30 32,34 Q44,30 44,14 Z" fill="' + accent + '" opacity="0.85"/><path d="M20,18 Q14,18 14,26 Q14,30 20,30" fill="none" stroke="' + accent + '" stroke-width="2.5"/><path d="M44,18 Q50,18 50,26 Q50,30 44,30" fill="none" stroke="' + accent + '" stroke-width="2.5"/>',
+      // 8 - 4 quadrantes
+      '<rect x="10" y="12" width="22" height="20" fill="' + accent + '" opacity="0.25"/><rect x="32" y="32" width="22" height="22" fill="' + accent + '" opacity="0.25"/><line x1="32" y1="12" x2="32" y2="54" stroke="' + accent + '" stroke-width="2.5"/><line x1="10" y1="32" x2="54" y2="32" stroke="' + accent + '" stroke-width="2.5"/>',
+      // 9 - Coracao
+      '<path d="M32,42 Q18,30 18,22 A10,10 0 0,1 32,16 A10,10 0 0,1 46,22 Q46,30 32,42Z" fill="' + accent + '"/>',
+    ];
+
+    var deco = decorations[index] || decorations[0];
+
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 68" width="100%" height="100%">' +
+      '<path d="M32,2 L58,14 L58,38 Q58,56 32,66 Q6,56 6,38 L6,14 Z" fill="' + bg + '" stroke="' + border + '" stroke-width="2.5"/>' +
+      '<path d="M32,7 L53,17 L53,38 Q53,52 32,61 Q11,52 11,38 L11,17 Z" fill="none" stroke="' + accent + '" stroke-width="1.5" opacity="0.4"/>' +
+      deco +
+      '</svg>';
+  }
+
+  var EMBLEMS = EMBLEM_THEMES.map(function(theme, idx) {
+    return buildShieldSVG(theme, idx);
+  });
+
+  return {
+    total: EMBLEMS.length,
+    themes: EMBLEM_THEMES,
+
+    get: function(index) {
+      var idx = ((index || 0) % EMBLEMS.length + EMBLEMS.length) % EMBLEMS.length;
+      return EMBLEMS[idx];
+    },
+
+    forTeam: function(team) {
+      var idx = (team && team.emblema !== undefined && team.emblema !== null) ? team.emblema : 0;
+      return this.get(idx);
+    },
+
+    getTheme: function(index) {
+      var idx = ((index || 0) % EMBLEM_THEMES.length + EMBLEM_THEMES.length) % EMBLEM_THEMES.length;
+      return EMBLEM_THEMES[idx];
+    },
+
+    // Renderiza seletor visual de emblemas (grade 5x2)
+    renderSelector: function(currentIndex, callbackName) {
+      var html = '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px;">';
+      for (var i = 0; i < EMBLEMS.length; i++) {
+        var isActive = i === ((currentIndex || 0));
+        html += '<div data-emblem-idx="' + i + '" ' +
+          'onclick="' + callbackName + '(' + i + ')" ' +
+          'style="width: 52px; height: 58px; cursor: pointer; border-radius: 8px; padding: 4px; ' +
+          'border: 2.5px solid ' + (isActive ? '#0284C7' : '#E2E8F0') + '; ' +
+          'background: ' + (isActive ? '#E0F2FE' : '#F8FAFC') + '; ' +
+          'box-shadow: ' + (isActive ? '0 0 0 2px #BAE6FD' : 'none') + '; ' +
+          'transition: all 0.15s; display: flex; align-items: center; justify-content: center;" ' +
+          'onmouseover="this.style.borderColor=\'#0284C7\'; this.style.background=\'#E0F2FE\';" ' +
+          'onmouseout="this.style.borderColor=\'' + (isActive ? '#0284C7' : '#E2E8F0') + '\'; this.style.background=\'' + (isActive ? '#E0F2FE' : '#F8FAFC') + '\';">' +
+          EMBLEMS[i] +
+          '</div>';
+      }
+      html += '</div>';
+      return html;
+    }
+  };
+})();

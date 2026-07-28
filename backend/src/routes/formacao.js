@@ -5,5 +5,6 @@ const authMiddleware = require('../middleware/auth');
 
 router.get('/sortear/:peladaId', authMiddleware, formacaoController.sortear);
 router.get('/pelada/:peladaId', authMiddleware, formacaoController.obterTimesSorteados);
+router.put('/times/:timeId/emblema', authMiddleware, formacaoController.atualizarEmblema);
 
 module.exports = router;

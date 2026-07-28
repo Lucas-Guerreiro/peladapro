@@ -354,6 +354,19 @@ function renderLiveMatchUI() {
   if (scoreAEl) scoreAEl.textContent = scoreA;
   if (scoreBEl) scoreBEl.textContent = scoreB;
 
+  // Renderiza emblemas dos times (busca no localStorage)
+  if (window.TeamEmblems) {
+    let teams = [];
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    const tA = teams.find(t => (t.nome || '').toLowerCase().trim() === teamA.toLowerCase().trim());
+    const tB = teams.find(t => (t.nome || '').toLowerCase().trim() === teamB.toLowerCase().trim());
+
+    const emblemAEl = document.getElementById("emblem-team-a");
+    const emblemBEl = document.getElementById("emblem-team-b");
+    if (emblemAEl) emblemAEl.innerHTML = window.TeamEmblems.forTeam(tA || { emblema: 0 });
+    if (emblemBEl) emblemBEl.innerHTML = window.TeamEmblems.forTeam(tB || { emblema: 1 });
+  }
+
   // Lógica de alerta visual de limite de vitórias seguidas
   const peladaAtiva = window.App.activePelada || {};
   const grupoAtivo = window.App.currentGroup || {};

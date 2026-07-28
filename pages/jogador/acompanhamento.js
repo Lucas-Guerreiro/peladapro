@@ -272,6 +272,18 @@ var Acompanhamento = {
       cardB.style.border = '1px solid ' + themeB.border;
     }
 
+    // Renderiza emblemas dos times
+    if (window.TeamEmblems) {
+      var teamsLS = [];
+      try { teamsLS = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
+      var tA = teamsLS.find(function(t) { return (t.nome || '').toLowerCase().trim() === (match.teamA || '').toLowerCase().trim(); });
+      var tB = teamsLS.find(function(t) { return (t.nome || '').toLowerCase().trim() === (match.teamB || '').toLowerCase().trim(); });
+      var embAEl = document.getElementById('emblem-acomp-team-a');
+      var embBEl = document.getElementById('emblem-acomp-team-b');
+      if (embAEl) embAEl.innerHTML = window.TeamEmblems.forTeam(tA || { emblema: 0 });
+      if (embBEl) embBEl.innerHTML = window.TeamEmblems.forTeam(tB || { emblema: 1 });
+    }
+
     if (scoreA) scoreA.textContent = match.scoreA || 0;
     if (scoreB) scoreB.textContent = match.scoreB || 0;
 

@@ -469,10 +469,29 @@ window.App.renderDrawnTeams = async function() {
     card.setAttribute("ondragleave", "dragLeave(event)");
     card.setAttribute("ondrop", `drop(event, '${team.id}')`);
 
+    const emblemaIdx = (team.emblema !== undefined && team.emblema !== null) ? team.emblema : 0;
+    const emblemaSVG = (window.TeamEmblems) ? window.TeamEmblems.get(emblemaIdx) : '';
+
     card.innerHTML = `
-      <div class="team-draft-header" style="border-top: 4px solid ${team.cor || '#777'};">
-        <input type="text" class="team-draft-title-input" value="${team.nome}" onchange="renameTeam('${team.id}', this.value)">
-        <span style="font-size:11px; font-weight:bold; color:var(--text-caption);">Média: ⭐${avg}</span>
+      <div class="team-draft-header" style="border-top: 4px solid ${team.cor || '#777'}; flex-direction: column; gap: 6px; padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <input type="text" class="team-draft-title-input" value="${team.nome}" onchange="renameTeam('${team.id}', this.value)">
+          <span style="font-size:11px; font-weight:bold; color:var(--text-caption);">⭐${avg}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div 
+            id="emblem-${team.id}"
+            title="Clique para trocar o emblema do time"
+            onclick="openEmblemSelector('${team.id}', ${emblemaIdx})"
+            style="width: 56px; height: 62px; cursor: pointer; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25)); transition: transform 0.15s; border-radius: 4px; overflow: hidden;"
+            onmouseover="this.style.transform='scale(1.08)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >${emblemaSVG}</div>
+          <div>
+            <div style="font-size: 12px; color: var(--text-caption); font-weight: 500;">🛡️ Emblema do Time</div>
+            <div style="font-size: 11px; color: #94A3B8;">Clique no escudo para alterar</div>
+          </div>
+        </div>
       </div>
       <div class="team-draft-players" id="players-list-${team.id}">
         <!-- Jogadores -->
@@ -690,3 +709,92 @@ function criarTimeManual() {
   window.App.updateAcompanhamentoUI();
   window.App.showToast(`Time ${novoTime.nome} criado com sucesso!`);
 }
+
+// ============================================================
+// SELETOR DE EMBLEMA DOS TIMES
+// ============================================================
+
+window._emblemTargetTeamId = null;
+
+window.openEmblemSelector = function(teamId, currentIndex) {
+  window._emblemTargetTeamId = teamId;
+
+  if (!window.TeamEmblems) {
+    window.App.showToast("Módulo de emblemas não carregado.", "error");
+    return;
+  }
+
+  // Remove seletor anterior se existir
+  var existing = document.getElementById("emblem-selector-popup");
+  if (existing) existing.remove();
+
+  var popup = document.createElement("div");
+  popup.id = "emblem-selector-popup";
+  popup.style.cssText = [
+    "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);",
+    "background: #FFFFFF; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);",
+    "z-index: 9999; width: 340px; overflow: hidden;"
+  ].join("");
+
+  popup.innerHTML =
+    "<div style=\"background: #0F172A; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;\">" +
+      "<span style=\"color: #FFFFFF; font-weight: 700; font-size: 15px; font-family: 'Inter', sans-serif;\">🛡️ Escolher Emblema</span>" +
+      "<button onclick=\"document.getElementById('emblem-selector-popup').remove()\" " +
+        "style=\"background: rgba(255,255,255,0.15); border: none; color: #FFF; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;\">✕</button>" +
+    "</div>" +
+    "<div style=\"padding: 16px;\">" +
+      "<p style=\"font-size: 12px; color: #64748B; margin: 0 0 12px 0; font-family: 'Inter', sans-serif;\">Clique no escudo desejado para o time:</p>" +
+      window.TeamEmblems.renderSelector(currentIndex, "selectEmblem") +
+    "</div>";
+
+  // Overlay
+  var overlay = document.createElement("div");
+  overlay.id = "emblem-selector-overlay";
+  overlay.style.cssText = "position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998;";
+  overlay.onclick = function() {
+    popup.remove();
+    overlay.remove();
+  };
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+};
+
+window.selectEmblem = function(emblemaIdx) {
+  var teamId = window._emblemTargetTeamId;
+  if (teamId === null || teamId === undefined) return;
+
+  // 1. Atualiza no localStorage
+  var teams = [];
+  try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+  var team = teams.find(function(t) { return String(t.id) === String(teamId); });
+  if (team) {
+    team.emblema = emblemaIdx;
+    localStorage.setItem("teams", JSON.stringify(teams));
+  }
+
+  // 2. Persiste no banco via API (best-effort, não bloqueia UI)
+  var token = localStorage.getItem("token");
+  if (token && team && team.db_id) {
+    fetch("/api/formacao/times/" + team.db_id + "/emblema", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ emblema: emblemaIdx })
+    }).catch(function(e) { console.warn("[Emblema] Erro ao salvar no banco:", e); });
+  }
+
+  // 3. Fecha popup
+  var popup = document.getElementById("emblem-selector-popup");
+  var overlay = document.getElementById("emblem-selector-overlay");
+  if (popup) popup.remove();
+  if (overlay) overlay.remove();
+
+  // 4. Atualiza visualmente sem re-renderizar tudo
+  var emblemEl = document.getElementById("emblem-" + teamId);
+  if (emblemEl && window.TeamEmblems) {
+    emblemEl.innerHTML = window.TeamEmblems.get(emblemaIdx);
+    emblemEl.setAttribute("onclick", "openEmblemSelector('" + teamId + "', " + emblemaIdx + ")");
+  }
+
+  window.App.showToast("Emblema atualizado!");
+};

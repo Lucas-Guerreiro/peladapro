@@ -47,18 +47,21 @@ exports.sortear = async (req, res) => {
     await client.query('DELETE FROM times WHERE pelada_id = $1', [peladaId]);
 
     // 5. Salvar os novos times e jogadores no banco
-    for (let time of timesSorteados) {
+    for (let i = 0; i < timesSorteados.length; i++) {
+      let time = timesSorteados[i];
       const queryInsertTime = `
-        INSERT INTO times (pelada_id, nome, cor)
-        VALUES ($1, $2, $3) RETURNING id`;
+        INSERT INTO times (pelada_id, nome, cor, emblema)
+        VALUES ($1, $2, $3, $4) RETURNING id`;
       const cor = time.nome.includes('Azul') ? '#2196F3' : 
                   time.nome.includes('Amarelo') ? '#FFC107' : 
                   time.nome.includes('Verde') ? '#00C853' : 
                   time.nome.includes('Preto') ? '#1A1A2E' : '#FF6D00';
+      const emblema = i % 10; // índice fixo por ordem de sorteio
       
-      const timeRes = await client.query(queryInsertTime, [peladaId, time.nome, cor]);
+      const timeRes = await client.query(queryInsertTime, [peladaId, time.nome, cor, emblema]);
       const timeId = timeRes.rows[0].id;
-      time.db_id = timeId; // Referência do ID no banco
+      time.db_id = timeId;
+      time.emblema = emblema;
 
       for (let jogador of time.jogadores) {
         const queryInsertJogador = `
@@ -98,6 +101,7 @@ exports.obterTimesSorteados = async (req, res) => {
         id: time.id,
         nome: time.nome,
         cor: time.cor,
+        emblema: time.emblema !== undefined && time.emblema !== null ? time.emblema : 0,
         vitorias: time.vitorias,
         empates: time.empates,
         gols_pro: time.gols_pro,
@@ -110,5 +114,30 @@ exports.obterTimesSorteados = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Erro ao buscar times sorteados', detail: err.message });
+  }
+};
+
+// Atualizar emblema de um time manualmente
+exports.atualizarEmblema = async (req, res) => {
+  const { timeId } = req.params;
+  const { emblema } = req.body;
+
+  if (emblema === undefined || emblema === null || isNaN(parseInt(emblema))) {
+    return res.status(400).json({ error: 'Campo emblema (número 0-9) é obrigatório' });
+  }
+
+  try {
+    const result = await db.query(
+      'UPDATE times SET emblema = $1 WHERE id = $2 RETURNING id, nome, emblema',
+      [parseInt(emblema), parseInt(timeId)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Time não encontrado' });
+    }
+
+    res.json({ message: 'Emblema atualizado com sucesso', time: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar emblema', detail: err.message });
   }
 };
