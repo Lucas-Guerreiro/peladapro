@@ -119,7 +119,7 @@ var Desempenho = {
           var gA = parseInt(m.gols_time_a) || 0;
           var gB = parseInt(m.gols_time_b) || 0;
 
-          // Pontuação por resultado das partidas
+          // Pontuação por resultado das partidas:
           // 2x0 -> 3.0 pts, 1x0 -> 2.5 pts, 2x1 -> 2.0 pts, 1x1 -> 1.0 pt, 0x0 -> 0.5 pt, Derrota -> 0 pts
           var ptsA = 0; var isWinA = false; var isCleanA = false;
           var ptsB = 0; var isWinB = false; var isCleanB = false;
@@ -176,7 +176,7 @@ var Desempenho = {
             }
           });
 
-          // Atribui pontos para Time A
+          // Atribui pontos e contabiliza a partida para Time A
           playersA.forEach(function(lowerName) {
             Object.keys(statsMap).forEach(function(nomeKey) {
               if (nomeKey.toLowerCase() === lowerName) {
@@ -190,7 +190,7 @@ var Desempenho = {
             });
           });
 
-          // Atribui pontos para Time B
+          // Atribui pontos e contabiliza a partida para Time B
           playersB.forEach(function(lowerName) {
             Object.keys(statsMap).forEach(function(nomeKey) {
               if (nomeKey.toLowerCase() === lowerName) {
