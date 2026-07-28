@@ -53,8 +53,59 @@ function startTimerLoop() {
   }, 1000);
 }
 
-window.App.initPartidas = function() {
+window.App.initPartidas = async function() {
   initPartidasPeladaSelect();
+
+  // Resolve a pelada ativa imediatamente se estiver nula
+  let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!peladaId) {
+    try {
+      const raw = localStorage.getItem("activePelada");
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj && obj.id) {
+          peladaId = obj.id;
+          window.App.activePelada = obj;
+        }
+      }
+    } catch(e) {}
+  }
+  if (!peladaId) {
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    if (currentGroup && currentGroup.id && window.Api && window.Api.listarDatasDoGrupo) {
+      try {
+        const peladas = await window.Api.listarDatasDoGrupo(currentGroup.id);
+        if (Array.isArray(peladas) && peladas.length > 0) {
+          const activeP = peladas.find(p => p.status !== 'finalizada') || peladas[0];
+          if (activeP) {
+            peladaId = activeP.id;
+            window.App.activePelada = activeP;
+            localStorage.setItem("activePelada", JSON.stringify(activeP));
+          }
+        }
+      } catch(e) {}
+    }
+  }
+
+  // Busca imediatamente o liveState do servidor para obter a fila de espera antes de renderizar
+  if (peladaId && window.Api && window.Api.obterLiveState) {
+    try {
+      const res = await window.Api.obterLiveState(peladaId);
+      if (res && res.state) {
+        if (res.state.liveMatch) {
+          window.App.liveMatch = res.state.liveMatch;
+          localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+        }
+        if (res.state.teams) {
+          localStorage.setItem("teams", JSON.stringify(res.state.teams));
+        }
+        if (res.state.waitingQueue) {
+          window.App.waitingQueue = res.state.waitingQueue;
+          localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
+        }
+      }
+    } catch(e) {}
+  }
 
   const activePelada = window.App.activePelada || {};
   const isFinished = activePelada.status === "finalizada";
@@ -215,8 +266,16 @@ function startGestorPolling() {
   gestorPollingInterval = setInterval(async () => {
     if (window.App.isFinishingMatch) return;
 
-    const activePelada = window.App.activePelada;
-    const peladaId = activePelada ? activePelada.id : null;
+    let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    if (!peladaId) {
+      try {
+        const raw = localStorage.getItem("activePelada");
+        if (raw) {
+          const obj = JSON.parse(raw);
+          if (obj && obj.id) peladaId = obj.id;
+        }
+      } catch(e) {}
+    }
 
     if (peladaId && window.Api && window.Api.obterLiveState) {
       try {
