@@ -12,6 +12,13 @@ window.App.initFormacao = function() {
     btnDraw.onclick = () => window.App.openModal("sorteio");
   }
 
+  const btnSyncCloud = document.getElementById("btn-sync-teams-cloud");
+  if (btnSyncCloud) {
+    btnSyncCloud.onclick = async () => {
+      await syncDrawnTeamsToCloud(true);
+    };
+  }
+
   const btnAddTeam = document.getElementById("btn-add-team-manual");
   if (btnAddTeam) {
     btnAddTeam.onclick = criarTimeManual;
@@ -480,7 +487,59 @@ window.App.renderDrawnTeams = async function() {
   if (teamsModificados) {
     localStorage.setItem("teams", JSON.stringify(teams));
   }
+
+  // Tenta salvar/sincronizar no banco em segundo plano se houver times locais
+  if (teams.length > 0) {
+    syncDrawnTeamsToCloud(false);
+  }
 };
+
+async function syncDrawnTeamsToCloud(showToastMessage) {
+  let teams = [];
+  try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+
+  let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!peladaId) {
+    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
+      try {
+        const peladas = await window.Api.listarDatasDoGrupo(group.id);
+        if (Array.isArray(peladas) && peladas.length > 0) {
+          const activeP = peladas.find(p => p.status !== 'finalizada') || peladas[0];
+          if (activeP) {
+            peladaId = activeP.id;
+            window.App.activePelada = activeP;
+          }
+        }
+      } catch(e) {}
+    }
+  }
+
+  if (!peladaId) {
+    if (showToastMessage) window.App.showToast("Nenhuma pelada de referência encontrada para salvar.", "warning");
+    return;
+  }
+
+  if (teams && teams.length > 0 && window.Api && window.Api.atualizarLiveState) {
+    try {
+      const res = await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+      if (showToastMessage) {
+        if (res && res.error) {
+          window.App.showToast(res.error, "error");
+        } else {
+          window.App.showToast("☁️ Times salvos e sincronizados no banco de dados com sucesso!", "success");
+        }
+      }
+    } catch(e) {
+      console.error("[syncDrawnTeamsToCloud]", e);
+      if (showToastMessage) window.App.showToast("Erro ao conectar ao servidor para salvar os times.", "error");
+    }
+  } else if (showToastMessage) {
+    window.App.showToast("Nenhum time montado para salvar.", "warning");
+  }
+}
+
+window.App.syncDrawnTeamsToCloud = syncDrawnTeamsToCloud;
 
 function drag(ev, playerId, teamId) {
   draggedPlayerId = playerId;
