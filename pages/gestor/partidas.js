@@ -491,11 +491,29 @@ function renderWaitingQueue() {
   if (!container) return;
 
   container.innerHTML = "";
-  let queue = window.App.waitingQueue || [];
 
-  let teams = [];
-  try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+  // 1. Obtém a fila de espera do estado global ou do localStorage
+  let queue = (window.App.waitingQueue && Array.isArray(window.App.waitingQueue) && window.App.waitingQueue.length > 0)
+    ? window.App.waitingQueue
+    : [];
 
+  if (!queue || queue.length === 0) {
+    try { queue = JSON.parse(localStorage.getItem("waitingQueue")) || []; } catch(e) {}
+  }
+
+  // 2. Obtém os times sorteados/cadastrados de todas as fontes possíveis
+  let teams = (window.App.teams && Array.isArray(window.App.teams) && window.App.teams.length > 0)
+    ? window.App.teams
+    : ((window.App.drawnTeams && Array.isArray(window.App.drawnTeams) && window.App.drawnTeams.length > 0) ? window.App.drawnTeams : []);
+
+  if (!teams || teams.length === 0) {
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+  }
+  if (!teams || teams.length === 0) {
+    try { teams = Api.getTeams() || []; } catch(e) {}
+  }
+
+  // 3. Failsafe: se a fila estiver vazia mas houver mais de 2 times sorteados, reconstrói a fila
   if ((!queue || queue.length === 0) && Array.isArray(teams) && teams.length > 2) {
     const tA = (window.App.liveMatch && window.App.liveMatch.teamA) ? String(window.App.liveMatch.teamA).toLowerCase().trim() : '';
     const tB = (window.App.liveMatch && window.App.liveMatch.teamB) ? String(window.App.liveMatch.teamB).toLowerCase().trim() : '';
@@ -509,7 +527,7 @@ function renderWaitingQueue() {
 
     if (queue.length > 0) {
       window.App.waitingQueue = queue;
-      localStorage.setItem("waitingQueue", JSON.stringify(queue));
+      try { localStorage.setItem("waitingQueue", JSON.stringify(queue)); } catch(e) {}
     }
   }
 
@@ -519,8 +537,8 @@ function renderWaitingQueue() {
 
   if (queue.length === 0) {
     container.innerHTML = `
-      <div style="text-align: center; padding: 24px; color: var(--text-caption);" class="text-inter">
-        <span style="font-size: 28px; display: block; margin-bottom: 8px;">📋</span>
+      <div style="text-align: center; padding: 20px; color: #64748B;" class="text-inter">
+        <span style="font-size: 28px; display: block; margin-bottom: 6px;">📋</span>
         Sem times na fila de espera.
       </div>
     `;
@@ -533,43 +551,39 @@ function renderWaitingQueue() {
     item.style.justifyContent = "space-between";
     item.style.alignItems = "center";
     item.style.padding = "10px 14px";
-    item.style.backgroundColor = "var(--background)";
+    item.style.backgroundColor = "#F8FAFC";
     item.style.borderRadius = "10px";
-    item.style.borderLeft = "4px solid var(--primary)";
-    
-    // Cores alternativas de posição
-    const posColors = ["var(--secondary)", "var(--text-caption)", "var(--border-color)"];
-    const posBg = posColors[index] || "var(--border-color)";
-    const posColor = index === 0 ? "var(--primary)" : "var(--text-caption)";
+    item.style.border = "1px solid #E2E8F0";
+    item.style.borderLeft = index === 0 ? "4px solid #0284C7" : "4px solid #94A3B8";
 
     item.innerHTML = `
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span class="text-inter" style="font-size: 11px; font-weight: bold; background: ${posBg}; color: ${posColor}; padding: 2px 8px; border-radius: 6px;">
+        <span style="font-size: 12px; font-weight: 800; background: ${index === 0 ? '#E0F2FE' : '#F1F5F9'}; color: ${index === 0 ? '#0369A1' : '#475569'}; padding: 3px 10px; border-radius: 6px;">
           ${index + 1}º
         </span>
-        <strong class="text-inter" style="font-size: 14px; color: var(--text-heading); font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">${teamName}</strong>
+        <strong style="font-size: 15px; color: #0F172A; font-weight: 700; font-family: 'Inter', sans-serif;">${teamName}</strong>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button class="btn btn-sm btn-outline-secondary btn-view-queue-team" data-team="${teamName}" style="padding: 4px; border:none; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer;">
-          <i data-feather="eye" style="width:14px; height:14px; color:var(--text-heading);"></i>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="btn-view-queue-team" data-team="${teamName}" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: #334155;" title="Ver escalação do ${teamName}">
+          👁️ Ver Escalação
         </button>
-        <span class="text-inter" style="font-size: 11px; color: var(--text-caption);">Aguardando</span>
+        ${index === 0 ? '<span style="font-size: 11px; font-weight: 800; color: #0284C7; background: #E0F2FE; padding: 3px 8px; border-radius: 6px;">PRÓXIMO ➜</span>' : '<span style="font-size: 11px; color: #64748B; font-weight: 600;">Aguardando</span>'}
       </div>
     `;
     container.appendChild(item);
   });
 
-  // Inicializar ícones Feather da fila de espera
-  if (window.feather) feather.replace();
-
-  // Configura cliques nos botões de olho da fila de espera
+  // Configura cliques nos botões de visualização de escalação
   const viewQueueButtons = container.querySelectorAll(".btn-view-queue-team");
   viewQueueButtons.forEach(btn => {
     btn.onclick = () => {
       const tName = btn.getAttribute("data-team");
-      const teams = JSON.parse(localStorage.getItem("teams")) || [];
-      const teamObj = teams.find(t => t.nome === tName) || { nome: tName, players: [] };
-      window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
+      let allTeams = (window.App.teams && window.App.teams.length > 0) ? window.App.teams : [];
+      if (!allTeams || allTeams.length === 0) {
+        try { allTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+      }
+      const teamObj = allTeams.find(t => (t.nome || t.name) === tName) || { nome: tName, players: [] };
+      window.App.openModal("ver_time", { teamName: teamObj.nome || tName, players: teamObj.players || teamObj.jogadores || [] });
     };
   });
 }
