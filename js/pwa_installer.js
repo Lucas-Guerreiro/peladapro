@@ -6,10 +6,10 @@ window.PWAInstaller = {
   _deferredPrompt: null,
 
   init() {
-    // 1. Registrar Service Worker
+    // 1. Registrar Service Worker com escopo absoluto /
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('📱 [PWA] Service Worker ativo!'))
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(() => console.log('📱 [PWA] Service Worker ativo com escopo /!'))
         .catch(err => console.warn('📱 [PWA] Erro no Service Worker:', err));
     }
 
