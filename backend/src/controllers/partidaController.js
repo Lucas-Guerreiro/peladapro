@@ -29,6 +29,24 @@ exports.criarPartida = async (req, res) => {
       autores_gols ? String(autores_gols) : null
     ]);
 
+    // Incrementar partidas disputadas para autores e assistentes envolvidos
+    if (autores_gols) {
+      try {
+        const goalsList = typeof autores_gols === 'string' ? JSON.parse(autores_gols) : autores_gols;
+        const playerNames = new Set();
+        (goalsList || []).forEach(g => {
+          if (g.autorNome) playerNames.add(g.autorNome.trim().toLowerCase());
+          if (g.assistNome) playerNames.add(g.assistNome.trim().toLowerCase());
+        });
+        for (let nome of playerNames) {
+          await db.query(
+            "UPDATE usuarios SET partidas = COALESCE(partidas, 0) + 1 WHERE LOWER(nome) = $1 OR LOWER(apelido) = $1",
+            [nome]
+          ).catch(() => {});
+        }
+      } catch(e) {}
+    }
+
     res.status(201).json({ message: 'Partida salva com sucesso!', partida: rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao salvar partida no banco.', detail: err.message });

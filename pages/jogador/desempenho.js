@@ -44,21 +44,100 @@ var Desempenho = {
     this.renderAll('all');
   },
 
-  renderAll: function(peladaId) {
-    this.renderArtilharia(peladaId);
-    this.renderMelhoresAvaliados(peladaId);
-    this.renderGoleiros(peladaId);
+  renderAll: async function(peladaId) {
+    var id = (peladaId && peladaId !== 'all') ? peladaId : null;
+    await this.renderArtilharia(id);
+    await this.renderMelhoresAvaliados(id);
+    await this.renderGoleiros(id);
   },
 
-  // --- Artilharia ---------------------------------------------------------
-  renderArtilharia: function(peladaId) {
+  // --- Artilharia (Calcula Gols e Quantidade Real de Jogos) ----------------
+  renderArtilharia: async function(peladaId) {
     var tbody = document.getElementById('desempenho-artilharia-body');
     if (!tbody) return;
 
     var players = Api.getPlayers() || [];
-    var scorers = players
-      .filter(function(p) { return (p.gols || 0) > 0 && !p.goleiro && p.ativo !== false; })
-      .sort(function(a, b) { return (b.gols || 0) - (a.gols || 0); })
+    var scorersMap = {};
+
+    players.forEach(function(p) {
+      if (p.ativo !== false && !p.goleiro) {
+        var nome = p.apelido || p.nome;
+        scorersMap[nome] = {
+          id: p.id,
+          nome: nome,
+          gols: p.gols || 0,
+          jogos: p.partidas || 0,
+          isMe: Auth.currentUser && String(p.id) === String(Auth.currentUser.id)
+        };
+      }
+    });
+
+    // Se houver partidas finalizadas no banco, recalcula gols e quantidade de jogos por atleta
+    try {
+      var partidas = [];
+      if (peladaId) {
+        partidas = await Api.listarPartidas(peladaId);
+      } else {
+        var group = Auth.currentGroup;
+        if (group && group.id) {
+          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          if (Array.isArray(peladasGroup)) {
+            for (var i = 0; i < peladasGroup.length; i++) {
+              var listP = await Api.listarPartidas(peladasGroup[i].id);
+              if (Array.isArray(listP)) partidas = partidas.concat(listP);
+            }
+          }
+        }
+      }
+
+      if (Array.isArray(partidas) && partidas.length > 0) {
+        var matchGols = {};
+        var matchJogos = {};
+
+        partidas.forEach(function(m) {
+          let goalsList = [];
+          if (m.autores_gols) {
+            try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
+          }
+          var playersInMatch = new Set();
+          (goalsList || []).forEach(function(g) {
+            if (g.autorNome) {
+              matchGols[g.autorNome] = (matchGols[g.autorNome] || 0) + 1;
+              playersInMatch.add(g.autorNome);
+            }
+            if (g.assistNome) {
+              playersInMatch.add(g.assistNome);
+            }
+          });
+          playersInMatch.forEach(function(nome) {
+            matchJogos[nome] = (matchJogos[nome] || 0) + 1;
+          });
+        });
+
+        Object.keys(matchGols).forEach(function(nome) {
+          if (scorersMap[nome]) {
+            scorersMap[nome].gols = matchGols[nome];
+            scorersMap[nome].jogos = Math.max(scorersMap[nome].jogos, matchJogos[nome] || 1);
+          } else {
+            scorersMap[nome] = {
+              nome: nome,
+              gols: matchGols[nome],
+              jogos: matchJogos[nome] || 1,
+              isMe: false
+            };
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[Desempenho] Erro ao recalcular artilharia das partidas:', e);
+    }
+
+    var scorers = Object.values(scorersMap)
+      .filter(function(p) { return p.gols > 0; })
+      .sort(function(a, b) {
+        if (b.gols !== a.gols) return b.gols - a.gols;
+        return a.jogos - b.jogos; // critério de desempate: menos jogos disputados
+      })
       .slice(0, 10);
 
     if (scorers.length === 0) {
@@ -69,21 +148,20 @@ var Desempenho = {
     var badgeMap = ['🥇', '🥈', '🥉'];
     var html = '';
     scorers.forEach(function(p, idx) {
-      var isMe = Auth.currentUser && String(p.id) === String(Auth.currentUser.id);
-      html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
+      html += '<tr' + (p.isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: ' + (isMe ? '700' : '600') + '; color: ' + (isMe ? 'var(--secondary)' : 'var(--text-heading)') + ';">' +
-          (p.apelido || p.nome) + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
+        '<td style="font-weight: ' + (p.isMe ? '700' : '600') + '; color: ' + (p.isMe ? 'var(--secondary)' : 'var(--text-heading)') + ';">' +
+          p.nome + (p.isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
         '</td>' +
-        '<td style="text-align: center; font-weight: 700; color: var(--primary);">' + (p.gols || 0) + ' ⚽</td>' +
-        '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +
+        '<td style="text-align: center; font-weight: 700; color: var(--primary);">' + p.gols + ' ⚽</td>' +
+        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + p.jogos + '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
   },
 
   // --- Melhor avaliados ---------------------------------------------------
-  renderMelhoresAvaliados: function(peladaId) {
+  renderMelhoresAvaliados: async function(peladaId) {
     var tbody = document.getElementById('desempenho-rating-body');
     if (!tbody) return;
 
@@ -116,14 +194,14 @@ var Desempenho = {
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
         '<td style="font-weight: 600;">' + (p.apelido || p.nome) + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</td>' +
         '<td style="text-align: center; color: var(--warning); font-weight: 700;">' + starsHTML + ' ' + rating.toFixed(1) + '</td>' +
-        '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +
+        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.partidas || 0) + '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
   },
 
   // --- Goleiros -----------------------------------------------------------
-  renderGoleiros: function(peladaId) {
+  renderGoleiros: async function(peladaId) {
     var tbody = document.getElementById('desempenho-goleiros-body');
     if (!tbody) return;
 
@@ -147,7 +225,7 @@ var Desempenho = {
           (p.apelido || p.nome) + ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' +
           (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
         '</td>' +
-        '<td style="text-align: center; color: var(--text-caption);">' + (p.partidas || 0) + '</td>' +
+        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.partidas || 0) + '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
@@ -187,7 +265,7 @@ var Desempenho = {
   }
 };
 
-// --- Ponto de entrada chamado pelo Router ----------------------------------
+// --- Ponto de entrada chamado pelo Router ---
 window.App.initDesempenho = function() {
   Desempenho.init();
 };
