@@ -432,7 +432,8 @@ window.App = {
   initModalAviso_aprovacao:     () => {},
   initModalLancar_gol:          () => {},
   initModalVer_time:            () => {},
-  initModalEditar_partida:      () => {}
+  initModalEditar_partida:      () => {},
+  initModalUpdate_email:        () => {}
 };
 
 // Namespace global para controle do layout unificado do jogador (Atleta)
