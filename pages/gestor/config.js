@@ -281,6 +281,8 @@ async function handleScheduleMatch() {
   const localSelect = document.getElementById("schedule-local");
   const local = localSelect ? localSelect.value : "";
   const valorConvocacao = parseFloat(document.getElementById("schedule-value").value) || 20.00;
+  const chavePix = document.getElementById("schedule-pix-key") ? document.getElementById("schedule-pix-key").value : "";
+  const chavePixNome = document.getElementById("schedule-pix-name") ? document.getElementById("schedule-pix-name").value : "";
 
   if (!grupoId || !data || !horario || !local) {
     window.App.showToast("Preencha todos os campos (selecione um local cadastrado).", "warning");
@@ -289,7 +291,7 @@ async function handleScheduleMatch() {
 
   try {
     window.App.showToast("Agendando no Supabase...", "info");
-    const responseData = await Api.agendarPelada(grupoId, data, horario, local, valorConvocacao);
+    const responseData = await Api.agendarPelada(grupoId, data, horario, local, valorConvocacao, 20, chavePix, chavePixNome);
 
     if (responseData.error) {
       window.App.showToast(responseData.error, "error");

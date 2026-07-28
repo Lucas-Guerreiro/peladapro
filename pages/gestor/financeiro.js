@@ -4,6 +4,7 @@
 
 window.App.initFinanceiro = async function() {
   await window.App.renderFinanceiroData();
+  await window.renderPixAuditoria();
 
   const btnExpense = document.getElementById("btn-open-expense-modal");
   if (btnExpense) {
@@ -163,4 +164,89 @@ function manualFinanceSettlement(playerId) {
   window.App.showToast(`Ajuste de ${toastVal} realizado.`);
   window.App.renderFinanceiroData();
 }
+
+window.renderPixAuditoria = async function() {
+  const bodyEl = document.getElementById("finances-pix-auditoria-body");
+  if (!bodyEl) return;
+
+  try {
+    bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-caption);">Carregando comprovantes Pix...</td></tr>`;
+
+    const comprobantes = await Api.listarComprovantesPix();
+
+    if (!Array.isArray(comprobantes) || comprobantes.length === 0) {
+      bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-caption);">Nenhum comprovante Pix enviado até o momento.</td></tr>`;
+      return;
+    }
+
+    let html = "";
+    comprobantes.forEach(c => {
+      const dataFmt = c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") + " " + new Date(c.created_at).toLocaleTimeString("pt-BR", {hour:'2-digit', minute:'2-digit'}) : "—";
+      const atletaNome = c.atleta_nome || c.atleta_apelido || c.atleta_email;
+      const valorFmt = window.Utils ? window.Utils.formatCurrency(c.valor) : `R$ ${parseFloat(c.valor).toFixed(2)}`;
+      
+      let statusBadge = "";
+      let btnEstornar = "";
+
+      if (c.status === 'estornado_pelo_gestor') {
+        statusBadge = `<span class="badge-status cortado" style="font-size:11px;">🚨 Estornado</span>`;
+        btnEstornar = `<span style="font-size:11px; color:#94A3B8;">Estornado</span>`;
+      } else {
+        statusBadge = `<span class="badge-status confirmado" style="font-size:11px;">✅ Aprovado</span>`;
+        btnEstornar = `
+          <button class="btn btn-sm btn-danger btn-estornar-pix" data-id="${c.id}" data-atleta="${atletaNome}" data-valor="${valorFmt}" style="font-size:11px; padding:4px 8px; height:24px;">
+            🚨 Desfazer Crédito
+          </button>
+        `;
+      }
+
+      html += `
+        <tr>
+          <td style="font-size:12px;">${dataFmt}</td>
+          <td style="font-weight:600; font-size:13px;">${atletaNome}</td>
+          <td style="font-family:monospace; font-size:11px; color:#0284C7;">${c.e2e_id || '—'}</td>
+          <td style="text-align:right; font-weight:700; color:#059669;">${valorFmt}</td>
+          <td style="text-align:center;">${statusBadge}</td>
+          <td style="text-align:center;">${btnEstornar}</td>
+        </tr>
+      `;
+    });
+
+    bodyEl.innerHTML = html;
+
+    // Vincular botões de estorno
+    bodyEl.querySelectorAll(".btn-estornar-pix").forEach(btn => {
+      btn.onclick = async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        const atleta = e.currentTarget.getAttribute("data-atleta");
+        const valor = e.currentTarget.getAttribute("data-valor");
+
+        if (!confirm(`⚠️ DESFAZER TRANSAÇÃO PIX:\n\nDeseja estornar o crédito de ${valor} do atleta ${atleta}?\nO saldo do atleta será debitado no valor do Pix.`)) {
+          return;
+        }
+
+        try {
+          window.App.showToast("Estornando transação no servidor...", "info");
+          const res = await Api.estornarTransacaoPix(id);
+
+          if (res.error) {
+            window.App.showToast(res.error, "error");
+            return;
+          }
+
+          window.App.showToast("Transação estornada e saldo revertido com sucesso!", "success");
+          window.renderPixAuditoria();
+          window.App.renderFinanceiroData();
+        } catch(err) {
+          console.error(err);
+          window.App.showToast("Erro ao estornar transação.", "error");
+        }
+      };
+    });
+
+  } catch(e) {
+    console.error('[FinanceiroPix]', e);
+    bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger);">Erro ao carregar auditoria Pix.</td></tr>`;
+  }
+};
 

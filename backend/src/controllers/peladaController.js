@@ -84,7 +84,7 @@ exports.listarGrupos = async (req, res) => {
 
 // --- Agendar nova data/horário para a pelada (com notificação) ----------
 exports.agendarData = async (req, res) => {
-  const { grupo_id, data, horario, local, max_jogadores, valor_convocacao } = req.body;
+  const { grupo_id, data, horario, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome } = req.body;
 
   if (!grupo_id || !data || !horario || !local) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes (grupo, data, horário, local)' });
@@ -98,9 +98,9 @@ exports.agendarData = async (req, res) => {
 
     // 1. Inserir a partida na tabela 'peladas'
     const queryPelada = `
-      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, valor_convocacao)
-      VALUES ($1, $2, $3, 'agendada', $4, $5, $6) RETURNING id, data, horario, local`;
-    const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00]);
+      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome)
+      VALUES ($1, $2, $3, 'agendada', $4, $5, $6, $7, $8) RETURNING id, data, horario, local, chave_pix, chave_pix_nome`;
+    const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00, chave_pix || null, chave_pix_nome || null]);
     const pelada = peladaRes.rows[0];
 
     // 2. Buscar todos os atletas ativos no sistema (jogadores, gestores e tipo ambos)
@@ -194,7 +194,7 @@ exports.listarDatasDoGrupo = async (req, res) => {
     }
 
     const query = `
-      SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores,
+      SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.chave_pix, p.chave_pix_nome,
              COALESCE(p.criterio_empate, c.criterio_empate, 'ambos_permanecem') as criterio_empate,
              COALESCE(p.vitorias_para_sair, c.vitorias_para_sair, 2) as vitorias_para_sair,
              COALESCE(p.jogadores_por_time, c.jogadores_por_time, 7) as jogadores_por_time,

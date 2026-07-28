@@ -221,7 +221,7 @@ const Api = {
     return data;
   },
 
-  async agendarPelada(grupoId, data, horario, local, valorConvocacao = 20.00, maxJogadores = 20) {
+  async agendarPelada(grupoId, data, horario, local, valorConvocacao = 20.00, maxJogadores = 20, chavePix = null, chavePixNome = null) {
     const token = localStorage.getItem('token');
     if (!token) {
       return { error: 'Sessão expirada ou inválida. Por favor, faça Logout e entre novamente para ativar a conexão com o Supabase.' };
@@ -238,7 +238,9 @@ const Api = {
         horario,
         local,
         valor_convocacao: parseFloat(valorConvocacao),
-        max_jogadores: parseInt(maxJogadores)
+        max_jogadores: parseInt(maxJogadores),
+        chave_pix: chavePix,
+        chave_pix_nome: chavePixNome
       })
     });
     const responseData = await res.json();
@@ -622,6 +624,62 @@ const Api = {
     } catch (e) {
       console.error('[Api] Erro ao atualizar configurações da partida:', e);
       return { error: 'Erro ao se conectar ao servidor.' };
+    }
+  },
+
+  async enviarComprovantePix(peladaId, e2eId, valor, beneficiarioNome, comprovanteUrl) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('http://localhost:3000/api/pix/enviar-comprovante', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          pelada_id: peladaId ? parseInt(peladaId) : null,
+          e2e_id: e2eId,
+          valor: parseFloat(valor),
+          beneficiario_nome: beneficiarioNome,
+          comprovante_url: comprovanteUrl
+        })
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro ao se conectar com o servidor para enviar Pix.' };
+    }
+  },
+
+  async listarComprovantesPix() {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    try {
+      const res = await fetch('http://localhost:3000/api/pix/comprovantes', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch(e) {
+      return [];
+    }
+  },
+
+  async estornarTransacaoPix(comprovanteId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('http://localhost:3000/api/pix/estornar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ comprovante_id: parseInt(comprovanteId) })
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro ao conectar ao servidor para estornar transação.' };
     }
   }
 };

@@ -132,10 +132,33 @@ var Convocacao = {
       this._selectedPeladaId = listToRender[0].id;
       this.renderConfirmedList(listToRender[0].id);
       this.updateMyStatus();
+      this.updatePixInfo(listToRender[0].id);
     } catch (err) {
       console.error('[Convocacao] Erro ao carregar datas do grupo:', err);
       selectData.innerHTML = '<option value="">Erro ao carregar datas</option>';
       selectData.disabled = true;
+    }
+  },
+
+  // --- Atualiza as informações do Pix com base na pelada selecionada --------
+  updatePixInfo: function(peladaId) {
+    const keyEl = document.getElementById('pix-display-key');
+    const benEl = document.getElementById('pix-display-beneficiario');
+    if (!keyEl || !benEl) return;
+
+    if (!peladaId) {
+      keyEl.textContent = '--';
+      benEl.textContent = '--';
+      return;
+    }
+
+    const pelada = Api.getPelada(peladaId);
+    if (pelada && (pelada.chave_pix || pelada.chave_pix_nome)) {
+      keyEl.textContent = pelada.chave_pix || 'Não cadastrada pelo gestor';
+      benEl.textContent = pelada.chave_pix_nome || 'Gestor da Pelada';
+    } else {
+      keyEl.textContent = 'Não cadastrada pelo gestor';
+      benEl.textContent = 'Gestor da Pelada';
     }
   },
 
@@ -294,6 +317,8 @@ var Convocacao = {
     var selectData = document.getElementById('select-conv-data');
     var btnAdd = document.getElementById('btn-conv-add');
     var btnRemove = document.getElementById('btn-conv-remove');
+    var btnCopyPix = document.getElementById('btn-copy-pix-key');
+    var btnUploadPix = document.getElementById('btn-upload-pix-receipt');
 
     if (selectGroup) {
       selectGroup.addEventListener('change', function(e) {
@@ -306,7 +331,79 @@ var Convocacao = {
         Convocacao._selectedPeladaId = e.target.value;
         Convocacao.renderConfirmedList(e.target.value);
         Convocacao.updateMyStatus();
+        Convocacao.updatePixInfo(e.target.value);
       });
+    }
+
+    if (btnCopyPix) {
+      btnCopyPix.onclick = function() {
+        const keyText = document.getElementById('pix-display-key')?.textContent;
+        if (!keyText || keyText.includes('Não cadastrada')) {
+          Utils.toast('Nenhuma chave Pix válida disponível.', 'warning');
+          return;
+        }
+        navigator.clipboard.writeText(keyText).then(() => {
+          Utils.toast('Chave Pix copiada com sucesso! 📋', 'success');
+        }).catch(() => {
+          Utils.toast('Não foi possível copiar automaticamente.', 'warning');
+        });
+      };
+    }
+
+    if (btnUploadPix) {
+      btnUploadPix.onclick = async function() {
+        const fileInput = document.getElementById('pix-receipt-file-input');
+        const file = fileInput ? fileInput.files[0] : null;
+
+        if (!file) {
+          Utils.toast('Selecione uma imagem ou PDF do comprovante Pix.', 'warning');
+          return;
+        }
+
+        const pelada = Api.getPelada(Convocacao._selectedPeladaId);
+        const expectedBen = pelada ? pelada.chave_pix_nome : '';
+        const expectedVal = pelada ? parseFloat(pelada.valor_convocacao || 0) : 0;
+
+        try {
+          btnUploadPix.disabled = true;
+          btnUploadPix.textContent = '⏳ Analisando comprovante (OCR)...';
+
+          const parsedData = await window.PixOCR.processReceiptFile(file, expectedBen, expectedVal);
+          
+          Utils.toast('Comprovante lido! Enviando para o servidor...', 'info');
+
+          const res = await Api.enviarComprovantePix(
+            Convocacao._selectedPeladaId,
+            parsedData.e2e_id,
+            parsedData.valor || expectedVal || 20.0,
+            parsedData.beneficiario || expectedBen,
+            null
+          );
+
+          if (res.error) {
+            Utils.toast(res.error, 'error');
+            return;
+          }
+
+          Utils.toast('✅ Pix validado com sucesso! Saldo creditado.', 'success');
+          
+          // Atualiza saldo do usuário logado localmente
+          if (Auth.currentUser) {
+            Auth.currentUser.saldo = res.novoSaldo;
+            localStorage.setItem('user', JSON.stringify(Auth.currentUser));
+          }
+
+          Convocacao.updateMyStatus();
+          if (fileInput) fileInput.value = '';
+
+        } catch (err) {
+          console.error('[PixOCR]', err);
+          Utils.toast(err.message || 'Erro ao processar comprovante Pix.', 'error');
+        } finally {
+          btnUploadPix.disabled = false;
+          btnUploadPix.textContent = '🔍 Validar & Enviar Comprovante';
+        }
+      };
     }
 
     if (btnAdd) {
