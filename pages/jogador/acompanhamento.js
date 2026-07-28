@@ -507,9 +507,12 @@ var Acompanhamento = {
       }
       avatarsHTML += '</div>';
 
+      var emblemSvg = window.TeamEmblems ? window.TeamEmblems.forTeam(teamObj || { nome: name, emblema: idx % 10 }) : '';
+
       html += '<div class="acomp-queue-item-clear" style="border-left: 4px solid ' + theme.border + ';">' +
         '<div class="acomp-queue-team-info-clear">' +
           '<span class="acomp-queue-pos-clear" style="color: ' + theme.text + ';">' + (idx + 1) + '</span>' +
+          '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 4px;">' + emblemSvg + '</div>' +
           avatarsHTML +
           '<span class="acomp-queue-team-name-clear">' + name + '</span>' +
           '<button class="acomp-btn-view-queue" data-team="' + name + '" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 2px 6px; cursor: pointer; font-size: 11px; margin-left: 6px;" title="Ver escalação do ' + name + '">👁️</button>' +
@@ -589,9 +592,16 @@ var Acompanhamento = {
 
       var html = '';
       var totalPartidas = partidas.length;
+      var teams = [];
+      try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+
       partidas.forEach(function(p, idx) {
         var numJogo = p.numero_jogo || p.id || (totalPartidas - idx);
         var isOpen = !!window.App.openGoalPanels[p.id];
+        var tA = teams.find(function(t) { return (t.nome || t.name) === p.time_a_nome; }) || { nome: p.time_a_nome, emblema: 0 };
+        var tB = teams.find(function(t) { return (t.nome || t.name) === p.time_b_nome; }) || { nome: p.time_b_nome, emblema: 1 };
+        var embA = window.TeamEmblems ? window.TeamEmblems.forTeam(tA) : '';
+        var embB = window.TeamEmblems ? window.TeamEmblems.forTeam(tB) : '';
 
         var goalsList = [];
         if (p.autores_gols) {
@@ -604,9 +614,11 @@ var Acompanhamento = {
           '<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">' +
             '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
               '<span style="font-size: 11px; font-weight: bold; background: #E2E8F0; color: #475569; padding: 2px 6px; border-radius: 4px;">#' + numJogo + '</span>' +
+              '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">' + embA + '</div>' +
               '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_a_nome || 'Time A') + '</span>' +
               '<span style="font-size: 15px; font-weight: 800; color: #0F172A; font-family: monospace;">' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '</span>' +
               '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_b_nome || 'Time B') + '</span>' +
+              '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">' + embB + '</div>' +
             '</div>' +
             '<button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>' +
           '</div>' +

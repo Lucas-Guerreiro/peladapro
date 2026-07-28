@@ -576,6 +576,9 @@ function renderWaitingQueue() {
   }
 
   queue.forEach((teamName, index) => {
+    const teamObj = (teams || []).find(t => (t.nome || t.name) === teamName) || { nome: teamName, emblema: index % 10 };
+    const emblemSvg = window.TeamEmblems ? window.TeamEmblems.forTeam(teamObj) : '';
+
     const item = document.createElement("div");
     item.style.display = "flex";
     item.style.justifyContent = "space-between";
@@ -591,6 +594,9 @@ function renderWaitingQueue() {
         <span style="font-size: 12px; font-weight: 800; background: ${index === 0 ? '#E0F2FE' : '#F1F5F9'}; color: ${index === 0 ? '#0369A1' : '#475569'}; padding: 3px 10px; border-radius: 6px;">
           ${index + 1}º
         </span>
+        <div style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          ${emblemSvg}
+        </div>
         <strong style="font-size: 15px; color: #0F172A; font-weight: 700; font-family: 'Inter', sans-serif;">${teamName}</strong>
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -964,8 +970,16 @@ async function renderRecentMatches() {
 
     window.App.openGoalPanels = window.App.openGoalPanels || {};
 
+    let teams = [];
+    try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+
     partidas.forEach(p => {
       const isOpen = !!window.App.openGoalPanels[p.id];
+      const tA = (teams || []).find(t => (t.nome || t.name) === p.time_a_nome) || { nome: p.time_a_nome, emblema: 0 };
+      const tB = (teams || []).find(t => (t.nome || t.name) === p.time_b_nome) || { nome: p.time_b_nome, emblema: 1 };
+      const embA = window.TeamEmblems ? window.TeamEmblems.forTeam(tA) : '';
+      const embB = window.TeamEmblems ? window.TeamEmblems.forTeam(tB) : '';
+
       const item = document.createElement("div");
       item.style.display = "flex";
       item.style.flexDirection = "column";
@@ -987,13 +1001,17 @@ async function renderRecentMatches() {
 
       item.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span style="font-size: 11px; background: rgba(0,200,83,0.1); color: var(--success); padding: 2px 8px; border-radius: 6px; font-weight: bold;">FIM</span>
-            <strong class="text-inter" style="font-size:14px; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">
-              ${p.time_a_nome} <span style="color:var(--secondary); font-size:16px;">${p.gols_time_a}</span> 
-              x 
-              <span style="color:var(--accent); font-size:16px;">${p.gols_time_b}</span> ${p.time_b_nome}
-            </strong>
+            <div style="display:inline-flex; align-items:center; gap:6px;">
+              <div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embA}</div>
+              <strong class="text-inter" style="font-size:14px; font-family: 'Inter', sans-serif;">${p.time_a_nome}</strong>
+              <span style="color:var(--secondary); font-size:16px; font-weight:800; margin:0 4px;">${p.gols_time_a}</span>
+              <span style="color:#64748B; font-weight:700;">x</span>
+              <span style="color:var(--accent); font-size:16px; font-weight:800; margin:0 4px;">${p.gols_time_b}</span>
+              <strong class="text-inter" style="font-size:14px; font-family: 'Inter', sans-serif;">${p.time_b_nome}</strong>
+              <div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embB}</div>
+            </div>
             <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols da partida" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-heading); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">

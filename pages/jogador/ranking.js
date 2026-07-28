@@ -168,12 +168,18 @@ var Ranking = {
       var sg = team.gols_pro - team.gols_contra;
       var sgStr = sg > 0 ? '+' + sg : String(sg);
 
+      var teamObj = localTeams.find(function(t) { return (t.nome || t.name) === team.nome; }) || { nome: team.nome, emblema: idx % 10 };
+      var emblemSvg = window.TeamEmblems ? window.TeamEmblems.forTeam(teamObj) : '';
+
       html += '<tr>' +
         '<td style="text-align: center;">' +
           (idx < 3 ? '<span class="ranking-badge-top ' + (classMap[idx] || '') + '">' + (badgeMap[idx] || (idx+1)) + '</span>' : (idx+1)) +
         '</td>' +
         '<td style="font-weight: 600;">' +
-          '<span style="color: ' + (team.cor || '#666') + '; margin-right: 6px;">■</span>' + team.nome +
+          '<div style="display: inline-flex; align-items: center; gap: 8px;">' +
+            '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">' + emblemSvg + '</div>' +
+            '<span>' + team.nome + '</span>' +
+          '</div>' +
         '</td>' +
         '<td style="text-align: center; font-weight: 700;">' + team.pontos + '</td>' +
         '<td style="text-align: center;">' + team.jogos + '</td>' +
