@@ -488,7 +488,20 @@ function renderLiveMatchUI() {
 function renderWaitingQueue() {
   const container = document.getElementById("wait-queue-container");
   const counterEl = document.getElementById("queue-count");
-  if (!container) return;
+
+  console.log("🔍 [DIAGNÓSTICO FILA DE ESPERA] Chamado renderWaitingQueue", {
+    containerExiste: !!container,
+    counterExiste: !!counterEl,
+    windowAppWaitingQueue: window.App ? window.App.waitingQueue : null,
+    localStorageWaitingQueue: localStorage.getItem("waitingQueue"),
+    localStorageTeams: localStorage.getItem("teams"),
+    liveMatch: window.App ? window.App.liveMatch : null
+  });
+
+  if (!container) {
+    console.warn("⚠️ [DIAGNÓSTICO FILA DE ESPERA] Elemento #wait-queue-container não encontrado no DOM.");
+    return;
+  }
 
   container.innerHTML = "";
 
@@ -525,11 +538,15 @@ function renderWaitingQueue() {
         return low !== tA && low !== tB;
       });
 
+    console.log("🛠️ [DIAGNÓSTICO FILA DE ESPERA] Fila reconstruída dinamicamente dos times:", queue);
+
     if (queue.length > 0) {
       window.App.waitingQueue = queue;
       try { localStorage.setItem("waitingQueue", JSON.stringify(queue)); } catch(e) {}
     }
   }
+
+  console.log("📊 [DIAGNÓSTICO FILA DE ESPERA] Fila final para renderização:", queue);
 
   if (counterEl) {
     counterEl.textContent = `${queue.length} Time${queue.length !== 1 ? 's' : ''}`;
