@@ -204,9 +204,14 @@ function handleExecuteSorteio() {
     if (scoreBEl) scoreBEl.textContent = "0";
   }
 
-  // Persiste imediatamente a fila e o jogo ao vivo no localStorage
+  // Persiste imediatamente a fila, o jogo ao vivo e os times sorteados no localStorage e no servidor
   localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
   localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (peladaId && window.Api && window.Api.atualizarLiveState) {
+    window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, drawnTeams);
+  }
 
   window.App.showToast("Equipes geradas!");
   window.App.renderDrawnTeams();

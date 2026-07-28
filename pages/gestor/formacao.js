@@ -378,14 +378,45 @@ async function desconvocarAtleta(atletaId, atletaNome) {
   }
 }
 
-window.App.renderDrawnTeams = function() {
+window.App.renderDrawnTeams = async function() {
   const container = document.getElementById("drawn-teams-container");
   if (!container) return;
   container.innerHTML = "";
 
-  const teams = JSON.parse(localStorage.getItem("teams")) || [];
+  let teams = [];
+  try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
 
-  if (teams.length === 0) {
+  if (!teams || teams.length === 0) {
+    let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+
+    if (!peladaId) {
+      const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
+        try {
+          const peladas = await window.Api.listarDatasDoGrupo(group.id);
+          if (Array.isArray(peladas) && peladas.length > 0) {
+            const activeP = peladas.find(p => p.status !== 'finalizada') || peladas[0];
+            if (activeP) {
+              peladaId = activeP.id;
+              window.App.activePelada = activeP;
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    if (peladaId && window.Api && window.Api.obterLiveState) {
+      try {
+        const liveRes = await window.Api.obterLiveState(peladaId);
+        if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams) && liveRes.state.teams.length > 0) {
+          teams = liveRes.state.teams;
+          localStorage.setItem("teams", JSON.stringify(teams));
+        }
+      } catch(e) {}
+    }
+  }
+
+  if (!teams || teams.length === 0) {
     container.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
         <i data-feather="shuffle" style="width: 48px; height: 48px; display: block; margin: 0 auto 12px auto; color: var(--text-caption);"></i>
