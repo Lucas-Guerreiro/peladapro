@@ -315,16 +315,33 @@ exports.atualizarLiveState = async (req, res) => {
       try { existing = JSON.parse(selectRes.rows[0].live_state) || {}; } catch(e) {}
     }
 
+    const currentMatch = liveMatch !== undefined ? liveMatch : (existing.liveMatch || {});
+    const currentTeams = (teams && Array.isArray(teams) && teams.length > 0) ? teams : (existing.teams || []);
+    let currentQueue = waitingQueue !== undefined ? waitingQueue : (existing.waitingQueue || []);
+
+    // Reconstrói a fila de espera se estiver vazia mas existirem mais de 2 times sorteados
+    if ((!currentQueue || currentQueue.length === 0) && Array.isArray(currentTeams) && currentTeams.length > 2) {
+      const tA = (currentMatch.teamA || '').toLowerCase().trim();
+      const tB = (currentMatch.teamB || '').toLowerCase().trim();
+      currentQueue = currentTeams
+        .map(t => t.nome || t.name)
+        .filter(n => {
+          if (!n) return false;
+          const low = String(n).toLowerCase().trim();
+          return low !== tA && low !== tB;
+        });
+    }
+
     const updatedState = {
-      liveMatch: liveMatch !== undefined ? liveMatch : (existing.liveMatch || {}),
-      waitingQueue: waitingQueue !== undefined ? waitingQueue : (existing.waitingQueue || []),
-      teams: (teams && Array.isArray(teams) && teams.length > 0) ? teams : (existing.teams || []),
+      liveMatch: currentMatch,
+      waitingQueue: currentQueue,
+      teams: currentTeams,
       updatedAt: Date.now()
     };
 
     const stateJson = JSON.stringify(updatedState);
 
-    // 2. Persiste o estado ao vivo (incluindo os times sorteados) no PostgreSQL
+    // 2. Persiste o estado ao vivo no PostgreSQL
     await db.query('UPDATE peladas SET live_state = $1 WHERE id = $2', [stateJson, id]);
 
     // Atualiza cache em memória
@@ -353,6 +370,25 @@ exports.obterLiveState = async (req, res) => {
           state = JSON.parse(selectRes.rows[0].live_state);
           if (state) liveStateMap.set(String(id), state);
         } catch(e) {}
+      }
+    }
+
+    if (state) {
+      const currentMatch = state.liveMatch || {};
+      const currentTeams = state.teams || [];
+      let currentQueue = state.waitingQueue || [];
+
+      if ((!currentQueue || currentQueue.length === 0) && Array.isArray(currentTeams) && currentTeams.length > 2) {
+        const tA = (currentMatch.teamA || '').toLowerCase().trim();
+        const tB = (currentMatch.teamB || '').toLowerCase().trim();
+        currentQueue = currentTeams
+          .map(t => t.nome || t.name)
+          .filter(n => {
+            if (!n) return false;
+            const low = String(n).toLowerCase().trim();
+            return low !== tA && low !== tB;
+          });
+        state.waitingQueue = currentQueue;
       }
     }
 
