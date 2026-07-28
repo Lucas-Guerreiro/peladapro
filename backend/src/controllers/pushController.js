@@ -54,13 +54,9 @@ exports.registerSubscription = async (req, res) => {
   }
 };
 
-// 3. Disparar Notificação Push para todas as Subscriptions registradas
-exports.sendNotification = async (req, res) => {
-  const { title, body, url, icon, payload } = req.body;
-
-  if (!title || !body) {
-    return res.status(400).json({ error: 'Título e corpo da notificação são obrigatórios.' });
-  }
+// Função utilitária para envio interno via backend
+async function sendNotificationInternal({ title, body, url, icon, payload }) {
+  if (!title || !body) return { successCount: 0, failureCount: 0 };
 
   const notificationPayload = JSON.stringify({
     title: title || 'PeladaPro ⚽',
@@ -72,7 +68,6 @@ exports.sendNotification = async (req, res) => {
 
   let subscriptionsList = [];
 
-  // Busca do banco Supabase
   try {
     const { rows } = await db.query('SELECT endpoint, keys FROM push_subscriptions');
     subscriptionsList = rows.map(r => {
@@ -86,13 +81,12 @@ exports.sendNotification = async (req, res) => {
     console.warn('[PushController] Falha ao consultar Supabase, usando memória fallback:', e.message);
   }
 
-  // Se o banco retornou vazio, utiliza a memória fallback
   if (subscriptionsList.length === 0) {
     memorySubscriptions.forEach(v => subscriptionsList.push(v.subscription));
   }
 
   if (subscriptionsList.length === 0) {
-    return res.status(200).json({ message: 'Nenhum dispositivo registrado para receber notificações.', sentCount: 0 });
+    return { message: 'Nenhum dispositivo registrado.', successCount: 0, failureCount: 0 };
   }
 
   let successCount = 0;
@@ -104,9 +98,6 @@ exports.sendNotification = async (req, res) => {
       successCount++;
     } catch (err) {
       failureCount++;
-      console.warn('[PushController] Erro ao enviar notificação para dispositivo:', sub.endpoint, err.statusCode);
-
-      // Se a subscription expirou ou foi cancelada pelo usuário (HTTP 404 ou 410)
       if (err.statusCode === 404 || err.statusCode === 410) {
         memorySubscriptions.delete(sub.endpoint);
         try {
@@ -117,10 +108,23 @@ exports.sendNotification = async (req, res) => {
   });
 
   await Promise.all(pushPromises);
+  return { successCount, failureCount };
+}
+
+exports.sendNotificationInternal = sendNotificationInternal;
+
+// 3. Disparar Notificação Push via Rota HTTP (Painel do Gestor)
+exports.sendNotification = async (req, res) => {
+  const { title, body, url, icon, payload } = req.body;
+
+  if (!title || !body) {
+    return res.status(400).json({ error: 'Título e corpo da notificação são obrigatórios.' });
+  }
+
+  const result = await sendNotificationInternal({ title, body, url, icon, payload });
 
   res.json({
-    message: `Notificações disparadas! Sucesso: ${successCount}, Falhas: ${failureCount}`,
-    successCount,
-    failureCount
+    message: `Notificações disparadas! Sucesso: ${result.successCount}, Falhas: ${result.failureCount}`,
+    ...result
   });
 };

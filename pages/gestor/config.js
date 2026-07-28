@@ -56,9 +56,48 @@ window.App.initConfig = function() {
 
   const btnActivate = document.getElementById("btn-activate-license");
   if (btnActivate) btnActivate.onclick = handleActivateLicense;
+
+  const btnSendPush = document.getElementById("btn-send-custom-push");
+  if (btnSendPush) btnSendPush.onclick = handleSendCustomPush;
   
   if (window.feather) feather.replace();
 };
+
+async function handleSendCustomPush() {
+  const titleInput = document.getElementById("push-title-input");
+  const bodyInput = document.getElementById("push-body-input");
+  const title = titleInput ? titleInput.value.trim() : "";
+  const body = bodyInput ? bodyInput.value.trim() : "";
+
+  if (!title || !body) {
+    window.App.showToast("Preencha o título e a mensagem do aviso.", "warning");
+    return;
+  }
+
+  try {
+    window.App.showToast("Disparando notificação push para todos os atletas...", "info");
+    const res = await fetch("/api/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: title,
+        body: body,
+        url: "/#/jogador/convocacao"
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.App.showToast(`Notificação enviada com sucesso para ${data.successCount || 0} dispositivo(s)! 🚀`, "success");
+      if (titleInput) titleInput.value = "";
+      if (bodyInput) bodyInput.value = "";
+    } else {
+      window.App.showToast(data.error || "Erro ao disparar notificação.", "error");
+    }
+  } catch(e) {
+    console.error(e);
+    window.App.showToast("Erro ao conectar ao servidor de push.", "error");
+  }
+}
 
 function loadConfigs() {
   if (!window.App.currentGroup || !window.App.currentGroup.id) return;
