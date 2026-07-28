@@ -113,13 +113,44 @@ var Desempenho = {
           }
         });
 
+        // 1. Contabiliza a quantidade real de partidas por atleta (idêntico à Artilharia)
+        var playerGamesMap = {};
+
+        partidas.forEach(function(m) {
+          var tA = (m.time_a_nome || '').trim().toLowerCase();
+          var tB = (m.time_b_nome || '').trim().toLowerCase();
+
+          var playersInMatch = new Set();
+
+          if (tA && teamPlayersMap[tA]) {
+            teamPlayersMap[tA].forEach(function(nome) { playersInMatch.add(nome); });
+          }
+          if (tB && teamPlayersMap[tB]) {
+            teamPlayersMap[tB].forEach(function(nome) { playersInMatch.add(nome); });
+          }
+
+          let goalsList = [];
+          if (m.autores_gols) {
+            try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
+          }
+          (goalsList || []).forEach(function(g) {
+            if (g.autorNome) playersInMatch.add(g.autorNome.trim().toLowerCase());
+            if (g.assistNome) playersInMatch.add(g.assistNome.trim().toLowerCase());
+          });
+
+          playersInMatch.forEach(function(nomeLower) {
+            playerGamesMap[nomeLower] = (playerGamesMap[nomeLower] || 0) + 1;
+          });
+        });
+
+        // 2. Processa os pontos obtidos em cada partida
         partidas.forEach(function(m) {
           var tA = (m.time_a_nome || '').trim();
           var tB = (m.time_b_nome || '').trim();
           var gA = parseInt(m.gols_time_a) || 0;
           var gB = parseInt(m.gols_time_b) || 0;
 
-          // Pontuação por resultado das partidas:
+          // Pontuação por resultado:
           // 2x0 -> 3.0 pts, 1x0 -> 2.5 pts, 2x1 -> 2.0 pts, 1x1 -> 1.0 pt, 0x0 -> 0.5 pt, Derrota -> 0 pts
           var ptsA = 0; var isWinA = false; var isCleanA = false;
           var ptsB = 0; var isWinB = false; var isCleanB = false;
@@ -176,12 +207,11 @@ var Desempenho = {
             }
           });
 
-          // Atribui pontos e contabiliza a partida para Time A
+          // Pontuação para o Time A
           playersA.forEach(function(lowerName) {
             Object.keys(statsMap).forEach(function(nomeKey) {
               if (nomeKey.toLowerCase() === lowerName) {
                 statsMap[nomeKey].pontos += ptsA;
-                statsMap[nomeKey].jogos += 1;
                 if (isWinA) statsMap[nomeKey].vitorias += 1;
                 if (isCleanA) statsMap[nomeKey].balizaZero += 1;
                 if (!isWinA && ptsA > 0) statsMap[nomeKey].empates += 1;
@@ -190,12 +220,11 @@ var Desempenho = {
             });
           });
 
-          // Atribui pontos e contabiliza a partida para Time B
+          // Pontuação para o Time B
           playersB.forEach(function(lowerName) {
             Object.keys(statsMap).forEach(function(nomeKey) {
               if (nomeKey.toLowerCase() === lowerName) {
                 statsMap[nomeKey].pontos += ptsB;
-                statsMap[nomeKey].jogos += 1;
                 if (isWinB) statsMap[nomeKey].vitorias += 1;
                 if (isCleanB) statsMap[nomeKey].balizaZero += 1;
                 if (!isWinB && ptsB > 0) statsMap[nomeKey].empates += 1;
@@ -204,6 +233,12 @@ var Desempenho = {
             });
           });
 
+        });
+
+        // 3. Aplica a quantidade exata de jogos calculada (idêntica à Artilharia)
+        Object.keys(statsMap).forEach(function(nomeKey) {
+          var lowerName = nomeKey.toLowerCase();
+          statsMap[nomeKey].jogos = playerGamesMap[lowerName] || 0;
         });
       }
     } catch (e) {
@@ -219,7 +254,7 @@ var Desempenho = {
         return a.derrotas - b.derrotas;
       });
 
-    // Atualiza os widgets do card "Meu Desempenho Pessoal" do usuario logado com os dados reais calculados
+    // Atualiza os widgets do card "Meu Desempenho Pessoal" do usuario logado
     if (Auth.currentUser) {
       var userKey = (Auth.currentUser.apelido || Auth.currentUser.nome || '').trim().toLowerCase();
       var myStats = ranked.find(function(r) { return r.isMe || r.nome.toLowerCase() === userKey; });
