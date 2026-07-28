@@ -61,7 +61,7 @@ async function sendNotificationInternal({ title, body, url, icon, payload }) {
   const notificationPayload = JSON.stringify({
     title: title || 'PeladaPro ⚽',
     body: body,
-    icon: icon || '/assets/icons/icon-192.png',
+    icon: icon || '/assets/icons/push-icon-192.png',
     url: url || '/#/jogador/convocacao',
     ...payload
   });

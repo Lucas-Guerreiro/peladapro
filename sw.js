@@ -84,8 +84,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'PeladaPro ⚽';
   const options = {
     body: data.body || 'Nova notificação da pelada!',
-    icon: data.icon || '/assets/icons/icon-192.png',
-    badge: '/assets/icons/icon-192.png',
+    icon: data.icon || '/assets/icons/push-icon-192.png',
+    badge: '/assets/icons/push-icon-192.png',
     vibrate: [200, 100, 200],
     data: {
       url: data.url || '/#/jogador/convocacao',
