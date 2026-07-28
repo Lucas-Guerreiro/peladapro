@@ -10,6 +10,11 @@ window.App.initFinanceiro = async function() {
   if (btnExpense) {
     btnExpense.onclick = () => window.App.openModal("despesa");
   }
+
+  const btnIncome = document.getElementById("btn-open-income-modal");
+  if (btnIncome) {
+    btnIncome.onclick = () => window.App.openModal("receita");
+  }
   
   window.manualFinanceSettlement = manualFinanceSettlement;
 };
@@ -18,7 +23,18 @@ window.App.renderFinanceiroData = async function() {
   let transactions = [];
   let players = [];
 
-  try { transactions = JSON.parse(localStorage.getItem("transactions")) || []; } catch(e) {}
+  try {
+    const rawTx = JSON.parse(localStorage.getItem("transactions")) || [];
+    // Purga transações fictícias pré-existentes do seed legado
+    transactions = rawTx.filter(t => t.id !== "t1" && t.id !== "t2" && t.id !== "t3" &&
+      !String(t.descricao).includes("Carlos Henrique") &&
+      !String(t.descricao).includes("Bruno Henrique") &&
+      !String(t.descricao).includes("Mensalidade do Campo Society"));
+    
+    if (transactions.length !== rawTx.length) {
+      localStorage.setItem("transactions", JSON.stringify(transactions));
+    }
+  } catch(e) {}
   try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
 
   // Carrega lista atualizada de atletas via API se a memória local estiver vazia ou nula

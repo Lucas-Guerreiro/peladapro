@@ -1,5 +1,1 @@
-[
-  { "id": "t1", "pelada_id": "m2", "jogador_id": "p1", "tipo": "convocacao", "descricao": "Convocação Carlos Henrique", "valor": 20.00, "sinal": "credito", "data": "2026-07-15T19:50:00Z" },
-  { "id": "t2", "pelada_id": "m2", "jogador_id": "p4", "tipo": "convocacao", "descricao": "Convocação Bruno Henrique", "valor": 20.00, "sinal": "credito", "data": "2026-07-15T19:52:00Z" },
-  { "id": "t3", "pelada_id": "m2", "jogador_id": null, "tipo": "despesa", "descricao": "Mensalidade do Campo Society", "valor": 150.00, "sinal": "debito", "data": "2026-07-15T22:30:00Z", "categoria": "campo" }
-]
+[]
