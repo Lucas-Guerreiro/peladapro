@@ -349,9 +349,15 @@ const Auth = {
       this.currentUser = JSON.parse(playerRaw);
       this.currentGroup = groupRaw ? JSON.parse(groupRaw) : null;
       
-      const isGestor = (this.currentUser.tipo === 'gestor');
-      this.currentUser.gestor = isGestor;
-      this._selectedRole = isGestor ? 'gestor' : 'jogador';
+      const savedRole = localStorage.getItem('ultimo_perfil');
+      if (savedRole === 'gestor' || savedRole === 'jogador') {
+        this._selectedRole = savedRole;
+        this.currentUser.gestor = (savedRole === 'gestor');
+      } else {
+        const isGestor = (this.currentUser.tipo === 'gestor');
+        this.currentUser.gestor = isGestor;
+        this._selectedRole = isGestor ? 'gestor' : 'jogador';
+      }
 
       // Renova a expiração por mais 12 horas a cada interação/refresh do usuário (sessão deslizante)
       const newExpiry = Date.now() + (12 * 60 * 60 * 1000);

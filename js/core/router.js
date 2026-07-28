@@ -180,7 +180,11 @@ const Router = {
     const layoutFile = role === 'gestor' ? 'pages/gestor/layout.html' : 'pages/jogador/layout.html';
 
     const isDual = Auth.hasDualRole();
-    const activeRole = Auth._selectedRole || (Auth.currentUser?.gestor ? 'gestor' : 'jogador');
+    Auth._selectedRole = role;
+    if (isDual) {
+      localStorage.setItem('ultimo_perfil', role);
+    }
+    const activeRole = role;
 
     try {
       const res = await fetch(`${layoutFile}?v=${Date.now()}`);
