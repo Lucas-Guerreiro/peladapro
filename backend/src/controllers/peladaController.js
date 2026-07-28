@@ -103,9 +103,9 @@ exports.agendarData = async (req, res) => {
     const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00]);
     const pelada = peladaRes.rows[0];
 
-    // 2. Buscar todos os atletas ativos no sistema
+    // 2. Buscar todos os atletas ativos no sistema (jogadores, gestores e tipo ambos)
     const { rows: atletas } = await client.query(
-      "SELECT id, nome, whatsapp FROM usuarios WHERE (tipo = 'jogador' OR tipo = 'gestor') AND ativo = true"
+      "SELECT id, nome, whatsapp FROM usuarios WHERE (tipo = 'jogador' OR tipo = 'gestor' OR tipo = 'ambos') AND ativo = true"
     );
 
     // 3. Criar convocações pendentes para todos os atletas ativos
