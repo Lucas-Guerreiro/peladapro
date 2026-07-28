@@ -78,6 +78,20 @@ window.TeamEmblems = (function() {
         }
       }
       var idx = (team && team.emblema !== undefined && team.emblema !== null) ? team.emblema : 0;
+
+      // Verifica se a galeria de emblemas customizados do grupo possui imagem para este índice
+      var groupList = window._groupEmblemsList || [];
+      if (!groupList || groupList.length === 0) {
+        try { groupList = JSON.parse(localStorage.getItem("groupEmblems")) || []; } catch(e) {}
+      }
+
+      if (Array.isArray(groupList) && groupList.length > 0) {
+        var gItem = groupList[idx % groupList.length];
+        if (gItem && gItem.imagem_url) {
+          return '<img src="' + gItem.imagem_url + '" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));" alt="Emblema">';
+        }
+      }
+
       return this.get(idx);
     },
 

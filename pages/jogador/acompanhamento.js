@@ -276,8 +276,8 @@ var Acompanhamento = {
     if (window.TeamEmblems) {
       var teamsLS = [];
       try { teamsLS = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
-      var tA = teamsLS.find(function(t) { return (t.nome || '').toLowerCase().trim() === (match.teamA || '').toLowerCase().trim(); });
-      var tB = teamsLS.find(function(t) { return (t.nome || '').toLowerCase().trim() === (match.teamB || '').toLowerCase().trim(); });
+      var tA = teamsLS.find(function(t) { return (t.nome || t.name || '').toLowerCase().trim() === (match.teamA || '').toLowerCase().trim(); }) || teamsLS[0];
+      var tB = teamsLS.find(function(t) { return (t.nome || t.name || '').toLowerCase().trim() === (match.teamB || '').toLowerCase().trim(); }) || teamsLS[1];
       var embAEl = document.getElementById('emblem-acomp-team-a');
       var embBEl = document.getElementById('emblem-acomp-team-b');
       if (embAEl) embAEl.innerHTML = window.TeamEmblems.forTeam(tA || { emblema: 0 });

@@ -13,7 +13,10 @@ window.App.initFormacao = function() {
     fetch(`/api/formacao/emblemas/grupo/${groupId}`, {
       headers: { "Authorization": `Bearer ${token}` }
     }).then(res => res.json()).then(data => {
-      if (Array.isArray(data)) window._groupEmblemsList = data;
+      if (Array.isArray(data)) {
+        window._groupEmblemsList = data;
+        localStorage.setItem("groupEmblems", JSON.stringify(data));
+      }
     }).catch(e => {});
   }
 
@@ -483,7 +486,7 @@ window.App.renderDrawnTeams = async function() {
     card.setAttribute("ondrop", `drop(event, '${team.id}')`);
 
     const emblemaIdx = (team.emblema !== undefined && team.emblema !== null) ? team.emblema : 0;
-    const emblemaSVG = (window.TeamEmblems) ? window.TeamEmblems.get(emblemaIdx) : '';
+    const emblemaSVG = (window.TeamEmblems) ? window.TeamEmblems.forTeam(team) : '';
 
     card.innerHTML = `
       <div class="team-draft-header" style="border-top: 4px solid ${team.cor || '#777'}; flex-direction: column; gap: 6px; padding-bottom: 10px;">

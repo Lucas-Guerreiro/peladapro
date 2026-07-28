@@ -358,8 +358,8 @@ function renderLiveMatchUI() {
   if (window.TeamEmblems) {
     let teams = [];
     try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
-    const tA = teams.find(t => (t.nome || '').toLowerCase().trim() === teamA.toLowerCase().trim());
-    const tB = teams.find(t => (t.nome || '').toLowerCase().trim() === teamB.toLowerCase().trim());
+    const tA = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (teamA || '').toLowerCase().trim()) || teams[0];
+    const tB = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (teamB || '').toLowerCase().trim()) || teams[1];
 
     const emblemAEl = document.getElementById("emblem-team-a");
     const emblemBEl = document.getElementById("emblem-team-b");
