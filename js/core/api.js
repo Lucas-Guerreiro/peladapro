@@ -480,7 +480,7 @@ const Api = {
     }
   },
 
-  async editarPartida(partidaId, golsA, golsB, timeANome, timeBNome) {
+  async editarPartida(partidaId, golsA, golsB, timeANome, timeBNome, autoresGols) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     const res = await fetch(`http://localhost:3000/api/partidas/${partidaId}`, {
@@ -493,7 +493,8 @@ const Api = {
         gols_time_a: parseInt(golsA),
         gols_time_b: parseInt(golsB),
         time_a_nome: timeANome,
-        time_b_nome: timeBNome
+        time_b_nome: timeBNome,
+        autores_gols: autoresGols !== undefined ? (typeof autoresGols === 'string' ? autoresGols : JSON.stringify(autoresGols)) : null
       })
     });
     return res.json();

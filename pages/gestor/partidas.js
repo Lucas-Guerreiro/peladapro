@@ -760,6 +760,7 @@ async function handleFinishMatch() {
 }
 
 async function renderRecentMatches() {
+  window.App.renderRecentMatches = renderRecentMatches;
   const container = document.getElementById("recent-matches-container");
   if (!container) return;
 

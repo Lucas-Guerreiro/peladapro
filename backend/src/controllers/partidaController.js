@@ -72,7 +72,7 @@ exports.listarPartidas = async (req, res) => {
 
 exports.editarPartida = async (req, res) => {
   const { id } = req.params;
-  const { gols_time_a, gols_time_b, time_a_nome, time_b_nome } = req.body;
+  const { gols_time_a, gols_time_b, time_a_nome, time_b_nome, autores_gols } = req.body;
   const gestorTipo = req.usuarioTipo;
 
   if (gestorTipo !== 'gestor') {
@@ -82,13 +82,18 @@ exports.editarPartida = async (req, res) => {
   try {
     const query = `
       UPDATE partidas 
-      SET gols_time_a = $1, gols_time_b = $2, time_a_nome = COALESCE($3, time_a_nome), time_b_nome = COALESCE($4, time_b_nome)
-      WHERE id = $5 RETURNING id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b`;
+      SET gols_time_a = $1, 
+          gols_time_b = $2, 
+          time_a_nome = COALESCE($3, time_a_nome), 
+          time_b_nome = COALESCE($4, time_b_nome),
+          autores_gols = COALESCE($5, autores_gols)
+      WHERE id = $6 RETURNING id, pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, autores_gols`;
     const { rows } = await db.query(query, [
       parseInt(gols_time_a) || 0,
       parseInt(gols_time_b) || 0,
       time_a_nome || null,
       time_b_nome || null,
+      autores_gols !== undefined ? (typeof autores_gols === 'string' ? autores_gols : JSON.stringify(autores_gols)) : null,
       id
     ]);
 

@@ -1,28 +1,40 @@
-<!-- Modal: Editar Partida do Histórico -->
+<!-- Modal: Editar Partida do Histórico (editar_partida.html) -->
 <div class="modal-backdrop" id="modal-editar-partida-backdrop">
-  <div class="modal-content" style="max-width: 400px; padding: 24px;">
+  <div class="modal-content" style="max-width: 520px; padding: 24px; max-height: 90vh; overflow-y: auto;">
     
-    <div class="modal-header" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-      <h3 style="margin: 0; font-size: 20px; color: var(--text-heading);">✏️ Editar Placar</h3>
+    <div class="modal-header" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 20px; color: var(--text-heading);">✏️ Editar Partida Finalizada</h3>
       <button class="modal-close" id="btn-close-editar-partida">&times;</button>
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 16px;">
       <!-- Time A -->
-      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--background); padding: 12px; border-radius: 8px;">
-        <label class="form-label" style="margin-bottom: 0; font-weight: bold; color: var(--secondary); font-size: 12px;">Time A (Nome e Gols)</label>
+      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--background); padding: 14px; border-radius: 10px; border-left: 4px solid var(--secondary);">
+        <label class="form-label" style="margin-bottom: 0; font-weight: bold; color: var(--secondary); font-size: 13px;">Time Mandante (Time A)</label>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-          <input type="text" id="edit-match-team-a" class="form-control" style="flex: 1; font-weight: bold; font-size: 14px;">
-          <input type="number" id="edit-match-score-a" class="form-control" style="width: 70px; text-align: center; font-size: 16px; font-weight: bold;" min="0">
+          <select id="edit-match-team-a" class="form-control" style="flex: 1; font-weight: bold; font-size: 14px;"></select>
+          <input type="number" id="edit-match-score-a" class="form-control" style="width: 75px; text-align: center; font-size: 18px; font-weight: bold;" min="0">
         </div>
       </div>
 
       <!-- Time B -->
-      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--background); padding: 12px; border-radius: 8px;">
-        <label class="form-label" style="margin-bottom: 0; font-weight: bold; color: var(--accent); font-size: 12px;">Time B (Nome e Gols)</label>
+      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--background); padding: 14px; border-radius: 10px; border-left: 4px solid var(--accent);">
+        <label class="form-label" style="margin-bottom: 0; font-weight: bold; color: var(--accent); font-size: 13px;">Time Visitante (Time B)</label>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-          <input type="text" id="edit-match-team-b" class="form-control" style="flex: 1; font-weight: bold; font-size: 14px;">
-          <input type="number" id="edit-match-score-b" class="form-control" style="width: 70px; text-align: center; font-size: 16px; font-weight: bold;" min="0">
+          <select id="edit-match-team-b" class="form-control" style="flex: 1; font-weight: bold; font-size: 14px;"></select>
+          <input type="number" id="edit-match-score-b" class="form-control" style="width: 75px; text-align: center; font-size: 18px; font-weight: bold;" min="0">
+        </div>
+      </div>
+
+      <!-- Seção de Edição de Autores de Gols e Assistências -->
+      <div style="background: var(--background); padding: 14px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label class="form-label" style="margin-bottom: 0; font-weight: bold; color: var(--text-heading); font-size: 13px;">⚽ Autores dos Gols e Assistências</label>
+          <button type="button" id="btn-add-edit-goal" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 4px 10px; font-weight: bold;">+ Adicionar Gol</button>
+        </div>
+        
+        <div id="edit-match-goals-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+          <!-- Itens dinâmicos gerados via JS -->
         </div>
       </div>
 
