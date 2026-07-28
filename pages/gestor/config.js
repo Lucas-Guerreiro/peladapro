@@ -66,8 +66,11 @@ window.App.initConfig = function() {
 async function handleSendCustomPush() {
   const titleInput = document.getElementById("push-title-input");
   const bodyInput = document.getElementById("push-body-input");
+  const targetTabSelect = document.getElementById("push-target-tab");
+
   const title = titleInput ? titleInput.value.trim() : "";
   const body = bodyInput ? bodyInput.value.trim() : "";
+  const targetUrl = targetTabSelect ? targetTabSelect.value : "/#/jogador/convocacao";
 
   if (!title || !body) {
     window.App.showToast("Preencha o título e a mensagem do aviso.", "warning");
@@ -82,7 +85,7 @@ async function handleSendCustomPush() {
       body: JSON.stringify({
         title: title,
         body: body,
-        url: "/#/jogador/convocacao"
+        url: targetUrl
       })
     });
     const data = await res.json();

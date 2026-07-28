@@ -122,6 +122,17 @@
         <textarea id="push-body-input" class="form-control" rows="3" placeholder="Ex: Pessoal, a quadra está reservada para às 19h. Cheguem com 15 minutos de antecedência!"></textarea>
       </div>
 
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="push-target-tab" class="form-label" style="font-weight: 700;">Direcionar Atleta ao Clicar na Notificação</label>
+        <select id="push-target-tab" class="form-control">
+          <option value="/#/jogador/convocacao">📋 Convocação (Lista de Presença & Pix)</option>
+          <option value="/#/jogador/dashboard">📊 Dashboard Principal</option>
+          <option value="/#/jogador/acompanhamento">⚽ Acompanhamento / Partida ao Vivo</option>
+          <option value="/#/jogador/ranking">🏆 Ranking do Grupo</option>
+          <option value="/#/jogador/desempenho">📈 Desempenho Pessoal do Atleta</option>
+        </select>
+      </div>
+
       <button id="btn-send-custom-push" class="btn btn-md btn-accent" style="font-weight: 700; height: 42px; width: 100%;">
         🚀 Disparar Notificação para Todos os Atletas
       </button>
