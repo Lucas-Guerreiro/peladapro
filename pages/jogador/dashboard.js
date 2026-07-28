@@ -9,8 +9,15 @@ var Dashboard = {
 
   init: function() {
     const user = Auth.currentUser;
-    // Se o perfil do atleta estiver incompleto (faltar nome, cpf ou data_nascimento)
-    if (user && (!user.nome || !user.cpf || !user.data_nascimento)) {
+
+    // O perfil só é considerado incompleto se o usuário NÃO for verificado/ativo E faltarem dados essenciais
+    const isComplete = !user || 
+                       (user.verificado === true) || 
+                       (user.ativo === true) || 
+                       (user.cadastro_completo === true) ||
+                       (user.nome && user.whatsapp && (user.cpf || user.data_nascimento || user.autoavaliacao > 0));
+
+    if (user && !isComplete) {
       this.renderCompletionScreen();
       return;
     }
@@ -152,19 +159,40 @@ var Dashboard = {
       .then(html => {
         container.innerHTML = html;
 
-        // 3. Inicializar os inputs da tela
+        // 3. Inicializar e pré-preencher os inputs da tela com dados existentes do usuário
+        const u = Auth.currentUser || {};
         const nomeInput = document.getElementById('comp-nome');
+        const apelidoInput = document.getElementById('comp-apelido');
         const cpfInput = document.getElementById('comp-cpf');
+        const nascimentoInput = document.getElementById('comp-nascimento');
         const whatsappInput = document.getElementById('comp-whatsapp');
+        const goleiroCheck = document.getElementById('comp-goleiro');
         const saveBtn = document.getElementById('btn-save-cadastro');
         const stars = document.querySelectorAll('#comp-stars-selector .comp-rating-star');
 
-        // Pré-carregar o nome completo do jogador logado
-        if (nomeInput && Auth.currentUser) {
-          nomeInput.value = Auth.currentUser.nome || '';
+        if (nomeInput) nomeInput.value = u.nome || u.name || '';
+        if (apelidoInput) apelidoInput.value = u.apelido || (u.nome ? u.nome.split(' ')[0] : '');
+        if (cpfInput && u.cpf) cpfInput.value = Utils.maskCPF(u.cpf);
+        if (nascimentoInput && (u.data_nascimento || u.dob)) {
+          try {
+            const rawDate = u.data_nascimento || u.dob;
+            const d = new Date(rawDate);
+            if (!isNaN(d.getTime())) {
+              nascimentoInput.value = d.toISOString().split('T')[0];
+            }
+          } catch(e) {}
         }
+        if (whatsappInput && u.whatsapp) whatsappInput.value = Utils.maskPhone(u.whatsapp);
+        if (goleiroCheck) goleiroCheck.checked = !!u.goleiro;
 
-        // Aplicar máscaras
+        // Pré-carregar avaliação de estrelas se existente
+        const initialRating = parseInt(u.autoavaliacao || u.avaliacao_media || 0);
+        this._currentRating = initialRating;
+        stars.forEach((s, idx) => {
+          s.style.color = idx < initialRating ? 'var(--warning)' : '#ccc';
+        });
+
+        // Aplicar máscaras de digitação dinâmica
         if (cpfInput) {
           cpfInput.oninput = (e) => {
             e.target.value = Utils.maskCPF(e.target.value);
@@ -176,8 +204,7 @@ var Dashboard = {
           };
         }
 
-        // Seleção de estrelas
-        this._currentRating = 0;
+        // Seleção dinâmica de estrelas
         stars.forEach(star => {
           star.onclick = () => {
             const val = parseInt(star.dataset.value);
