@@ -113,20 +113,21 @@ var Desempenho = {
           }
         });
 
-        // 1. Contabiliza a quantidade real de partidas por atleta (idêntico à Artilharia)
-        var playerGamesMap = {};
+        // 1. Contabiliza partidas disputadas por cada TIME
+        var teamMatchesCount = {};
+        var playerTeamFromGoals = {};
 
         partidas.forEach(function(m) {
-          var tA = (m.time_a_nome || '').trim().toLowerCase();
-          var tB = (m.time_b_nome || '').trim().toLowerCase();
+          var tA = (m.time_a_nome || '').trim();
+          var tB = (m.time_b_nome || '').trim();
 
-          var playersInMatch = new Set();
-
-          if (tA && teamPlayersMap[tA]) {
-            teamPlayersMap[tA].forEach(function(nome) { playersInMatch.add(nome); });
+          if (tA) {
+            var keyA = tA.toLowerCase();
+            teamMatchesCount[keyA] = (teamMatchesCount[keyA] || 0) + 1;
           }
-          if (tB && teamPlayersMap[tB]) {
-            teamPlayersMap[tB].forEach(function(nome) { playersInMatch.add(nome); });
+          if (tB) {
+            var keyB = tB.toLowerCase();
+            teamMatchesCount[keyB] = (teamMatchesCount[keyB] || 0) + 1;
           }
 
           let goalsList = [];
@@ -134,12 +135,13 @@ var Desempenho = {
             try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
           }
           (goalsList || []).forEach(function(g) {
-            if (g.autorNome) playersInMatch.add(g.autorNome.trim().toLowerCase());
-            if (g.assistNome) playersInMatch.add(g.assistNome.trim().toLowerCase());
-          });
-
-          playersInMatch.forEach(function(nomeLower) {
-            playerGamesMap[nomeLower] = (playerGamesMap[nomeLower] || 0) + 1;
+            var teamNameOfPlayer = g.teamName || (g.teamKey === 'a' ? tA : (g.teamKey === 'b' ? tB : null));
+            if (g.autorNome && teamNameOfPlayer) {
+              playerTeamFromGoals[g.autorNome.trim().toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
+            }
+            if (g.assistNome && teamNameOfPlayer) {
+              playerTeamFromGoals[g.assistNome.trim().toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
+            }
           });
         });
 
@@ -150,8 +152,6 @@ var Desempenho = {
           var gA = parseInt(m.gols_time_a) || 0;
           var gB = parseInt(m.gols_time_b) || 0;
 
-          // Pontuação por resultado:
-          // 2x0 -> 3.0 pts, 1x0 -> 2.5 pts, 2x1 -> 2.0 pts, 1x1 -> 1.0 pt, 0x0 -> 0.5 pt, Derrota -> 0 pts
           var ptsA = 0; var isWinA = false; var isCleanA = false;
           var ptsB = 0; var isWinB = false; var isCleanB = false;
 
@@ -235,10 +235,34 @@ var Desempenho = {
 
         });
 
-        // 3. Aplica a quantidade exata de jogos calculada (idêntica à Artilharia)
+        // Helper para resolver a quantidade exata de jogos disputados pelo time do atleta
+        function getGamesForPlayer(nomeKey) {
+          var lowerKey = nomeKey.toLowerCase();
+          
+          var teamFromGoal = playerTeamFromGoals[lowerKey];
+          if (teamFromGoal && teamMatchesCount[teamFromGoal]) {
+            return teamMatchesCount[teamFromGoal];
+          }
+
+          var maxGames = 0;
+          Object.keys(teamPlayersMap).forEach(function(tName) {
+            if (teamPlayersMap[tName].has(lowerKey)) {
+              maxGames = Math.max(maxGames, teamMatchesCount[tName] || 0);
+            }
+          });
+
+          if (maxGames > 0) return maxGames;
+
+          var allTeamGames = Object.values(teamMatchesCount);
+          if (allTeamGames.length > 0) {
+            return Math.max.apply(null, allTeamGames);
+          }
+          return 1;
+        }
+
+        // 3. Aplica a quantidade exata de jogos calculada para cada jogador (idêntica ao Acompanhamento e à Artilharia)
         Object.keys(statsMap).forEach(function(nomeKey) {
-          var lowerName = nomeKey.toLowerCase();
-          statsMap[nomeKey].jogos = playerGamesMap[lowerName] || 0;
+          statsMap[nomeKey].jogos = getGamesForPlayer(nomeKey);
         });
       }
     } catch (e) {
