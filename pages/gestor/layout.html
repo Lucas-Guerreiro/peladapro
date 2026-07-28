@@ -176,6 +176,28 @@
     }
   }
 
+  .gestor-hamburger-btn,
+  .acomp-hamburger-btn {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 18px;
+    color: #0F172A;
+    cursor: pointer;
+    padding: 4px 10px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .gestor-hamburger-btn:hover,
+  .acomp-hamburger-btn:hover {
+    background: #E2E8F0;
+    color: #0284C7;
+  }
+
   .gestor-mobile-dropdown {
     display: none;
     flex-direction: column;
@@ -197,6 +219,12 @@
     color: #334155;
     cursor: pointer;
     border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .gestor-mobile-dropdown button:hover {
+    background: rgba(2, 132, 199, 0.04);
+    color: #0284C7;
   }
 
   .gestor-mobile-dropdown button.active {
