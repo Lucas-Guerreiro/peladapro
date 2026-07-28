@@ -86,21 +86,56 @@ window.TeamEmblems = (function() {
       return EMBLEM_THEMES[idx];
     },
 
-    // Renderiza seletor visual de emblemas (grade 5x2 + opção de upload de imagem)
-    renderSelector: function(currentIndex, callbackName, uploadCallbackName) {
+    // Renderiza seletor visual de emblemas com Galeria Salva do Grupo + Padrões do Sistema
+    renderSelector: function(currentTeam, callbackName, uploadCallbackName, customEmblemsList, selectCustomCallbackName, deleteCustomCallbackName) {
       uploadCallbackName = uploadCallbackName || 'handleCustomEmblemUpload';
-      var html = '<div style="margin-bottom: 12px; padding: 10px; background: #F1F5F9; border-radius: 10px; border: 1.5px dashed #94A3B8; text-align: center;">' +
-        '<label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 600; color: #0F172A;">' +
-          '<span>📁 Carregar Imagem Própria</span>' +
+      selectCustomCallbackName = selectCustomCallbackName || 'selectCustomEmblemFromLibrary';
+      deleteCustomCallbackName = deleteCustomCallbackName || 'deleteCustomEmblemFromLibrary';
+
+      var currentUrl = currentTeam ? (currentTeam.emblema_url || currentTeam.emblemaUrl) : null;
+      var currentIdx = (currentTeam && !currentUrl && currentTeam.emblema !== undefined && currentTeam.emblema !== null) ? currentTeam.emblema : 0;
+
+      var html = '<div style="margin-bottom: 14px; padding: 12px; background: #F8FAFC; border-radius: 12px; border: 1.5px dashed #0284C7; text-align: center;">' +
+        '<label style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; color: #0284C7; background: #E0F2FE; padding: 8px 16px; border-radius: 8px; transition: all 0.2s;">' +
+          '<span>➕ Adicionar Novo Emblema à Galeria</span>' +
           '<input type="file" accept="image/*" style="display: none;" onchange="' + uploadCallbackName + '(event)">' +
         '</label>' +
-        '<div style="font-size: 11px; color: #64748B; margin-top: 2px;">Envie uma foto ou logotipo do seu time (PNG/JPG)</div>' +
-      '</div>' +
-      '<div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px;">Ou escolha um escudo pré-definido:</div>' +
+        '<div style="font-size: 11px; color: #64748B; margin-top: 6px;">Envie uma foto/escudo que ficará salvo para todos os sorteios do grupo</div>' +
+      '</div>';
+
+      // 1. Galeria de Emblemas Salvos do Grupo
+      if (Array.isArray(customEmblemsList) && customEmblemsList.length > 0) {
+        html += '<div style="font-size: 12px; font-weight: 700; color: #0F172A; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">' +
+          '<span>🛡️ Emblemas Gravados do Grupo (' + customEmblemsList.length + '):</span>' +
+        '</div>' +
+        '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 4px; margin-bottom: 16px; max-height: 160px; overflow-y: auto;">';
+
+        for (var k = 0; k < customEmblemsList.length; k++) {
+          var item = customEmblemsList[k];
+          var isSelected = (currentUrl === item.imagem_url);
+          html += '<div style="position: relative; width: 62px; height: 68px;">' +
+            '<div onclick="' + selectCustomCallbackName + '(\'' + item.id + '\')" ' +
+            'title="' + (item.nome || 'Emblema') + '" ' +
+            'style="width: 100%; height: 100%; cursor: pointer; border-radius: 10px; padding: 6px; ' +
+            'border: 2.5px solid ' + (isSelected ? '#00E676' : '#CBD5E1') + '; ' +
+            'background: ' + (isSelected ? 'rgba(0,230,118,0.1)' : '#FFFFFF') + '; ' +
+            'box-shadow: ' + (isSelected ? '0 0 0 2px #A7F3D0' : '0 2px 4px rgba(0,0,0,0.08)') + '; ' +
+            'transition: all 0.15s; display: flex; align-items: center; justify-content: center;">' +
+            '<img src="' + item.imagem_url + '" style="width: 100%; height: 100%; object-fit: contain;">' +
+            '</div>' +
+            '<button title="Remover da galeria" onclick="event.stopPropagation(); ' + deleteCustomCallbackName + '(' + item.id + ')" ' +
+            'style="position: absolute; top: -5px; right: -5px; background: #EF4444; color: #FFF; border: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">✕</button>' +
+          '</div>';
+        }
+        html += '</div>';
+      }
+
+      // 2. Escudos Pré-definidos do Sistema
+      html += '<div style="font-size: 12px; font-weight: 600; color: #64748B; margin-bottom: 8px;">🎨 Ou escolha um escudo padrão do sistema:</div>' +
       '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px;">';
 
       for (var i = 0; i < EMBLEMS.length; i++) {
-        var isActive = (currentIndex === i);
+        var isActive = (!currentUrl && currentIdx === i);
         html += '<div data-emblem-idx="' + i + '" ' +
           'onclick="' + callbackName + '(' + i + ')" ' +
           'style="width: 52px; height: 58px; cursor: pointer; border-radius: 8px; padding: 4px; ' +

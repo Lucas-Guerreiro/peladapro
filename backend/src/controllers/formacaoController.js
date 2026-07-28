@@ -22,7 +22,14 @@ exports.sortear = async (req, res) => {
       return res.status(404).json({ error: 'Configuração da pelada não encontrada' });
     }
 
-    const { qtd_times, jogadores_por_time } = configRes.rows[0];
+    const { grupo_id, qtd_times, jogadores_por_time } = configRes.rows[0];
+
+    // Buscar emblemas customizados do grupo no banco de dados
+    const emblemasGrupoRes = await client.query(
+      'SELECT id, imagem_url FROM emblemas_grupo WHERE grupo_id = $1 ORDER BY id ASC',
+      [grupo_id]
+    );
+    const emblemasGrupo = emblemasGrupoRes.rows;
 
     // 2. Buscar todos os jogadores confirmados na pelada
     const queryConfirmados = `
@@ -49,19 +56,24 @@ exports.sortear = async (req, res) => {
     // 5. Salvar os novos times e jogadores no banco
     for (let i = 0; i < timesSorteados.length; i++) {
       let time = timesSorteados[i];
-      const queryInsertTime = `
-        INSERT INTO times (pelada_id, nome, cor, emblema)
-        VALUES ($1, $2, $3, $4) RETURNING id`;
       const cor = time.nome.includes('Azul') ? '#2196F3' : 
                   time.nome.includes('Amarelo') ? '#FFC107' : 
                   time.nome.includes('Verde') ? '#00C853' : 
                   time.nome.includes('Preto') ? '#1A1A2E' : '#FF6D00';
-      const emblema = i % 10; // índice fixo por ordem de sorteio
+      const emblema = i % 10;
+      const emblemaUrl = (emblemasGrupo && emblemasGrupo.length > 0)
+        ? emblemasGrupo[i % emblemasGrupo.length].imagem_url
+        : null;
+
+      const queryInsertTime = `
+        INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url)
+        VALUES ($1, $2, $3, $4, $5) RETURNING id`;
       
-      const timeRes = await client.query(queryInsertTime, [peladaId, time.nome, cor, emblema]);
+      const timeRes = await client.query(queryInsertTime, [peladaId, time.nome, cor, emblema, emblemaUrl]);
       const timeId = timeRes.rows[0].id;
       time.db_id = timeId;
       time.emblema = emblema;
+      if (emblemaUrl) time.emblema_url = emblemaUrl;
 
       for (let jogador of time.jogadores) {
         const queryInsertJogador = `
@@ -148,3 +160,51 @@ exports.atualizarEmblema = async (req, res) => {
     res.status(500).json({ error: 'Erro ao atualizar emblema', detail: err.message });
   }
 };
+
+// --- BIBLIOTECA DE EMBLEMAS DO GRUPO ---
+
+exports.listarEmblemasGrupo = async (req, res) => {
+  const { grupoId } = req.params;
+  try {
+    const { rows } = await db.query(
+      'SELECT id, grupo_id, nome, imagem_url, criado_em FROM emblemas_grupo WHERE grupo_id = $1 ORDER BY id ASC',
+      [parseInt(grupoId)]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao listar emblemas do grupo', detail: err.message });
+  }
+};
+
+exports.adicionarEmblemaGrupo = async (req, res) => {
+  const { grupoId } = req.params;
+  const { nome, imagemUrl } = req.body;
+
+  if (!imagemUrl) {
+    return res.status(400).json({ error: 'imagemUrl é obrigatório' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      'INSERT INTO emblemas_grupo (grupo_id, nome, imagem_url) VALUES ($1, $2, $3) RETURNING *',
+      [parseInt(grupoId), nome || 'Emblema Customizado', imagemUrl]
+    );
+    res.status(201).json({ message: 'Emblema salvo na galeria com sucesso', emblema: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar emblema no grupo', detail: err.message });
+  }
+};
+
+exports.deletarEmblemaGrupo = async (req, res) => {
+  const { emblemaId } = req.params;
+  try {
+    const result = await db.query('DELETE FROM emblemas_grupo WHERE id = $1 RETURNING id', [parseInt(emblemaId)]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Emblema não encontrado' });
+    }
+    res.json({ message: 'Emblema removido com sucesso' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao remover emblema do grupo', detail: err.message });
+  }
+};
+
