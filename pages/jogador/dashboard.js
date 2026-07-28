@@ -51,13 +51,6 @@ var Dashboard = {
       avatarEl.src = user.foto || user.photo || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80';
     }
 
-    // Estrelas
-    var starsEl = document.getElementById('player-card-stars');
-    if (starsEl) {
-      var rating = user.autoavaliacao || user.avaliacao_media || 0;
-      starsEl.innerHTML = Utils.starsHTML(Math.round(rating));
-    }
-
     // Saldo
     var balanceEl = document.getElementById('player-balance-value');
     var balanceCard = document.getElementById('player-card-balance');

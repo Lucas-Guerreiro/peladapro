@@ -20,6 +20,13 @@ window.App.initModalAtleta = function (data = {}) {
 
   let photoBase64 = "";
 
+  // O seletor de estrelas só deve ser exibido quando acessado pelo perfil de GESTOR
+  const ratingContainer = document.getElementById("athlete-rating-container");
+  const isGestor = (window.Auth && (window.Auth._selectedRole === 'gestor' || (window.Auth.currentUser && window.Auth.currentUser.gestor)));
+  if (ratingContainer) {
+    ratingContainer.style.display = isGestor ? "block" : "none";
+  }
+
   if (password) password.value = "";
 
   const stars = document.querySelectorAll("#athlete-stars-selector .rating-star");

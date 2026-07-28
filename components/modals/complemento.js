@@ -82,11 +82,6 @@ window.ComplementoModal = {
       return;
     }
 
-    if (this._currentRating === 0) {
-      window.App.showToast("Por favor, selecione uma nota de autoavaliação (estrelas).", "warning");
-      return;
-    }
-
     try {
       window.App.showToast("Salvando informações...", "info");
       
@@ -96,7 +91,7 @@ window.ComplementoModal = {
         cpf,
         whatsapp,
         goleiro,
-        autoavaliacao: this._currentRating
+        autoavaliacao: this._currentRating || 3
       });
 
       if (res.error) {
