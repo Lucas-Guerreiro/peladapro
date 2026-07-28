@@ -391,7 +391,7 @@ window.Router = Router;
 // Permite que pages/jogador/*.js e pages/gestor/*.js usem window.App.*
 // sem precisar ser reescritos
 // ==========================================================================
-window.App = {
+window.App = Object.assign(window.App || {}, {
   // --- Sessão (proxies para Auth) -----------------------------------------
   get currentUser()    { return Auth.currentUser; },
   get currentGroup()   { return Auth.currentGroup; },
@@ -442,7 +442,7 @@ window.App = {
   initModalVer_time:            () => {},
   initModalEditar_partida:      () => {},
   initModalUpdate_email:        () => {}
-};
+});
 
 // Namespace global para controle do layout unificado do jogador (Atleta)
 window.AcompanhamentoGlobal = {
