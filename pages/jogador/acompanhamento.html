@@ -307,19 +307,39 @@
     border-radius: 16px;
     padding: 24px;
     border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);
+    box-shadow: 0 4px 14px rgba(30, 41, 59, 0.03);
     display: flex;
     flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   @media (max-width: 768px) {
     .acomp-card-clear {
-      border-radius: 0;
-      border-left: none;
-      border-right: none;
-      padding: 20px;
-      box-shadow: none;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .acomp-scoreboard-row-clear {
+      gap: 4px;
+    }
+
+    .acomp-team-box-clear {
+      padding: 10px 4px;
+      min-height: auto;
+    }
+
+    .acomp-score-num-clear {
+      font-size: 36px;
+    }
+
+    .acomp-player-name-clear {
+      max-width: 65px;
+      font-size: 11px;
     }
   }
 </style>
@@ -392,7 +412,7 @@
 </div>
 
 <!-- FILA DE ESPERA -->
-<div class="acomp-queue-wrapper-clear">
+<div class="acomp-card-clear acomp-queue-wrapper-clear" style="padding: 16px;">
   <div class="acomp-queue-header-clear">
     <h3>
       <i data-feather="list" style="width: 16px; height: 16px; color: #64748B;"></i>
