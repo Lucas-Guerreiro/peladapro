@@ -1,5 +1,5 @@
 // ==========================================================================
-// pages/jogador/ranking.js — Classificação, Resultados e Artilharia
+// pages/jogador/ranking.js — Classificação e Artilharia
 // ==========================================================================
 
 var Ranking = {
@@ -185,8 +185,6 @@ var Ranking = {
     tbody.innerHTML = html;
   },
 
-
-
   // --- Artilharia ---
   renderArtilharia: async function(peladaId) {
     var tbody = document.getElementById('ranking-scorers-body');
@@ -214,40 +212,95 @@ var Ranking = {
       }
     }
 
-    (partidas || []).forEach(function(m) {
-      let goalsList = [];
-      if (m.autores_gols) {
-        try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch (e) {}
-      }
-      (goalsList || []).forEach(function(g) {
-        var nome = g.autorNome;
-        if (nome) {
-          if (!scorersMap[nome]) {
-            scorersMap[nome] = { nome: nome, gols: 0, assistencias: 0 };
-          }
-          scorersMap[nome].gols++;
-        }
-        var assist = g.assistNome;
-        if (assist) {
-          if (!scorersMap[assist]) {
-            scorersMap[assist] = { nome: assist, gols: 0, assistencias: 0 };
-          }
-          scorersMap[assist].assistencias++;
+    if (Array.isArray(partidas) && partidas.length > 0) {
+      var teamPlayersMap = {};
+      var teams = [];
+      try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
+      if (!teams || teams.length === 0) teams = Api.getTeams() || [];
+
+      (teams || []).forEach(function(t) {
+        var tName = (t.nome || t.name || '').trim();
+        if (tName) {
+          if (!teamPlayersMap[tName]) teamPlayersMap[tName] = new Set();
+          var pList = t.jogadores || t.players || [];
+          pList.forEach(function(p) {
+            var pName = (p.apelido || p.nome || '').trim();
+            if (pName) teamPlayersMap[tName].add(pName);
+          });
         }
       });
-    });
 
-    var scorers = Object.values(scorersMap).sort(function(a, b) {
-      if (b.gols !== a.gols) return b.gols - a.gols;
-      return b.assistencias - a.assistencias;
-    });
+      var matchGols = {};
+      var matchAssists = {};
+      var matchJogos = {};
 
-    // Se não há gols nas partidas desta pelada, exibe lista de artilheiros dos atletas
+      partidas.forEach(function(m) {
+        var playersInMatch = new Set();
+
+        var tA = (m.time_a_nome || '').trim();
+        if (tA && teamPlayersMap[tA]) {
+          teamPlayersMap[tA].forEach(function(nome) { playersInMatch.add(nome); });
+        }
+        var tB = (m.time_b_nome || '').trim();
+        if (tB && teamPlayersMap[tB]) {
+          teamPlayersMap[tB].forEach(function(nome) { playersInMatch.add(nome); });
+        }
+
+        let goalsList = [];
+        if (m.autores_gols) {
+          try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
+        }
+        (goalsList || []).forEach(function(g) {
+          if (g.autorNome) {
+            var aNome = g.autorNome.trim();
+            matchGols[aNome] = (matchGols[aNome] || 0) + 1;
+            playersInMatch.add(aNome);
+          }
+          if (g.assistNome) {
+            var assNome = g.assistNome.trim();
+            matchAssists[assNome] = (matchAssists[assNome] || 0) + 1;
+            playersInMatch.add(assNome);
+          }
+        });
+
+        playersInMatch.forEach(function(nome) {
+          matchJogos[nome] = (matchJogos[nome] || 0) + 1;
+        });
+      });
+
+      Object.keys(matchGols).forEach(function(nome) {
+        scorersMap[nome] = {
+          nome: nome,
+          gols: matchGols[nome] || 0,
+          assistencias: matchAssists[nome] || 0,
+          jogos: matchJogos[nome] || 1
+        };
+      });
+
+      Object.keys(matchAssists).forEach(function(nome) {
+        if (!scorersMap[nome]) {
+          scorersMap[nome] = {
+            nome: nome,
+            gols: matchGols[nome] || 0,
+            assistencias: matchAssists[nome] || 0,
+            jogos: matchJogos[nome] || 1
+          };
+        }
+      });
+    }
+
+    var scorers = Object.values(scorersMap)
+      .filter(function(p) { return p.gols > 0 || p.assistencias > 0; })
+      .sort(function(a, b) {
+        if (b.gols !== a.gols) return b.gols - a.gols;
+        return b.assistencias - a.assistencias;
+      });
+
     if (scorers.length === 0) {
       var players = Api.getPlayers() || [];
       scorers = players
         .filter(function(p) { return (p.gols || 0) > 0; })
-        .map(function(p) { return { nome: p.apelido || p.nome, gols: p.gols || 0, assistencias: 0 }; })
+        .map(function(p) { return { nome: p.apelido || p.nome, gols: p.gols || 0, assistencias: 0, jogos: p.partidas || 0 }; })
         .sort(function(a, b) { return b.gols - a.gols; });
     }
 
