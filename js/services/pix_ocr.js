@@ -164,45 +164,18 @@ window.PixOCR = {
     const normRawText = this._normalizeStr(rawText);
     const rawTextDigits = this._extractDigits(rawText);
 
-    // Validação 3: Conferir Nome do Beneficiário ou Chave Pix (se configurados pelo gestor)
-    let matchedKeyOrName = false;
-
-    // a. Se houver Chave Pix informada (ex: celular com ou sem +55, CPF, email)
-    if (expectedPixKey && expectedPixKey.trim()) {
-      const normKey = this._normalizeStr(expectedPixKey);
-      const keyDigits = this._extractDigits(expectedPixKey);
-
-      // Se for celular ou CPF (apenas dígitos)
-      if (keyDigits.length >= 8) {
-        // Trata código de país (+55 / 55)
-        const keyWithout55 = keyDigits.startsWith('55') ? keyDigits.substring(2) : keyDigits;
-        if (rawTextDigits.includes(keyDigits) || rawTextDigits.includes(keyWithout55)) {
-          matchedKeyOrName = true;
-        }
-      }
-      // Se for email ou texto
-      if (normKey.length > 3 && normRawText.includes(normKey)) {
-        matchedKeyOrName = true;
-      }
-    }
-
-    // b. Se houver Nome do Beneficiário informado
-    if (!matchedKeyOrName && expectedBeneficiario && expectedBeneficiario.trim()) {
+    // Validação 3: Conferir Apenas o Nome do Beneficiário (se configurado pelo gestor)
+    if (expectedBeneficiario && expectedBeneficiario.trim()) {
       const normBen = this._normalizeStr(expectedBeneficiario);
       const palavrasChave = normBen.split(/\s+/).filter(w => w.length > 2);
 
       if (palavrasChave.length > 0) {
-        // Bate se ao menos 1 palavra significativa do nome (ex: "Lucas", "Guerreiro") estiver no texto
+        // Bate se ao menos 1 palavra significativa do nome (ex: "Lucas", "Guerreiro") estiver no texto do comprovante
         const bateuNome = palavrasChave.some(palavra => normRawText.includes(palavra));
-        if (bateuNome) {
-          matchedKeyOrName = true;
+        if (!bateuNome) {
+          throw new Error(`O comprovante enviado não parece corresponder ao beneficiário (${expectedBeneficiario}). Verifique se a transferência foi efetuada para a pessoa correta.`);
         }
       }
-    }
-
-    // Se o gestor definiu nome ou chave e nada foi encontrado no comprovante
-    if ((expectedBeneficiario.trim() || expectedPixKey.trim()) && !matchedKeyOrName) {
-      throw new Error(`O comprovante enviado não parece corresponder ao beneficiário (${expectedBeneficiario || expectedPixKey}). Verifique se pagou para a chave Pix correta.`);
     }
 
     // Validação 4: Valor mínimo se especificado
