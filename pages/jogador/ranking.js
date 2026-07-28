@@ -335,7 +335,7 @@ var Ranking = {
     }
 
     if (scorers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-caption);">Sem artilheiros registrados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-caption);">Sem artilheiros registrados.</td></tr>';
       return;
     }
 
@@ -347,6 +347,7 @@ var Ranking = {
         '<td style="font-weight: 600;">' + p.nome + '</td>' +
         '<td style="text-align: center; font-weight: 700; color: var(--secondary);">' + p.gols + ' ⚽</td>' +
         '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.assistencias || 0) + ' 👟</td>' +
+        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.jogos || 1) + '</td>' +
       '</tr>';
     });
 
