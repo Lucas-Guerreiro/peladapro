@@ -192,7 +192,12 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         const sel = peladas.find(p => String(p.id) === String(e.target.value));
         window.App.activePelada = sel;
         if (selectStatus) selectStatus.value = sel.status || "agendada";
+
+        // Limpa o cache local de times da data anterior para atualizar os cards
+        localStorage.removeItem("teams");
+
         await updateCheckinPlayersList(e.target.value);
+        window.App.renderDrawnTeams();
         window.App.updateAcompanhamentoUI();
       }
     };
