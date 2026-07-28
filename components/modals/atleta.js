@@ -2,12 +2,13 @@
 // MODAL: ATLETA (atleta.js)
 // ==========================================================================
 
-window.App.initModalAtleta = function(data = {}) {
+window.App.initModalAtleta = function (data = {}) {
   const title = document.getElementById("athlete-modal-title");
   const formId = document.getElementById("athlete-edit-id");
   const name = document.getElementById("athlete-name");
   const apelido = document.getElementById("athlete-apelido");
   const email = document.getElementById("athlete-email");
+  const password = document.getElementById("athlete-password");
   const dob = document.getElementById("athlete-dob");
   const cpf = document.getElementById("athlete-cpf");
   const whatsapp = document.getElementById("athlete-whatsapp");
@@ -18,6 +19,8 @@ window.App.initModalAtleta = function(data = {}) {
   const photoOverlay = document.getElementById("athlete-photo-overlay");
 
   let photoBase64 = "";
+
+  if (password) password.value = "";
 
   const stars = document.querySelectorAll("#athlete-stars-selector .rating-star");
   stars.forEach(s => s.style.color = "#ccc");
@@ -64,7 +67,7 @@ window.App.initModalAtleta = function(data = {}) {
     title.textContent = "Editar Atleta";
     const players = JSON.parse(localStorage.getItem("players")) || [];
     const p = players.find(x => x.id === targetId);
-    
+
     if (p) {
       formId.value = p.id;
       name.value = p.nome || "";
@@ -81,7 +84,7 @@ window.App.initModalAtleta = function(data = {}) {
       cpf.value = p.cpf || "";
       whatsapp.value = p.whatsapp || "";
       isGk.checked = !!p.goleiro;
-      
+
       const rating = p.autoavaliacao || 0;
       starSelector.dataset.value = rating;
       stars.forEach((s, idx) => {
@@ -141,6 +144,7 @@ async function handleSaveAthlete(photoPreview) {
   const name = document.getElementById("athlete-name").value.trim();
   const apelido = document.getElementById("athlete-apelido").value.trim();
   const email = document.getElementById("athlete-email").value.trim();
+  const password = document.getElementById("athlete-password") ? document.getElementById("athlete-password").value.trim() : "";
   const dob = document.getElementById("athlete-dob").value;
   const cpf = document.getElementById("athlete-cpf").value;
   const whatsapp = document.getElementById("athlete-whatsapp").value;
@@ -161,15 +165,22 @@ async function handleSaveAthlete(photoPreview) {
     return;
   }
 
-  // --- Salvar no Banco do Supabase se for o próprio jogador logado -----------
+  if (password && password.length < 6) {
+    window.App.showToast("A senha deve ter no mínimo 6 caracteres.", "error");
+    return;
+  }
+
+  // --- Salvar no Banco se for o próprio jogador logado -----------
   const isSelfUpdate = (window.Auth && window.Auth.currentUser && String(window.Auth.currentUser.id) === String(id));
   if (isSelfUpdate) {
     try {
-      window.App.showToast("Salvando perfil no Supabase...", "info");
-      
+      window.App.showToast("Salvando perfil...", "info");
+
       const res = await Api.atualizarPerfil({
         nome: name,
         apelido: apelido,
+        email: email,
+        senha: password || undefined,
         cpf: cpf,
         data_nascimento: dob,
         whatsapp: whatsapp,
@@ -183,8 +194,8 @@ async function handleSaveAthlete(photoPreview) {
         return;
       }
 
-      window.App.showToast("Perfil atualizado no Supabase com sucesso!", "success");
-      
+      window.App.showToast("Perfil atualizado com sucesso!", "success");
+
       // Sincroniza dados atualizados do backend para o local do front
       const token = localStorage.getItem('token');
       if (token && window.Auth._syncDataFromBackend) {
@@ -196,6 +207,7 @@ async function handleSaveAthlete(photoPreview) {
         ...window.Auth.currentUser,
         nome: name,
         apelido: apelido,
+        email: email,
         cpf: cpf,
         data_nascimento: dob,
         whatsapp: whatsapp,
@@ -221,7 +233,7 @@ async function handleSaveAthlete(photoPreview) {
     }
   }
 
-  // --- Fluxo Legado de LocalStorage (apenas para Gestor gerenciar outros atletas no front local) ---
+  // --- Fluxo de atualização por Gestor ---
   const players = JSON.parse(localStorage.getItem("players")) || [];
 
   if (id) {
@@ -242,6 +254,8 @@ async function handleSaveAthlete(photoPreview) {
         body: JSON.stringify({
           nome: name,
           apelido: apelido,
+          email: email,
+          senha: password || undefined,
           cpf: cpf,
           data_nascimento: dob,
           whatsapp: whatsapp,
@@ -324,10 +338,4 @@ async function handleSaveAthlete(photoPreview) {
     }
   }
 
-  localStorage.setItem("players", JSON.stringify(players));
-  window.App.closeModal();
-
-  if (window.App.renderManagerAthletesList && typeof window.App.renderManagerAthletesList === 'function') {
-    window.App.renderManagerAthletesList();
-  }
 }

@@ -20,41 +20,70 @@ exports.me = async (req, res) => {
 
 exports.atualizarPerfil = async (req, res) => {
   const usuario_id = req.usuarioId;
-  const { nome, apelido, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao } = req.body;
+  const { nome, apelido, email, senha, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao } = req.body;
 
   try {
-    // Atualização flexível baseada nos campos fornecidos
+    const bcrypt = require('bcrypt');
+
+    // 1. Obter usuário atual
+    const { rows: userCheck } = await db.query('SELECT id, email, senha_hash FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userCheck.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // 2. Se e-mail foi alterado, verificar unicidade
+    if (email && email.trim().toLowerCase() !== userCheck[0].email.toLowerCase()) {
+      const { rows: emailCheck } = await db.query(
+        'SELECT id FROM usuarios WHERE LOWER(email) = $1 AND id <> $2',
+        [email.trim().toLowerCase(), usuario_id]
+      );
+      if (emailCheck.length > 0) {
+        return res.status(400).json({ error: 'Este e-mail já está sendo utilizado por outro usuário.' });
+      }
+    }
+
+    // 3. Tratar senha se informada
+    let newHash = null;
+    if (senha && senha.trim()) {
+      if (senha.trim().length < 6) {
+        return res.status(400).json({ error: 'A senha deve conter no mínimo 6 caracteres.' });
+      }
+      newHash = await bcrypt.hash(senha.trim(), 10);
+    }
+
+    // 4. Executar UPDATE flexível
     const query = `
       UPDATE usuarios 
       SET nome = COALESCE($1, nome),
           apelido = COALESCE($2, apelido),
-          whatsapp = COALESCE($3, whatsapp),
-          foto = COALESCE($4, foto),
-          goleiro = COALESCE($5, goleiro),
-          cpf = COALESCE($6, cpf),
-          data_nascimento = COALESCE($7, data_nascimento),
-          autoavaliacao = COALESCE($8, autoavaliacao)
-      WHERE id = $9
+          email = COALESCE($3, email),
+          senha_hash = COALESCE($4, senha_hash),
+          whatsapp = COALESCE($5, whatsapp),
+          foto = COALESCE($6, foto),
+          goleiro = COALESCE($7, goleiro),
+          cpf = COALESCE($8, cpf),
+          data_nascimento = COALESCE($9, data_nascimento),
+          autoavaliacao = COALESCE($10, autoavaliacao)
+      WHERE id = $11
       RETURNING id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media`;
     
     const { rows } = await db.query(query, [
-      nome || null, 
-      apelido || null, 
-      whatsapp || null, 
+      nome ? nome.trim() : null, 
+      apelido ? apelido.trim() : null, 
+      email ? email.trim().toLowerCase() : null,
+      newHash,
+      whatsapp ? whatsapp.trim() : null, 
       foto || null, 
-      goleiro !== undefined ? goleiro : null,
-      cpf || null,
+      goleiro !== undefined ? !!goleiro : null,
+      cpf ? cpf.trim() : null,
       data_nascimento || null,
       autoavaliacao !== undefined ? parseInt(autoavaliacao) : null,
       usuario_id
     ]);
-    
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
 
     res.json({ message: 'Perfil atualizado com sucesso!', usuario: rows[0] });
   } catch (err) {
+    console.error('Erro ao atualizar perfil:', err);
     res.status(400).json({ error: 'Erro ao atualizar perfil', detail: err.message });
   }
 };
@@ -278,20 +307,33 @@ exports.atualizarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem atualizar outros atletas.' });
   }
 
-  const { nome, apelido, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto } = req.body;
+  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto } = req.body;
 
   if (!nome) {
     return res.status(400).json({ error: 'O nome é obrigatório.' });
   }
 
   try {
-    // Verificar se o atleta existe
-    const { rows: userCheck } = await db.query('SELECT id FROM usuarios WHERE id = $1', [id]);
+    const bcrypt = require('bcrypt');
+
+    // 1. Verificar se o atleta existe
+    const { rows: userCheck } = await db.query('SELECT id, email FROM usuarios WHERE id = $1', [id]);
     if (userCheck.length === 0) {
       return res.status(404).json({ error: 'Atleta não encontrado.' });
     }
 
-    // Verificar se CPF já existe em outro usuário (se fornecido)
+    // 2. Verificar unicidade de e-mail se foi alterado
+    if (email && email.trim().toLowerCase() !== userCheck[0].email.toLowerCase()) {
+      const { rows: emailCheck } = await db.query(
+        'SELECT id FROM usuarios WHERE LOWER(email) = $1 AND id <> $2',
+        [email.trim().toLowerCase(), id]
+      );
+      if (emailCheck.length > 0) {
+        return res.status(400).json({ error: 'Este e-mail já está sendo utilizado por outro usuário.' });
+      }
+    }
+
+    // 3. Verificar se CPF já existe em outro usuário (se fornecido)
     if (cpf && cpf.trim()) {
       const { rows: cpfCheck } = await db.query('SELECT id FROM usuarios WHERE cpf = $1 AND id <> $2', [cpf.trim(), id]);
       if (cpfCheck.length > 0) {
@@ -299,11 +341,30 @@ exports.atualizarPorGestor = async (req, res) => {
       }
     }
 
-    // Atualizar no banco PostgreSQL
+    // 4. Tratar atualização de senha (se informada)
+    let newHash = null;
+    if (senha && senha.trim()) {
+      if (senha.trim().length < 6) {
+        return res.status(400).json({ error: 'A senha deve conter no mínimo 6 caracteres.' });
+      }
+      newHash = await bcrypt.hash(senha.trim(), 10);
+    }
+
+    // 5. Atualizar no banco PostgreSQL
     const query = `
       UPDATE usuarios 
-      SET nome = $1, apelido = $2, cpf = $3, data_nascimento = $4, whatsapp = $5, goleiro = $6, autoavaliacao = $7, foto = $8, avaliacao_media = $9
-      WHERE id = $10
+      SET nome = $1,
+          apelido = $2,
+          cpf = $3,
+          data_nascimento = $4,
+          whatsapp = $5,
+          goleiro = $6,
+          autoavaliacao = $7,
+          foto = $8,
+          avaliacao_media = $9,
+          email = COALESCE($10, email),
+          senha_hash = COALESCE($11, senha_hash)
+      WHERE id = $12
       RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado`;
 
     const { rows } = await db.query(query, [
@@ -316,12 +377,15 @@ exports.atualizarPorGestor = async (req, res) => {
       autoavaliacao !== undefined ? parseInt(autoavaliacao) : 3,
       foto || null,
       autoavaliacao !== undefined ? parseFloat(autoavaliacao) : 3.0,
+      email ? email.trim().toLowerCase() : null,
+      newHash,
       id
     ]);
 
     res.json({ message: 'Atleta atualizado com sucesso!', usuario: rows[0] });
 
   } catch (err) {
+    console.error('Erro ao atualizar atleta por gestor:', err);
     res.status(500).json({ error: 'Erro ao atualizar atleta.', detail: err.message });
   }
 };
