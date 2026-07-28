@@ -237,6 +237,7 @@
           <!-- Toggle Switch de Perfil (Exclusivo para tipo 'ambos') -->
           {{ROLE_TOGGLE}}
 
+          <button class="btn btn-sm" onclick="window.PWAInstaller.triggerInstall()" style="background: #0284C7; color: #FFF; font-weight: 700; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;">📲 Instalar App</button>
           <span class="acomp-user-name-clear" id="layout-user-name-desktop">{{USER_NAME}}</span>
           <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
         </div>
@@ -267,6 +268,7 @@
       <div class="acomp-mobile-dropdown" id="acomp-mobile-dropdown">
         <div class="acomp-dropdown-user" id="layout-user-name-mobile">{{USER_NAME}}</div>
         {{ROLE_TOGGLE_MOBILE}}
+        <button class="tab-btn" onclick="window.PWAInstaller.triggerInstall(); AcompanhamentoGlobal.closeMobileMenu();" style="color: #0284C7; font-weight: 700;">📲 Instalar Aplicativo (PWA)</button>
         <button class="tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard'); AcompanhamentoGlobal.closeMobileMenu();">Dashboard</button>
         <button class="tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao'); AcompanhamentoGlobal.closeMobileMenu();">Convocação</button>
         <button class="tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento'); AcompanhamentoGlobal.closeMobileMenu();">Acompanhamento</button>
