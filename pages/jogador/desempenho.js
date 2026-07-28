@@ -67,7 +67,7 @@ var Desempenho = {
           nome: nome,
           gols: p.gols || 0,
           jogos: p.partidas || 0,
-          isMe: Auth.currentUser && String(p.id) === String(Auth.currentUser.id)
+          isMe: Auth.currentUser && (String(p.id) === String(Auth.currentUser.id) || p.nome === Auth.currentUser.nome)
         };
       }
     });
@@ -188,7 +188,7 @@ var Desempenho = {
               nome: nome,
               gols: matchGols[nome],
               jogos: calculatedGames,
-              isMe: false
+              isMe: Auth.currentUser && (nome.toLowerCase() === Auth.currentUser.nome.toLowerCase() || (Auth.currentUser.apelido && nome.toLowerCase() === Auth.currentUser.apelido.toLowerCase()))
             };
           }
         });
@@ -239,13 +239,14 @@ var Desempenho = {
         statsMap[nome] = {
           id: p.id,
           nome: nome,
+          gols: p.gols || 0,
           pontos: 0,
           vitorias: 0,
           balizaZero: 0,
           empates: 0,
           derrotas: 0,
           jogos: 0,
-          isMe: Auth.currentUser && String(p.id) === String(Auth.currentUser.id)
+          isMe: Auth.currentUser && (String(p.id) === String(Auth.currentUser.id) || (Auth.currentUser.nome && nome.toLowerCase() === Auth.currentUser.nome.toLowerCase()) || (Auth.currentUser.apelido && nome.toLowerCase() === Auth.currentUser.apelido.toLowerCase()))
         };
       }
     });
@@ -391,27 +392,27 @@ var Desempenho = {
         if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
         if (b.balizaZero !== a.balizaZero) return b.balizaZero - a.balizaZero;
         return a.derrotas - b.derrotas;
-      })
-      .slice(0, 10);
+      });
+
+    // Atualiza os widgets do card "Meu Desempenho Pessoal" do usuario logado com os dados reais calculados
+    if (Auth.currentUser) {
+      var userKey = (Auth.currentUser.apelido || Auth.currentUser.nome || '').trim().toLowerCase();
+      var myStats = ranked.find(function(r) { return r.isMe || r.nome.toLowerCase() === userKey; });
+      if (myStats) {
+        this.updateMyPersonalStats(myStats.gols, myStats.jogos, myStats.pontos);
+      } else {
+        this.updateMyPersonalStats(Auth.currentUser.gols || 0, Auth.currentUser.partidas || 0, 0);
+      }
+    }
 
     if (ranked.length === 0) {
       tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-caption);">Nenhum dado de partida disponível.</td></tr>';
       return;
     }
 
-    // Se o usuário logado está no ranking, atualiza o widget "Meu Desempenho - Pontos 🎖️"
-    if (Auth.currentUser) {
-      var myStats = ranked.find(function(r) { return r.isMe; });
-      var myRatingEl = document.getElementById('my-stat-rating');
-      if (myRatingEl) {
-        var ptsVal = myStats ? myStats.pontos : 0;
-        myRatingEl.textContent = ptsVal.toFixed(1).replace('.', ',');
-      }
-    }
-
     var badgeMap = ['🥇', '🥈', '🥉'];
     var html = '';
-    ranked.forEach(function(p, idx) {
+    ranked.slice(0, 10).forEach(function(p, idx) {
       var ptsFmt = p.pontos.toFixed(1).replace('.', ',');
       html += '<tr' + (p.isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
@@ -457,21 +458,23 @@ var Desempenho = {
 
   // --- Stats pessoais do jogador logado -----------------------------------
   renderMyStats: function() {
-    var user = Auth.currentUser;
-    if (!user) return;
+    this.updateMyPersonalStats();
+  },
 
+  updateMyPersonalStats: function(myGoals, myGames, myPoints) {
+    var user = Auth.currentUser;
     var golsEl     = document.getElementById('my-stat-gols');
     var partidasEl = document.getElementById('my-stat-partidas');
     var ratingEl   = document.getElementById('my-stat-rating');
     var saldoEl    = document.getElementById('my-stat-saldo');
 
-    if (golsEl)     golsEl.textContent     = user.gols || 0;
-    if (partidasEl) partidasEl.textContent = user.partidas || 0;
+    if (golsEl)     golsEl.textContent     = (myGoals !== undefined ? myGoals : (user ? (user.gols || 0) : 0));
+    if (partidasEl) partidasEl.textContent = (myGames !== undefined ? myGames : (user ? (user.partidas || 0) : 0));
     if (ratingEl) {
-      var r = parseFloat(user.avaliacao_media) || parseInt(user.autoavaliacao) || 0;
-      ratingEl.textContent = r > 0 ? (r.toFixed(1).replace('.', ',') + ' 🎖️') : '0,0';
+      var pts = (myPoints !== undefined ? myPoints : 0);
+      ratingEl.textContent = pts > 0 ? (pts.toFixed(1).replace('.', ',')) : '0,0';
     }
-    if (saldoEl) {
+    if (saldoEl && user) {
       var saldo = user.saldo || 0;
       saldoEl.textContent = window.Utils ? window.Utils.formatCurrency(saldo) : ('R$ ' + saldo);
       saldoEl.style.color = saldo < 0 ? 'var(--danger)' : 'var(--primary)';
