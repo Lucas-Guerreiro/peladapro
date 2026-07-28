@@ -316,7 +316,8 @@ async function loadGestorLocations() {
   if (!select || !listContainer) return;
 
   try {
-    const locais = await Api.listarLocais();
+    const rawLocais = await Api.listarLocais();
+    const locais = Array.isArray(rawLocais) ? rawLocais : (rawLocais?.locais || []);
     select.innerHTML = "";
     listContainer.innerHTML = "";
 

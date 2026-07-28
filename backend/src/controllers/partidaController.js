@@ -4,7 +4,7 @@ exports.criarPartida = async (req, res) => {
   const { pelada_id, time_a_nome, time_b_nome, gols_time_a, gols_time_b, autores_gols } = req.body;
   const gestorTipo = req.usuarioTipo;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem lançar resultados de partidas.' });
   }
 
@@ -75,7 +75,7 @@ exports.editarPartida = async (req, res) => {
   const { gols_time_a, gols_time_b, time_a_nome, time_b_nome, autores_gols } = req.body;
   const gestorTipo = req.usuarioTipo;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem editar partidas.' });
   }
 
@@ -111,7 +111,7 @@ exports.deletarPartida = async (req, res) => {
   const { id } = req.params;
   const gestorTipo = req.usuarioTipo;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem deletar partidas.' });
   }
 

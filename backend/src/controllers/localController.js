@@ -4,7 +4,7 @@ exports.listarTodos = async (req, res) => {
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
 
-  if (tipo !== 'gestor') {
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Acesso negado. Apenas gestores podem gerenciar locais.' });
   }
 
@@ -24,7 +24,7 @@ exports.criar = async (req, res) => {
   const tipo = req.usuarioTipo;
   const { nome, endereco } = req.body;
 
-  if (tipo !== 'gestor') {
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Acesso negado. Apenas gestores podem criar locais.' });
   }
 
@@ -49,7 +49,7 @@ exports.atualizar = async (req, res) => {
   const { id } = req.params;
   const { nome, endereco } = req.body;
 
-  if (tipo !== 'gestor') {
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Acesso negado. Apenas gestores podem atualizar locais.' });
   }
 
@@ -78,7 +78,7 @@ exports.deletar = async (req, res) => {
   const tipo = req.usuarioTipo;
   const { id } = req.params;
 
-  if (tipo !== 'gestor') {
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Acesso negado. Apenas gestores podem excluir locais.' });
   }
 

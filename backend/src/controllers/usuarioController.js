@@ -121,7 +121,7 @@ exports.aprovarAtleta = async (req, res) => {
   const gestorTipo = req.usuarioTipo;
   const { id } = req.params;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem aprovar atletas.' });
   }
 
@@ -146,7 +146,7 @@ exports.recusarAtleta = async (req, res) => {
   const gestorTipo = req.usuarioTipo;
   const { id } = req.params;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem recusar/deletar atletas.' });
   }
 
@@ -216,7 +216,7 @@ exports.adicionarGol = async (req, res) => {
 
 exports.criarPorGestor = async (req, res) => {
   const gestorTipo = req.usuarioTipo;
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem cadastrar atletas.' });
   }
 
@@ -303,7 +303,7 @@ exports.atualizarPorGestor = async (req, res) => {
   const gestorTipo = req.usuarioTipo;
   const { id } = req.params;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem atualizar outros atletas.' });
   }
 

@@ -176,7 +176,7 @@ exports.atualizarPresenca = async (req, res) => {
   const { pelada_id, usuario_id, presenca } = req.body;
   const gestorTipo = req.usuarioTipo;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem registrar presença.' });
   }
 
@@ -204,7 +204,7 @@ exports.atualizarPresenca = async (req, res) => {
 
 exports.desconvocarPorGestor = async (req, res) => {
   const gestorTipo = req.usuarioTipo;
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem desconvocar atletas.' });
   }
 

@@ -525,15 +525,24 @@ const Api = {
 
   async listarLocais() {
     const token = localStorage.getItem('token');
-    if (!token) return [];
+    if (!token) return this._get('locais') || [];
     try {
       const res = await fetch('http://localhost:3000/api/locais', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      return await res.json();
+      if (!res.ok) {
+        console.warn('[Api] HTTP status ao listar locais:', res.status);
+        return this._get('locais') || [];
+      }
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        this._set('locais', data);
+        return data;
+      }
+      return this._get('locais') || [];
     } catch (e) {
       console.error('[Api] Erro ao listar locais:', e);
-      return [];
+      return this._get('locais') || [];
     }
   },
 
@@ -549,7 +558,14 @@ const Api = {
         },
         body: JSON.stringify({ nome, endereco })
       });
-      return await res.json();
+      const data = await res.json();
+      // Atualiza cache local
+      if (data && data.local) {
+        const locais = this._get('locais') || [];
+        locais.push(data.local);
+        this._set('locais', locais);
+      }
+      return data;
     } catch (e) {
       console.error('[Api] Erro ao criar local:', e);
       return { error: 'Erro ao se conectar ao servidor.' };

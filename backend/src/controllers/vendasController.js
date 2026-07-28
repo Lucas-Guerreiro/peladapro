@@ -142,7 +142,7 @@ exports.ativarLicencaManual = async (req, res) => {
   const gestorId = req.usuarioId;
   const gestorTipo = req.usuarioTipo;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem ativar licenças em grupos.' });
   }
 

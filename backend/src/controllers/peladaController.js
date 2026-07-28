@@ -219,7 +219,7 @@ exports.atualizarConfigPartida = async (req, res) => {
   const tipo = req.usuarioTipo;
   const { criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao } = req.body;
 
-  if (tipo !== 'gestor') {
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
   }
 
@@ -265,7 +265,7 @@ exports.atualizarStatus = async (req, res) => {
   const gestorId = req.usuarioId;
   const gestorTipo = req.usuarioTipo;
 
-  if (gestorTipo !== 'gestor') {
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem finalizar peladas.' });
   }
 
