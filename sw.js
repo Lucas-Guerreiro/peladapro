@@ -2,11 +2,13 @@
 // Service Worker — PeladaPro PWA
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v1';
+const CACHE_NAME = 'peladapro-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
   './css/main.css',
   './css/components.css',
   './css/responsive.css',
