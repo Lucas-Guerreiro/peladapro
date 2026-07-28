@@ -396,12 +396,15 @@ const Auth = {
 window.App = window.App || {};
 window.App.submitUpdatedEmail = async function() {
   const input = document.getElementById('input-new-real-email');
-  if (!input) return;
+  if (!input) {
+    console.error('[submitUpdatedEmail] Elemento #input-new-real-email não encontrado.');
+    return;
+  }
   const newEmail = input.value.trim().toLowerCase();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!newEmail || !emailRegex.test(newEmail)) {
-    Utils.toast('Por favor, informe um e-mail válido.', 'warning');
+    Utils.toast('Por favor, informe um e-mail válido (ex: seuemail@gmail.com).', 'warning');
     return;
   }
 
@@ -434,7 +437,12 @@ window.App.submitUpdatedEmail = async function() {
     }
 
     Utils.toast('E-mail atualizado com sucesso! 🎉', 'success');
-    Router.closeModal();
+    
+    // Fecha e remove o modal
+    const backdrop = document.getElementById('modal-update-email-backdrop') || document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.remove();
+    const root = document.getElementById('modal-container-root');
+    if (root) root.innerHTML = '';
   } catch(err) {
     console.error(err);
     Utils.toast('Erro de conexão ao atualizar e-mail.', 'error');
