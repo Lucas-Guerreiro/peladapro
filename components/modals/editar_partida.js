@@ -94,7 +94,7 @@ window.App.initModalEditar_partida = function(data) {
       if (!t || (!t.nome && !t.name)) return false;
       const n = String(t.nome || t.name).toLowerCase().trim();
       const nClean = n.replace(/^time\s+/, '').trim();
-      return n === targetName || nClean === targetClean || n === targetClean || nClean === target;
+      return n === targetName || nClean === targetClean || n === targetClean || nClean === targetName;
     });
 
     if (teamObj) {
