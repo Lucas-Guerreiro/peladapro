@@ -251,6 +251,20 @@ window.renderPixAuditoria = async function() {
           }
 
           window.App.showToast("Transação estornada e saldo revertido com sucesso!", "success");
+
+          // Atualiza saldo em memória do usuário e do elenco local
+          if (window.Auth && window.Auth.refreshCurrentUser) {
+            await window.Auth.refreshCurrentUser();
+          }
+          if (window.Api && window.Api.getPlayers) {
+            try {
+              const updatedPlayers = await window.Api.getPlayers();
+              if (Array.isArray(updatedPlayers)) {
+                localStorage.setItem("players", JSON.stringify(updatedPlayers));
+              }
+            } catch(e) {}
+          }
+
           window.renderPixAuditoria();
           window.App.renderFinanceiroData();
         } catch(err) {

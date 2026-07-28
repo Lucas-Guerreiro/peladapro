@@ -260,7 +260,10 @@ var Convocacao = {
   },
 
   // --- Atualiza o status e saldo do jogador ------------------------------
-  updateMyStatus: function() {
+  updateMyStatus: async function() {
+    if (window.Auth && window.Auth.refreshCurrentUser) {
+      await window.Auth.refreshCurrentUser();
+    }
     var user      = Auth.currentUser;
     var statusEl  = document.getElementById('my-status-badge');
     var balanceEl = document.getElementById('my-balance-conv');
@@ -268,7 +271,7 @@ var Convocacao = {
     var btnRemove = document.getElementById('btn-conv-remove');
     
     if (balanceEl && user) {
-      var saldo = user.saldo || 0;
+      var saldo = parseFloat(user.saldo || 0);
       balanceEl.textContent   = Utils.formatCurrency(saldo);
       balanceEl.style.color   = saldo < 0 ? 'var(--danger)' : 'var(--primary)';
     }

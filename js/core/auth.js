@@ -363,11 +363,33 @@ const Auth = {
       const newExpiry = Date.now() + (12 * 60 * 60 * 1000);
       localStorage.setItem('session_expiry', String(newExpiry));
 
+      // Sincroniza saldo e dados do perfil atualizado do backend sem bloquear a UI
+      this.refreshCurrentUser();
+
       return true;
     } catch (e) {
       console.error('[Auth] Falha ao recuperar sessão do localStorage:', e);
       this.logout();
       return false;
+    }
+  },
+
+  async refreshCurrentUser() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:3000/api/usuarios/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const user = await res.json();
+        if (user && user.id) {
+          this.currentUser = { ...this.currentUser, ...user, saldo: parseFloat(user.saldo || 0) };
+          localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Erro ao atualizar perfil/saldo do usuário:', e);
     }
   },
 

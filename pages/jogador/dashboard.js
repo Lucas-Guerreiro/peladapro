@@ -308,6 +308,9 @@ var Dashboard = {
 };
 
 // --- Ponto de entrada chamado pelo Router ----------------------------------
-window.App.initDashboard = function() {
+window.App.initDashboard = async function() {
+  if (window.Auth && window.Auth.refreshCurrentUser) {
+    await window.Auth.refreshCurrentUser();
+  }
   Dashboard.init();
 };
