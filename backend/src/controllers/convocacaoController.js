@@ -160,7 +160,7 @@ exports.listarConvocados = async (req, res) => {
   const { peladaId } = req.params;
   try {
     const query = `
-      SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, c.status, c.forma_pagamento, c.data_convocacao, c.presenca
+      SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.foto, c.status, c.forma_pagamento, c.data_convocacao, c.presenca
       FROM convocacoes c
       JOIN usuarios u ON c.usuario_id = u.id
       WHERE c.pelada_id = $1

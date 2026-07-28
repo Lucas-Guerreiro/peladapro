@@ -91,7 +91,7 @@ exports.atualizarPerfil = async (req, res) => {
 exports.listarTodos = async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado FROM usuarios ORDER BY nome ASC'
+      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado FROM usuarios ORDER BY nome ASC'
     );
     res.json(rows);
   } catch (err) {
@@ -103,7 +103,7 @@ exports.obterDetalhes = async (req, res) => {
   const { id } = req.params;
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado FROM usuarios WHERE id = $1',
+      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado FROM usuarios WHERE id = $1',
       [id]
     );
 

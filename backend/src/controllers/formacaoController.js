@@ -26,7 +26,7 @@ exports.sortear = async (req, res) => {
 
     // 2. Buscar todos os jogadores confirmados na pelada
     const queryConfirmados = `
-      SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.avaliacao_media
+      SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.avaliacao_media, u.foto
       FROM convocacoes c
       JOIN usuarios u ON c.usuario_id = u.id
       WHERE c.pelada_id = $1 AND c.status = 'confirmado'`;
@@ -88,7 +88,7 @@ exports.obterTimesSorteados = async (req, res) => {
     for (let time of times) {
       // Buscar os jogadores de cada time
       const queryJogadores = `
-        SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.avaliacao_media
+        SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.avaliacao_media, u.foto
         FROM times_jogadores tj
         JOIN usuarios u ON tj.usuario_id = u.id
         WHERE tj.time_id = $1`;
