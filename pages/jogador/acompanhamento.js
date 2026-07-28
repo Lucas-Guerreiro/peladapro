@@ -613,7 +613,6 @@ var Acompanhamento = {
         html += '<div style="margin-bottom: 8px; background: #F8FAFC; border-radius: 8px; border-left: 4px solid #10B981; padding: 10px 14px;">' +
           '<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">' +
             '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
-              '<span style="font-size: 11px; font-weight: bold; background: #E2E8F0; color: #475569; padding: 2px 6px; border-radius: 4px;">#' + numJogo + '</span>' +
               '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">' + embA + '</div>' +
               '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_a_nome || 'Time A') + '</span>' +
               '<span style="font-size: 15px; font-weight: 800; color: #0F172A; font-family: monospace;">' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '</span>' +
