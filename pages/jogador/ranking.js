@@ -185,7 +185,7 @@ var Ranking = {
     tbody.innerHTML = html;
   },
 
-  // --- Artilharia ---
+  // --- Artilharia (Calcula Gols e Jogos por Time de Forma 100% Autônoma) ---
   renderArtilharia: async function(peladaId) {
     var tbody = document.getElementById('ranking-scorers-body');
     if (!tbody) return;
@@ -217,15 +217,6 @@ var Ranking = {
       try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
       if (!teams || teams.length === 0) teams = Api.getTeams() || [];
 
-      if ((!teams || teams.length === 0) && peladaId && Api.obterLiveState) {
-        try {
-          var liveRes = await Api.obterLiveState(peladaId);
-          if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
-            teams = liveRes.state.teams;
-          }
-        } catch(e) {}
-      }
-
       var teamPlayersMap = {};
       (teams || []).forEach(function(t) {
         var tName = (t.nome || t.name || '').trim().toLowerCase();
@@ -244,64 +235,85 @@ var Ranking = {
       var teamMatchesCount = {};
       var matchGols = {};
       var matchAssists = {};
+      var matchJogos = {};
+      var playerTeamMap = {};
 
       partidas.forEach(function(m) {
-        var tA = (m.time_a_nome || '').trim().toLowerCase();
-        var tB = (m.time_b_nome || '').trim().toLowerCase();
+        var tA = (m.time_a_nome || '').trim();
+        var tB = (m.time_b_nome || '').trim();
 
-        if (tA) teamMatchesCount[tA] = (teamMatchesCount[tA] || 0) + 1;
-        if (tB) teamMatchesCount[tB] = (teamMatchesCount[tB] || 0) + 1;
+        if (tA) teamMatchesCount[tA.toLowerCase()] = (teamMatchesCount[tA.toLowerCase()] || 0) + 1;
+        if (tB) teamMatchesCount[tB.toLowerCase()] = (teamMatchesCount[tB.toLowerCase()] || 0) + 1;
 
         let goalsList = [];
         if (m.autores_gols) {
           try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
         }
+
+        var playersInMatch = new Set();
         (goalsList || []).forEach(function(g) {
+          var teamNameOfPlayer = g.teamName || (g.teamKey === 'a' ? tA : (g.teamKey === 'b' ? tB : null));
+
           if (g.autorNome) {
             var aNome = g.autorNome.trim();
             matchGols[aNome] = (matchGols[aNome] || 0) + 1;
+            playersInMatch.add(aNome);
+            if (teamNameOfPlayer) playerTeamMap[aNome.toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
           }
+
           if (g.assistNome) {
             var assNome = g.assistNome.trim();
             matchAssists[assNome] = (matchAssists[assNome] || 0) + 1;
+            playersInMatch.add(assNome);
+            if (teamNameOfPlayer) playerTeamMap[assNome.toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
           }
+        });
+
+        playersInMatch.forEach(function(nome) {
+          matchJogos[nome] = (matchJogos[nome] || 0) + 1;
         });
       });
 
       Object.keys(matchGols).forEach(function(nome) {
         var lowerKey = nome.toLowerCase();
-        var jogosCount = 1;
+        var tNameFromMatch = playerTeamMap[lowerKey];
+        var teamGames = tNameFromMatch ? (teamMatchesCount[tNameFromMatch] || 0) : 0;
 
         Object.keys(teamPlayersMap).forEach(function(tName) {
           if (teamPlayersMap[tName].has(lowerKey)) {
-            jogosCount = Math.max(jogosCount, teamMatchesCount[tName] || 1);
+            teamGames = Math.max(teamGames, teamMatchesCount[tName] || 0);
           }
         });
+
+        var calculatedGames = Math.max(teamGames, matchJogos[nome] || 0, 1);
 
         scorersMap[nome] = {
           nome: nome,
           gols: matchGols[nome] || 0,
           assistencias: matchAssists[nome] || 0,
-          jogos: jogosCount
+          jogos: calculatedGames
         };
       });
 
       Object.keys(matchAssists).forEach(function(nome) {
         if (!scorersMap[nome]) {
           var lowerKey = nome.toLowerCase();
-          var jogosCount = 1;
+          var tNameFromMatch = playerTeamMap[lowerKey];
+          var teamGames = tNameFromMatch ? (teamMatchesCount[tNameFromMatch] || 0) : 0;
 
           Object.keys(teamPlayersMap).forEach(function(tName) {
             if (teamPlayersMap[tName].has(lowerKey)) {
-              jogosCount = Math.max(jogosCount, teamMatchesCount[tName] || 1);
+              teamGames = Math.max(teamGames, teamMatchesCount[tName] || 0);
             }
           });
+
+          var calculatedGames = Math.max(teamGames, matchJogos[nome] || 0, 1);
 
           scorersMap[nome] = {
             nome: nome,
             gols: matchGols[nome] || 0,
             assistencias: matchAssists[nome] || 0,
-            jogos: jogosCount
+            jogos: calculatedGames
           };
         }
       });

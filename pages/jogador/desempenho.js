@@ -51,7 +51,7 @@ var Desempenho = {
     await this.renderGoleiros(id);
   },
 
-  // --- Artilharia (Calcula Gols e Jogos exatos sincronizados com os Times) ---
+  // --- Artilharia (Calcula Gols e Jogos por Time de Forma 100% Autônoma) ---
   renderArtilharia: async function(peladaId) {
     var tbody = document.getElementById('desempenho-artilharia-body');
     if (!tbody) return;
@@ -90,21 +90,11 @@ var Desempenho = {
       }
 
       if (Array.isArray(partidas) && partidas.length > 0) {
-        // 1. Mapear times sorteados (do localStorage, Api ou LiveState)
+        // Mapeamento de times -> atletas da sessão
         var teams = [];
         try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
         if (!teams || teams.length === 0) teams = Api.getTeams() || [];
-        
-        if ((!teams || teams.length === 0) && peladaId && Api.obterLiveState) {
-          try {
-            var liveRes = await Api.obterLiveState(peladaId);
-            if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
-              teams = liveRes.state.teams;
-            }
-          } catch(e) {}
-        }
 
-        // Mapa case-insensitive de time -> conjunto de nomes de atletas
         var teamPlayersMap = {};
         (teams || []).forEach(function(t) {
           var tName = (t.nome || t.name || '').trim().toLowerCase();
@@ -120,58 +110,92 @@ var Desempenho = {
           }
         });
 
-        // 2. Contar partidas disputadas por cada TIME e acumular gols por ATLETA
+        // Contagem de partidas disputadas por cada TIME e gols por ATLETA
         var teamMatchesCount = {};
         var matchGols = {};
+        var matchJogos = {};
+        var playerTeamMap = {};
 
         partidas.forEach(function(m) {
-          var tA = (m.time_a_nome || '').trim().toLowerCase();
-          var tB = (m.time_b_nome || '').trim().toLowerCase();
+          var tA = (m.time_a_nome || '').trim();
+          var tB = (m.time_b_nome || '').trim();
 
-          if (tA) teamMatchesCount[tA] = (teamMatchesCount[tA] || 0) + 1;
-          if (tB) teamMatchesCount[tB] = (teamMatchesCount[tB] || 0) + 1;
+          if (tA) teamMatchesCount[tA.toLowerCase()] = (teamMatchesCount[tA.toLowerCase()] || 0) + 1;
+          if (tB) teamMatchesCount[tB.toLowerCase()] = (teamMatchesCount[tB.toLowerCase()] || 0) + 1;
 
           let goalsList = [];
           if (m.autores_gols) {
             try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
           }
+
+          var playersInMatch = new Set();
           (goalsList || []).forEach(function(g) {
+            var teamNameOfPlayer = g.teamName || (g.teamKey === 'a' ? tA : (g.teamKey === 'b' ? tB : null));
+            
             if (g.autorNome) {
               var aNome = g.autorNome.trim();
               matchGols[aNome] = (matchGols[aNome] || 0) + 1;
+              playersInMatch.add(aNome);
+              if (teamNameOfPlayer) playerTeamMap[aNome.toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
             }
+
+            if (g.assistNome) {
+              var assNome = g.assistNome.trim();
+              playersInMatch.add(assNome);
+              if (teamNameOfPlayer) playerTeamMap[assNome.toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
+            }
+          });
+
+          playersInMatch.forEach(function(nome) {
+            matchJogos[nome] = (matchJogos[nome] || 0) + 1;
           });
         });
 
-        // 3. Atualizar gols e quantidade de jogos de cada atleta de acordo com o time dele
+        // Atualiza a tabela de artilharia com gols e quantidade exata de jogos disputados pelo time do atleta
         Object.keys(scorersMap).forEach(function(nomeKey) {
           var lowerKey = nomeKey.toLowerCase();
+          
           if (matchGols[nomeKey] !== undefined) {
             scorersMap[nomeKey].gols = matchGols[nomeKey];
           }
 
-          // Encontra se o atleta pertence a algum dos times e atribui a quantidade de jogos jogada pelo time dele
+          // 1. Tenta pegar jogos disputados pelo time associado em autores_gols
+          var tNameFromMatch = playerTeamMap[lowerKey];
+          var teamGames = tNameFromMatch ? (teamMatchesCount[tNameFromMatch] || 0) : 0;
+
+          // 2. Tenta pegar jogos disputados pelo time sorteado localmente
           Object.keys(teamPlayersMap).forEach(function(tName) {
             if (teamPlayersMap[tName].has(lowerKey)) {
-              scorersMap[nomeKey].jogos = Math.max(scorersMap[nomeKey].jogos, teamMatchesCount[tName] || 0);
+              teamGames = Math.max(teamGames, teamMatchesCount[tName] || 0);
             }
           });
+
+          var gamesInMatch = matchJogos[nomeKey] || 0;
+
+          // O número de jogos é o maior entre os jogos do time, jogos com gol e os dados prévios do atleta (mínimo 1 se fez gol)
+          var calculatedGames = Math.max(teamGames, gamesInMatch, (scorersMap[nomeKey].gols > 0 ? 1 : 0));
+          scorersMap[nomeKey].jogos = Math.max(scorersMap[nomeKey].jogos, calculatedGames);
         });
 
-        // Inclui qualquer autor de gol registrado nas partidas que não estivesse na lista principal
+        // Inclui qualquer autor de gol registrado nas partidas que não estivesse na lista inicial de atletas
         Object.keys(matchGols).forEach(function(nome) {
           if (!scorersMap[nome]) {
             var lowerName = nome.toLowerCase();
-            var jogosCount = 1;
+            var tNameFromMatch = playerTeamMap[lowerName];
+            var teamGames = tNameFromMatch ? (teamMatchesCount[tNameFromMatch] || 0) : 0;
+            
             Object.keys(teamPlayersMap).forEach(function(tName) {
               if (teamPlayersMap[tName].has(lowerName)) {
-                jogosCount = Math.max(jogosCount, teamMatchesCount[tName] || 1);
+                teamGames = Math.max(teamGames, teamMatchesCount[tName] || 0);
               }
             });
+
+            var calculatedGames = Math.max(teamGames, matchJogos[nome] || 0, 1);
+
             scorersMap[nome] = {
               nome: nome,
               gols: matchGols[nome],
-              jogos: jogosCount,
+              jogos: calculatedGames,
               isMe: false
             };
           }
@@ -185,7 +209,7 @@ var Desempenho = {
       .filter(function(p) { return p.gols > 0; })
       .sort(function(a, b) {
         if (b.gols !== a.gols) return b.gols - a.gols;
-        return a.jogos - b.jogos; // melhor aproveitamento (menos jogos)
+        return a.jogos - b.jogos;
       })
       .slice(0, 10);
 
@@ -203,7 +227,7 @@ var Desempenho = {
           p.nome + (p.isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
         '</td>' +
         '<td style="text-align: center; font-weight: 700; color: var(--primary);">' + p.gols + ' ⚽</td>' +
-        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + p.jogos + '</td>' +
+        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.jogos || 1) + '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
