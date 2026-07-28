@@ -770,6 +770,8 @@ window.selectEmblem = function(emblemaIdx) {
   var team = teams.find(function(t) { return String(t.id) === String(teamId); });
   if (team) {
     team.emblema = emblemaIdx;
+    delete team.emblema_url;
+    delete team.emblemaUrl;
     localStorage.setItem("teams", JSON.stringify(teams));
   }
 
@@ -792,9 +794,54 @@ window.selectEmblem = function(emblemaIdx) {
   // 4. Atualiza visualmente sem re-renderizar tudo
   var emblemEl = document.getElementById("emblem-" + teamId);
   if (emblemEl && window.TeamEmblems) {
-    emblemEl.innerHTML = window.TeamEmblems.get(emblemaIdx);
+    emblemEl.innerHTML = window.TeamEmblems.forTeam(team || { emblema: emblemaIdx });
     emblemEl.setAttribute("onclick", "openEmblemSelector('" + teamId + "', " + emblemaIdx + ")");
   }
 
   window.App.showToast("Emblema atualizado!");
+};
+
+window.handleCustomEmblemUpload = function(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  var teamId = window._emblemTargetTeamId;
+  if (teamId === null || teamId === undefined) return;
+
+  window.App.showToast("Processando imagem do emblema...");
+
+  window.TeamEmblems.compressImage(file, function(base64) {
+    var teams = [];
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    var team = teams.find(function(t) { return String(t.id) === String(teamId); });
+    if (team) {
+      team.emblema_url = base64;
+      team.emblemaUrl = base64;
+      localStorage.setItem("teams", JSON.stringify(teams));
+    }
+
+    // Persiste no banco
+    var token = localStorage.getItem("token");
+    if (token && team && team.db_id) {
+      fetch("/api/formacao/times/" + team.db_id + "/emblema", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ emblemaUrl: base64 })
+      }).catch(function(e) { console.warn("[Emblema Custom] Erro ao salvar no banco:", e); });
+    }
+
+    // Fecha modal
+    var popup = document.getElementById("emblem-selector-popup");
+    var overlay = document.getElementById("emblem-selector-overlay");
+    if (popup) popup.remove();
+    if (overlay) overlay.remove();
+
+    // Atualiza imagem na interface
+    var emblemEl = document.getElementById("emblem-" + teamId);
+    if (emblemEl && window.TeamEmblems) {
+      emblemEl.innerHTML = window.TeamEmblems.forTeam(team || { emblema_url: base64 });
+    }
+
+    window.App.showToast("Logotipo do time atualizado com sucesso! 🛡️");
+  });
 };

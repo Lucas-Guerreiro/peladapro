@@ -71,6 +71,12 @@ window.TeamEmblems = (function() {
     },
 
     forTeam: function(team) {
+      if (team) {
+        var customUrl = team.emblema_url || team.emblemaUrl;
+        if (customUrl) {
+          return '<img src="' + customUrl + '" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));" alt="Emblema">';
+        }
+      }
       var idx = (team && team.emblema !== undefined && team.emblema !== null) ? team.emblema : 0;
       return this.get(idx);
     },
@@ -80,11 +86,21 @@ window.TeamEmblems = (function() {
       return EMBLEM_THEMES[idx];
     },
 
-    // Renderiza seletor visual de emblemas (grade 5x2)
-    renderSelector: function(currentIndex, callbackName) {
-      var html = '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px;">';
+    // Renderiza seletor visual de emblemas (grade 5x2 + opção de upload de imagem)
+    renderSelector: function(currentIndex, callbackName, uploadCallbackName) {
+      uploadCallbackName = uploadCallbackName || 'handleCustomEmblemUpload';
+      var html = '<div style="margin-bottom: 12px; padding: 10px; background: #F1F5F9; border-radius: 10px; border: 1.5px dashed #94A3B8; text-align: center;">' +
+        '<label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 600; color: #0F172A;">' +
+          '<span>📁 Carregar Imagem Própria</span>' +
+          '<input type="file" accept="image/*" style="display: none;" onchange="' + uploadCallbackName + '(event)">' +
+        '</label>' +
+        '<div style="font-size: 11px; color: #64748B; margin-top: 2px;">Envie uma foto ou logotipo do seu time (PNG/JPG)</div>' +
+      '</div>' +
+      '<div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px;">Ou escolha um escudo pré-definido:</div>' +
+      '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px;">';
+
       for (var i = 0; i < EMBLEMS.length; i++) {
-        var isActive = i === ((currentIndex || 0));
+        var isActive = (currentIndex === i);
         html += '<div data-emblem-idx="' + i + '" ' +
           'onclick="' + callbackName + '(' + i + ')" ' +
           'style="width: 52px; height: 58px; cursor: pointer; border-radius: 8px; padding: 4px; ' +
@@ -99,6 +115,42 @@ window.TeamEmblems = (function() {
       }
       html += '</div>';
       return html;
+    },
+
+    // Redimensiona imagem para base64 leve (max 180x180)
+    compressImage: function(file, callback) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var maxDim = 180;
+          var width = img.width;
+          var height = img.height;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height *= maxDim / width;
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width *= maxDim / height;
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          var base64 = canvas.toDataURL('image/png');
+          callback(base64);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
   };
 })();

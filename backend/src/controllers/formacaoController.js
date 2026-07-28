@@ -102,6 +102,7 @@ exports.obterTimesSorteados = async (req, res) => {
         nome: time.nome,
         cor: time.cor,
         emblema: time.emblema !== undefined && time.emblema !== null ? time.emblema : 0,
+        emblema_url: time.emblema_url || null,
         vitorias: time.vitorias,
         empates: time.empates,
         gols_pro: time.gols_pro,
@@ -117,20 +118,26 @@ exports.obterTimesSorteados = async (req, res) => {
   }
 };
 
-// Atualizar emblema de um time manualmente
+// Atualizar emblema de um time manualmente (número do sistema ou URL/Base64 de imagem customizada)
 exports.atualizarEmblema = async (req, res) => {
   const { timeId } = req.params;
-  const { emblema } = req.body;
-
-  if (emblema === undefined || emblema === null || isNaN(parseInt(emblema))) {
-    return res.status(400).json({ error: 'Campo emblema (número 0-9) é obrigatório' });
-  }
+  const { emblema, emblemaUrl } = req.body;
 
   try {
-    const result = await db.query(
-      'UPDATE times SET emblema = $1 WHERE id = $2 RETURNING id, nome, emblema',
-      [parseInt(emblema), parseInt(timeId)]
-    );
+    let query = '';
+    let params = [];
+
+    if (emblemaUrl !== undefined) {
+      query = 'UPDATE times SET emblema_url = $1 WHERE id = $2 RETURNING id, nome, emblema, emblema_url';
+      params = [emblemaUrl, parseInt(timeId)];
+    } else if (emblema !== undefined && emblema !== null) {
+      query = 'UPDATE times SET emblema = $1, emblema_url = NULL WHERE id = $2 RETURNING id, nome, emblema, emblema_url';
+      params = [parseInt(emblema), parseInt(timeId)];
+    } else {
+      return res.status(400).json({ error: 'Forneça emblema (índice 0-9) ou emblemaUrl' });
+    }
+
+    const result = await db.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Time não encontrado' });
