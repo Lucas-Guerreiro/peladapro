@@ -355,13 +355,38 @@ var Ranking = {
 
     var badgeMap = ['🥇', '🥈', '🥉'];
     var html = '';
+    var allPlayersList = Api.getPlayers() || [];
+    try {
+      var locP = JSON.parse(localStorage.getItem("players"));
+      if (Array.isArray(locP) && locP.length > 0) allPlayersList = locP;
+    } catch(e) {}
+
     scorers.slice(0, 10).forEach(function(p, idx) {
+      var foundPlayer = allPlayersList.find(function(pl) {
+        var pName = (pl.apelido || pl.nome || '').trim().toLowerCase();
+        var fullN = (pl.nome || '').trim().toLowerCase();
+        var targetN = (p.nome || '').trim().toLowerCase();
+        return pName === targetN || fullN === targetN || String(pl.id) === String(p.id);
+      });
+
+      var fotoUrl = foundPlayer ? foundPlayer.foto : null;
+      var initial = (p.nome || '?').charAt(0).toUpperCase();
+
+      var avatarHTML = fotoUrl
+        ? '<img src="' + fotoUrl + '" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 2px 4px rgba(0,0,0,0.12);" alt="' + p.nome + '">'
+        : '<div style="width: 36px; height: 36px; border-radius: 50%; background: #10B981; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">' + initial + '</div>';
+
       html += '<tr>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: 600;">' + p.nome + '</td>' +
-        '<td style="text-align: center; font-weight: 700; color: var(--secondary);">' + p.gols + ' ⚽</td>' +
-        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.assistencias || 0) + ' 👟</td>' +
-        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.jogos || 1) + '</td>' +
+        '<td style="font-weight: 700;">' +
+          '<div style="display: flex; align-items: center; gap: 10px;">' +
+            avatarHTML +
+            '<span style="font-size: 14px; color: #0F172A;">' + p.nome + '</span>' +
+          '</div>' +
+        '</td>' +
+        '<td style="text-align: center; font-weight: 700; color: #10B981; font-size: 14px;">' + p.gols + ' ⚽</td>' +
+        '<td style="text-align: center; color: #64748B; font-weight: 600;">' + (p.assistencias || 0) + ' 👟</td>' +
+        '<td style="text-align: center; color: #64748B; font-weight: 600;">' + (p.jogos || 1) + '</td>' +
       '</tr>';
     });
 

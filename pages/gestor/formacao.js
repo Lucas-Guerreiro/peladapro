@@ -435,6 +435,7 @@ window.App.renderDrawnTeams = async function() {
   }
 
   let teamsModificados = false;
+  const allPlayersLocais = JSON.parse(localStorage.getItem("players")) || [];
 
   teams.forEach((team) => {
     // Remove qualquer jogador nulo ou inválido que possa ter entrado por falha anterior do drag/drop
@@ -472,10 +473,22 @@ window.App.renderDrawnTeams = async function() {
       pDiv.draggable = true;
       pDiv.setAttribute("ondragstart", `drag(event, '${p.id}', '${team.id}')`);
       
+      const matchingPlayer = allPlayersLocais.find(pl => String(pl.id) === String(p.id)) || p;
+      const fotoUrl = p.foto || matchingPlayer.foto || null;
+      const nameStr = p.apelido || p.nome || 'Atleta';
+      const initial = nameStr.charAt(0).toUpperCase();
+
+      const avatarHtml = fotoUrl 
+        ? `<img src="${fotoUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid ${team.cor || '#0284C7'}; box-shadow: 0 2px 4px rgba(0,0,0,0.12);" alt="${nameStr}">`
+        : `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${team.cor || '#0284C7'}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">${initial}</div>`;
+
       pDiv.innerHTML = `
-        <span class="player-draft-name">
-          ${p.apelido || p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}
-        </span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          ${avatarHtml}
+          <span class="player-draft-name" style="font-weight: 600;">
+            ${nameStr} ${p.goleiro ? '🧤' : ''}
+          </span>
+        </div>
         <span class="player-draft-stars">${"★".repeat(parseInt(p.autoavaliacao) || 3)}</span>
       `;
       playersList.appendChild(pDiv);

@@ -296,13 +296,38 @@ var Desempenho = {
 
     var badgeMap = ['🥇', '🥈', '🥉'];
     var html = '';
+    var allPlayersList = Api.getPlayers() || [];
+    try {
+      var locP = JSON.parse(localStorage.getItem("players"));
+      if (Array.isArray(locP) && locP.length > 0) allPlayersList = locP;
+    } catch(e) {}
+
     ranked.slice(0, 10).forEach(function(p, idx) {
+      var foundPlayer = allPlayersList.find(function(pl) {
+        var pName = (pl.apelido || pl.nome || '').trim().toLowerCase();
+        var fullN = (pl.nome || '').trim().toLowerCase();
+        var targetN = (p.nome || '').trim().toLowerCase();
+        return pName === targetN || fullN === targetN || String(pl.id) === String(p.id);
+      });
+
+      var fotoUrl = foundPlayer ? foundPlayer.foto : null;
+      var initial = (p.nome || '?').charAt(0).toUpperCase();
+
+      var avatarHTML = fotoUrl
+        ? '<img src="' + fotoUrl + '" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #D97706; box-shadow: 0 2px 4px rgba(0,0,0,0.12);" alt="' + p.nome + '">'
+        : '<div style="width: 36px; height: 36px; border-radius: 50%; background: #D97706; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">' + initial + '</div>';
+
       var ptsFmt = p.pontos.toFixed(1).replace('.', ',');
       html += '<tr' + (p.isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: 600;">' + p.nome + (p.isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</td>' +
-        '<td style="text-align: center; color: #D97706; font-weight: 800;">' + ptsFmt + ' 🎖️</td>' +
-        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + p.jogos + '</td>' +
+        '<td style="font-weight: 700;">' +
+          '<div style="display: flex; align-items: center; gap: 10px;">' +
+            avatarHTML +
+            '<span style="font-size: 14px; color: #0F172A;">' + p.nome + (p.isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</span>' +
+          '</div>' +
+        '</td>' +
+        '<td style="text-align: center; color: #D97706; font-weight: 800; font-size: 14px;">' + ptsFmt + ' 🎖️</td>' +
+        '<td style="text-align: center; color: #64748B; font-weight: 600;">' + p.jogos + '</td>' +
       '</tr>';
     });
 
@@ -315,6 +340,11 @@ var Desempenho = {
     if (!tbody) return;
 
     var players = Api.getPlayers() || [];
+    try {
+      var locP = JSON.parse(localStorage.getItem("players"));
+      if (Array.isArray(locP) && locP.length > 0) players = locP;
+    } catch(e) {}
+
     var goalkeepers = players
       .filter(function(p) { return p.goleiro && p.ativo !== false; })
       .sort(function(a, b) { return (b.partidas || 0) - (a.partidas || 0); });
@@ -328,13 +358,23 @@ var Desempenho = {
     var html = '';
     goalkeepers.forEach(function(p, idx) {
       var isMe = Auth.currentUser && String(p.id) === String(Auth.currentUser.id);
+      var name = p.apelido || p.nome;
+      var fotoUrl = p.foto;
+      var initial = (name || '?').charAt(0).toUpperCase();
+
+      var avatarHTML = fotoUrl
+        ? '<img src="' + fotoUrl + '" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #0284C7; box-shadow: 0 2px 4px rgba(0,0,0,0.12);" alt="' + name + '">'
+        : '<div style="width: 36px; height: 36px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">' + initial + '</div>';
+
       html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: 600;">' +
-          (p.apelido || p.nome) + ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' +
-          (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') +
+        '<td style="font-weight: 700;">' +
+          '<div style="display: flex; align-items: center; gap: 10px;">' +
+            avatarHTML +
+            '<span style="font-size: 14px; color: #0F172A;">' + name + ' 🧤' + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</span>' +
+          '</div>' +
         '</td>' +
-        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.partidas || 0) + '</td>' +
+        '<td style="text-align: center; color: #0284C7; font-weight: 800; font-size: 14px;">' + (p.partidas || 0) + '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
