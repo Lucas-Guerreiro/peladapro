@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="PeladaPro — Gerencie sua pelada amadora com sorteio inteligente de times, controle financeiro e convocações." />
+  <meta name="description"
+    content="PeladaPro — Gerencie sua pelada amadora com sorteio inteligente de times, controle financeiro e convocações." />
   <title>PeladaPro — Gestão de Peladas</title>
 
   <!-- Redirecionamento instantâneo caso acessado diretamente -->
@@ -22,7 +24,8 @@
   <!-- Fontes (Inter) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
 
   <!-- PWA Manifest & Mobile Standalone Tags -->
   <link rel="manifest" href="/manifest.json" />
@@ -37,6 +40,7 @@
   <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
 </head>
+
 <body>
 
   <!-- Ponto de montagem da SPA -->
@@ -58,5 +62,14 @@
     });
   </script>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
+
 </body>
+
 </html>
