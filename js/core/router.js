@@ -452,4 +452,19 @@ window.AcompanhamentoGlobal = {
     const nameMobile = document.getElementById('layout-user-name-mobile');
     if (nameMobile) nameMobile.textContent = nomeExibir;
   }
+// Namespace global para controle do layout unificado do gestor
+window.GestorGlobal = {
+  toggleMobileMenu: function() {
+    const dropdown = document.getElementById('gestor-mobile-dropdown');
+    if (!dropdown) return;
+    if (dropdown.style.display === 'flex') {
+      dropdown.style.display = 'none';
+    } else {
+      dropdown.style.display = 'flex';
+    }
+  },
+  closeMobileMenu: function() {
+    const dropdown = document.getElementById('gestor-mobile-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+  }
 };

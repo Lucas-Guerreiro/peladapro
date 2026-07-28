@@ -135,24 +135,26 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
     const balanceColor = saldoVal >= 0 ? "var(--success)" : "var(--danger)";
     const estrelasText = p.autoavaliacao !== null && p.autoavaliacao !== undefined ? `${p.autoavaliacao} estrelas` : 'N/A';
 
+    const avatarHTML = p.foto 
+      ? `<img src="${p.foto}" class="athlete-avatar" alt="${p.nome}" style="width: 48px; height: 48px; min-width: 48px; min-height: 48px; max-width: 48px; max-height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1;" />`
+      : `<div class="athlete-avatar-placeholder" style="width: 48px; height: 48px; min-width: 48px; min-height: 48px; max-width: 48px; max-height: 48px; border-radius: 50%; background-color: var(--primary); color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 18px; flex-shrink: 0; aspect-ratio: 1/1;">${initials}</div>`;
+
     card.innerHTML = `
       <div class="athlete-info">
-        <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--primary); color: #FFF; display:flex; align-items:center; justify-content:center; font-family: 'Inter', sans-serif; font-size:18px;">
-          ${initials}
-        </div>
+        ${avatarHTML}
         <div class="athlete-details">
           <h4>${p.nome} ${p.goleiro ? '🧤' : ''}</h4>
-          <span style="font-size:12px; color: var(--text-caption);">E-mail: ${p.email} | CPF: ${p.cpf || 'Não preenchido'} | ⭐ ${estrelasText}</span>
+          <span style="font-size:12px; color: var(--text-caption); display: block; margin-top: 2px;">E-mail: ${p.email || '—'} | CPF: ${p.cpf || 'Não preenchido'} | ⭐ ${estrelasText}</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap: 24px;">
-        <div style="text-align: right;">
-          <span style="font-size:11px; display:block; text-transform:uppercase; color: var(--text-caption);">Saldo</span>
+      <div class="card-athlete-right">
+        <div style="text-align: right;" class="athlete-saldo-col">
+          <span style="font-size:11px; display:block; text-transform:uppercase; color: var(--text-caption); font-weight: 700;">Saldo</span>
           <strong style="color: ${balanceColor}; font-size:15px;">R$ ${balanceText}</strong>
         </div>
         <div class="athlete-actions">
-          <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}">✏️</button>
-          <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}">🗑️</button>
+          <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}" title="Editar Atleta">✏️ Editar</button>
+          <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}" title="Excluir Atleta">🗑️ Excluir</button>
         </div>
       </div>
     `;
