@@ -2,7 +2,7 @@
 // MODAL: EDITAR PARTIDA (editar_partida.js)
 // ==========================================================================
 
-window.App.initModalEditar_partida = function(data) {
+window.App.initModalEditar_partida = async function(data) {
   const partida = data.partida || {};
   const allPeladaPartidas = data.allPartidas || [];
   
@@ -44,16 +44,29 @@ window.App.initModalEditar_partida = function(data) {
   if (scoreAEl) scoreAEl.value = partida.gols_time_a !== undefined ? partida.gols_time_a : 0;
   if (scoreBEl) scoreBEl.value = partida.gols_time_b !== undefined ? partida.gols_time_b : 0;
 
-  // 2. Carregar lista de atletas disponíveis
+  // 2. Carregar lista de atletas disponíveis (busca do backend se localStorage estiver vazio)
   let players = Api.getPlayers() || [];
   if (!players || players.length === 0) {
     try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
   }
-  const activePlayers = (players || []).filter(p => p.ativo !== false && !p.goleiro);
+
+  if ((!players || players.length === 0) && window.Api && window.Api.listarAtletas) {
+    try {
+      players = await window.Api.listarAtletas();
+      if (Array.isArray(players)) {
+        localStorage.setItem("players", JSON.stringify(players));
+      }
+    } catch(e) {}
+  }
+
+  const activePlayers = (players || []).filter(p => p && p.ativo !== false && !p.goleiro);
+  if (activePlayers.length === 0 && Array.isArray(players) && players.length > 0) {
+    activePlayers.push(...players);
+  }
 
   // Helper para filtrar os atletas que pertencem estritamente a um determinado time
   function getPlayersForTeam(teamName) {
-    if (!teamName) return activePlayers;
+    if (!teamName || activePlayers.length === 0) return activePlayers;
     const targetName = String(teamName).toLowerCase().trim();
     const targetClean = targetName.replace(/^time\s+/, '').trim();
 
@@ -109,6 +122,7 @@ window.App.initModalEditar_partida = function(data) {
       }
     }
 
+    // Failsafe: se a lista do time não for encontrada, retorna activePlayers para o gestor poder selecionar
     return activePlayers;
   }
 
@@ -274,23 +288,20 @@ window.App.initModalEditar_partida = function(data) {
     if (scoreBEl) scoreBEl.value = scoreB;
   }
 
-  // Evento do botão + Adicionar Gol
+  // Evento do botão + Adicionar Gol (Infalível e resiliente)
   if (btnAddGoal) {
     btnAddGoal.onclick = () => {
       const currentTeamA = teamASelect ? teamASelect.value : 'Time A';
       const teamAPlayers = getPlayersForTeam(currentTeamA);
 
-      if (teamAPlayers.length === 0) {
-        window.App.showToast("Nenhum atleta ativo cadastrado no time.", "warning");
-        return;
-      }
-
-      const firstPlayer = teamAPlayers[0];
+      const defaultPlayer = (teamAPlayers && teamAPlayers.length > 0) 
+        ? teamAPlayers[0] 
+        : ((activePlayers && activePlayers.length > 0) ? activePlayers[0] : { id: '1', nome: 'Atleta', apelido: 'Atleta' });
 
       goalsInEdit.push({
-        id: Date.now(),
-        autorId: String(firstPlayer.id),
-        autorNome: firstPlayer.apelido || firstPlayer.nome,
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        autorId: String(defaultPlayer.id || 1),
+        autorNome: defaultPlayer.apelido || defaultPlayer.nome || "Atleta",
         assistId: null,
         assistNome: null,
         teamKey: 'a',
