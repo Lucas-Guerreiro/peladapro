@@ -48,6 +48,37 @@ window.App.initModalEditar_partida = function(data) {
   }
   const activePlayers = (players || []).filter(p => p.ativo !== false && !p.goleiro);
 
+  // Helper para filtrar os atletas que pertencem a um determinado time
+  function getPlayersForTeam(teamName) {
+    if (!teamName) return activePlayers;
+    const targetName = String(teamName).toLowerCase().trim();
+    const targetClean = targetName.replace(/^time\s+/, '').trim();
+
+    const teamObj = (teams || []).find(t => {
+      if (!t || (!t.nome && !t.name)) return false;
+      const n = String(t.nome || t.name).toLowerCase().trim();
+      const nClean = n.replace(/^time\s+/, '').trim();
+      return n === targetName || nClean === targetClean || n === targetClean || nClean === target;
+    });
+
+    if (teamObj) {
+      const roster = teamObj.jogadores || teamObj.players || [];
+      if (Array.isArray(roster) && roster.length > 0) {
+        const rosterIds = new Set(roster.map(p => String(p.id)));
+        const rosterNames = new Set(roster.map(p => (p.apelido || p.nome || '').toLowerCase().trim()));
+
+        const filtered = activePlayers.filter(p => {
+          const pName = (p.apelido || p.nome || '').toLowerCase().trim();
+          return rosterIds.has(String(p.id)) || rosterNames.has(pName);
+        });
+
+        if (filtered.length > 0) return filtered;
+      }
+    }
+
+    return activePlayers;
+  }
+
   // Array de gols em edição
   let goalsInEdit = [];
   if (partida.autores_gols) {
@@ -83,6 +114,10 @@ window.App.initModalEditar_partida = function(data) {
       const currentTeamB = teamBSelect ? teamBSelect.value : (partida.time_b_nome || 'Time B');
 
       const isTeamB = (g.teamKey === 'b' || (g.teamName && g.teamName.trim().toLowerCase() === currentTeamB.trim().toLowerCase()));
+      const selectedTeamName = isTeamB ? currentTeamB : currentTeamA;
+
+      // Obtém somente os atletas do time selecionado para este gol
+      const teamPlayers = getPlayersForTeam(selectedTeamName);
 
       row.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
@@ -100,9 +135,9 @@ window.App.initModalEditar_partida = function(data) {
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
           <div>
-            <label style="font-size: 10px; color: var(--text-caption); display: block; margin-bottom: 2px; font-weight: bold;">Autor do Gol</label>
+            <label style="font-size: 10px; color: var(--text-caption); display: block; margin-bottom: 2px; font-weight: bold;">Autor do Gol (${selectedTeamName})</label>
             <select class="form-control edit-goal-autor-select" data-index="${index}" style="font-size: 12px; padding: 4px 6px;">
-              ${activePlayers.map(p => {
+              ${teamPlayers.map(p => {
                 const name = p.apelido || p.nome;
                 const selected = (g.autorNome && g.autorNome.trim().toLowerCase() === name.trim().toLowerCase()) || (String(p.id) === String(g.autorId));
                 return `<option value="${p.id}" data-name="${name}" ${selected ? 'selected' : ''}>${name}</option>`;
@@ -114,7 +149,7 @@ window.App.initModalEditar_partida = function(data) {
             <label style="font-size: 10px; color: var(--text-caption); display: block; margin-bottom: 2px; font-weight: bold;">Assistência (Opcional)</label>
             <select class="form-control edit-goal-assist-select" data-index="${index}" style="font-size: 12px; padding: 4px 6px;">
               <option value="">Sem assistência</option>
-              ${activePlayers.map(p => {
+              ${teamPlayers.map(p => {
                 const name = p.apelido || p.nome;
                 const selected = (g.assistNome && g.assistNome.trim().toLowerCase() === name.trim().toLowerCase()) || (String(p.id) === String(g.assistId));
                 return `<option value="${p.id}" data-name="${name}" ${selected ? 'selected' : ''}>${name}</option>`;
@@ -135,9 +170,22 @@ window.App.initModalEditar_partida = function(data) {
         const currentTeamA = teamASelect ? teamASelect.value : 'Time A';
         const currentTeamB = teamBSelect ? teamBSelect.value : 'Time B';
         if (goalsInEdit[idx]) {
-          goalsInEdit[idx].teamKey = e.target.value;
-          goalsInEdit[idx].teamName = e.target.value === 'a' ? currentTeamA : currentTeamB;
+          const selectedTeam = e.target.value;
+          const targetTeamName = selectedTeam === 'a' ? currentTeamA : currentTeamB;
+          goalsInEdit[idx].teamKey = selectedTeam;
+          goalsInEdit[idx].teamName = targetTeamName;
+
+          // Ao trocar o time do gol, seleciona por padrão o primeiro atleta daquele time
+          const newTeamPlayers = getPlayersForTeam(targetTeamName);
+          if (newTeamPlayers.length > 0) {
+            goalsInEdit[idx].autorId = String(newTeamPlayers[0].id);
+            goalsInEdit[idx].autorNome = newTeamPlayers[0].apelido || newTeamPlayers[0].nome;
+          }
+          goalsInEdit[idx].assistId = null;
+          goalsInEdit[idx].assistNome = null;
+
           updateScoresFromGoals();
+          renderEditGoalsList();
         }
       };
     });
@@ -196,12 +244,15 @@ window.App.initModalEditar_partida = function(data) {
   // Evento do botão + Adicionar Gol
   if (btnAddGoal) {
     btnAddGoal.onclick = () => {
-      if (activePlayers.length === 0) {
-        window.App.showToast("Nenhum atleta ativo cadastrado para associar ao gol.", "warning");
+      const currentTeamA = teamASelect ? teamASelect.value : 'Time A';
+      const teamAPlayers = getPlayersForTeam(currentTeamA);
+
+      if (teamAPlayers.length === 0) {
+        window.App.showToast("Nenhum atleta ativo cadastrado no time.", "warning");
         return;
       }
-      const firstPlayer = activePlayers[0];
-      const currentTeamA = teamASelect ? teamASelect.value : 'Time A';
+
+      const firstPlayer = teamAPlayers[0];
 
       goalsInEdit.push({
         id: Date.now(),
