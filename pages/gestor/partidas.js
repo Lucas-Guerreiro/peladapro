@@ -226,13 +226,30 @@ function startGestorPolling() {
             window.App.liveMatch = res.state.liveMatch;
             localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
           }
-          if (res.state.waitingQueue) {
-            window.App.waitingQueue = res.state.waitingQueue;
-            localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
-          }
           if (res.state.teams) {
             localStorage.setItem("teams", JSON.stringify(res.state.teams));
           }
+
+          let currentQueue = res.state.waitingQueue || [];
+          let currentTeams = res.state.teams || [];
+          if (!currentTeams || currentTeams.length === 0) {
+            try { currentTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+          }
+
+          if ((!currentQueue || currentQueue.length === 0) && Array.isArray(currentTeams) && currentTeams.length > 2) {
+            const tA = (res.state.liveMatch && res.state.liveMatch.teamA) ? String(res.state.liveMatch.teamA).toLowerCase().trim() : '';
+            const tB = (res.state.liveMatch && res.state.liveMatch.teamB) ? String(res.state.liveMatch.teamB).toLowerCase().trim() : '';
+            currentQueue = currentTeams
+              .map(t => t.nome || t.name)
+              .filter(n => {
+                if (!n) return false;
+                const low = String(n).toLowerCase().trim();
+                return low !== tA && low !== tB;
+              });
+          }
+
+          window.App.waitingQueue = currentQueue;
+          localStorage.setItem("waitingQueue", JSON.stringify(currentQueue));
         }
       } catch (err) {}
     }
@@ -415,7 +432,27 @@ function renderWaitingQueue() {
   if (!container) return;
 
   container.innerHTML = "";
-  const queue = window.App.waitingQueue || [];
+  let queue = window.App.waitingQueue || [];
+
+  let teams = [];
+  try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+
+  if ((!queue || queue.length === 0) && Array.isArray(teams) && teams.length > 2) {
+    const tA = (window.App.liveMatch && window.App.liveMatch.teamA) ? String(window.App.liveMatch.teamA).toLowerCase().trim() : '';
+    const tB = (window.App.liveMatch && window.App.liveMatch.teamB) ? String(window.App.liveMatch.teamB).toLowerCase().trim() : '';
+    queue = teams
+      .map(t => t.nome || t.name)
+      .filter(n => {
+        if (!n) return false;
+        const low = String(n).toLowerCase().trim();
+        return low !== tA && low !== tB;
+      });
+
+    if (queue.length > 0) {
+      window.App.waitingQueue = queue;
+      localStorage.setItem("waitingQueue", JSON.stringify(queue));
+    }
+  }
 
   if (counterEl) {
     counterEl.textContent = `${queue.length} Time${queue.length !== 1 ? 's' : ''}`;

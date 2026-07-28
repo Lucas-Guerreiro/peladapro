@@ -421,6 +421,32 @@ var Acompanhamento = {
     var countEl  = document.getElementById('acomp-queue-count');
     var queue    = window.App.waitingQueue || [];
 
+    var teams = [];
+    try {
+      teams = JSON.parse(localStorage.getItem("teams")) || (Api.getTeams ? Api.getTeams() : []);
+    } catch(e) {
+      teams = Api.getTeams ? Api.getTeams() : [];
+    }
+
+    if ((!queue || queue.length === 0) && Array.isArray(teams) && teams.length > 2) {
+      var liveMatch = window.App.liveMatch || {};
+      var tA = liveMatch.teamA ? String(liveMatch.teamA).toLowerCase().trim() : '';
+      var tB = liveMatch.teamB ? String(liveMatch.teamB).toLowerCase().trim() : '';
+
+      queue = teams
+        .map(function(t) { return t.nome || t.name; })
+        .filter(function(n) {
+          if (!n) return false;
+          var low = String(n).toLowerCase().trim();
+          return low !== tA && low !== tB;
+        });
+
+      if (queue.length > 0) {
+        window.App.waitingQueue = queue;
+        try { localStorage.setItem("waitingQueue", JSON.stringify(queue)); } catch(e) {}
+      }
+    }
+
     if (countEl) countEl.textContent = queue.length + (queue.length === 1 ? ' time' : ' times');
 
     if (!listEl) return;
