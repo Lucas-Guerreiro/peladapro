@@ -105,13 +105,22 @@ const Router = {
       this._currentLayoutRole = newRole;
     }
 
-    // ---- Página pública (login / cadastro) ----
+    // ---- Página pública/standalone (login / cadastro / selecionar_perfil) ----
     if (!needsLayout) {
       this._currentLayoutRole = null;
       try {
         app.innerHTML = `<div class="app-container"></div>`;
         const res = await fetch(`pages/${route.page}.html?v=${Date.now()}`);
         app.querySelector('.app-container').innerHTML = await res.text();
+
+        // Carrega o JS correspondente se existir
+        const jsPath = `pages/${route.page}.js`;
+        this._loadScript(jsPath, () => {
+          const rawName = route.page.split('/').pop();
+          const parts = rawName.split('_');
+          const initFn = `init${parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('')}`;
+          if (window.App && window.App[initFn]) window.App[initFn]();
+        });
       } catch (e) {
         console.error('[Router]', e);
         app.innerHTML = `<div class="login-container"><p style="color:var(--danger)">Erro ao carregar página.</p></div>`;

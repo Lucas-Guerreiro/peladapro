@@ -228,6 +228,17 @@ const Auth = {
 
   // Selecionar Papel (Gestor ou Jogador)
   selectRole(role) {
+    if (!role || (role !== 'gestor' && role !== 'jogador')) return;
+
+    const chkRemember = document.getElementById('chk-remember-profile');
+    if (chkRemember) {
+      if (chkRemember.checked) {
+        localStorage.setItem('ultimo_perfil', role);
+      } else {
+        localStorage.removeItem('ultimo_perfil');
+      }
+    }
+
     if (!this.currentUser) {
       try {
         const raw = localStorage.getItem('currentUser');
@@ -352,3 +363,5 @@ const Auth = {
 };
 
 window.Auth = Auth;
+window.App = window.App || {};
+window.App.selectRole = function(role) { Auth.selectRole(role); };

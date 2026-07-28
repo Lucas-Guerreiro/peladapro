@@ -40,7 +40,7 @@
         <div 
           id="card-profile-gestor"
           class="profile-option-card profile-card-gestor"
-          onclick="window.App.selectRole('gestor')"
+          onclick="(window.App.selectRole || Auth.selectRole)('gestor')"
           tabindex="0"
           role="button"
           aria-label="Acessar como Gestor"
@@ -61,7 +61,7 @@
         <div 
           id="card-profile-jogador"
           class="profile-option-card profile-card-jogador"
-          onclick="window.App.selectRole('jogador')"
+          onclick="(window.App.selectRole || Auth.selectRole)('jogador')"
           tabindex="0"
           role="button"
           aria-label="Acessar como Jogador"
