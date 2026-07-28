@@ -181,17 +181,17 @@ var Convocacao = {
         var avatarHTML = '';
         var hasPhoto = c.foto || c.photo;
         if (hasPhoto) {
-          avatarHTML = '<img src="' + hasPhoto + '" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--secondary);">';
+          avatarHTML = '<img src="' + hasPhoto + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2.5px solid var(--secondary); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
         } else {
-          avatarHTML = '<div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 700; font-size: 14px; flex-shrink: 0;">' +
+          avatarHTML = '<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
             nome.charAt(0).toUpperCase() +
           '</div>';
         }
 
-        html += '<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-color);">' +
+        html += '<div style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border-color);">' +
           avatarHTML +
           '<div style="flex: 1;">' +
-            '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' +
+            '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading);">' +
               nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary); background: rgba(0,230,118,0.1); padding: 2px 6px; border-radius: 10px;">Você</span>' : '') +
               (c.goleiro ? ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' : '') +
             '</p>' +

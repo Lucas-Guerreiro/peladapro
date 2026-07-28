@@ -32,8 +32,8 @@ window.App.initModalVer_time = function(data) {
       const initial = nameStr.charAt(0).toUpperCase();
 
       const avatarHtml = fotoUrl
-        ? `<img src="${fotoUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.12);" alt="${nameStr}">`
-        : `<div style="width: 36px; height: 36px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">${initial}</div>`;
+        ? `<img src="${fotoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="${nameStr}">`
+        : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${initial}</div>`;
 
       const div = document.createElement("div");
       div.style.display = "flex";

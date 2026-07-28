@@ -234,6 +234,8 @@ async function updateCheckinPlayersList(peladaId) {
         pLocal.autoavaliacao = parseInt(c.autoavaliacao) || 3;
       }
 
+      if (!pLocal.foto && c.foto) pLocal.foto = c.foto;
+
       // Adiciona na lista de presentes na memória se estiver marcado como presente no banco
       if (c.presenca) {
         window.App.presentPlayers.push(c.id);
@@ -243,22 +245,33 @@ async function updateCheckinPlayersList(peladaId) {
       div.style.display = "flex";
       div.style.justifyContent = "space-between";
       div.style.alignItems = "center";
-      div.style.padding = "8px 12px";
+      div.style.padding = "10px 12px";
       div.style.backgroundColor = "var(--background)";
-      div.style.borderRadius = "8px";
+      div.style.borderRadius = "10px";
       div.style.marginBottom = "8px";
 
+      const nameStr = c.apelido || c.nome || 'Atleta';
+      const fotoUrl = c.foto || (pLocal && pLocal.foto) || null;
+      const initial = nameStr.charAt(0).toUpperCase();
+
+      const avatarHtml = fotoUrl
+        ? `<img src="${fotoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;" alt="${nameStr}">`
+        : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;">${initial}</div>`;
+
       div.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px; flex:1;">
-          <span style="font-size:13px; font-weight:500;">${c.apelido || c.nome} ${c.goleiro ? '🧤' : ''}</span>
-          <span style="color:var(--warning); font-size:11px;">${'★'.repeat(parseInt(c.autoavaliacao) || 3)}</span>
+        <div style="display:flex; align-items:center; gap:12px; flex:1;">
+          ${avatarHtml}
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-size:15px; font-weight:700; color:var(--text-heading);">${nameStr} ${c.goleiro ? '🧤' : ''}</span>
+            <span style="color:var(--warning); font-size:12px;">${'★'.repeat(parseInt(c.autoavaliacao) || 3)}</span>
+          </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <label class="toggle-switch">
             <input type="checkbox" class="toggle-input" ${c.presenca ? 'checked' : ''} onchange="togglePresenter('${c.id}', this)">
             <span class="toggle-label"></span>
           </label>
-          <button title="Desconvocar atleta" onclick="desconvocarAtleta('${c.id}', '${c.apelido || c.nome}')" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
+          <button title="Desconvocar atleta" onclick="desconvocarAtleta('${c.id}', '${nameStr}')" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
         </div>
       `;
       container.appendChild(div);
@@ -479,8 +492,8 @@ window.App.renderDrawnTeams = async function() {
       const initial = nameStr.charAt(0).toUpperCase();
 
       const avatarHtml = fotoUrl 
-        ? `<img src="${fotoUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid ${team.cor || '#0284C7'}; box-shadow: 0 2px 4px rgba(0,0,0,0.12);" alt="${nameStr}">`
-        : `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${team.cor || '#0284C7'}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">${initial}</div>`;
+        ? `<img src="${fotoUrl}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2.5px solid ${team.cor || '#0284C7'}; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="${nameStr}">`
+        : `<div style="width: 44px; height: 44px; border-radius: 50%; background: ${team.cor || '#0284C7'}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${initial}</div>`;
 
       pDiv.innerHTML = `
         <div style="display: flex; align-items: center; gap: 8px;">
