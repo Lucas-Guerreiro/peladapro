@@ -294,6 +294,18 @@ exports.atualizarStatus = async (req, res) => {
       WHERE id = $2 RETURNING id, status`;
     const { rows } = await db.query(queryUpdate, [status, id]);
 
+    // Se o status for finalizada/encerrada, envia push notification automatica aos atletas
+    if (status === 'finalizada' || status === 'encerrada') {
+      try {
+        const { sendNotificationInternal } = require('./pushController');
+        sendNotificationInternal({
+          title: '🏆 Pelada Encerrada & Ranking Atualizado!',
+          body: 'A pelada de hoje foi encerrada! Acesse o app para conferir seu desempenho, gols marcados e a tabela do ranking.',
+          url: '/#/jogador/ranking'
+        }).catch(e => console.warn('[Push] Erro ao disparar notificação de encerramento:', e));
+      } catch(e) {}
+    }
+
     res.json({ message: 'Status da pelada atualizado com sucesso!', pelada: rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao atualizar status da pelada', detail: err.message });

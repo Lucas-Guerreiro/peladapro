@@ -1164,7 +1164,18 @@ async function handleFinishPeladaDay() {
     // 4. Atualiza a pelada selecionada para refletir o status
     window.App.activePelada.status = "finalizada";
 
-    // 5. Reinicializa a tela de partidas para aplicar a UI de concluída
+    // 5. Dispara Notificação Push para os Atletas conferirem o Ranking & Desempenho
+    fetch("/api/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "🏆 Pelada Encerrada & Ranking Atualizado!",
+        body: "A pelada de hoje foi encerrada! Acesse o app para conferir seu desempenho, gols marcados e a tabela do ranking.",
+        url: "/#/jogador/ranking"
+      })
+    }).catch(e => console.warn("[Push] Erro ao disparar notificação de encerramento:", e));
+
+    // 6. Reinicializa a tela de partidas para aplicar a UI de concluída
     window.App.initPartidas();
     window.App.showToast("Rodada encerrada com sucesso!", "success");
 
