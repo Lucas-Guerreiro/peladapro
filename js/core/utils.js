@@ -32,10 +32,12 @@ const Utils = {
 
   // --- Formatação ---------------------------------------------------------
   formatCurrency(v) {
+    const num = parseFloat(v);
+    const safeNum = isNaN(num) ? 0 : num;
     return new Intl.NumberFormat('pt-BR', {
       style:    'currency',
       currency: 'BRL'
-    }).format(v);
+    }).format(safeNum);
   },
 
   formatDate(isoDate) {
