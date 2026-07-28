@@ -75,15 +75,9 @@ var Convocacao = {
     try {
       // Buscar peladas reais do grupo
       const peladas = await Api.listarDatasDoGrupo(groupId);
-      var today = new Date().toISOString().split('T')[0];
 
-      // Filtrar peladas agendadas do grupo e ordenar
-      var upcoming = peladas.filter(function(p) {
-        return p.status === 'agendada' && p.data >= today;
-      }).sort(function(a, b) { return a.data.localeCompare(b.data); });
-
-      if (upcoming.length === 0) {
-        selectData.innerHTML = '<option value="">Nenhuma data agendada</option>';
+      if (!Array.isArray(peladas) || peladas.length === 0) {
+        selectData.innerHTML = '<option value="">Nenhuma data cadastrada</option>';
         selectData.disabled = true;
         selectData.style.background = 'var(--background)';
         
@@ -93,9 +87,15 @@ var Convocacao = {
         return;
       }
 
+      // Priorizar peladas ativas/agendadas (não finalizadas), ou listar todas se todas estiverem finalizadas
+      var activePeladas = peladas.filter(function(p) {
+        return p.status !== 'finalizada';
+      });
+      var listToRender = activePeladas.length > 0 ? activePeladas : peladas;
+
       // Sincronizar localmente as peladas do grupo no localStorage para o resto do app
       const peladasLocais = Api.getPeladas().filter(p => String(p.grupo_id) !== String(groupId));
-      upcoming.forEach(p => {
+      listToRender.forEach(p => {
         peladasLocais.push({
           id: p.id,
           grupo_id: parseInt(groupId),
@@ -119,17 +119,18 @@ var Convocacao = {
       selectData.style.background = 'var(--card-background)';
       selectData.innerHTML = '';
 
-      upcoming.forEach(function(p) {
+      listToRender.forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = Utils.formatDate(p.data) + ' · ' + (p.horario || '');
+        var dataFmt = window.Utils ? window.Utils.formatDate(p.data) : p.data;
+        opt.textContent = dataFmt + (p.horario ? ' · ' + p.horario : '') + (p.local ? ' (' + p.local + ')' : '');
         selectData.appendChild(opt);
       });
 
-      // Pré-selecionar a data mais próxima
-      selectData.value = upcoming[0].id;
-      this._selectedPeladaId = upcoming[0].id;
-      this.renderConfirmedList(upcoming[0].id);
+      // Pré-selecionar a primeira data da lista
+      selectData.value = listToRender[0].id;
+      this._selectedPeladaId = listToRender[0].id;
+      this.renderConfirmedList(listToRender[0].id);
       this.updateMyStatus();
     } catch (err) {
       console.error('[Convocacao] Erro ao carregar datas do grupo:', err);
