@@ -375,14 +375,15 @@ var Convocacao = {
         }
 
         const pelada = Api.getPelada(Convocacao._selectedPeladaId);
-        const expectedBen = pelada ? pelada.chave_pix_nome : '';
+        const expectedBen = pelada ? (pelada.chave_pix_nome || '') : '';
         const expectedVal = pelada ? parseFloat(pelada.valor_convocacao || 0) : 0;
+        const expectedKey = pelada ? (pelada.chave_pix || '') : '';
 
         try {
           btnUploadPix.disabled = true;
           btnUploadPix.textContent = '⏳ Analisando comprovante (OCR)...';
 
-          const parsedData = await window.PixOCR.processReceiptFile(file, expectedBen, expectedVal);
+          const parsedData = await window.PixOCR.processReceiptFile(file, expectedBen, expectedVal, expectedKey);
           
           Utils.toast('Comprovante lido! Enviando para o servidor...', 'info');
 

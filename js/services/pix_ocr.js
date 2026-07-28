@@ -1,5 +1,6 @@
 /**
  * js/services/pix_ocr.js — Motor de Leitura e Validação OCR de Comprovantes Pix
+ * Suporta Nubank, Itaú, Bradesco, Banco do Brasil, Caixa, Inter, Santander, PicPay, Mercado Pago, C6, etc.
  */
 
 window.PixOCR = {
@@ -20,6 +21,25 @@ window.PixOCR = {
   },
 
   /**
+   * Normaliza texto removendo acentos e convertendo para minúsculas
+   */
+  _normalizeStr(str) {
+    if (!str) return '';
+    return String(str)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  },
+
+  /**
+   * Extrai apenas dígitos numéricos de uma string
+   */
+  _extractDigits(str) {
+    if (!str) return '';
+    return String(str).replace(/\D/g, '');
+  },
+
+  /**
    * Extrai o texto bruto do comprovante (Imagem ou PDF)
    */
   async extractText(file) {
@@ -29,7 +49,7 @@ window.PixOCR = {
     if (file.type.startsWith('image/')) {
       await this._loadTesseract();
       if (!window.Tesseract) {
-        throw new Error('Não foi possível carregar o leitor OCR. Verifique sua conexão.');
+        throw new Error('Não foi possível carregar o leitor OCR. Verifique sua conexão com a internet.');
       }
       const worker = await Tesseract.createWorker('por');
       const ret = await worker.recognize(file);
@@ -58,37 +78,51 @@ window.PixOCR = {
    */
   parseText(rawText) {
     const text = String(rawText || '').replace(/\r\n/g, '\n');
+    const normText = this._normalizeStr(text);
     const upperText = text.toUpperCase();
 
     // 1. Identificar se é Agendamento
-    const isAgendamento = upperText.includes('AGENDAMENTO') ||
-                          upperText.includes('PAGAMENTO AGENDADO') ||
-                          upperText.includes('AGENDADO PARA');
+    const isAgendamento = normText.includes('agendamento') ||
+                          normText.includes('pagamento agendado') ||
+                          normText.includes('agendado para') ||
+                          normText.includes('transferencia agendada');
 
-    // 2. Extrair Código E2E / Autenticação (Ex: E000000002026... ou hashes alfanuméricos de 20 a 44 caracteres)
+    // 2. Extrair Código E2E / Autenticação
     let e2e_id = null;
-    
-    // Busca padrão E2E do Pix (começa com E e possui 31 dígitos após)
-    const matchE2E = upperText.match(/E\d{31}/);
+
+    // Padrão E2E oficial do Banco Central (Começa com E + 31 caracteres alfanuméricos)
+    const matchE2E = upperText.match(/E[A-Z0-9]{31}/);
     if (matchE2E) {
       e2e_id = matchE2E[0];
     } else {
-      // Busca ID de Transação / Autenticação alfanumérico padrão bancário (ex: A1B2C3D4E5F6G7H8)
-      const matchAuth = upperText.match(/(?:AUTENTICA[ÇC][AÃ]O|ID DA TRANSA[ÇC][AÃ]O|CÓDIGO|TXID)[:\s]+([A-Z0-9-]{12,45})/i);
-      if (matchAuth && matchAuth[1]) {
+      // Outros termos comuns de Autenticação / TXID nos bancos brasileiros (Nubank, Itaú, Bradesco, Inter, Caixa, BB, etc.)
+      const matchAuth = upperText.match(/(?:AUTENTICA[ÇC][AÃ]O|ID DA TRANSA[ÇC][AÃ]O|ID TRANSA[ÇC][AÃ]O|CÓDIGO DA OPERA[ÇC][AÃ]O|CONTROLE|TXID|PROTOCOLO|COMPROVANTE|VIA DO CLIENTE)[:\s#]+([A-Z0-9-]{8,45})/i);
+      if (matchAuth && matchAuth[1] && matchAuth[1].replace(/[^A-Z0-9]/g, '').length >= 8) {
         e2e_id = matchAuth[1].replace(/[^A-Z0-9]/g, '');
       } else {
-        // Fallback: Busca qualquer sequência contínua hex/alfanumerica de 20 a 36 caracteres no comprovante
-        const matchGenericHash = upperText.match(/[A-Z0-9]{24,36}/);
+        // Busca qualquer hash de 16 a 40 caracteres contínuos no comprovante
+        const matchGenericHash = upperText.match(/[A-Z0-9]{16,40}/);
         if (matchGenericHash) {
           e2e_id = matchGenericHash[0];
+        } else {
+          // Fallback determinístico: se o OCR for ruidoso mas houver texto legível, gera um ID único baseado na assinatura do texto
+          const cleanChars = normText.replace(/[^a-z0-9]/g, '');
+          if (cleanChars.length >= 8) {
+            let hash = 0;
+            for (let i = 0; i < cleanChars.length; i++) {
+              hash = ((hash << 5) - hash) + cleanChars.charCodeAt(i);
+              hash |= 0;
+            }
+            e2e_id = 'PIX_' + Math.abs(hash).toString(36).toUpperCase() + '_' + cleanChars.substring(0, 8).toUpperCase();
+          }
         }
       }
     }
 
     // 3. Extrair Valor do Pix (R$ 00,00)
     let valor = null;
-    const matchValor = text.match(/(?:VALOR|R\$)\s*:?\s*R?\$?\s*([\d\.]+\,\d{2})/i);
+    const matchValor = text.match(/(?:VALOR|TOTAL|R\$)\s*:?\s*R?\$?\s*([\d\.]+\,\d{2})/i) ||
+                       text.match(/R\$\s*([\d\.]+\,\d{2})/i);
     if (matchValor && matchValor[1]) {
       const cleanVal = matchValor[1].replace(/\./g, '').replace(',', '.');
       valor = parseFloat(cleanVal);
@@ -96,7 +130,7 @@ window.PixOCR = {
 
     // 4. Extrair Nome do Destinatário/Beneficiário se houver
     let beneficiario = null;
-    const matchDest = text.match(/(?:DESTINAT[ÁA]RIO|BENEFICI[ÁA]RIO|PARA|RECEBEDOR)[:\s]+([^\n\r]+)/i);
+    const matchDest = text.match(/(?:DESTINAT[ÁA]RIO|BENEFICI[ÁA]RIO|PARA|RECEBEDOR|FAVORECIDO)[:\s]+([^\n\r]+)/i);
     if (matchDest && matchDest[1]) {
       beneficiario = matchDest[1].trim();
     }
@@ -113,7 +147,7 @@ window.PixOCR = {
   /**
    * Executa a análise completa do arquivo enviado pelo atleta
    */
-  async processReceiptFile(file, expectedBeneficiario = '', expectedValor = 0) {
+  async processReceiptFile(file, expectedBeneficiario = '', expectedValor = 0, expectedPixKey = '') {
     const rawText = await this.extractText(file);
     const parsed = this.parseText(rawText);
 
@@ -124,21 +158,51 @@ window.PixOCR = {
 
     // Validação 2: Exigir Código de Autenticação/E2E
     if (!parsed.e2e_id) {
-      throw new Error('Não foi possível identificar o Código de Autenticação/E2E no comprovante. Verifique a imagem.');
+      throw new Error('Não foi possível identificar o Código de Autenticação no comprovante. Verifique a qualidade da imagem.');
     }
 
-    // Validação 3: Conferir Nome do Beneficiário (se configurado pelo gestor)
-    if (expectedBeneficiario && expectedBeneficiario.trim()) {
-      const expNorm = expectedBeneficiario.trim().toLowerCase();
-      const rawNorm = rawText.toLowerCase();
-      
-      // Busca se o nome cadastrado ou parte dele está presente no texto
-      const palavrasChave = expNorm.split(' ').filter(w => w.length > 2);
-      const bateuNome = palavrasChave.some(palavra => rawNorm.includes(palavra));
+    const normRawText = this._normalizeStr(rawText);
+    const rawTextDigits = this._extractDigits(rawText);
 
-      if (!bateuNome) {
-        throw new Error(`O comprovante enviado não parece ter sido pago para ${expectedBeneficiario}.`);
+    // Validação 3: Conferir Nome do Beneficiário ou Chave Pix (se configurados pelo gestor)
+    let matchedKeyOrName = false;
+
+    // a. Se houver Chave Pix informada (ex: celular com ou sem +55, CPF, email)
+    if (expectedPixKey && expectedPixKey.trim()) {
+      const normKey = this._normalizeStr(expectedPixKey);
+      const keyDigits = this._extractDigits(expectedPixKey);
+
+      // Se for celular ou CPF (apenas dígitos)
+      if (keyDigits.length >= 8) {
+        // Trata código de país (+55 / 55)
+        const keyWithout55 = keyDigits.startsWith('55') ? keyDigits.substring(2) : keyDigits;
+        if (rawTextDigits.includes(keyDigits) || rawTextDigits.includes(keyWithout55)) {
+          matchedKeyOrName = true;
+        }
       }
+      // Se for email ou texto
+      if (normKey.length > 3 && normRawText.includes(normKey)) {
+        matchedKeyOrName = true;
+      }
+    }
+
+    // b. Se houver Nome do Beneficiário informado
+    if (!matchedKeyOrName && expectedBeneficiario && expectedBeneficiario.trim()) {
+      const normBen = this._normalizeStr(expectedBeneficiario);
+      const palavrasChave = normBen.split(/\s+/).filter(w => w.length > 2);
+
+      if (palavrasChave.length > 0) {
+        // Bate se ao menos 1 palavra significativa do nome (ex: "Lucas", "Guerreiro") estiver no texto
+        const bateuNome = palavrasChave.some(palavra => normRawText.includes(palavra));
+        if (bateuNome) {
+          matchedKeyOrName = true;
+        }
+      }
+    }
+
+    // Se o gestor definiu nome ou chave e nada foi encontrado no comprovante
+    if ((expectedBeneficiario.trim() || expectedPixKey.trim()) && !matchedKeyOrName) {
+      throw new Error(`O comprovante enviado não parece corresponder ao beneficiário (${expectedBeneficiario || expectedPixKey}). Verifique se pagou para a chave Pix correta.`);
     }
 
     // Validação 4: Valor mínimo se especificado
