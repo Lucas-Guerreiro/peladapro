@@ -169,6 +169,33 @@ window.PWAPush = {
     } catch (err) {
       console.error('📱 [PWAPush] Erro ao enviar subscription para o backend:', err);
     }
+  },
+
+  async sendTestNotification() {
+    try {
+      if (Notification.permission !== 'granted') {
+        alert('Por favor, ative as notificações primeiro clicando no botão 🔔 Ativar Notificações.');
+        return;
+      }
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Pelada Confirmada! ⚽',
+          body: 'Notificação de teste do PeladaPro enviada com sucesso!',
+          url: '/#/jogador/convocacao'
+        })
+      });
+      const data = await res.json();
+      if (window.App && window.App.showToast) {
+        window.App.showToast(`Notificação disparada para ${data.successCount || 1} dispositivo(s)! 🚀`, 'success');
+      } else {
+        alert(`Notificação disparada para ${data.successCount || 1} dispositivo(s)! 🚀`);
+      }
+    } catch(e) {
+      console.error(e);
+      alert('Erro ao disparar notificação de teste.');
+    }
   }
 };
 
