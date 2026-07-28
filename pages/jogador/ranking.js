@@ -54,7 +54,6 @@ var Ranking = {
   renderAll: async function(peladaId) {
     var id = (peladaId && peladaId !== 'all') ? peladaId : null;
     await this.renderClassificacao(id);
-    await this.renderResultados(id);
     await this.renderArtilharia(id);
   },
 
@@ -186,74 +185,7 @@ var Ranking = {
     tbody.innerHTML = html;
   },
 
-  // --- Resultados das partidas ---
-  renderResultados: async function(peladaId) {
-    var listEl = document.getElementById('ranking-results-list');
-    if (!listEl) return;
 
-    var partidas = [];
-    if (peladaId) {
-      try {
-        partidas = await Api.listarPartidas(peladaId);
-      } catch (e) {}
-    } else {
-      var group = Auth.currentGroup;
-      if (group && group.id) {
-        try {
-          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
-          if (Array.isArray(peladasGroup)) {
-            for (var i = 0; i < peladasGroup.length; i++) {
-              var listP = await Api.listarPartidas(peladasGroup[i].id);
-              if (Array.isArray(listP)) {
-                partidas = partidas.concat(listP);
-              }
-            }
-          }
-        } catch (e) {}
-      }
-    }
-
-    if (!partidas || partidas.length === 0) {
-      listEl.innerHTML = '<div class="empty-state" style="padding: 32px; background: var(--surface); border-radius: var(--radius-lg);"><span style="font-size: 32px;">🏟️</span><p class="text-inter" style="font-size: 14px;">Nenhum resultado registrado ainda.</p></div>';
-      return;
-    }
-
-    var html = '';
-    partidas.forEach(function(m) {
-      var gA = parseInt(m.gols_time_a) || 0;
-      var gB = parseInt(m.gols_time_b) || 0;
-      var corBorda = gA > gB ? '#4CAF50' : (gA < gB ? 'var(--danger)' : 'var(--warning)');
-
-      let goalsList = [];
-      if (m.autores_gols) {
-        try {
-          goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols;
-        } catch (e) {}
-      }
-
-      var goalsHtml = '';
-      if (Array.isArray(goalsList) && goalsList.length > 0) {
-        goalsHtml = '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">' +
-          goalsList.map(function(g) {
-            return '<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ' + (g.autorNome || 'Jogador') + (g.assistNome ? ' <span style="color:#0F172A; font-weight:600;">(' + g.assistNome + ' 👟)</span>' : '') + '</span>';
-          }).join('') +
-        '</div>';
-      }
-
-      var dateObj = m.created_at ? new Date(m.created_at) : new Date();
-      var timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-      html += '<div class="card" style="padding: 15px; border-left: 4px solid ' + corBorda + '; margin-bottom: 0;">' +
-        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-          '<span class="text-inter" style="font-weight: 700;">' + m.time_a_nome + ' <span style="color:var(--secondary); font-size:16px;">' + gA + '</span> × <span style="color:var(--accent); font-size:16px;">' + gB + '</span> ' + m.time_b_nome + '</span>' +
-          '<span class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + timeStr + '</span>' +
-        '</div>' +
-        goalsHtml +
-      '</div>';
-    });
-
-    listEl.innerHTML = html;
-  },
 
   // --- Artilharia ---
   renderArtilharia: async function(peladaId) {
