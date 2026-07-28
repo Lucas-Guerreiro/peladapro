@@ -903,17 +903,26 @@ function setupHistoryActions() {
 
       let teams = [];
       try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
-      if ((!teams || teams.length === 0) && window.App.activePelada && window.Api && window.Api.obterLiveState) {
-        try {
-          const liveRes = await window.Api.obterLiveState(window.App.activePelada.id);
-          if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
-            teams = liveRes.state.teams;
-            localStorage.setItem("teams", JSON.stringify(teams));
-          }
-        } catch(e) {}
+
+      const peladaId = partidaData.pelada_id || (window.App.activePelada ? window.App.activePelada.id : null);
+      let allPartidas = [];
+
+      if (peladaId && window.Api) {
+        if (window.Api.listarPartidas) {
+          try { allPartidas = await window.Api.listarPartidas(peladaId); } catch(e) {}
+        }
+        if ((!teams || teams.length === 0) && window.Api.obterLiveState) {
+          try {
+            const liveRes = await window.Api.obterLiveState(peladaId);
+            if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
+              teams = liveRes.state.teams;
+              localStorage.setItem("teams", JSON.stringify(teams));
+            }
+          } catch(e) {}
+        }
       }
 
-      window.App.openModal("editar_partida", { partida: partidaData, teams: teams });
+      window.App.openModal("editar_partida", { partida: partidaData, teams: teams, allPartidas: allPartidas });
     };
   });
 

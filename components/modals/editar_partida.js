@@ -4,6 +4,7 @@
 
 window.App.initModalEditar_partida = function(data) {
   const partida = data.partida || {};
+  const allPeladaPartidas = data.allPartidas || [];
   
   const teamASelect = document.getElementById("edit-match-team-a");
   const teamBSelect = document.getElementById("edit-match-team-b");
@@ -50,12 +51,13 @@ window.App.initModalEditar_partida = function(data) {
   }
   const activePlayers = (players || []).filter(p => p.ativo !== false && !p.goleiro);
 
-  // Helper para filtrar os atletas que pertencem a um determinado time
+  // Helper para filtrar os atletas que pertencem estritamente a um determinado time
   function getPlayersForTeam(teamName) {
     if (!teamName) return activePlayers;
     const targetName = String(teamName).toLowerCase().trim();
     const targetClean = targetName.replace(/^time\s+/, '').trim();
 
+    // 1. Procura no array `teams` (times sorteados / escalados na pelada)
     const teamObj = (teams || []).find(t => {
       if (!t || (!t.nome && !t.name)) return false;
       const n = String(t.nome || t.name).toLowerCase().trim();
@@ -71,10 +73,39 @@ window.App.initModalEditar_partida = function(data) {
 
         const filtered = activePlayers.filter(p => {
           const pName = (p.apelido || p.nome || '').toLowerCase().trim();
-          return rosterIds.has(String(p.id)) || rosterNames.has(pName);
+          const fullName = (p.nome || '').toLowerCase().trim();
+          return rosterIds.has(String(p.id)) || rosterNames.has(pName) || rosterNames.has(fullName);
         });
 
         if (filtered.length > 0) return filtered;
+      }
+    }
+
+    // 2. Se o time não estiver em `teams`, verifica no histórico de gols gravados da pelada para esse time
+    if (Array.isArray(allPeladaPartidas) && allPeladaPartidas.length > 0) {
+      const namesFromGoals = new Set();
+      allPeladaPartidas.forEach(p => {
+        let gList = [];
+        if (p.autores_gols) {
+          try { gList = typeof p.autores_gols === 'string' ? JSON.parse(p.autores_gols) : p.autores_gols; } catch(e) {}
+        }
+        (gList || []).forEach(g => {
+          const gTeam = String(g.teamName || '').toLowerCase().trim();
+          const gTeamClean = gTeam.replace(/^time\s+/, '').trim();
+          if (gTeam === targetName || gTeamClean === targetClean) {
+            if (g.autorNome) namesFromGoals.add(g.autorNome.toLowerCase().trim());
+            if (g.assistNome) namesFromGoals.add(g.assistNome.toLowerCase().trim());
+          }
+        });
+      });
+
+      if (namesFromGoals.size > 0) {
+        const filteredFromGoals = activePlayers.filter(p => {
+          const pName = (p.apelido || p.nome || '').toLowerCase().trim();
+          const fullName = (p.nome || '').toLowerCase().trim();
+          return namesFromGoals.has(pName) || namesFromGoals.has(fullName);
+        });
+        if (filteredFromGoals.length > 0) return filteredFromGoals;
       }
     }
 
@@ -118,7 +149,7 @@ window.App.initModalEditar_partida = function(data) {
       const isTeamB = (g.teamKey === 'b' || (g.teamName && g.teamName.trim().toLowerCase() === currentTeamB.trim().toLowerCase()));
       const selectedTeamName = isTeamB ? currentTeamB : currentTeamA;
 
-      // Obtém somente os atletas do time selecionado para este gol
+      // Obtém estritamente os atletas do time selecionado para este gol
       const teamPlayers = getPlayersForTeam(selectedTeamName);
 
       row.innerHTML = `
@@ -172,9 +203,9 @@ window.App.initModalEditar_partida = function(data) {
         const currentTeamA = teamASelect ? teamASelect.value : 'Time A';
         const currentTeamB = teamBSelect ? teamBSelect.value : 'Time B';
         if (goalsInEdit[idx]) {
-          const selectedTeam = e.target.value;
-          const targetTeamName = selectedTeam === 'a' ? currentTeamA : currentTeamB;
-          goalsInEdit[idx].teamKey = selectedTeam;
+          const selectedTeamKey = e.target.value;
+          const targetTeamName = selectedTeamKey === 'a' ? currentTeamA : currentTeamB;
+          goalsInEdit[idx].teamKey = selectedTeamKey;
           goalsInEdit[idx].teamName = targetTeamName;
 
           // Ao trocar o time do gol, seleciona por padrão o primeiro atleta daquele time
