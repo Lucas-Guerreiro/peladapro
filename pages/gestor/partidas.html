@@ -42,33 +42,59 @@
     .gestor-score-card,
     .gestor-card-clear {
       border-radius: 12px;
-      padding: 16px;
+      padding: 12px;
       width: 100%;
       box-sizing: border-box;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
 
     .gestor-timer-wrapper {
-      padding: 14px 10px;
+      padding: 12px 8px;
     }
 
     .gestor-timer-time {
-      font-size: 38px;
-    }
-
-    .gestor-score-num {
       font-size: 36px;
     }
 
+    .gestor-score-num {
+      font-size: 32px;
+    }
+
+    .gestor-team-title {
+      font-size: 12px !important;
+    }
+
     .btn-goal-trigger {
-      padding: 4px 8px;
-      font-size: 11px;
+      padding: 3px 6px;
+      font-size: 10px;
     }
 
     .btn-adjust-score {
-      width: 24px;
-      height: 24px;
-      font-size: 12px;
+      width: 22px;
+      height: 22px;
+      font-size: 11px;
+    }
+
+    #emblem-team-a, #emblem-team-b {
+      width: 36px !important;
+      height: 40px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .gestor-score-num {
+      font-size: 28px;
+    }
+
+    .btn-goal-trigger {
+      padding: 2px 5px;
+      font-size: 10px;
+    }
+
+    .btn-adjust-score {
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
     }
   }
 
@@ -234,20 +260,20 @@
     </div>
 
     <!-- Placar Central e Controle de Placar -->
-    <div style="background: #F8FAFC; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 24px;">
+    <div style="background: #F8FAFC; padding: 12px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 20px; width: 100%; box-sizing: border-box; overflow: hidden;">
       
-      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; box-sizing: border-box;">
         
         <!-- Time A -->
-        <div id="acomp-team-a" style="flex: 1; text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-          <div id="emblem-team-a" style="width: 52px; height: 58px; margin-bottom: 6px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));" title="Emblema do Time A"></div>
-          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 4px;">
-            <button id="btn-view-team-a" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time A">👁️</button>
-            <h4 class="gestor-team-title" id="match-control-team-a" style="margin: 0;">Time A</h4>
+        <div id="acomp-team-a" style="flex: 1; min-width: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+          <div id="emblem-team-a" style="width: 44px; height: 50px; margin-left: auto; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); flex-shrink: 0;" title="Emblema do Time A"></div>
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-bottom: 4px; width: 100%;">
+            <button id="btn-view-team-a" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 4px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; line-height: 1; flex-shrink: 0;" title="Ver escalação do Time A">👁️</button>
+            <h4 class="gestor-team-title" id="match-control-team-a" style="margin: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">Time A</h4>
           </div>
-          <div id="match-control-team-a-status" style="min-height: 16px; margin-bottom: 6px; text-align: right;"></div>
+          <div id="match-control-team-a-status" style="min-height: 14px; margin-bottom: 4px; text-align: right; font-size: 10px;"></div>
           
-          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap; width: 100%;">
             <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1">-</button>
             <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
             <button id="btn-goal-team-a" class="btn-goal-trigger">GOL ⚽</button>
@@ -255,8 +281,8 @@
         </div>
 
         <!-- PLACAR CENTRAL -->
-        <div style="text-align: center; padding: 0 10px; display: flex; align-items: center; justify-content: center; min-width: 100px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="text-align: center; padding: 0 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 4px;">
             <span class="gestor-score-num" id="match-control-score-a">0</span>
             <span class="gestor-score-divider">x</span>
             <span class="gestor-score-num" id="match-control-score-b">0</span>
@@ -264,15 +290,15 @@
         </div>
 
         <!-- Time B -->
-        <div id="acomp-team-b" style="flex: 1; text-align: left; display: flex; flex-direction: column; align-items: flex-start;">
-          <div id="emblem-team-b" style="width: 52px; height: 58px; margin-bottom: 6px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));" title="Emblema do Time B"></div>
-          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 4px;">
-            <h4 class="gestor-team-title" id="match-control-team-b" style="margin: 0;">Time B</h4>
-            <button id="btn-view-team-b" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time B">👁️</button>
+        <div id="acomp-team-b" style="flex: 1; min-width: 0; text-align: left; display: flex; flex-direction: column; align-items: flex-start;">
+          <div id="emblem-team-b" style="width: 44px; height: 50px; margin-right: auto; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); flex-shrink: 0;" title="Emblema do Time B"></div>
+          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 4px; margin-bottom: 4px; width: 100%;">
+            <h4 class="gestor-team-title" id="match-control-team-b" style="margin: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">Time B</h4>
+            <button id="btn-view-team-b" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 4px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; line-height: 1; flex-shrink: 0;" title="Ver escalação do Time B">👁️</button>
           </div>
-          <div id="match-control-team-b-status" style="min-height: 16px; margin-bottom: 6px; text-align: left;"></div>
+          <div id="match-control-team-b-status" style="min-height: 14px; margin-bottom: 4px; text-align: left; font-size: 10px;"></div>
           
-          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 4px; flex-wrap: wrap; width: 100%;">
             <button id="btn-goal-team-b" class="btn-goal-trigger">GOL ⚽</button>
             <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1">-</button>
             <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
@@ -281,10 +307,10 @@
       </div>
 
       <!-- Autores de Gols -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; padding-top: 8px;">
-        <div id="match-control-team-a-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
-        <div style="min-width: 100px;"></div>
-        <div id="match-control-team-b-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-top: 10px; padding-top: 6px; border-top: 1px dashed #CBD5E1; width: 100%; box-sizing: border-box;">
+        <div id="match-control-team-a-goals" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 11px; font-weight: 700; color: #0F172A;"></div>
+        <div style="width: 20px; flex-shrink: 0;"></div>
+        <div id="match-control-team-b-goals" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; font-weight: 700; color: #0F172A;"></div>
       </div>
 
     </div>
