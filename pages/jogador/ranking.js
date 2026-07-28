@@ -213,38 +213,44 @@ var Ranking = {
     }
 
     if (Array.isArray(partidas) && partidas.length > 0) {
-      var teamPlayersMap = {};
       var teams = [];
       try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
       if (!teams || teams.length === 0) teams = Api.getTeams() || [];
 
+      if ((!teams || teams.length === 0) && peladaId && Api.obterLiveState) {
+        try {
+          var liveRes = await Api.obterLiveState(peladaId);
+          if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
+            teams = liveRes.state.teams;
+          }
+        } catch(e) {}
+      }
+
+      var teamPlayersMap = {};
       (teams || []).forEach(function(t) {
-        var tName = (t.nome || t.name || '').trim();
+        var tName = (t.nome || t.name || '').trim().toLowerCase();
         if (tName) {
           if (!teamPlayersMap[tName]) teamPlayersMap[tName] = new Set();
           var pList = t.jogadores || t.players || [];
           pList.forEach(function(p) {
-            var pName = (p.apelido || p.nome || '').trim();
-            if (pName) teamPlayersMap[tName].add(pName);
+            var pApelido = (p.apelido || '').trim().toLowerCase();
+            var pNome = (p.nome || '').trim().toLowerCase();
+            if (pApelido) teamPlayersMap[tName].add(pApelido);
+            if (pNome) teamPlayersMap[tName].add(pNome);
           });
         }
       });
 
+      var teamMatchesCount = {};
       var matchGols = {};
       var matchAssists = {};
-      var matchJogos = {};
 
       partidas.forEach(function(m) {
-        var playersInMatch = new Set();
+        var tA = (m.time_a_nome || '').trim().toLowerCase();
+        var tB = (m.time_b_nome || '').trim().toLowerCase();
 
-        var tA = (m.time_a_nome || '').trim();
-        if (tA && teamPlayersMap[tA]) {
-          teamPlayersMap[tA].forEach(function(nome) { playersInMatch.add(nome); });
-        }
-        var tB = (m.time_b_nome || '').trim();
-        if (tB && teamPlayersMap[tB]) {
-          teamPlayersMap[tB].forEach(function(nome) { playersInMatch.add(nome); });
-        }
+        if (tA) teamMatchesCount[tA] = (teamMatchesCount[tA] || 0) + 1;
+        if (tB) teamMatchesCount[tB] = (teamMatchesCount[tB] || 0) + 1;
 
         let goalsList = [];
         if (m.autores_gols) {
@@ -254,36 +260,48 @@ var Ranking = {
           if (g.autorNome) {
             var aNome = g.autorNome.trim();
             matchGols[aNome] = (matchGols[aNome] || 0) + 1;
-            playersInMatch.add(aNome);
           }
           if (g.assistNome) {
             var assNome = g.assistNome.trim();
             matchAssists[assNome] = (matchAssists[assNome] || 0) + 1;
-            playersInMatch.add(assNome);
           }
-        });
-
-        playersInMatch.forEach(function(nome) {
-          matchJogos[nome] = (matchJogos[nome] || 0) + 1;
         });
       });
 
       Object.keys(matchGols).forEach(function(nome) {
+        var lowerKey = nome.toLowerCase();
+        var jogosCount = 1;
+
+        Object.keys(teamPlayersMap).forEach(function(tName) {
+          if (teamPlayersMap[tName].has(lowerKey)) {
+            jogosCount = Math.max(jogosCount, teamMatchesCount[tName] || 1);
+          }
+        });
+
         scorersMap[nome] = {
           nome: nome,
           gols: matchGols[nome] || 0,
           assistencias: matchAssists[nome] || 0,
-          jogos: matchJogos[nome] || 1
+          jogos: jogosCount
         };
       });
 
       Object.keys(matchAssists).forEach(function(nome) {
         if (!scorersMap[nome]) {
+          var lowerKey = nome.toLowerCase();
+          var jogosCount = 1;
+
+          Object.keys(teamPlayersMap).forEach(function(tName) {
+            if (teamPlayersMap[tName].has(lowerKey)) {
+              jogosCount = Math.max(jogosCount, teamMatchesCount[tName] || 1);
+            }
+          });
+
           scorersMap[nome] = {
             nome: nome,
             gols: matchGols[nome] || 0,
             assistencias: matchAssists[nome] || 0,
-            jogos: matchJogos[nome] || 1
+            jogos: jogosCount
           };
         }
       });

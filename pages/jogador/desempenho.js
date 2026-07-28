@@ -51,7 +51,7 @@ var Desempenho = {
     await this.renderGoleiros(id);
   },
 
-  // --- Artilharia (Calcula Gols e Jogos por Time) --------------------------
+  // --- Artilharia (Calcula Gols e Jogos exatos sincronizados com os Times) ---
   renderArtilharia: async function(peladaId) {
     var tbody = document.getElementById('desempenho-artilharia-body');
     if (!tbody) return;
@@ -90,42 +90,47 @@ var Desempenho = {
       }
 
       if (Array.isArray(partidas) && partidas.length > 0) {
-        // Mapeia atletas por time sorteado
-        var teamPlayersMap = {};
+        // 1. Mapear times sorteados (do localStorage, Api ou LiveState)
         var teams = [];
         try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
         if (!teams || teams.length === 0) teams = Api.getTeams() || [];
+        
+        if ((!teams || teams.length === 0) && peladaId && Api.obterLiveState) {
+          try {
+            var liveRes = await Api.obterLiveState(peladaId);
+            if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
+              teams = liveRes.state.teams;
+            }
+          } catch(e) {}
+        }
 
+        // Mapa case-insensitive de time -> conjunto de nomes de atletas
+        var teamPlayersMap = {};
         (teams || []).forEach(function(t) {
-          var tName = (t.nome || t.name || '').trim();
+          var tName = (t.nome || t.name || '').trim().toLowerCase();
           if (tName) {
             if (!teamPlayersMap[tName]) teamPlayersMap[tName] = new Set();
             var pList = t.jogadores || t.players || [];
             pList.forEach(function(p) {
-              var pName = (p.apelido || p.nome || '').trim();
-              if (pName) teamPlayersMap[tName].add(pName);
+              var pApelido = (p.apelido || '').trim().toLowerCase();
+              var pNome = (p.nome || '').trim().toLowerCase();
+              if (pApelido) teamPlayersMap[tName].add(pApelido);
+              if (pNome) teamPlayersMap[tName].add(pNome);
             });
           }
         });
 
+        // 2. Contar partidas disputadas por cada TIME e acumular gols por ATLETA
+        var teamMatchesCount = {};
         var matchGols = {};
-        var matchJogos = {};
 
         partidas.forEach(function(m) {
-          var playersInMatch = new Set();
+          var tA = (m.time_a_nome || '').trim().toLowerCase();
+          var tB = (m.time_b_nome || '').trim().toLowerCase();
 
-          // Atletas do Time A
-          var tA = (m.time_a_nome || '').trim();
-          if (tA && teamPlayersMap[tA]) {
-            teamPlayersMap[tA].forEach(function(nome) { playersInMatch.add(nome); });
-          }
-          // Atletas do Time B
-          var tB = (m.time_b_nome || '').trim();
-          if (tB && teamPlayersMap[tB]) {
-            teamPlayersMap[tB].forEach(function(nome) { playersInMatch.add(nome); });
-          }
+          if (tA) teamMatchesCount[tA] = (teamMatchesCount[tA] || 0) + 1;
+          if (tB) teamMatchesCount[tB] = (teamMatchesCount[tB] || 0) + 1;
 
-          // Processa gols e assistências da partida
           let goalsList = [];
           if (m.autores_gols) {
             try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
@@ -134,38 +139,41 @@ var Desempenho = {
             if (g.autorNome) {
               var aNome = g.autorNome.trim();
               matchGols[aNome] = (matchGols[aNome] || 0) + 1;
-              playersInMatch.add(aNome);
             }
-            if (g.assistNome) {
-              var assNome = g.assistNome.trim();
-              playersInMatch.add(assNome);
-            }
-          });
-
-          // Cada atleta em um dos dois times do jogo ganha +1 jogo disputado
-          playersInMatch.forEach(function(nome) {
-            matchJogos[nome] = (matchJogos[nome] || 0) + 1;
           });
         });
 
+        // 3. Atualizar gols e quantidade de jogos de cada atleta de acordo com o time dele
+        Object.keys(scorersMap).forEach(function(nomeKey) {
+          var lowerKey = nomeKey.toLowerCase();
+          if (matchGols[nomeKey] !== undefined) {
+            scorersMap[nomeKey].gols = matchGols[nomeKey];
+          }
+
+          // Encontra se o atleta pertence a algum dos times e atribui a quantidade de jogos jogada pelo time dele
+          Object.keys(teamPlayersMap).forEach(function(tName) {
+            if (teamPlayersMap[tName].has(lowerKey)) {
+              scorersMap[nomeKey].jogos = Math.max(scorersMap[nomeKey].jogos, teamMatchesCount[tName] || 0);
+            }
+          });
+        });
+
+        // Inclui qualquer autor de gol registrado nas partidas que não estivesse na lista principal
         Object.keys(matchGols).forEach(function(nome) {
-          if (scorersMap[nome]) {
-            scorersMap[nome].gols = matchGols[nome];
-            scorersMap[nome].jogos = Math.max(scorersMap[nome].jogos, matchJogos[nome] || 1);
-          } else {
+          if (!scorersMap[nome]) {
+            var lowerName = nome.toLowerCase();
+            var jogosCount = 1;
+            Object.keys(teamPlayersMap).forEach(function(tName) {
+              if (teamPlayersMap[tName].has(lowerName)) {
+                jogosCount = Math.max(jogosCount, teamMatchesCount[tName] || 1);
+              }
+            });
             scorersMap[nome] = {
               nome: nome,
               gols: matchGols[nome],
-              jogos: matchJogos[nome] || 1,
+              jogos: jogosCount,
               isMe: false
             };
-          }
-        });
-
-        // Atualiza quantidade de jogos também para os atletas que participaram das partidas mesmo sem fazer gols
-        Object.keys(matchJogos).forEach(function(nome) {
-          if (scorersMap[nome]) {
-            scorersMap[nome].jogos = Math.max(scorersMap[nome].jogos, matchJogos[nome]);
           }
         });
       }
@@ -177,7 +185,7 @@ var Desempenho = {
       .filter(function(p) { return p.gols > 0; })
       .sort(function(a, b) {
         if (b.gols !== a.gols) return b.gols - a.gols;
-        return a.jogos - b.jogos;
+        return a.jogos - b.jogos; // melhor aproveitamento (menos jogos)
       })
       .slice(0, 10);
 
