@@ -898,9 +898,22 @@ function setupHistoryActions() {
   // Configura cliques de Edição
   const editButtons = document.querySelectorAll(".btn-edit-match");
   editButtons.forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const partidaData = JSON.parse(btn.getAttribute("data-partida"));
-      window.App.openModal("editar_partida", { partida: partidaData });
+
+      let teams = [];
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+      if ((!teams || teams.length === 0) && window.App.activePelada && window.Api && window.Api.obterLiveState) {
+        try {
+          const liveRes = await window.Api.obterLiveState(window.App.activePelada.id);
+          if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
+            teams = liveRes.state.teams;
+            localStorage.setItem("teams", JSON.stringify(teams));
+          }
+        } catch(e) {}
+      }
+
+      window.App.openModal("editar_partida", { partida: partidaData, teams: teams });
     };
   });
 

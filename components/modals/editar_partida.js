@@ -13,8 +13,10 @@ window.App.initModalEditar_partida = function(data) {
   const btnAddGoal = document.getElementById("btn-add-edit-goal");
 
   // 1. Carregar lista de times disponíveis (sorteados / cadastrados)
-  let teams = [];
-  try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+  let teams = (data && data.teams && Array.isArray(data.teams) && data.teams.length > 0) ? data.teams : [];
+  if (!teams || teams.length === 0) {
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+  }
   if (!teams || teams.length === 0) teams = Api.getTeams() || [];
 
   // Nomes de times conhecidos
