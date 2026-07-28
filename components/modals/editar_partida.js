@@ -2,27 +2,35 @@
 // MODAL: EDITAR PARTIDA (editar_partida.js)
 // ==========================================================================
 
-window.App.initModalEditar_partida = async function(data) {
-  const partida = data.partida || {};
-  const allPeladaPartidas = data.allPartidas || [];
-  
+window.App.initModalEditar_partida = function(data) {
+  const partida = (data && data.partida) ? data.partida : {};
+  const allPeladaPartidas = (data && data.allPartidas) ? data.allPartidas : [];
+
   const teamASelect = document.getElementById("edit-match-team-a");
   const teamBSelect = document.getElementById("edit-match-team-b");
   const scoreAEl = document.getElementById("edit-match-score-a");
   const scoreBEl = document.getElementById("edit-match-score-b");
   const goalsContainer = document.getElementById("edit-match-goals-list");
   const btnAddGoal = document.getElementById("btn-add-edit-goal");
+  const btnSubmit = document.getElementById("btn-submit-editar-partida");
+  const btnClose = document.getElementById("btn-close-editar-partida");
+  const btnCancel = document.getElementById("btn-cancel-editar-partida");
+
+  if (btnClose) btnClose.onclick = () => window.App.closeModal();
+  if (btnCancel) btnCancel.onclick = () => window.App.closeModal();
 
   // 1. Carregar lista de times disponíveis (sorteados / cadastrados)
   let teams = (data && data.teams && Array.isArray(data.teams) && data.teams.length > 0) ? data.teams : [];
   if (!teams || teams.length === 0) {
     try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
   }
-  if (!teams || teams.length === 0) teams = Api.getTeams() || [];
+  if (!teams || teams.length === 0) {
+    try { teams = Api.getTeams() || []; } catch(e) {}
+  }
 
   // Nomes de times conhecidos
   let teamNamesSet = new Set(["Time A", "Time B", "Time C", "Time D", "Time E", "Time F"]);
-  teams.forEach(t => {
+  (teams || []).forEach(t => {
     const n = t.nome || t.name;
     if (n) teamNamesSet.add(n.trim());
   });
@@ -44,24 +52,35 @@ window.App.initModalEditar_partida = async function(data) {
   if (scoreAEl) scoreAEl.value = partida.gols_time_a !== undefined ? partida.gols_time_a : 0;
   if (scoreBEl) scoreBEl.value = partida.gols_time_b !== undefined ? partida.gols_time_b : 0;
 
-  // 2. Carregar lista de atletas disponíveis (busca do backend se localStorage estiver vazio)
-  let players = Api.getPlayers() || [];
+  // 2. Carregar lista de atletas disponíveis (busca síncrona com fallback e atualização em segundo plano)
+  let players = [];
+  try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
   if (!players || players.length === 0) {
-    try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
+    try { players = Api.getPlayers() || []; } catch(e) {}
   }
 
-  if ((!players || players.length === 0) && window.Api && window.Api.listarAtletas) {
-    try {
-      players = await window.Api.listarAtletas();
-      if (Array.isArray(players)) {
-        localStorage.setItem("players", JSON.stringify(players));
-      }
-    } catch(e) {}
-  }
-
-  const activePlayers = (players || []).filter(p => p && p.ativo !== false && !p.goleiro);
+  let activePlayers = (players || []).filter(p => p && p.ativo !== false && !p.goleiro);
   if (activePlayers.length === 0 && Array.isArray(players) && players.length > 0) {
-    activePlayers.push(...players);
+    activePlayers = [...players];
+  }
+
+  // Failsafe se activePlayers estiver totalmente vazio
+  if (activePlayers.length === 0) {
+    activePlayers = [
+      { id: 1, nome: "Jogador 1", apelido: "Jogador 1" },
+      { id: 2, nome: "Jogador 2", apelido: "Jogador 2" }
+    ];
+  }
+
+  // Se a lista de atletas estava vazia, busca em segundo plano via API e atualiza a modal
+  if ((!players || players.length === 0) && window.Api && window.Api.listarAtletas) {
+    window.Api.listarAtletas().then(apiPlayers => {
+      if (Array.isArray(apiPlayers) && apiPlayers.length > 0) {
+        localStorage.setItem("players", JSON.stringify(apiPlayers));
+        activePlayers = apiPlayers.filter(p => p && p.ativo !== false && !p.goleiro);
+        renderEditGoalsList();
+      }
+    }).catch(err => console.warn('[editar_partida] Erro ao listar atletas em background:', err));
   }
 
   // Helper para filtrar os atletas que pertencem estritamente a um determinado time
@@ -122,7 +141,6 @@ window.App.initModalEditar_partida = async function(data) {
       }
     }
 
-    // Failsafe: se a lista do time não for encontrada, retorna activePlayers para o gestor poder selecionar
     return activePlayers;
   }
 
@@ -132,6 +150,7 @@ window.App.initModalEditar_partida = async function(data) {
     try {
       goalsInEdit = typeof partida.autores_gols === 'string' ? JSON.parse(partida.autores_gols) : partida.autores_gols;
     } catch(e) {
+      console.warn('[editar_partida] Erro ao parsear autores_gols:', e);
       goalsInEdit = [];
     }
   }
@@ -163,7 +182,6 @@ window.App.initModalEditar_partida = async function(data) {
       const isTeamB = (g.teamKey === 'b' || (g.teamName && g.teamName.trim().toLowerCase() === currentTeamB.trim().toLowerCase()));
       const selectedTeamName = isTeamB ? currentTeamB : currentTeamA;
 
-      // Obtém estritamente os atletas do time selecionado para este gol
       const teamPlayers = getPlayersForTeam(selectedTeamName);
 
       row.innerHTML = `
@@ -222,7 +240,6 @@ window.App.initModalEditar_partida = async function(data) {
           goalsInEdit[idx].teamKey = selectedTeamKey;
           goalsInEdit[idx].teamName = targetTeamName;
 
-          // Ao trocar o time do gol, seleciona por padrão o primeiro atleta daquele time
           const newTeamPlayers = getPlayersForTeam(targetTeamName);
           if (newTeamPlayers.length > 0) {
             goalsInEdit[idx].autorId = String(newTeamPlayers[0].id);
@@ -288,20 +305,21 @@ window.App.initModalEditar_partida = async function(data) {
     if (scoreBEl) scoreBEl.value = scoreB;
   }
 
-  // Evento do botão + Adicionar Gol (Infalível e resiliente)
+  // Evento do botão + Adicionar Gol (Vínculo imediato e infalível)
   if (btnAddGoal) {
-    btnAddGoal.onclick = () => {
+    btnAddGoal.onclick = (e) => {
+      if (e) e.preventDefault();
       const currentTeamA = teamASelect ? teamASelect.value : 'Time A';
       const teamAPlayers = getPlayersForTeam(currentTeamA);
 
       const defaultPlayer = (teamAPlayers && teamAPlayers.length > 0) 
         ? teamAPlayers[0] 
-        : ((activePlayers && activePlayers.length > 0) ? activePlayers[0] : { id: '1', nome: 'Atleta', apelido: 'Atleta' });
+        : ((activePlayers && activePlayers.length > 0) ? activePlayers[0] : { id: '1', nome: 'Atleta 1', apelido: 'Atleta 1' });
 
       goalsInEdit.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
         autorId: String(defaultPlayer.id || 1),
-        autorNome: defaultPlayer.apelido || defaultPlayer.nome || "Atleta",
+        autorNome: defaultPlayer.apelido || defaultPlayer.nome || "Atleta 1",
         assistId: null,
         assistNome: null,
         teamKey: 'a',
@@ -314,7 +332,6 @@ window.App.initModalEditar_partida = async function(data) {
     };
   }
 
-  // Quando o gestor muda a seleção dos times Mandante ou Visitante
   if (teamASelect) {
     teamASelect.onchange = () => {
       const currentTeamA = teamASelect.value;
@@ -336,12 +353,6 @@ window.App.initModalEditar_partida = async function(data) {
 
   renderEditGoalsList();
 
-  // Fechar modal
-  document.getElementById("btn-close-editar-partida").onclick = () => window.App.closeModal();
-  document.getElementById("btn-cancel-editar-partida").onclick = () => window.App.closeModal();
-
-  // Enviar alterações
-  const btnSubmit = document.getElementById("btn-submit-editar-partida");
   if (btnSubmit) {
     btnSubmit.onclick = async () => {
       const golsA = parseInt(scoreAEl.value);
@@ -380,7 +391,6 @@ window.App.initModalEditar_partida = async function(data) {
         window.App.showToast("Partida e autores de gols atualizados com sucesso!", "success");
         window.App.closeModal();
 
-        // Recarrega o histórico de partidas na tela gestor
         if (window.App.renderRecentMatches) {
           await window.App.renderRecentMatches();
         } else if (window.App.initPartidas) {
