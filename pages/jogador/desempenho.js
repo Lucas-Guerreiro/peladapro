@@ -51,7 +51,7 @@ var Desempenho = {
     await this.renderGoleiros(id);
   },
 
-  // --- Artilharia (Calcula Gols e Jogos por Time de Forma 100% Autônoma) ---
+  // --- Artilharia (Calcula Gols e Jogos por Time) ---
   renderArtilharia: async function(peladaId) {
     var tbody = document.getElementById('desempenho-artilharia-body');
     if (!tbody) return;
@@ -90,7 +90,6 @@ var Desempenho = {
       }
 
       if (Array.isArray(partidas) && partidas.length > 0) {
-        // Mapeamento de times -> atletas da sessão
         var teams = [];
         try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
         if (!teams || teams.length === 0) teams = Api.getTeams() || [];
@@ -110,7 +109,6 @@ var Desempenho = {
           }
         });
 
-        // Contagem de partidas disputadas por cada TIME e gols por ATLETA
         var teamMatchesCount = {};
         var matchGols = {};
         var matchJogos = {};
@@ -151,7 +149,6 @@ var Desempenho = {
           });
         });
 
-        // Atualiza a tabela de artilharia com gols e quantidade exata de jogos disputados pelo time do atleta
         Object.keys(scorersMap).forEach(function(nomeKey) {
           var lowerKey = nomeKey.toLowerCase();
           
@@ -159,11 +156,9 @@ var Desempenho = {
             scorersMap[nomeKey].gols = matchGols[nomeKey];
           }
 
-          // 1. Tenta pegar jogos disputados pelo time associado em autores_gols
           var tNameFromMatch = playerTeamMap[lowerKey];
           var teamGames = tNameFromMatch ? (teamMatchesCount[tNameFromMatch] || 0) : 0;
 
-          // 2. Tenta pegar jogos disputados pelo time sorteado localmente
           Object.keys(teamPlayersMap).forEach(function(tName) {
             if (teamPlayersMap[tName].has(lowerKey)) {
               teamGames = Math.max(teamGames, teamMatchesCount[tName] || 0);
@@ -171,13 +166,10 @@ var Desempenho = {
           });
 
           var gamesInMatch = matchJogos[nomeKey] || 0;
-
-          // O número de jogos é o maior entre os jogos do time, jogos com gol e os dados prévios do atleta (mínimo 1 se fez gol)
           var calculatedGames = Math.max(teamGames, gamesInMatch, (scorersMap[nomeKey].gols > 0 ? 1 : 0));
           scorersMap[nomeKey].jogos = Math.max(scorersMap[nomeKey].jogos, calculatedGames);
         });
 
-        // Inclui qualquer autor de gol registrado nas partidas que não estivesse na lista inicial de atletas
         Object.keys(matchGols).forEach(function(nome) {
           if (!scorersMap[nome]) {
             var lowerName = nome.toLowerCase();
@@ -233,43 +225,202 @@ var Desempenho = {
     tbody.innerHTML = html;
   },
 
-  // --- Melhor avaliados ---------------------------------------------------
+  // --- Melhor Jogador (Ranking por Pontuação Acumulada de Resultados) -----------
   renderMelhoresAvaliados: async function(peladaId) {
     var tbody = document.getElementById('desempenho-rating-body');
     if (!tbody) return;
 
     var players = Api.getPlayers() || [];
-    var rated = players
-      .filter(function(p) {
-        var rating = parseFloat(p.avaliacao_media) || parseInt(p.autoavaliacao) || 0;
-        return rating > 0 && p.ativo !== false;
-      })
+    var statsMap = {};
+
+    players.forEach(function(p) {
+      if (p.ativo !== false) {
+        var nome = (p.apelido || p.nome || '').trim();
+        statsMap[nome] = {
+          id: p.id,
+          nome: nome,
+          pontos: 0,
+          vitorias: 0,
+          balizaZero: 0,
+          empates: 0,
+          derrotas: 0,
+          jogos: 0,
+          isMe: Auth.currentUser && String(p.id) === String(Auth.currentUser.id)
+        };
+      }
+    });
+
+    try {
+      var partidas = [];
+      if (peladaId) {
+        partidas = await Api.listarPartidas(peladaId);
+      } else {
+        var group = Auth.currentGroup;
+        if (group && group.id) {
+          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          if (Array.isArray(peladasGroup)) {
+            for (var i = 0; i < peladasGroup.length; i++) {
+              var listP = await Api.listarPartidas(peladasGroup[i].id);
+              if (Array.isArray(listP)) partidas = partidas.concat(listP);
+            }
+          }
+        }
+      }
+
+      if (Array.isArray(partidas) && partidas.length > 0) {
+        var teams = [];
+        try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
+        if (!teams || teams.length === 0) teams = Api.getTeams() || [];
+
+        var teamPlayersMap = {};
+        (teams || []).forEach(function(t) {
+          var tName = (t.nome || t.name || '').trim().toLowerCase();
+          if (tName) {
+            if (!teamPlayersMap[tName]) teamPlayersMap[tName] = new Set();
+            var pList = t.jogadores || t.players || [];
+            pList.forEach(function(p) {
+              var pApelido = (p.apelido || '').trim().toLowerCase();
+              var pNome = (p.nome || '').trim().toLowerCase();
+              if (pApelido) teamPlayersMap[tName].add(pApelido);
+              if (pNome) teamPlayersMap[tName].add(pNome);
+            });
+          }
+        });
+
+        partidas.forEach(function(m) {
+          var tA = (m.time_a_nome || '').trim();
+          var tB = (m.time_b_nome || '').trim();
+          var gA = parseInt(m.gols_time_a) || 0;
+          var gB = parseInt(m.gols_time_b) || 0;
+
+          // Pontuação por resultado das partidas
+          // 2x0 -> 3.0 pts, 1x0 -> 2.5 pts, 2x1 -> 2.0 pts, 1x1 -> 1.0 pt, 0x0 -> 0.5 pt, Derrota -> 0 pts
+          var ptsA = 0; var isWinA = false; var isCleanA = false;
+          var ptsB = 0; var isWinB = false; var isCleanB = false;
+
+          if (gA > gB) {
+            isWinA = true;
+            if (gB === 0) {
+              ptsA = (gA >= 2) ? 3.0 : 2.5;
+              isCleanA = true;
+            } else {
+              ptsA = 2.0;
+            }
+          } else if (gB > gA) {
+            isWinB = true;
+            if (gA === 0) {
+              ptsB = (gB >= 2) ? 3.0 : 2.5;
+              isCleanB = true;
+            } else {
+              ptsB = 2.0;
+            }
+          } else {
+            if (gA === 0) {
+              ptsA = 0.5; ptsB = 0.5;
+            } else {
+              ptsA = 1.0; ptsB = 1.0;
+            }
+          }
+
+          var playersA = new Set();
+          var playersB = new Set();
+
+          if (tA && teamPlayersMap[tA.toLowerCase()]) {
+            teamPlayersMap[tA.toLowerCase()].forEach(function(nome) { playersA.add(nome); });
+          }
+          if (tB && teamPlayersMap[tB.toLowerCase()]) {
+            teamPlayersMap[tB.toLowerCase()].forEach(function(nome) { playersB.add(nome); });
+          }
+
+          let goalsList = [];
+          if (m.autores_gols) {
+            try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
+          }
+          (goalsList || []).forEach(function(g) {
+            var playerTeam = g.teamName ? g.teamName.trim().toLowerCase() : (g.teamKey === 'a' ? tA.toLowerCase() : (g.teamKey === 'b' ? tB.toLowerCase() : ''));
+            if (g.autorNome) {
+              var aName = g.autorNome.trim().toLowerCase();
+              if (playerTeam === tA.toLowerCase()) playersA.add(aName);
+              else if (playerTeam === tB.toLowerCase()) playersB.add(aName);
+            }
+            if (g.assistNome) {
+              var assName = g.assistNome.trim().toLowerCase();
+              if (playerTeam === tA.toLowerCase()) playersA.add(assName);
+              else if (playerTeam === tB.toLowerCase()) playersB.add(assName);
+            }
+          });
+
+          // Atribui pontos para Time A
+          playersA.forEach(function(lowerName) {
+            Object.keys(statsMap).forEach(function(nomeKey) {
+              if (nomeKey.toLowerCase() === lowerName) {
+                statsMap[nomeKey].pontos += ptsA;
+                statsMap[nomeKey].jogos += 1;
+                if (isWinA) statsMap[nomeKey].vitorias += 1;
+                if (isCleanA) statsMap[nomeKey].balizaZero += 1;
+                if (!isWinA && ptsA > 0) statsMap[nomeKey].empates += 1;
+                if (ptsA === 0) statsMap[nomeKey].derrotas += 1;
+              }
+            });
+          });
+
+          // Atribui pontos para Time B
+          playersB.forEach(function(lowerName) {
+            Object.keys(statsMap).forEach(function(nomeKey) {
+              if (nomeKey.toLowerCase() === lowerName) {
+                statsMap[nomeKey].pontos += ptsB;
+                statsMap[nomeKey].jogos += 1;
+                if (isWinB) statsMap[nomeKey].vitorias += 1;
+                if (isCleanB) statsMap[nomeKey].balizaZero += 1;
+                if (!isWinB && ptsB > 0) statsMap[nomeKey].empates += 1;
+                if (ptsB === 0) statsMap[nomeKey].derrotas += 1;
+              }
+            });
+          });
+
+        });
+      }
+    } catch (e) {
+      console.warn('[Desempenho] Erro ao calcular Melhor Jogador:', e);
+    }
+
+    var ranked = Object.values(statsMap)
+      .filter(function(p) { return p.jogos > 0 || p.pontos > 0; })
       .sort(function(a, b) {
-        var ra = parseFloat(a.avaliacao_media) || parseInt(a.autoavaliacao) || 0;
-        var rb = parseFloat(b.avaliacao_media) || parseInt(b.autoavaliacao) || 0;
-        return rb - ra;
+        if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+        if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
+        if (b.balizaZero !== a.balizaZero) return b.balizaZero - a.balizaZero;
+        return a.derrotas - b.derrotas;
       })
       .slice(0, 10);
 
-    if (rated.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-caption);">Nenhum dado de avaliação disponível.</td></tr>';
+    if (ranked.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-caption);">Nenhum dado de partida disponível.</td></tr>';
       return;
+    }
+
+    // Se o usuário logado está no ranking, atualiza o widget "Meu Desempenho - Pontos 🎖️"
+    if (Auth.currentUser) {
+      var myStats = ranked.find(function(r) { return r.isMe; });
+      var myRatingEl = document.getElementById('my-stat-rating');
+      if (myRatingEl) {
+        var ptsVal = myStats ? myStats.pontos : 0;
+        myRatingEl.textContent = ptsVal.toFixed(1).replace('.', ',');
+      }
     }
 
     var badgeMap = ['🥇', '🥈', '🥉'];
     var html = '';
-    rated.forEach(function(p, idx) {
-      var rating = parseFloat(p.avaliacao_media) || parseInt(p.autoavaliacao) || 0;
-      var isMe = Auth.currentUser && String(p.id) === String(Auth.currentUser.id);
-      var starsHTML = window.Utils ? window.Utils.starsHTML(Math.round(rating)) : '★';
-
-      html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
+    ranked.forEach(function(p, idx) {
+      var ptsFmt = p.pontos.toFixed(1).replace('.', ',');
+      html += '<tr' + (p.isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: 600;">' + (p.apelido || p.nome) + (isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</td>' +
-        '<td style="text-align: center; color: var(--warning); font-weight: 700;">' + starsHTML + ' ' + rating.toFixed(1) + '</td>' +
-        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + (p.partidas || 0) + '</td>' +
+        '<td style="font-weight: 600;">' + p.nome + (p.isMe ? ' <span style="font-size: 11px; color: var(--secondary);">↩ Você</span>' : '') + '</td>' +
+        '<td style="text-align: center; color: #D97706; font-weight: 800;">' + ptsFmt + ' 🎖️</td>' +
+        '<td style="text-align: center; color: var(--text-caption); font-weight: 600;">' + p.jogos + '</td>' +
       '</tr>';
     });
+
     tbody.innerHTML = html;
   },
 
@@ -318,7 +469,7 @@ var Desempenho = {
     if (partidasEl) partidasEl.textContent = user.partidas || 0;
     if (ratingEl) {
       var r = parseFloat(user.avaliacao_media) || parseInt(user.autoavaliacao) || 0;
-      ratingEl.textContent = r > 0 ? (r.toFixed(1) + '★') : '—';
+      ratingEl.textContent = r > 0 ? (r.toFixed(1).replace('.', ',') + ' 🎖️') : '0,0';
     }
     if (saldoEl) {
       var saldo = user.saldo || 0;
