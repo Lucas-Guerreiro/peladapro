@@ -112,12 +112,12 @@ window.App.initPartidas = async function() {
 
   // Se a pelada estiver finalizada, oculta controles de jogo ao vivo e fila
   if (isFinished) {
-    const liveCol = document.querySelector('.grid-3 > div:first-child');
-    const queueCard = document.getElementById('wait-queue-container')?.closest('.card');
+    const liveCol = document.querySelector('.gestor-score-card');
+    const queueCard = document.getElementById('gestor-queue-card');
     
     if (liveCol) {
       liveCol.innerHTML = `
-        <div class="card" style="background-color: var(--success); color: #FFF; border: none; padding: 28px; text-align: center;">
+        <div style="background-color: #10B981; color: #FFF; border-radius: 12px; padding: 28px; text-align: center;">
           <span style="font-size: 40px; display: block; margin-bottom: 12px;">🏁</span>
           <h3 style="color: #FFF; margin-bottom: 8px;">Rodada Finalizada</h3>
           <p class="text-inter" style="font-size: 14px; opacity: 0.9; margin: 0;">Esta rodada de pelada já foi concluída e encerrada pelo gestor. Veja abaixo o histórico de partidas.</p>

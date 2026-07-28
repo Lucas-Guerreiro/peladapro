@@ -1,52 +1,12 @@
-<!-- Parcial: Controle da Partida e Filas de Espera (Redesign Claro & Unificado com Módulo Atleta) -->
-
-<!-- ESTILOS EXCLUSIVOS DO PLACAR E CRONÔMETRO DO GESTOR -->
+<!-- ========================================================================== -->
+<!-- PÁGINA: GESTOR - PARTIDAS E JOGO AO VIVO (partidas.html) -->
+<!-- ========================================================================== -->
 <style>
-  /* --- Cronômetro Moderno Claro --- */
-  .gestor-timer-wrapper {
-    align-items: center;
-    text-align: center;
-  }
-
-  .gestor-timer-time {
-    font-size: 44px;
-    font-weight: 300;
-    font-family: monospace, sans-serif;
-    color: #0F172A;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-    line-height: 1;
-  }
-
-  .gestor-progress-container {
-    width: 100%;
-    height: 8px;
-    background: #F1F5F9;
-    border-radius: 100px;
-    overflow: hidden;
-    margin-bottom: 12px;
-  }
-
-  .gestor-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #34D399 0%, #0284C7 100%);
-    border-radius: 100px;
-    transition: width 0.3s ease;
-  }
-
-  .gestor-status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #64748B;
-    font-weight: 600;
-  }
-
+  /* Status Pulse Animation */
   .gestor-pulse-dot {
     width: 8px;
     height: 8px;
-    background-color: #34D399;
+    background-color: #10B981;
     border-radius: 50%;
     box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
     animation: gestor-pulse 2s infinite;
@@ -92,10 +52,49 @@
   .gestor-live-tag span {
     width: 6px;
     height: 6px;
-    background-color: #34D399;
+    background: #10B981;
     border-radius: 50%;
     display: inline-block;
-    animation: gestor-pulse 1.5s infinite;
+  }
+
+  .gestor-timer-wrapper {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .gestor-timer-time {
+    font-size: 48px;
+    font-weight: 800;
+    color: #0F172A;
+    font-family: monospace, sans-serif;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .gestor-progress-container {
+    height: 6px;
+    background: #E2E8F0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 12px 0 16px;
+  }
+
+  .gestor-progress-bar {
+    height: 100%;
+    background: #0284C7;
+    transition: width 0.3s ease;
+  }
+
+  .gestor-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
   }
 
   .gestor-team-title {
@@ -159,140 +158,130 @@
   }
 </style>
 
-<div class="grid-3" style="align-items: start; gap: 20px;">
+<div style="display: flex; flex-direction: column; gap: 20px; max-width: 960px; margin: 0 auto;">
   
-  <!-- Coluna 1 e 2: Controle da Partida Ativa (Ocupa 2 colunas) -->
-  <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 20px;">
+  <!-- 1. CARD: Partida em Andamento / Placar e Cronômetro -->
+  <div class="gestor-score-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span class="gestor-live-tag">
+          <span></span>AO VIVO
+        </span>
+        <select id="partidas-select-pelada-date" class="form-control" style="background: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; max-width: 260px;">
+          <option value="">Carregando datas...</option>
+        </select>
+      </div>
+      <span class="badge-status" id="match-live-status-badge" style="background: #E2E8F0; color: #475569; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 20px;">AGUARDANDO SORTEIO</span>
+    </div>
     
-    <!-- Card de Controle de Placar e Cronômetro (Design Claro & Unificado) -->
-    <div class="gestor-score-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px; gap: 12px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span class="gestor-live-tag">
-            <span></span>AO VIVO
-          </span>
-          <select id="partidas-select-pelada-date" class="form-control" style="background: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; max-width: 260px;">
-            <option value="">Carregando datas...</option>
-          </select>
-        </div>
-        <span class="badge-status" id="match-live-status-badge" style="background: #E2E8F0; color: #475569; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 20px;">AGUARDANDO SORTEIO</span>
+    <!-- Cronômetro Central -->
+    <div class="gestor-timer-wrapper" style="margin-bottom: 24px;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
+        <button id="btn-timer-minus" class="btn-adjust-score" title="Subtrair 1 minuto">-1</button>
+        <div class="gestor-timer-time" id="match-control-timer">08:00</div>
+        <button id="btn-timer-plus" class="btn-adjust-score" title="Somar 1 minuto">+1</button>
       </div>
-      
-      <!-- Cronômetro Central (Design do Atleta) -->
-      <div class="gestor-timer-wrapper" style="margin-bottom: 24px;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
-          <button id="btn-timer-minus" class="btn-adjust-score" title="Subtrair 1 minuto">-1</button>
-          <div class="gestor-timer-time" id="match-control-timer">08:00</div>
-          <button id="btn-timer-plus" class="btn-adjust-score" title="Somar 1 minuto">+1</button>
-        </div>
-        <div class="gestor-progress-container">
-          <div id="gestor-timer-progress" class="gestor-progress-bar" style="width: 0%;"></div>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-          <div class="gestor-status-badge">
-            <span id="gestor-timer-dot" class="gestor-pulse-dot paused"></span>
-            <span id="gestor-timer-status-text">Pronto para iniciar</span>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button id="btn-timer-toggle" class="btn btn-sm" style="background: #0284C7; color: #FFF; font-weight: 700; border-radius: 8px; padding: 6px 16px; border: none; cursor: pointer;">Iniciar</button>
-            <button id="btn-timer-reset" class="btn btn-sm" style="background: #F1F5F9; color: #475569; font-weight: 600; border-radius: 8px; padding: 6px 14px; border: 1px solid #CBD5E1; cursor: pointer;">Reset</button>
-          </div>
-        </div>
+      <div class="gestor-progress-container">
+        <div id="gestor-timer-progress" class="gestor-progress-bar" style="width: 0%;"></div>
       </div>
-
-      <!-- Placar Central e Controle de Placar (Layout Fixo) -->
-      <div style="background: #F8FAFC; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 24px;">
-        
-        <!-- PARTE SUPERIOR FIXA: Nomes, Olho, Botões (- / + / GOL) e Placar 1 x 1 (Nunca move) -->
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-          
-          <!-- Time A (ESQUERDA - Alinhado à Direita) -->
-          <div id="acomp-team-a" style="flex: 1; text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 4px;">
-              <button id="btn-view-team-a" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time A">👁️</button>
-              <h4 class="gestor-team-title" id="match-control-team-a" style="margin: 0;">Time A</h4>
-            </div>
-            <div id="match-control-team-a-status" style="min-height: 16px; margin-bottom: 6px; text-align: right;"></div>
-            
-            <!-- Placar e Botões Time A -->
-            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-              <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1">-</button>
-              <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
-              <button id="btn-goal-team-a" class="btn-goal-trigger">GOL ⚽</button>
-            </div>
-          </div>
-
-          <!-- PLACAR CENTRAL (1 x 1 FIXO) -->
-          <div style="text-align: center; padding: 0 10px; display: flex; align-items: center; justify-content: center; min-width: 100px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span class="gestor-score-num" id="match-control-score-a">0</span>
-              <span class="gestor-score-divider">x</span>
-              <span class="gestor-score-num" id="match-control-score-b">0</span>
-            </div>
-          </div>
-
-          <!-- Time B (DIREITA - Alinhado à Esquerda) -->
-          <div id="acomp-team-b" style="flex: 1; text-align: left; display: flex; flex-direction: column; align-items: flex-start;">
-            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 4px;">
-              <h4 class="gestor-team-title" id="match-control-team-b" style="margin: 0;">Time B</h4>
-              <button id="btn-view-team-b" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time B">👁️</button>
-            </div>
-            <div id="match-control-team-b-status" style="min-height: 16px; margin-bottom: 6px; text-align: left;"></div>
-            
-            <!-- Placar e Botões Time B -->
-            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
-              <button id="btn-goal-team-b" class="btn-goal-trigger">GOL ⚽</button>
-              <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1">-</button>
-              <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
-            </div>
-          </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div class="gestor-status-badge">
+          <span id="gestor-timer-dot" class="gestor-pulse-dot paused"></span>
+          <span id="gestor-timer-status-text">Pronto para iniciar</span>
         </div>
-
-        <!-- PARTE INFERIOR SEPARADA: Lista de Autores de Gols e Assistências (Cresce para baixo sem mover o topo) -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; padding-top: 8px;">
-          <!-- Autores de gols do Time A (alinhado à direita) -->
-          <div id="match-control-team-a-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
-
-          <!-- Espaço em branco central proporcional ao 1x1 -->
-          <div style="min-width: 100px;"></div>
-
-          <!-- Autores de gols do Time B (alinhado à esquerda) -->
-          <div id="match-control-team-b-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-timer-toggle" class="btn btn-sm" style="background: #0284C7; color: #FFF; font-weight: 700; border-radius: 8px; padding: 6px 16px; border: none; cursor: pointer;">Iniciar</button>
+          <button id="btn-timer-reset" class="btn btn-sm" style="background: #F1F5F9; color: #475569; font-weight: 600; border-radius: 8px; padding: 6px 14px; border: 1px solid #CBD5E1; cursor: pointer;">Reset</button>
         </div>
-
-      </div>
- 
-      <!-- Rodapé de Ação: Concluir Partida -->
-      <div style="display: flex; border-top: 1px solid #E2E8F0; padding-top: 16px; width: 100%;">
-        <button id="btn-finish-match" class="btn" style="flex: 1; background: #10B981; color: #FFF; font-weight: 700; font-size: 14px; border-radius: 12px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);">
-          <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Lançar Resultado (Concluir Jogo)
-        </button>
       </div>
     </div>
 
-    <!-- Card de Histórico de Partidas Recentes -->
-    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
-        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">⚽ Histórico de Partidas Recentes</h3>
-        <span style="font-size: 11px; background: #D1FAE5; color: #065F46; font-weight: 700; padding: 3px 10px; border-radius: 20px;">JOGOS ENCERRADOS</span>
+    <!-- Placar Central e Controle de Placar -->
+    <div style="background: #F8FAFC; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 24px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        
+        <!-- Time A -->
+        <div id="acomp-team-a" style="flex: 1; text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 4px;">
+            <button id="btn-view-team-a" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time A">👁️</button>
+            <h4 class="gestor-team-title" id="match-control-team-a" style="margin: 0;">Time A</h4>
+          </div>
+          <div id="match-control-team-a-status" style="min-height: 16px; margin-bottom: 6px; text-align: right;"></div>
+          
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+            <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1">-</button>
+            <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
+            <button id="btn-goal-team-a" class="btn-goal-trigger">GOL ⚽</button>
+          </div>
+        </div>
+
+        <!-- PLACAR CENTRAL -->
+        <div style="text-align: center; padding: 0 10px; display: flex; align-items: center; justify-content: center; min-width: 100px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="gestor-score-num" id="match-control-score-a">0</span>
+            <span class="gestor-score-divider">x</span>
+            <span class="gestor-score-num" id="match-control-score-b">0</span>
+          </div>
+        </div>
+
+        <!-- Time B -->
+        <div id="acomp-team-b" style="flex: 1; text-align: left; display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 4px;">
+            <h4 class="gestor-team-title" id="match-control-team-b" style="margin: 0;">Time B</h4>
+            <button id="btn-view-team-b" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 6px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; line-height: 1;" title="Ver escalação do Time B">👁️</button>
+          </div>
+          <div id="match-control-team-b-status" style="min-height: 16px; margin-bottom: 6px; text-align: left;"></div>
+          
+          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+            <button id="btn-goal-team-b" class="btn-goal-trigger">GOL ⚽</button>
+            <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1">-</button>
+            <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
+          </div>
+        </div>
       </div>
 
-      <!-- Lista de Partidas Recentes -->
-      <div id="recent-matches-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;">
-        <!-- Inserido dinamicamente -->
+      <!-- Autores de Gols -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px; padding-top: 8px;">
+        <div id="match-control-team-a-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
+        <div style="min-width: 100px;"></div>
+        <div id="match-control-team-b-goals" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 12px; font-weight: 700; color: #0F172A;"></div>
       </div>
+
+    </div>
+
+    <!-- Rodapé de Ação: Concluir Partida -->
+    <div style="display: flex; border-top: 1px solid #E2E8F0; padding-top: 16px; width: 100%;">
+      <button id="btn-finish-match" class="btn" style="flex: 1; background: #10B981; color: #FFF; font-weight: 700; font-size: 14px; border-radius: 12px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);">
+        <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Lançar Resultado (Concluir Jogo)
+      </button>
     </div>
   </div>
 
-  <!-- Coluna 3: Fila de Espera dos Times (Ocupa 1 coluna) -->
-  <div style="grid-column: span 1; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+  <!-- 2. CARD: Fila de Espera dos Times (Posicionado logo abaixo da Partida em Andamento) -->
+  <div id="gestor-queue-card" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
       <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">📋 Fila de Espera</h3>
       <span id="queue-count" style="font-size: 12px; color: #64748B; font-weight: 600;">0 Times</span>
     </div>
 
     <!-- Lista Vertical da Fila de Espera -->
-    <div id="wait-queue-container" style="display: flex; flex-direction: column; gap: 8px; min-height: 150px;">
+    <div id="wait-queue-container" style="display: flex; flex-direction: column; gap: 8px; min-height: 80px;">
       <!-- Inserido dinamicamente -->
+    </div>
   </div>
+
+  <!-- 3. CARD: Histórico de Partidas Recentes (Posicionado logo abaixo da Fila de Espera) -->
+  <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">⚽ Histórico de Partidas Recentes</h3>
+      <span style="font-size: 11px; background: #D1FAE5; color: #065F46; font-weight: 700; padding: 3px 10px; border-radius: 20px;">JOGOS ENCERRADOS</span>
+    </div>
+
+    <!-- Lista de Partidas Recentes -->
+    <div id="recent-matches-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;">
+      <!-- Inserido dinamicamente -->
+    </div>
+  </div>
+
 </div>
