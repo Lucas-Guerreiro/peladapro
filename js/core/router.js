@@ -175,85 +175,45 @@ const Router = {
     const isDual = Auth.hasDualRole();
     const activeRole = Auth._selectedRole || (Auth.currentUser?.gestor ? 'gestor' : 'jogador');
 
-    // Header fixo do app com suporte a menu sanduíche e Toggle Switch de Perfil (Exclusivo para tipo 'ambos')
-    const headerHTML = `
-      <header class="main-header" id="main-header">
-        <button id="hamburger-menu-btn" class="hamburger-btn">
-          <i data-feather="menu" style="width:24px; height:24px;"></i>
-        </button>
-        <div class="brand" style="cursor:pointer" onclick="Router.navigate(Auth.currentUser?.gestor ? '#/gestor/atletas' : '#/jogador/dashboard')">
-          <h1>PELADA <span>PRO</span></h1>
-        </div>
-        <div class="user-nav-status" style="display:flex; align-items:center; gap:10px;">
-          <!-- Toggle Switch de Perfil (Apenas para cadastro tipo 'ambos') -->
-          ${isDual ? `
-            <div 
-              class="role-toggle-switch ${activeRole === 'gestor' ? 'is-gestor' : 'is-jogador'}" 
-              onclick="Auth.toggleRole()"
-              title="Clique para alternar entre perfil de Gestor e Jogador"
-            >
-              <span class="role-toggle-option role-opt-jogador">⚽ Jogador</span>
-              <span class="role-toggle-option role-opt-gestor">🏆 Gestor</span>
-              <div class="role-toggle-slider"></div>
-            </div>
-          ` : ''}
-
-          <span class="text-inter" style="font-size:14px; color:var(--text-caption); font-weight:600" id="header-user-name">
-            ${Auth.currentUser ? Auth.currentUser.nome : ''}
-          </span>
-          <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Sair</button>
-        </div>
-      </header>
-      
-      <!-- Menu lateral mobile (sanduíche) -->
-      <div id="mobile-sidebar" class="mobile-sidebar">
-        <div class="sidebar-header">
-          <div class="brand">
-            <h1>PELADA <span>PRO</span></h1>
-          </div>
-          <button id="sidebar-close-btn" class="sidebar-close-btn">&times;</button>
-        </div>
-        <div class="sidebar-user-info">
-          <span class="text-inter" id="sidebar-user-name-menu" style="font-size: 14px; font-weight: bold; color: #FFF;">
-            ${Auth.currentUser ? Auth.currentUser.nome : ''}
-          </span>
-        </div>
-        <nav class="sidebar-nav">
-          <!-- Abas de navegação injetadas dinamicamente -->
-        </nav>
-        <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:10px;">
-          ${isDual ? `
-            <button class="btn btn-outline btn-md" style="width:100%; border-color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; font-size:14px;" onclick="Auth.toggleRole()">
-              🔄 Alternar para Modo ${activeRole === 'gestor' ? 'Jogador ⚽' : 'Gestor 🏆'}
-            </button>
-          ` : ''}
-          <button class="btn btn-outline btn-md" style="width:100%" onclick="Auth.logout()">Sair</button>
-        </div>
-      </div>
-      <div id="sidebar-overlay" class="sidebar-overlay"></div>`;
-
     try {
       const res = await fetch(`${layoutFile}?v=${Date.now()}`);
-      const layoutHTML = await res.text();
-      app.innerHTML = headerHTML + `<div class="app-container">${layoutHTML}</div>`;
+      let layoutHTML = await res.text();
+      
+      const userName = Auth.currentUser ? (Auth.currentUser.nome || Auth.currentUser.email || '') : '';
+      
+      const toggleHTML = isDual ? `
+        <div 
+          class="role-toggle-switch ${activeRole === 'gestor' ? 'is-gestor' : 'is-jogador'}" 
+          onclick="Auth.toggleRole()"
+          title="Clique para alternar entre perfil de Gestor e Jogador"
+        >
+          <span class="role-toggle-option role-opt-jogador">⚽ Jogador</span>
+          <span class="role-toggle-option role-opt-gestor">🏆 Gestor</span>
+          <div class="role-toggle-slider"></div>
+        </div>
+      ` : '';
+
+      const toggleMobileHTML = isDual ? `
+        <div style="padding: 4px 0; margin-bottom: 8px;">
+          <button class="btn btn-outline btn-md" style="width:100%; border-color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; font-size:13px;" onclick="Auth.toggleRole()">
+            🔄 Alternar para Modo ${activeRole === 'gestor' ? 'Jogador ⚽' : 'Gestor 🏆'}
+          </button>
+        </div>
+      ` : '';
+
+      layoutHTML = layoutHTML.replace(/\{\{USER_NAME\}\}/g, userName)
+                             .replace(/\{\{ROLE_TOGGLE\}\}/g, toggleHTML)
+                             .replace(/\{\{ROLE_TOGGLE_MOBILE\}\}/g, toggleMobileHTML);
+
+      app.innerHTML = layoutHTML;
+
+      if (window.feather) {
+        try { window.feather.replace(); } catch(e) {}
+      }
     } catch (e) {
-      app.innerHTML = headerHTML + `<div class="app-container"><p>Erro ao carregar layout.</p></div>`;
+      console.error(e);
+      app.innerHTML = `<div style="padding:20px; color:var(--danger)">Erro ao carregar layout.</div>`;
     }
-
-    // Configura os handlers do menu mobile
-    const hamburgerBtn = document.getElementById('hamburger-menu-btn');
-    const closeBtn = document.getElementById('sidebar-close-btn');
-    const overlay = document.getElementById('sidebar-overlay');
-
-    if (hamburgerBtn) hamburgerBtn.onclick = () => this._openMobileSidebar();
-    if (closeBtn) closeBtn.onclick = () => this._closeMobileSidebar();
-    if (overlay) overlay.onclick = () => this._closeMobileSidebar();
-
-    // Atualiza nome no header
-    const nameEl = document.getElementById('header-user-name');
-    if (nameEl && Auth.currentUser) nameEl.textContent = Auth.currentUser.nome;
-    const nameElMenu = document.getElementById('sidebar-user-name-menu');
-    if (nameElMenu && Auth.currentUser) nameElMenu.textContent = Auth.currentUser.nome;
 
     // Bind das abas de navegação
     this._bindTabButtons(role);
