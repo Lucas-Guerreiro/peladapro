@@ -288,10 +288,19 @@ exports.atualizarStatus = async (req, res) => {
       return res.status(403).json({ error: 'Você não tem permissão para alterar esta pelada.' });
     }
 
-    const queryUpdate = `
+    let queryUpdate = `
       UPDATE peladas
       SET status = $1
       WHERE id = $2 RETURNING id, status`;
+
+    if (status === 'finalizada' || status === 'encerrada') {
+      queryUpdate = `
+        UPDATE peladas
+        SET status = $1, live_state = NULL
+        WHERE id = $2 RETURNING id, status`;
+      liveStateMap.delete(id);
+    }
+
     const { rows } = await db.query(queryUpdate, [status, id]);
 
     // Se o status for finalizada/encerrada, envia push notification automatica aos atletas

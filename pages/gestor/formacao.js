@@ -424,11 +424,27 @@ window.App.renderDrawnTeams = async function() {
   if (!container) return;
   container.innerHTML = "";
 
+  const activePelada = window.App.activePelada;
+
+  // Se a pelada selecionada estiver finalizada, limpa os times sorteados
+  if (activePelada && activePelada.status === "finalizada") {
+    localStorage.removeItem("teams");
+    container.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1; padding: 32px 16px; text-align: center;">
+        <i data-feather="check-circle" style="width: 48px; height: 48px; display: block; margin: 0 auto 12px auto; color: var(--secondary);"></i>
+        <h4 class="text-inter" style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px;">Rodada Encerrada 🏁</h4>
+        <p class="text-inter" style="font-size: 13px; color: var(--text-caption);">Os jogos desta data já foram finalizados. Agende uma nova data ou selecione uma rodada ativa para um novo sorteio.</p>
+      </div>
+    `;
+    if (window.feather) feather.replace();
+    return;
+  }
+
   let teams = [];
   try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
 
   if (!teams || teams.length === 0) {
-    let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    let peladaId = activePelada ? activePelada.id : null;
 
     if (!peladaId) {
       const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
