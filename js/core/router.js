@@ -100,9 +100,16 @@ const Router = {
     const newRole       = isGestorPage ? 'gestor' : (isJogadorPage ? 'jogador' : null);
 
     // ---- Precisa renderizar o layout principal? ----
-    if (needsLayout && this._currentLayoutRole !== newRole) {
+    let container = document.getElementById(
+      isGestorPage ? 'manager-tab-content-container' : 'player-tab-content-container'
+    );
+
+    if (needsLayout && (!container || this._currentLayoutRole !== newRole)) {
       await this._injectMainLayout(newRole);
       this._currentLayoutRole = newRole;
+      container = document.getElementById(
+        isGestorPage ? 'manager-tab-content-container' : 'player-tab-content-container'
+      );
     }
 
     // ---- Página pública/standalone (login / cadastro / selecionar_perfil) ----
@@ -131,7 +138,7 @@ const Router = {
 
     // ---- Aba dentro do layout ----
     const tabName = route.page.split('/')[1];
-    const container = document.getElementById(
+    container = container || document.getElementById(
       isGestorPage ? 'manager-tab-content-container' : 'player-tab-content-container'
     );
     if (!container) return;
@@ -278,18 +285,15 @@ const Router = {
 
   // --- Pós-carregamento ---------------------------------------------------
   _afterPageLoad(route) {
-    // Ativa ícones Feather se disponível
-    if (window.feather) feather.replace();
-    // Sincroniza abas no menu mobile (sidebar)
-    this._syncMobileSidebar();
-    // Re-vincula o botão hamburger a cada navegação (garante que sempre funcione)
-    this._bindHamburgerBtn();
-    // Sincroniza info e menus do layout do atleta se existir
-    if (window.AcompanhamentoGlobal) {
-      window.AcompanhamentoGlobal.renderUserInfo();
-    }
-    // Dispara evento customizado para scripts que escutam
-    document.dispatchEvent(new CustomEvent('page:loaded', { detail: { route } }));
+    try { if (window.feather) feather.replace(); } catch(e) {}
+    try { this._syncMobileSidebar(); } catch(e) {}
+    try { this._bindHamburgerBtn(); } catch(e) {}
+    try {
+      if (window.AcompanhamentoGlobal) window.AcompanhamentoGlobal.renderUserInfo();
+    } catch(e) {}
+    try {
+      document.dispatchEvent(new CustomEvent('page:loaded', { detail: { route } }));
+    } catch(e) {}
   },
 
   // --- Vincula botão hamburger (chamado em toda navegação) -----------------
@@ -452,6 +456,8 @@ window.AcompanhamentoGlobal = {
     const nameMobile = document.getElementById('layout-user-name-mobile');
     if (nameMobile) nameMobile.textContent = nomeExibir;
   }
+};
+
 // Namespace global para controle do layout unificado do gestor
 window.GestorGlobal = {
   toggleMobileMenu: function() {
