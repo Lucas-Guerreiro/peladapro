@@ -221,13 +221,59 @@ const Auth = {
     }
   },
 
-  _startSession(player) {
+  // Abrir Tela de Seleção de Perfil para trocar entre Gestor e Jogador
+  openProfileSelection() {
+    Router.navigate('#/selecionar-perfil');
+  },
+
+  // Selecionar Papel (Gestor ou Jogador)
+  selectRole(role) {
+    if (!this.currentUser) {
+      try {
+        const raw = localStorage.getItem('currentUser');
+        if (raw) this.currentUser = JSON.parse(raw);
+      } catch(e) {}
+    }
+    if (!this.currentUser) return Router.navigate('#/login');
+    this._startSession(this.currentUser, role);
+  },
+
+  _startSession(player, forcedRole = null) {
     this.currentUser = player;
 
-    // Roteamento baseado estritamente no tipo de usuário do banco de dados (Supabase)
-    const isGestor = (player.tipo === 'gestor');
-    player.gestor = isGestor;
-    this._selectedRole = isGestor ? 'gestor' : 'jogador';
+    // Regra de Duplo Acesso:
+    // tipo = "jogador" -> Redireciona para dashboard do jogador
+    // tipo = "gestor"  -> Redireciona para dashboard do gestor
+    // tipo = "ambos"   -> Se ultimo_perfil != null -> Redireciona direto para ultimo_perfil
+    //                     Se ultimo_perfil = null -> Exibe Tela de Seleção (#/selecionar-perfil)
+
+    const isGestorOnly = (player.tipo === 'gestor');
+    const isJogadorOnly = (player.tipo === 'jogador');
+
+    let activeRole = 'jogador';
+
+    if (forcedRole) {
+      activeRole = forcedRole;
+    } else if (isGestorOnly) {
+      activeRole = 'gestor';
+    } else if (isJogadorOnly) {
+      activeRole = 'jogador';
+    } else {
+      // Duplo acesso (tipo = 'ambos' ou perfil compartilhado)
+      const ultimoPerfil = localStorage.getItem('ultimo_perfil') || player.ultimo_perfil || null;
+      if (ultimoPerfil && (ultimoPerfil === 'gestor' || ultimoPerfil === 'jogador')) {
+        activeRole = ultimoPerfil;
+      } else {
+        // Exibir Tela de Seleção de Perfil!
+        localStorage.setItem('currentUser', JSON.stringify(player));
+        const expiryTime = Date.now() + (12 * 60 * 60 * 1000);
+        localStorage.setItem('session_expiry', String(expiryTime));
+        return Router.navigate('#/selecionar-perfil');
+      }
+    }
+
+    this._selectedRole = activeRole;
+    player.gestor = (activeRole === 'gestor');
 
     // Sincronizar ou simular grupo
     const groups = Api.getGroups();
@@ -246,9 +292,9 @@ const Auth = {
     const expiryTime = Date.now() + (12 * 60 * 60 * 1000); 
     localStorage.setItem('session_expiry', String(expiryTime));
 
-    Utils.toast(`Bem-vindo, ${player.nome || player.email}! 🏆`, 'success');
+    Utils.toast(`Acessando como ${activeRole === 'gestor' ? 'Gestor 🏆' : 'Jogador ⚽'}!`, 'success');
 
-    if (isGestor) {
+    if (activeRole === 'gestor') {
       Router.navigate('#/gestor/atletas');
     } else {
       Router.navigate('#/jogador/dashboard');

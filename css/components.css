@@ -733,3 +733,102 @@
   padding: 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+/* --- TELA DE SELEÇÃO DE PERFIL ------------------------------------------- */
+.profile-option-card {
+  width: 100%;
+  border-radius: 12px;
+  border: 1.5px solid #E2E8F0;
+  background-color: #FFFFFF;
+  padding: 16px 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  outline: none;
+}
+
+.profile-option-card:hover, .profile-option-card:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.profile-option-card:active {
+  transform: translateY(0);
+}
+
+.profile-card-gestor:hover, .profile-card-gestor:focus {
+  border-color: #0284C7 !important;
+  background-color: #F0F9FF !important;
+}
+
+.profile-card-jogador:hover, .profile-card-jogador:focus {
+  border-color: #10B981 !important;
+  background-color: #ECFDF5 !important;
+}
+
+.profile-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.profile-option-card:hover .profile-card-icon,
+.profile-option-card:focus .profile-card-icon {
+  transform: scale(1.1);
+}
+
+.profile-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.profile-card-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.profile-card-subtitle {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.profile-card-arrow {
+  font-size: 16px;
+  color: #94A3B8;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.profile-card-gestor:hover .profile-card-arrow,
+.profile-card-gestor:focus .profile-card-arrow {
+  transform: translateX(4px);
+  color: #0284C7;
+}
+
+.profile-card-jogador:hover .profile-card-arrow,
+.profile-card-jogador:focus .profile-card-arrow {
+  transform: translateX(4px);
+  color: #10B981;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

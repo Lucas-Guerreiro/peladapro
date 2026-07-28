@@ -206,8 +206,15 @@ exports.login = async (req, res) => {
       });
     }
 
+    let tipoFinal = usuario.tipo;
+    if (rows.length > 1) {
+      const temGestor = rows.some(r => r.tipo === 'gestor');
+      const temJogador = rows.some(r => r.tipo === 'jogador');
+      if (temGestor && temJogador) tipoFinal = 'ambos';
+    }
+
     const token = jwt.sign(
-      { id: usuario.id, tipo: usuario.tipo }, 
+      { id: usuario.id, tipo: tipoFinal }, 
       process.env.JWT_SECRET, 
       { expiresIn: '1d' }
     );
@@ -222,14 +229,14 @@ exports.login = async (req, res) => {
         data_nascimento: usuario.data_nascimento,
         whatsapp: usuario.whatsapp,
         autoavaliacao: usuario.autoavaliacao,
-        tipo: usuario.tipo, 
+        tipo: tipoFinal, 
         goleiro: usuario.goleiro,
         apelido: usuario.apelido,
         foto: usuario.foto,
-        saldo: parseFloat(usuario.saldo),
+        saldo: parseFloat(usuario.saldo || 0),
         gols: usuario.gols,
         partidas: usuario.partidas,
-        avaliacao_media: parseFloat(usuario.avaliacao_media),
+        avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
         verificado: true
       } 
     });

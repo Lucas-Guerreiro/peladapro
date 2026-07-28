@@ -1,0 +1,95 @@
+<!-- pages/selecionar_perfil.html — Tela de Seleção de Perfil para Duplo Acesso -->
+<div class="login-container" id="view-profile-selection" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+
+  <div class="card login-card" style="max-width: 440px; width: 100%; padding: 32px 24px; box-shadow: var(--shadow-lg); border-radius: var(--radius-xl);">
+
+    <!-- Header / Brand -->
+    <div class="login-brand" style="margin-bottom: 8px; text-align: center;">
+      <h1 style="font-size: 26px; margin: 0;">🏟️ PELADA <span>APP</span></h1>
+    </div>
+    
+    <h2 class="text-inter" style="font-size: 20px; font-weight: 800; color: var(--text-heading); text-align: center; margin-top: 12px; margin-bottom: 4px;">
+      Como você quer acessar?
+    </h2>
+    
+    <p class="text-inter" style="font-size: 13px; color: var(--text-caption); text-align: center; margin-bottom: 24px;">
+      Selecione o modo de acesso para continuar:
+    </p>
+
+    <!-- Container de Estados: Skeleton / Erro / Cards -->
+    <div id="profile-selector-container">
+      
+      <!-- Skeleton Loading State -->
+      <div id="profile-skeleton" class="hidden" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+        <div style="height: 82px; border-radius: 12px; background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+        <div style="height: 82px; border-radius: 12px; background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+      </div>
+
+      <!-- Erro State -->
+      <div id="profile-error" class="hidden" style="padding: 20px; text-align: center; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 12px; margin-bottom: 20px;">
+        <div style="font-size: 28px; margin-bottom: 6px;">⚠️</div>
+        <h4 style="font-size: 14px; font-weight: 700; color: #991B1B; margin-bottom: 4px;">Não foi possível carregar seus perfis</h4>
+        <p style="font-size: 12px; color: #7F1D1D; margin-bottom: 14px;">Ocorreu um problema ao verificar suas permissões.</p>
+        <button class="btn btn-sm btn-outline" style="border-color: #991B1B; color: #991B1B;" onclick="window.App.initSelecionarPerfil()">Tentar novamente</button>
+      </div>
+
+      <!-- Cards de Escolha de Perfil -->
+      <div id="profile-cards" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+
+        <!-- Card Gestor -->
+        <div 
+          id="card-profile-gestor"
+          class="profile-option-card profile-card-gestor"
+          onclick="window.App.selectRole('gestor')"
+          tabindex="0"
+          role="button"
+          aria-label="Acessar como Gestor"
+        >
+          <div class="profile-card-icon" style="background: #E0F2FE; color: #0284C7;">
+            🏆
+          </div>
+          <div class="profile-card-content">
+            <div class="profile-card-title" style="color: #0369A1;">GESTOR</div>
+            <div class="profile-card-subtitle">Gerenciar peladas, elenco, relatórios</div>
+          </div>
+          <div class="profile-card-arrow">
+            ➔
+          </div>
+        </div>
+
+        <!-- Card Jogador -->
+        <div 
+          id="card-profile-jogador"
+          class="profile-option-card profile-card-jogador"
+          onclick="window.App.selectRole('jogador')"
+          tabindex="0"
+          role="button"
+          aria-label="Acessar como Jogador"
+        >
+          <div class="profile-card-icon" style="background: #D1FAE5; color: #059669;">
+            ⚽
+          </div>
+          <div class="profile-card-content">
+            <div class="profile-card-title" style="color: #047857;">JOGADOR</div>
+            <div class="profile-card-subtitle">Confirmar presença, ver escalação</div>
+          </div>
+          <div class="profile-card-arrow">
+            ➔
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Checkbox "Lembrar minha escolha" -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F5F9;">
+        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text-caption); user-select: none;">
+          <input type="checkbox" id="chk-remember-profile" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
+          <span>Lembrar minha escolha</span>
+        </label>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

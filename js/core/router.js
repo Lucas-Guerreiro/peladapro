@@ -10,6 +10,7 @@ const Router = {
     '#/':                    { page: 'login',               permission: 'public'  },
     '#/login':               { page: 'login',               permission: 'public'  },
     '#/cadastro':            { page: 'cadastro',            permission: 'public'  },
+    '#/selecionar-perfil':   { page: 'selecionar_perfil',   permission: 'public'  },
     '#/jogador/dashboard':   { page: 'jogador/dashboard',   permission: 'jogador' },
     '#/jogador/convocacao':  { page: 'jogador/convocacao',  permission: 'jogador' },
     '#/jogador/acompanhamento': { page: 'jogador/acompanhamento', permission: 'jogador' },
@@ -171,10 +172,13 @@ const Router = {
         <div class="brand" style="cursor:pointer" onclick="Router.navigate(Auth.currentUser?.gestor ? '#/gestor/atletas' : '#/jogador/dashboard')">
           <h1>PELADA <span>PRO</span></h1>
         </div>
-        <div class="user-nav-status">
+        <div class="user-nav-status" style="display:flex; align-items:center; gap:8px;">
           <span class="text-inter" style="font-size:14px; color:var(--text-caption); font-weight:600" id="header-user-name">
             ${Auth.currentUser ? Auth.currentUser.nome : ''}
           </span>
+          <button class="btn btn-outline btn-sm" title="Alternar entre perfil Gestor e Jogador" onclick="Auth.openProfileSelection()" style="padding: 0 10px; font-size:12px;">
+            🔄 Perfil
+          </button>
           <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Sair</button>
         </div>
       </header>
@@ -195,7 +199,8 @@ const Router = {
         <nav class="sidebar-nav">
           <!-- Abas de navegação injetadas dinamicamente -->
         </nav>
-        <div class="sidebar-footer">
+        <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:10px;">
+          <button class="btn btn-outline btn-md" style="width:100%" onclick="Auth.openProfileSelection()">🔄 Alternar Perfil</button>
           <button class="btn btn-outline btn-md" style="width:100%" onclick="Auth.logout()">Sair</button>
         </div>
       </div>
