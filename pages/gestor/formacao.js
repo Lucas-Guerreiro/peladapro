@@ -4,6 +4,19 @@
 
 window.App.initFormacao = function() {
   renderManagerCheckin();
+
+  const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = group ? group.id : null;
+  const token = localStorage.getItem("token");
+
+  if (groupId && token) {
+    fetch(`/api/formacao/emblemas/grupo/${groupId}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    }).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) window._groupEmblemsList = data;
+    }).catch(e => {});
+  }
+
   window.App.renderDrawnTeams();
 
   // Escutas
@@ -805,6 +818,7 @@ window.selectEmblem = function(emblemaIdx) {
     delete team.emblema_url;
     delete team.emblemaUrl;
     localStorage.setItem("teams", JSON.stringify(teams));
+    syncDrawnTeamsToCloud(false);
   }
 
   var token = localStorage.getItem("token");
@@ -844,6 +858,7 @@ window.selectCustomEmblemFromLibrary = function(emblemaId) {
     team.emblema_url = item.imagem_url;
     team.emblemaUrl = item.imagem_url;
     localStorage.setItem("teams", JSON.stringify(teams));
+    syncDrawnTeamsToCloud(false);
   }
 
   var token = localStorage.getItem("token");
@@ -923,6 +938,7 @@ window.handleCustomEmblemUpload = function(event) {
       team.emblema_url = base64;
       team.emblemaUrl = base64;
       localStorage.setItem("teams", JSON.stringify(teams));
+      syncDrawnTeamsToCloud(false);
     }
 
     if (token && team && team.db_id) {

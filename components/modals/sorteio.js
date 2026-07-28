@@ -81,14 +81,24 @@ function handleExecuteSorteio() {
 
   let drawnTeams = [];
   const teamColors = ["#2196F3", "#FFC107", "#FF1744", "#00C853", "#FF6D00", "#9C27B0", "#E91E63", "#00BCD4", "#795548", "#607D8B"];
+  const groupEmblems = window._groupEmblemsList || [];
 
   for (let i = 0; i < qtyTeams; i++) {
-    drawnTeams.push({
+    const teamObj = {
       id: `team_${i+1}`,
       nome: `Time ${getColoName(i)}`,
       cor: teamColors[i] || "#777",
+      emblema: i % 10,
       players: []
-    });
+    };
+    if (Array.isArray(groupEmblems) && groupEmblems.length > 0) {
+      const embItem = groupEmblems[i % groupEmblems.length];
+      if (embItem && embItem.imagem_url) {
+        teamObj.emblema_url = embItem.imagem_url;
+        teamObj.emblemaUrl = embItem.imagem_url;
+      }
+    }
+    drawnTeams.push(teamObj);
   }
 
   // 1. Distribuir goleiros de forma embaralhada respeitando a vaga de cada time
