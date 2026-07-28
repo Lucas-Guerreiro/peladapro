@@ -14,6 +14,7 @@ const localRoutes     = require('./routes/locais');
 const partidaRoutes   = require('./routes/partidas');
 const vendasRoutes    = require('./routes/vendas');
 const pixRoutes       = require('./routes/pix');
+const pushRoutes      = require('./routes/push');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -99,6 +100,7 @@ app.use('/api/locais',      localRoutes);
 app.use('/api/partidas',    partidaRoutes);
 app.use('/api/vendas',      vendasRoutes);
 app.use('/api/pix',         pixRoutes);
+app.use('/api/push',        pushRoutes);
 
 // Rota de seed: apenas em desenvolvimento
 if (!isProduction) {
