@@ -17,6 +17,8 @@ window.App.initModalPartida_config = function(data) {
   document.getElementById("partida-config-players").value = data.jogadores_por_time || 7;
   document.getElementById("partida-config-teams").value = data.quantidade_times || 2;
   document.getElementById("partida-config-value").value = data.valor_convocacao ? parseFloat(data.valor_convocacao).toFixed(2) : "20.00";
+  document.getElementById("partida-config-pix-key").value = data.chave_pix || "";
+  document.getElementById("partida-config-pix-name").value = data.chave_pix_nome || "";
 
   // Ligar eventos de fechamento
   document.getElementById("btn-close-partida-config").onclick = () => window.App.closeModal();
@@ -31,6 +33,8 @@ window.App.initModalPartida_config = function(data) {
     const players = parseInt(document.getElementById("partida-config-players").value);
     const teams = parseInt(document.getElementById("partida-config-teams").value);
     const value = parseFloat(document.getElementById("partida-config-value").value) || 20.00;
+    const pixKey = document.getElementById("partida-config-pix-key").value;
+    const pixName = document.getElementById("partida-config-pix-name").value;
 
     // Validações
     if (wins < 2 || wins > 5) {
@@ -54,7 +58,9 @@ window.App.initModalPartida_config = function(data) {
         regra_saida: exitRule,
         jogadores_por_time: players,
         quantidade_times: teams,
-        valor_convocacao: value
+        valor_convocacao: value,
+        chave_pix: pixKey,
+        chave_pix_nome: pixName
       });
 
       if (res.error) {

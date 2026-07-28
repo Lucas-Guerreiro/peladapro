@@ -105,6 +105,8 @@ var Convocacao = {
           status: p.status,
           max_jogadores: p.max_jogadores,
           valor_convocacao: p.valor_convocacao,
+          chave_pix: p.chave_pix,
+          chave_pix_nome: p.chave_pix_nome,
           criterio_empate: p.criterio_empate,
           vitorias_para_sair: p.vitorias_para_sair,
           jogadores_por_time: p.jogadores_por_time,
@@ -141,7 +143,7 @@ var Convocacao = {
   },
 
   // --- Atualiza as informações do Pix com base na pelada selecionada --------
-  updatePixInfo: function(peladaId) {
+  updatePixInfo: async function(peladaId) {
     const keyEl = document.getElementById('pix-display-key');
     const benEl = document.getElementById('pix-display-beneficiario');
     if (!keyEl || !benEl) return;
@@ -152,7 +154,19 @@ var Convocacao = {
       return;
     }
 
-    const pelada = Api.getPelada(peladaId);
+    let pelada = Api.getPelada(peladaId);
+    if (!pelada || (!pelada.chave_pix && !pelada.chave_pix_nome)) {
+      const selectGroup = document.getElementById('select-conv-pelada');
+      const groupId = selectGroup ? selectGroup.value : null;
+      if (groupId) {
+        try {
+          const peladas = await Api.listarDatasDoGrupo(groupId);
+          const encontrada = peladas.find(p => String(p.id) === String(peladaId));
+          if (encontrada) pelada = encontrada;
+        } catch(e) {}
+      }
+    }
+
     if (pelada && (pelada.chave_pix || pelada.chave_pix_nome)) {
       keyEl.textContent = pelada.chave_pix || 'Não cadastrada pelo gestor';
       benEl.textContent = pelada.chave_pix_nome || 'Gestor da Pelada';

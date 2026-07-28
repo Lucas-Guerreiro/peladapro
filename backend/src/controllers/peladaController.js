@@ -217,7 +217,7 @@ exports.atualizarConfigPartida = async (req, res) => {
   const { id } = req.params;
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
-  const { criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao } = req.body;
+  const { criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome } = req.body;
 
   if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
@@ -241,8 +241,10 @@ exports.atualizarConfigPartida = async (req, res) => {
           jogadores_por_time = $3,
           quantidade_times = $4,
           regra_saida = $5,
-          valor_convocacao = $6
-      WHERE id = $7 RETURNING id`;
+          valor_convocacao = $6,
+          chave_pix = $7,
+          chave_pix_nome = $8
+      WHERE id = $9 RETURNING id`;
     await db.query(queryUpdate, [
       criterio_empate || null,
       vitorias_para_sair !== undefined ? parseInt(vitorias_para_sair) : null,
@@ -250,10 +252,12 @@ exports.atualizarConfigPartida = async (req, res) => {
       quantidade_times !== undefined ? parseInt(quantidade_times) : null,
       regra_saida || null,
       valor_convocacao !== undefined ? parseFloat(valor_convocacao) : null,
+      chave_pix !== undefined ? chave_pix : null,
+      chave_pix_nome !== undefined ? chave_pix_nome : null,
       id
     ]);
 
-    res.json({ message: 'Configurações da partida updated com sucesso!' });
+    res.json({ message: 'Configurações da partida atualizadas com sucesso!' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao atualizar configurações da partida', detail: err.message });
   }

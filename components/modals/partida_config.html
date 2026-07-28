@@ -55,10 +55,21 @@
       </div>
     </div>
 
-    <!-- Finanças (Valor da Convocação) -->
-    <div class="form-group" style="margin-bottom: 28px;">
+    <!-- Finanças (Valor da Convocação e Pix) -->
+    <div class="form-group" style="margin-bottom: 16px;">
       <label for="partida-config-value" class="form-label" style="font-weight: 700;">Valor da Convocação (R$)</label>
       <input type="number" id="partida-config-value" class="form-control" step="0.50">
+    </div>
+
+    <div class="grid-2" style="gap: 16px; margin-bottom: 24px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="partida-config-pix-key" class="form-label" style="font-weight: 700;">Chave Pix para Pagamento</label>
+        <input type="text" id="partida-config-pix-key" class="form-control" placeholder="CPF, Celular, E-mail ou Aleatória">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="partida-config-pix-name" class="form-label" style="font-weight: 700;">Nome do Beneficiário (Dono do Pix)</label>
+        <input type="text" id="partida-config-pix-name" class="form-control" placeholder="Ex: João da Silva">
+      </div>
     </div>
 
     <!-- Botões de Ação -->
