@@ -255,7 +255,8 @@ const Auth = {
       localStorage.removeItem('currentGroup');
     }
 
-    const expiryTime = Date.now() + (12 * 60 * 60 * 1000); 
+    // Expiração de 30 dias para a sessão no PWA
+    const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); 
     localStorage.setItem('session_expiry', String(expiryTime));
 
     Utils.toast(`Acessando como ${activeRole === 'gestor' ? 'Gestor 🏆' : 'Jogador ⚽'}!`, 'success');
@@ -296,7 +297,7 @@ const Auth = {
       }
 
       if (expiry && Date.now() > parseInt(expiry)) {
-        console.log('[Auth] Sessão expirou por tempo de inatividade.');
+        console.log('[Auth] Sessão de 30 dias expirou.');
         this.logout();
         return false;
       }
@@ -314,13 +315,12 @@ const Auth = {
         this._selectedRole = isGestor ? 'gestor' : 'jogador';
       }
 
-      const newExpiry = Date.now() + (12 * 60 * 60 * 1000);
+      // Renova a expiração por mais 30 dias a cada interação (sessão deslizante)
+      const newExpiry = Date.now() + (30 * 24 * 60 * 60 * 1000);
       localStorage.setItem('session_expiry', String(newExpiry));
 
-      this.refreshCurrentUser();
-
-      // Verifica e-mail temporário no carregamento de sessão
-      this.checkUserEmailTest();
+      // Valida o token de 30 dias junto ao backend (/api/auth/verify)
+      this.verifySessionWithServer();
 
       return true;
     } catch (e) {
@@ -328,6 +328,36 @@ const Auth = {
       this.logout();
       return false;
     }
+  },
+
+  async verifySessionWithServer() {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+
+    try {
+      const res = await fetch('/api/auth/verify', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.valid && data.usuario) {
+          this.currentUser = { ...this.currentUser, ...data.usuario, saldo: parseFloat(data.usuario.saldo || 0) };
+          localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+          this.checkUserEmailTest();
+          return true;
+        }
+      }
+
+      if (res.status === 401) {
+        console.warn('[Auth] Token rejeitado pelo servidor (401). Efetuando logout.');
+        this.logout();
+        return false;
+      }
+    } catch (e) {
+      console.warn('[Auth] Erro ao verificar token no servidor:', e);
+    }
+    return true;
   },
 
   async refreshCurrentUser() {

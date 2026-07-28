@@ -76,8 +76,16 @@ const Router = {
 
   // --- Handler Principal --------------------------------------------------
   async _handleRoute(hash) {
-    const route = this._routes[hash] || this._routes['#/login'];
-    this.activeRoute = hash;
+    let targetHash = hash || '#/';
+
+    // Se o usuário já tem sessão válida de 30d, abre direto na tela principal sem passar pelo login
+    if ((targetHash === '#/' || targetHash === '#/login' || targetHash === '#/cadastro') && Auth.isLoggedIn()) {
+      const mainRoute = Auth._selectedRole === 'gestor' ? '#/gestor/atletas' : '#/jogador/dashboard';
+      return this.navigate(mainRoute);
+    }
+
+    const route = this._routes[targetHash] || this._routes['#/login'];
+    this.activeRoute = targetHash;
 
     // Guarda de permissão
     if (route.permission === 'jogador' || route.permission === 'gestor') {

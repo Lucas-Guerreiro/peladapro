@@ -214,9 +214,9 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, tipo: tipoFinal }, 
+      { id: usuario.id, usuario_id: usuario.id, email: usuario.email, tipo: tipoFinal }, 
       process.env.JWT_SECRET, 
-      { expiresIn: '1d' }
+      { expiresIn: '30d' }
     );
 
     res.json({ 
@@ -334,5 +334,61 @@ exports.googleSupabase = async (req, res) => {
   } catch (err) {
     console.error('❌ Erro no login do Google:', err);
     res.status(500).json({ error: 'Erro interno ao autenticar com Google', detail: err.message });
+  }
+};
+
+// --- GET /api/auth/verify — Validar token de sessão (30d) e retornar dados do usuário ---
+exports.verify = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ valid: false, error: 'Token de autenticação não fornecido.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded.usuario_id;
+
+    if (!userId) {
+      return res.status(401).json({ valid: false, error: 'Payload do token inválido.' });
+    }
+
+    const { rows } = await db.query('SELECT * FROM usuarios WHERE id = $1', [userId]);
+    if (rows.length === 0) {
+      return res.status(401).json({ valid: false, error: 'Usuário não encontrado.' });
+    }
+
+    const usuario = rows[0];
+
+    if (!usuario.verificado) {
+      return res.status(401).json({ valid: false, error: 'Usuário pendente de aprovação.' });
+    }
+
+    let tipoFinal = usuario.tipo;
+
+    res.json({
+      valid: true,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        cpf: usuario.cpf,
+        data_nascimento: usuario.data_nascimento,
+        whatsapp: usuario.whatsapp,
+        autoavaliacao: usuario.autoavaliacao,
+        tipo: tipoFinal,
+        goleiro: usuario.goleiro,
+        apelido: usuario.apelido,
+        foto: usuario.foto,
+        saldo: parseFloat(usuario.saldo || 0),
+        gols: usuario.gols,
+        partidas: usuario.partidas,
+        avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
+        verificado: true
+      }
+    });
+  } catch (err) {
+    return res.status(401).json({ valid: false, error: 'Sessão expirada ou token inválido.' });
   }
 };
