@@ -84,9 +84,10 @@ const authLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ============================================================
-// 4. BODY PARSER — Limite de payload reduzido
+// 4. BODY PARSER — Permite ate 10MB para fotos de perfil e uploads
 // ============================================================
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ============================================================
 // 5. ROTAS

@@ -53,21 +53,17 @@ window.App.initModalAtleta = function (data = {}) {
     photoPreview.onmouseleave = () => { photoOverlay.style.opacity = "0"; };
   }
 
-  // Upload da foto
+  // Upload e compressão automática da foto do atleta
   if (photoInput && photoPreview) {
     photoInput.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        if (file.size > 2 * 1024 * 1024) {
-          window.App.showToast("Escolha uma imagem menor que 2MB.", "error");
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          photoBase64 = event.target.result;
+        window.App.showToast("Processando e otimizando imagem...", "info");
+        compressImage(file, 500, 0.8, (compressedBase64) => {
+          photoBase64 = compressedBase64;
           photoPreview.style.backgroundImage = `url('${photoBase64}')`;
-        };
-        reader.readAsDataURL(file);
+          window.App.showToast("Foto otimizada com sucesso!", "success");
+        });
       }
     };
   }
@@ -386,3 +382,40 @@ window.App.handleSaveAthleteProxy = async function(e) {
   if (e) e.preventDefault();
   await handleSaveAthlete();
 };
+
+function compressImage(file, maxDimension, quality, callback) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        }
+      } else {
+        if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const base64 = canvas.toDataURL('image/jpeg', quality);
+      callback(base64);
+    };
+    img.onerror = () => {
+      callback(e.target.result);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
