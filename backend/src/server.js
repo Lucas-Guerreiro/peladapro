@@ -35,8 +35,6 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .filter(Boolean);
 
 const defaultOrigins = [
-  'http://localhost:8082',
-  'http://localhost:3000',
   'https://www.thorneios.com.br',
   'https://thorneios.com.br'
 ];
