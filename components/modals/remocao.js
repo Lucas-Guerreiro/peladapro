@@ -66,7 +66,7 @@ async function handleConfirmRemoval() {
   try {
     window.App.showToast("Cancelando presença no servidor...", "info");
 
-    const res = await fetch('http://localhost:3000/api/convocacoes/remover', {
+    const res = await fetch('/api/convocacoes/remover', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
