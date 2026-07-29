@@ -84,7 +84,7 @@ window.GoogleAuthModal = {
         });
 
         const logData = await logResponse.json();
-        
+
         if (logData.status === 'verificacao_pendente') {
           // Se já existe e a verificação de segurança do e-mail do Google está pendente
           this.close();

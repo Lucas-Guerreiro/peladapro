@@ -4,7 +4,7 @@
 
 let localPelada = null;
 
-window.App.initModalRemocao = function(pelada) {
+window.App.initModalRemocao = function (pelada) {
   localPelada = pelada;
 
   const peladaDateTime = new Date(`${pelada.data}T${pelada.horario}:00`);
@@ -13,7 +13,7 @@ window.App.initModalRemocao = function(pelada) {
   const hoursLeft = timeDiffMs / (1000 * 60 * 60);
 
   const infoDiv = document.getElementById("removal-reimbursement-info");
-  
+
   if (hoursLeft >= 2) {
     infoDiv.style.backgroundColor = "rgba(0, 200, 83, 0.1)";
     infoDiv.style.color = "var(--success)";
@@ -44,7 +44,7 @@ window.App.initModalRemocao = function(pelada) {
   document.getElementById("btn-close-removal-modal").onclick = window.App.closeModal;
   document.getElementById("btn-cancel-removal").onclick = window.App.closeModal;
   document.getElementById("btn-confirm-removal-action").onclick = handleConfirmRemoval;
-  
+
   feather.replace();
 };
 
@@ -90,7 +90,7 @@ async function handleConfirmRemoval() {
       window.App.showToast("Convocação cancelada. Taxa estornada ao saldo!", "success");
       // Atualizar o saldo na sessão do jogador logado!
       window.App.currentUser.saldo += cost;
-      
+
       // Sincronizar na lista de players do localStorage
       const players = JSON.parse(localStorage.getItem("players")) || [];
       const p = players.find(x => String(x.id) === String(window.App.currentUser.id));

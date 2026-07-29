@@ -202,7 +202,7 @@ const Api = {
     if (!token) {
       return { error: 'Sessão expirada ou inválida. Por favor, faça Logout e entre novamente para ativar a conexão com o Supabase.' };
     }
-    const res = await fetch('http://localhost:3000/api/peladas/grupos', {
+    const res = await fetch('/api/peladas/grupos', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ const Api = {
     if (!token) {
       return { error: 'Sessão expirada ou inválida. Por favor, faça Logout e entre novamente para ativar a conexão com o Supabase.' };
     }
-    const res = await fetch('http://localhost:3000/api/peladas/agendar', {
+    const res = await fetch('/api/peladas/agendar', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -282,7 +282,7 @@ const Api = {
   async getGruposDoGestor() {
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch('http://localhost:3000/api/peladas/grupos', {
+    const res = await fetch('/api/peladas/grupos', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -297,7 +297,7 @@ const Api = {
   async listarDatasDoGrupo(grupoId) {
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`http://localhost:3000/api/peladas/grupo/${grupoId}`, {
+    const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -310,7 +310,7 @@ const Api = {
     if (!token) {
       return { error: 'Sessão expirada. Por favor, faça login novamente.' };
     }
-    const res = await fetch(`http://localhost:3000/api/peladas/${id}`, {
+    const res = await fetch(`/api/peladas/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -331,7 +331,7 @@ const Api = {
   async listarConvocados(peladaId) {
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`http://localhost:3000/api/convocacoes/pelada/${peladaId}`, {
+    const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -344,7 +344,7 @@ const Api = {
     if (!token) {
       return { error: 'Sessão expirada.' };
     }
-    const res = await fetch('http://localhost:3000/api/usuarios/profile', {
+    const res = await fetch('/api/usuarios/profile', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -358,7 +358,7 @@ const Api = {
   async lancarGolAtleta(jogadorId) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
-    const res = await fetch(`http://localhost:3000/api/usuarios/${jogadorId}/gol`, {
+    const res = await fetch(`/api/usuarios/${jogadorId}/gol`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -370,7 +370,7 @@ const Api = {
   async atualizarPresenca(peladaId, usuarioId, presenca) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
-    const res = await fetch('http://localhost:3000/api/convocacoes/presenca', {
+    const res = await fetch('/api/convocacoes/presenca', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -388,7 +388,7 @@ const Api = {
   async lancarPartida(peladaId, timeANome, timeBNome, golsTimeA, golsTimeB, autoresGols) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
-    const res = await fetch('http://localhost:3000/api/partidas', {
+    const res = await fetch('/api/partidas', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -409,7 +409,7 @@ const Api = {
   async listarPartidas(peladaId) {
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`http://localhost:3000/api/partidas/pelada/${peladaId}`, {
+    const res = await fetch(`/api/partidas/pelada/${peladaId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -420,7 +420,7 @@ const Api = {
   async atualizarStatusPelada(peladaId, status) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
-    const res = await fetch(`http://localhost:3000/api/peladas/${peladaId}/status`, {
+    const res = await fetch(`/api/peladas/${peladaId}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -435,7 +435,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch(`http://localhost:3000/api/peladas/${peladaId}/live`, {
+      const res = await fetch(`/api/peladas/${peladaId}/live`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -453,7 +453,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return null;
     try {
-      const res = await fetch(`http://localhost:3000/api/peladas/${peladaId}/live`, {
+      const res = await fetch(`/api/peladas/${peladaId}/live`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -468,7 +468,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return [];
     try {
-      const res = await fetch(`http://localhost:3000/api/peladas/grupo/${grupoId}`, {
+      const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -485,7 +485,7 @@ const Api = {
   async editarPartida(partidaId, golsA, golsB, timeANome, timeBNome, autoresGols) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
-    const res = await fetch(`http://localhost:3000/api/partidas/${partidaId}`, {
+    const res = await fetch(`/api/partidas/${partidaId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -505,7 +505,7 @@ const Api = {
   async excluirPartida(partidaId) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
-    const res = await fetch(`http://localhost:3000/api/partidas/${partidaId}`, {
+    const res = await fetch(`/api/partidas/${partidaId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -515,7 +515,7 @@ const Api = {
   },
 
   async verificarCodigo(email, codigo) {
-    const res = await fetch('http://localhost:3000/api/auth/verificar', {
+    const res = await fetch('/api/auth/verificar', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -529,7 +529,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return this._get('locais') || [];
     try {
-      const res = await fetch('http://localhost:3000/api/locais', {
+      const res = await fetch('/api/locais', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -552,7 +552,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch('http://localhost:3000/api/locais', {
+      const res = await fetch('/api/locais', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -578,7 +578,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch(`http://localhost:3000/api/locais/${id}`, {
+      const res = await fetch(`/api/locais/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -597,7 +597,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch(`http://localhost:3000/api/locais/${id}`, {
+      const res = await fetch(`/api/locais/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -612,7 +612,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch(`http://localhost:3000/api/peladas/${id}/config`, {
+      const res = await fetch(`/api/peladas/${id}/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -631,7 +631,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch('http://localhost:3000/api/pix/enviar-comprovante', {
+      const res = await fetch('/api/pix/enviar-comprovante', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -655,7 +655,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return [];
     try {
-      const res = await fetch('http://localhost:3000/api/pix/comprovantes', {
+      const res = await fetch('/api/pix/comprovantes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) return [];
@@ -669,7 +669,7 @@ const Api = {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
     try {
-      const res = await fetch('http://localhost:3000/api/pix/estornar', {
+      const res = await fetch('/api/pix/estornar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

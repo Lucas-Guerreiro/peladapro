@@ -2,7 +2,7 @@
 // PÁGINA: GESTOR - CONFIGURAÇÕES (config.js)
 // ==========================================================================
 
-window.App.initConfig = function() {
+window.App.initConfig = function () {
   loadConfigs();
   loadGestorGroups().then(() => {
     loadDrawnDates();
@@ -13,7 +13,7 @@ window.App.initConfig = function() {
   window.App.syncDrawnDates = loadDrawnDates;
 
   // Escutar criação de nova pelada pelo modal criar_pelada
-  document.addEventListener("pelada:created", async function(e) {
+  document.addEventListener("pelada:created", async function (e) {
     await loadGestorGroups();
 
     // Selecionar o novo grupo no dropdown
@@ -59,7 +59,7 @@ window.App.initConfig = function() {
 
   const btnSendPush = document.getElementById("btn-send-custom-push");
   if (btnSendPush) btnSendPush.onclick = handleSendCustomPush;
-  
+
   if (window.feather) feather.replace();
 };
 
@@ -96,7 +96,7 @@ async function handleSendCustomPush() {
     } else {
       window.App.showToast(data.error || "Erro ao disparar notificação.", "error");
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     window.App.showToast("Erro ao conectar ao servidor de push.", "error");
   }
@@ -133,7 +133,7 @@ async function loadGestorGroups() {
     const grupos = await Api.getGruposDoGestor();
     window.App.gestorGroups = grupos; // Armazena em cache no global
     select.innerHTML = "";
-    
+
     if (grupos.length === 0) {
       const opt = document.createElement("option");
       opt.value = "";
@@ -145,11 +145,11 @@ async function loadGestorGroups() {
     // Se o currentGroup estiver nulo ou pertencer a outro gestor, selecionar o primeiro grupo retornado
     const gestorId = window.Auth && window.Auth.currentUser ? window.Auth.currentUser.id : null;
     const belongsToMe = window.App.currentGroup && gestorId && String(window.App.currentGroup.gestor_id) === String(gestorId);
-    
+
     if (grupos.length > 0 && (!window.App.currentGroup || !belongsToMe)) {
       window.App.currentGroup = grupos[0];
       if (window.Auth) window.Auth.currentGroup = grupos[0];
-      
+
       // Carrega configurações correspondentes
       loadConfigs();
     }
@@ -194,7 +194,7 @@ async function loadDrawnDates() {
       const dataFormatada = Utils.formatDate(d.data);
       // Serializa os dados da partida em string para passar no clique do botão de configs
       const stringifiedData = encodeURIComponent(JSON.stringify(d));
-      
+
       html += `
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-color); gap: 12px;">
           <div style="flex: 1;">
@@ -342,7 +342,7 @@ async function handleScheduleMatch() {
 
     window.App.showToast(`Notificações enviadas via WhatsApp para ${responseData.totalNotificados} atletas ativos!`, "success");
     window.App.showToast("Partida agendada e convocação aberta!");
-    
+
     // Limpa campos e recarrega lista de datas
     document.getElementById("schedule-date").value = "";
     document.getElementById("schedule-time").value = "";
@@ -525,7 +525,7 @@ function updateLicenseUI() {
   // Verifica se a licença está ativa
   if (config.licenca_status === 'ativa' && config.licenca_expira_em) {
     const expDate = new Date(config.licenca_expira_em);
-    
+
     // Se a data já passou, está expirada
     if (expDate < new Date()) {
       statusLabel.textContent = "Expirada";
@@ -536,7 +536,7 @@ function updateLicenseUI() {
       statusLabel.textContent = "Ativa";
       statusLabel.style.background = "rgba(0, 230, 118, 0.1)";
       statusLabel.style.color = "var(--primary)";
-      
+
       if (expiryLabel && expiryDate) {
         expiryDate.textContent = expDate.toLocaleDateString('pt-BR');
         expiryLabel.style.display = "block";
@@ -567,7 +567,7 @@ async function handleActivateLicense() {
 
   try {
     window.App.showToast("Ativando licença...", "info");
-    
+
     const token = localStorage.getItem('token');
     const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? '/api'
@@ -575,7 +575,7 @@ async function handleActivateLicense() {
 
     const res = await fetch(`${apiBase}/vendas/ativar-manual`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },

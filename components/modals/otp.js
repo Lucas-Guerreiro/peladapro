@@ -96,16 +96,16 @@ window.OtpModal = {
       }
 
       window.App.showToast("E-mail confirmado com sucesso!", "success");
-      
+
       // Salva token e sincroniza dados do banco
       localStorage.setItem('token', res.token);
       await Auth._syncDataFromBackend(res.token);
 
       this.close();
-      
+
       // Inicia sessão
       Auth._startSession(res.usuario);
-      
+
       if (this._resolvePromise) this._resolvePromise(true);
 
     } catch (err) {
@@ -117,7 +117,7 @@ window.OtpModal = {
   async handleResend() {
     try {
       window.App.showToast("Reenviando código...", "info");
-      
+
       // Simula uma tentativa de login para re-gerar e reenviar o código OTP
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -128,7 +128,7 @@ window.OtpModal = {
       const data = await res.json();
       if (res.ok && data.status === 'verificacao_pendente') {
         window.App.showToast("Novo código enviado por e-mail (verifique o console)!", "success");
-        
+
         // Limpar inputs de código e focar no primeiro
         const inputs = document.querySelectorAll("#otp-inputs-container .otp-digit-input");
         inputs.forEach(i => i.value = "");

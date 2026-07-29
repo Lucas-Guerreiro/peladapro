@@ -4,7 +4,7 @@
 
 let localPelada = null;
 
-window.App.initModalPagamento = function(pelada) {
+window.App.initModalPagamento = function (pelada) {
   localPelada = pelada;
 
   // PostgreSQL retorna números como string — parseFloat garante o tipo correto
@@ -56,8 +56,8 @@ async function handleConfirmPayment() {
 
   try {
     window.App.showToast("Confirmando presença no servidor...", "info");
-    
-    const res = await fetch('/api/convocacoes/confirmar', {
+
+    const res = await fetch('http://localhost:3000/api/convocacoes/confirmar', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ async function handleConfirmPayment() {
     // Sincronizar o saldo atualizado do jogador logado de volta na sessão local!
     if (method === 'saldo') {
       window.App.currentUser.saldo -= cost;
-      
+
       // Sincronizar também na lista de players do localStorage
       const players = JSON.parse(localStorage.getItem("players")) || [];
       const p = players.find(x => String(x.id) === String(window.App.currentUser.id));

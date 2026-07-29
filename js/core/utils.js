@@ -1,8 +1,8 @@
 // Interceptador para redirecionar chamadas de API locais em produção
-(function() {
+(function () {
   const originalFetch = window.fetch;
-  window.fetch = function(input, init) {
-    if (typeof input === 'string' && input.startsWith('/api')) {
+  window.fetch = function (input, init) {
+    if (typeof input === 'string' && input.startsWith('http://localhost:3000/api')) {
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (!isLocal) {
         input = input.replace('/api', '/api');
@@ -35,7 +35,7 @@ const Utils = {
     const num = parseFloat(v);
     const safeNum = isNaN(num) ? 0 : num;
     return new Intl.NumberFormat('pt-BR', {
-      style:    'currency',
+      style: 'currency',
       currency: 'BRL'
     }).format(safeNum);
   },
@@ -96,8 +96,8 @@ const Utils = {
     const icons = {
       success: '✅',
       warning: '⚠️',
-      error:   '❌',
-      info:    'ℹ️'
+      error: '❌',
+      info: 'ℹ️'
     };
     const container = this._getContainer();
     const el = document.createElement('div');
@@ -107,7 +107,7 @@ const Utils = {
 
     setTimeout(() => {
       el.style.animation = 'none';
-      el.style.opacity   = '0';
+      el.style.opacity = '0';
       el.style.transform = 'translateY(-20px)';
       el.style.transition = 'opacity 0.3s, transform 0.3s';
       setTimeout(() => el.remove(), 350);
@@ -130,7 +130,7 @@ const Utils = {
       var dateStr;
       // Se já é um objeto Date
       if (dob instanceof Date) {
-        dateStr = dob.getFullYear() + '-' + String(dob.getMonth() + 1).padStart(2,'0') + '-' + String(dob.getDate()).padStart(2,'0');
+        dateStr = dob.getFullYear() + '-' + String(dob.getMonth() + 1).padStart(2, '0') + '-' + String(dob.getDate()).padStart(2, '0');
       } else {
         // Garante string e pega apenas a parte AAAA-MM-DD
         dateStr = String(dob).substring(0, 10);
@@ -147,7 +147,7 @@ const Utils = {
       var m = today.getMonth() - birth.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
       return (age >= 0 && age < 150) ? age : null;
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   }

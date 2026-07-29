@@ -10,27 +10,27 @@ const pool = new Pool({
 async function test() {
   console.log('🤖 INICIANDO TESTE INTEGRADO DE LICENCIAMENTO...');
   const client = await pool.connect();
-  
+
   const emailTeste = 'gestor_venda_teste@gmail.com';
   let licencaCodigo = '';
 
   try {
     // 0. Limpar qualquer teste anterior
     await client.query('DELETE FROM licencas WHERE email_comprador = $1', [emailTeste]);
-    
+
     // 1. Simular a chamada de Checkout (criação)
     console.log('\nStep 1: Criando checkout Pix...');
-    
+
     // Simular a chamada ao controller
     const resCheckout = await fetch('/api/vendas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: emailTeste, plano: 'mensal' })
     });
-    
+
     const dataCheckout = await resCheckout.json();
     if (!resCheckout.ok) throw new Error(dataCheckout.error || 'Erro no checkout');
-    
+
     licencaCodigo = dataCheckout.licenca_codigo;
     console.log(`✅ Checkout criado! Licença Gerada: ${licencaCodigo}`);
 
@@ -45,10 +45,10 @@ async function test() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email_comprador: emailTeste, licenca_codigo: licencaCodigo })
     });
-    
+
     const dataConfirmar = await resConfirmar.json();
     if (!resConfirmar.ok) throw new Error(dataConfirmar.error || 'Erro na confirmação');
-    
+
     console.log(`✅ Pagamento Confirmado! Resposta: ${dataConfirmar.message}`);
 
     // Verificar no banco de dados se a licença está 'ativa' e com expiração correta

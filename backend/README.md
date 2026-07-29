@@ -38,7 +38,7 @@ API RESTful em Node.js com Express para gerenciamento de peladas amadoras, integ
    ```
 6. Popule o banco executando um POST vazio na rota de seed:
    ```bash
-   curl -X POST http://localhost:3000/api/seed
+   curl -X POST /api/seed
    ```
 
 ## Endpoints Principais

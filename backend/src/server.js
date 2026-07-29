@@ -4,17 +4,17 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 require('dotenv').config();
 
-const authRoutes      = require('./routes/auth');
-const usuarioRoutes   = require('./routes/usuarios');
+const authRoutes = require('./routes/auth');
+const usuarioRoutes = require('./routes/usuarios');
 const convocacaoRoutes = require('./routes/convocacoes');
-const formacaoRoutes  = require('./routes/formacao');
-const peladaRoutes    = require('./routes/peladas');
-const seedRoutes      = require('./routes/seed');
-const localRoutes     = require('./routes/locais');
-const partidaRoutes   = require('./routes/partidas');
-const vendasRoutes    = require('./routes/vendas');
-const pixRoutes       = require('./routes/pix');
-const pushRoutes      = require('./routes/push');
+const formacaoRoutes = require('./routes/formacao');
+const peladaRoutes = require('./routes/peladas');
+const seedRoutes = require('./routes/seed');
+const localRoutes = require('./routes/locais');
+const partidaRoutes = require('./routes/partidas');
+const vendasRoutes = require('./routes/vendas');
+const pixRoutes = require('./routes/pix');
+const pushRoutes = require('./routes/push');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -42,13 +42,13 @@ const defaultOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    
+
     const formattedOrigin = origin.trim().toLowerCase().replace(/\/$/, '');
-    
+
     if (defaultOrigins.includes(formattedOrigin) || allowedOrigins.includes(formattedOrigin)) {
       return callback(null, true);
     }
-    
+
     return callback(new Error(`CORS bloqueado para origem: ${origin}`), false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -90,16 +90,16 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // ============================================================
 // 5. ROTAS
 // ============================================================
-app.use('/api/auth',        authLimiter, authRoutes);   // Rate limit mais restrito no auth
-app.use('/api/usuarios',    usuarioRoutes);
+app.use('/api/auth', authLimiter, authRoutes);   // Rate limit mais restrito no auth
+app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/convocacoes', convocacaoRoutes);
-app.use('/api/formacao',    formacaoRoutes);
-app.use('/api/peladas',     peladaRoutes);
-app.use('/api/locais',      localRoutes);
-app.use('/api/partidas',    partidaRoutes);
-app.use('/api/vendas',      vendasRoutes);
-app.use('/api/pix',         pixRoutes);
-app.use('/api/push',        pushRoutes);
+app.use('/api/formacao', formacaoRoutes);
+app.use('/api/peladas', peladaRoutes);
+app.use('/api/locais', localRoutes);
+app.use('/api/partidas', partidaRoutes);
+app.use('/api/vendas', vendasRoutes);
+app.use('/api/pix', pixRoutes);
+app.use('/api/push', pushRoutes);
 
 // Rota de seed: apenas em desenvolvimento
 if (!isProduction) {

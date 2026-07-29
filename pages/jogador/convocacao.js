@@ -22,7 +22,7 @@ var Convocacao = {
       const token = localStorage.getItem('token');
       if (token) {
         // Sincroniza grupos com o backend real
-        const resGroups = await fetch('http://localhost:3000/api/peladas/grupos', {
+        const resGroups = await fetch('/api/peladas/grupos', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (resGroups.ok) {

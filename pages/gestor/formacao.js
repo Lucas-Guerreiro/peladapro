@@ -398,7 +398,7 @@ async function desconvocarAtleta(atletaId, atletaNome) {
 
   try {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:3000/api/convocacoes/desconvocar", {
+    const res = await fetch("/api/convocacoes/desconvocar", {
       method: "DELETE",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify({

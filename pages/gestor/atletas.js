@@ -22,7 +22,7 @@ window.App.syncAthletesList = async function() {
   const token = localStorage.getItem("token");
   if (!token) return;
   try {
-    const res = await fetch('http://localhost:3000/api/usuarios', {
+    const res = await fetch('/api/usuarios', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
@@ -173,7 +173,7 @@ async function approveAthlete(id) {
     Utils.toast("Aprovando cadastro do atleta...", "info");
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}/aprovar`, {
+    const res = await fetch(`/api/usuarios/${id}/aprovar`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -202,7 +202,7 @@ async function rejectAthlete(id, nome) {
     Utils.toast("Recusando cadastro do atleta...", "info");
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+    const res = await fetch(`/api/usuarios/${id}`, {
       method: "DELETE",
       headers: { 
         "Content-Type": "application/json",
@@ -231,7 +231,7 @@ async function deleteAthlete(id, nome) {
     Utils.toast("Excluindo atleta do banco...", "info");
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+    const res = await fetch(`/api/usuarios/${id}`, {
       method: "DELETE",
       headers: { 
         "Content-Type": "application/json",
