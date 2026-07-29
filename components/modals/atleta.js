@@ -88,7 +88,7 @@ window.App.initModalAtleta = function (data = {}) {
       } else {
         dob.value = "";
       }
-      cpf.value = p.cpf || "";
+      if (cpf) cpf.value = p.cpf || "";
       whatsapp.value = p.whatsapp || "";
       isGk.checked = !!p.goleiro;
 
@@ -115,17 +115,20 @@ window.App.initModalAtleta = function (data = {}) {
       email.disabled = false;
     }
     dob.value = "";
-    cpf.value = "";
+    if (cpf) cpf.value = "";
     whatsapp.value = "";
     isGk.checked = false;
-    photoBase64 = "";
+    starSelector.dataset.value = 0;
+    stars.forEach(s => s.style.color = "#ccc");
     photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
   }
 
   initModalMasks(cpf, whatsapp);
 
   document.getElementById("btn-close-athlete-modal").onclick = window.App.closeModal;
-  document.getElementById("btn-save-athlete").onclick = () => handleSaveAthlete(photoPreview);
+  saveBtn.onclick = async () => {
+    await handleSaveAthlete();
+  };
 };
 
 function initModalMasks(cpf, whatsapp) {
@@ -252,7 +255,7 @@ async function handleSaveAthlete(photoPreview) {
         return;
       }
 
-      const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+      const res = await fetch(`/api/usuarios/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -303,7 +306,7 @@ async function handleSaveAthlete(photoPreview) {
         return;
       }
 
-      const res = await fetch('http://localhost:3000/api/usuarios', {
+      const res = await fetch('/api/usuarios', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
