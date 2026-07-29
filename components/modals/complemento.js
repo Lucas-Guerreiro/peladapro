@@ -63,17 +63,13 @@ window.ComplementoModal = {
   async handleSave() {
     const nome = document.getElementById("comp-name").value.trim();
     const dob = document.getElementById("comp-dob").value;
-    const cpf = document.getElementById("comp-cpf").value.trim();
+    const cpfInput = document.getElementById("comp-cpf");
+    const cpf = cpfInput ? cpfInput.value.trim() : "";
     const whatsapp = document.getElementById("comp-whatsapp").value.trim();
     const goleiro = document.getElementById("comp-is-gk").checked;
 
-    if (!nome || !dob || !cpf || !whatsapp) {
+    if (!nome || !dob || !whatsapp) {
       window.App.showToast("Por favor, preencha todos os campos obrigatórios.", "warning");
-      return;
-    }
-
-    if (cpf.length < 14) {
-      window.App.showToast("Por favor, informe um CPF válido.", "warning");
       return;
     }
 

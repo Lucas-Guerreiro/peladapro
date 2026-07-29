@@ -75,7 +75,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
                 ${p.nome} 
                 <span style="font-size:10px; font-weight:normal; background:rgba(255, 109, 0, 0.15); color:var(--accent); padding:2px 6px; border-radius:4px;">Pendente</span>
               </h4>
-              <span style="font-size:12px; color: var(--text-caption);">E-mail: ${p.email} | CPF: ${p.cpf || 'Não preenchido'}</span>
+              <span style="font-size:12px; color: var(--text-caption);">E-mail: ${p.email}</span>
             </div>
           </div>
           <div class="athlete-actions" style="display:flex; gap: 8px;">
@@ -101,7 +101,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
   // 3. Filtrar aprovados pelo termo de pesquisa
   const filtered = approvedPlayers.filter(p => {
-    return p.nome.toLowerCase().includes(searchQuery.toLowerCase()) || p.cpf.includes(searchQuery);
+    return (p.nome && p.nome.toLowerCase().includes(searchQuery.toLowerCase())) || (p.email && p.email.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   // Estatísticas baseadas apenas em contas confirmadas
@@ -145,7 +145,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
         ${avatarHTML}
         <div class="athlete-details">
           <h4>${p.nome} ${p.goleiro ? '🧤' : ''}</h4>
-          <span style="font-size:12px; color: var(--text-caption); display: block; margin-top: 2px;">E-mail: ${p.email || '—'} | CPF: ${p.cpf || 'Não preenchido'} | ⭐ ${estrelasText}</span>
+          <span style="font-size:12px; color: var(--text-caption); display: block; margin-top: 2px;">E-mail: ${p.email || '—'} | ⭐ ${estrelasText}</span>
         </div>
       </div>
       <div class="card-athlete-right">
