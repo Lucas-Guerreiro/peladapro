@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v4';
+const CACHE_NAME = 'peladapro-v5'; // ← Versão incrementada
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -50,13 +50,30 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/api/')) {
+  // ✅ CORRIDO: requisições de API passam direto (sem cache)
+  if (event.request.url.includes('/api/') || event.request.url.includes('supabase.co')) {
+    event.respondWith(fetch(event.request).catch(() => {
+      return new Response('Erro de rede', { status: 503 });
+    }));
     return;
   }
+
+  // Estratégia: Network First com fallback para cache
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).catch(() => {});
-    })
+    fetch(event.request)
+      .then((response) => {
+        // Atualiza o cache com a resposta nova
+        return caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      })
+      .catch(() => {
+        // Se falhou (offline), tenta do cache
+        return caches.match(event.request).then((cached) => {
+          return cached || new Response('Conteúdo não disponível', { status: 404 });
+        });
+      })
   );
 });
 
@@ -64,7 +81,6 @@ self.addEventListener('fetch', (event) => {
 // 🔔 PUSH NOTIFICATIONS LISTENERS
 // ==========================================================================
 
-// Listener do evento 'push' (Recebe notificações do servidor Web-Push)
 self.addEventListener('push', (event) => {
   let data = {};
 
@@ -102,7 +118,6 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Listener do evento 'notificationclick' (Clique na notificação)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
