@@ -2,10 +2,10 @@
 (function() {
   const originalFetch = window.fetch;
   window.fetch = function(input, init) {
-    if (typeof input === 'string' && input.startsWith('http://localhost:3000/api')) {
+    if (typeof input === 'string' && input.startsWith('/api')) {
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (!isLocal) {
-        input = input.replace('http://localhost:3000/api', '/api');
+        input = input.replace('/api', '/api');
       }
     }
     return originalFetch(input, init);
