@@ -67,7 +67,7 @@ window.GoogleAuthModal = {
       window.App.showToast("Conectando ao Google Accounts...", "info");
 
       // 1. Tenta registrar o usuário com e-mail do Google
-      const regResponse = await fetch('http://localhost:3000/api/auth/registrar', {
+      const regResponse = await fetch('/api/auth/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha: mockPassword })
@@ -77,7 +77,7 @@ window.GoogleAuthModal = {
 
       if (!regResponse.ok) {
         // Se já estiver cadastrado, tenta fazer login para forçar a geração de código ou autenticar
-        const logResponse = await fetch('http://localhost:3000/api/auth/login', {
+        const logResponse = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cpf: email, senha: mockPassword })
@@ -97,7 +97,7 @@ window.GoogleAuthModal = {
         // Se já estiver cadastrado e verificado com a senha do Google
         if (regResponse.status === 400 && regData.error.includes("já está cadastrado")) {
           // Faz login e entra direto!
-          const logConfirmRes = await fetch('http://localhost:3000/api/auth/login', {
+          const logConfirmRes = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cpf: email, senha: mockPassword })

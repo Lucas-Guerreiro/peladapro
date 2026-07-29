@@ -119,7 +119,7 @@ window.OtpModal = {
       window.App.showToast("Reenviando código...", "info");
       
       // Simula uma tentativa de login para re-gerar e reenviar o código OTP
-      const res = await fetch('http://localhost:3000/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf: this._email, senha: this._senha || 'senha123' })

@@ -22,7 +22,7 @@ async function test() {
     console.log('\nStep 1: Criando checkout Pix...');
     
     // Simular a chamada ao controller
-    const resCheckout = await fetch('http://localhost:3000/api/vendas/checkout', {
+    const resCheckout = await fetch('/api/vendas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: emailTeste, plano: 'mensal' })
@@ -40,7 +40,7 @@ async function test() {
 
     // 2. Simular a Confirmação de Pagamento
     console.log('\nStep 2: Simulando confirmação de pagamento Pix aprovado...');
-    const resConfirmar = await fetch('http://localhost:3000/api/vendas/confirmar', {
+    const resConfirmar = await fetch('/api/vendas/confirmar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email_comprador: emailTeste, licenca_codigo: licencaCodigo })
