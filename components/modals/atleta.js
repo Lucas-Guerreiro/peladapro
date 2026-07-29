@@ -17,6 +17,8 @@ window.App.initModalAtleta = function (data = {}) {
   const photoInput = document.getElementById("athlete-photo-input");
   const photoPreview = document.getElementById("athlete-photo-preview");
   const photoOverlay = document.getElementById("athlete-photo-overlay");
+  const saveBtn = document.getElementById("btn-save-athlete");
+  const closeBtn = document.getElementById("btn-close-athlete-modal");
 
   let photoBase64 = "";
 
@@ -30,18 +32,20 @@ window.App.initModalAtleta = function (data = {}) {
   if (password) password.value = "";
 
   const stars = document.querySelectorAll("#athlete-stars-selector .rating-star");
-  stars.forEach(s => s.style.color = "#ccc");
-  starSelector.dataset.value = 0;
+  if (stars && starSelector) {
+    stars.forEach(s => s.style.color = "#ccc");
+    starSelector.dataset.value = 0;
 
-  stars.forEach(star => {
-    star.onclick = () => {
-      const val = parseInt(star.getAttribute("data-value"));
-      starSelector.dataset.value = val;
-      stars.forEach((s, idx) => {
-        s.style.color = idx < val ? "var(--warning)" : "#ccc";
-      });
-    };
-  });
+    stars.forEach(star => {
+      star.onclick = () => {
+        const val = parseInt(star.getAttribute("data-value"));
+        starSelector.dataset.value = val;
+        stars.forEach((s, idx) => {
+          s.style.color = idx < val ? "var(--warning)" : "#ccc";
+        });
+      };
+    });
+  }
 
   // Hover da foto
   if (photoPreview && photoOverlay) {
@@ -54,7 +58,6 @@ window.App.initModalAtleta = function (data = {}) {
     photoInput.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Validação básica de tamanho (ex: 2MB)
         if (file.size > 2 * 1024 * 1024) {
           window.App.showToast("Escolha uma imagem menor que 2MB.", "error");
           return;
@@ -71,95 +74,128 @@ window.App.initModalAtleta = function (data = {}) {
 
   if (data.playerId || data.id) {
     const targetId = data.playerId || data.id;
-    title.textContent = "Editar Atleta";
+    if (title) title.textContent = "Editar Atleta";
+    
     const players = JSON.parse(localStorage.getItem("players")) || [];
-    const p = players.find(x => x.id === targetId);
+    let p = players.find(x => String(x.id) === String(targetId));
+    
+    // Se não encontrar na lista local, tenta usar o usuário autenticado atual
+    if (!p && window.Auth && window.Auth.currentUser && String(window.Auth.currentUser.id) === String(targetId)) {
+      p = window.Auth.currentUser;
+    }
 
     if (p) {
-      formId.value = p.id;
-      name.value = p.nome || "";
-      apelido.value = p.apelido || "";
+      if (formId) formId.value = p.id;
+      if (name) name.value = p.nome || "";
+      if (apelido) apelido.value = p.apelido || "";
       if (email) {
         email.value = p.email || "";
         email.disabled = false;
       }
-      if (p.data_nascimento) {
-        dob.value = p.data_nascimento.substring(0, 10);
-      } else {
-        dob.value = "";
+      if (dob) {
+        if (p.data_nascimento) {
+          dob.value = String(p.data_nascimento).substring(0, 10);
+        } else {
+          dob.value = "";
+        }
       }
       if (cpf) cpf.value = p.cpf || "";
-      whatsapp.value = p.whatsapp || "";
-      isGk.checked = !!p.goleiro;
+      if (whatsapp) whatsapp.value = p.whatsapp || "";
+      if (isGk) isGk.checked = !!p.goleiro;
 
       const rating = p.autoavaliacao || 0;
-      starSelector.dataset.value = rating;
-      stars.forEach((s, idx) => {
-        s.style.color = idx < rating ? "var(--warning)" : "#ccc";
-      });
+      if (starSelector) starSelector.dataset.value = rating;
+      if (stars) {
+        stars.forEach((s, idx) => {
+          s.style.color = idx < rating ? "var(--warning)" : "#ccc";
+        });
+      }
 
       photoBase64 = p.foto || p.photo || "";
-      if (photoBase64) {
-        photoPreview.style.backgroundImage = `url('${photoBase64}')`;
-      } else {
-        photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
+      if (photoPreview) {
+        if (photoBase64) {
+          photoPreview.style.backgroundImage = `url('${photoBase64}')`;
+        } else {
+          photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
+        }
       }
     }
   } else {
-    title.textContent = "Cadastrar Novo Atleta";
-    formId.value = "";
-    name.value = "";
-    apelido.value = "";
+    if (title) title.textContent = "Cadastrar Novo Atleta";
+    if (formId) formId.value = "";
+    if (name) name.value = "";
+    if (apelido) apelido.value = "";
     if (email) {
       email.value = "";
       email.disabled = false;
     }
-    dob.value = "";
+    if (dob) dob.value = "";
     if (cpf) cpf.value = "";
-    whatsapp.value = "";
-    isGk.checked = false;
-    starSelector.dataset.value = 0;
-    stars.forEach(s => s.style.color = "#ccc");
-    photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
+    if (whatsapp) whatsapp.value = "";
+    if (isGk) isGk.checked = false;
+    if (starSelector) starSelector.dataset.value = 0;
+    if (stars) stars.forEach(s => s.style.color = "#ccc");
+    if (photoPreview) photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
   }
 
   initModalMasks(cpf, whatsapp);
 
-  document.getElementById("btn-close-athlete-modal").onclick = window.App.closeModal;
-  saveBtn.onclick = async () => {
-    await handleSaveAthlete();
-  };
+  if (closeBtn) {
+    closeBtn.onclick = () => window.App.closeModal();
+  }
+
+  if (saveBtn) {
+    saveBtn.onclick = async (e) => {
+      if (e) e.preventDefault();
+      await handleSaveAthlete();
+    };
+  }
 };
 
 function initModalMasks(cpf, whatsapp) {
-  cpf.addEventListener("input", (e) => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-    if (v.length > 9) v = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`;
-    else if (v.length > 6) v = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`;
-    else if (v.length > 3) v = `${v.slice(0, 3)}.${v.slice(3)}`;
-    e.target.value = v;
-  });
+  if (cpf) {
+    cpf.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+      if (v.length > 9) v = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`;
+      else if (v.length > 6) v = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`;
+      else if (v.length > 3) v = `${v.slice(0, 3)}.${v.slice(3)}`;
+      e.target.value = v;
+    });
+  }
 
-  whatsapp.addEventListener("input", (e) => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-    if (v.length > 6) v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
-    else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
-    else if (v.length > 0) v = `(${v}`;
-    e.target.value = v;
-  });
+  if (whatsapp) {
+    whatsapp.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+      if (v.length > 6) v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+      else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+      else if (v.length > 0) v = `(${v}`;
+      e.target.value = v;
+    });
+  }
 }
 
-async function handleSaveAthlete(photoPreview) {
-  const id = document.getElementById("athlete-edit-id").value;
-  const name = document.getElementById("athlete-name").value.trim();
-  const apelido = document.getElementById("athlete-apelido").value.trim();
-  const email = document.getElementById("athlete-email").value.trim();
-  const password = document.getElementById("athlete-password") ? document.getElementById("athlete-password").value.trim() : "";
-  const dob = document.getElementById("athlete-dob").value;
-  const cpf = document.getElementById("athlete-cpf").value;
-  const whatsapp = document.getElementById("athlete-whatsapp").value;
-  const isGk = document.getElementById("athlete-is-gk").checked;
-  const rating = parseInt(document.getElementById("athlete-stars-selector").dataset.value) || 0;
+async function handleSaveAthlete() {
+  const photoPreview = document.getElementById("athlete-photo-preview");
+  const formIdEl = document.getElementById("athlete-edit-id");
+  const id = formIdEl ? formIdEl.value : "";
+  const nameInput = document.getElementById("athlete-name");
+  const name = nameInput ? nameInput.value.trim() : "";
+  const apelidoInput = document.getElementById("athlete-apelido");
+  const apelido = apelidoInput ? apelidoInput.value.trim() : "";
+  const emailInput = document.getElementById("athlete-email");
+  const email = emailInput ? emailInput.value.trim() : "";
+  const passwordInput = document.getElementById("athlete-password");
+  const password = passwordInput ? passwordInput.value.trim() : "";
+  const dobInput = document.getElementById("athlete-dob");
+  const dob = dobInput ? dobInput.value : "";
+  const cpfEl = document.getElementById("athlete-cpf");
+  const cpf = cpfEl ? cpfEl.value : "";
+  const whatsappInput = document.getElementById("athlete-whatsapp");
+  const whatsapp = whatsappInput ? whatsappInput.value : "";
+  const isGkEl = document.getElementById("athlete-is-gk");
+  const isGk = isGkEl ? isGkEl.checked : false;
+  const starSelector = document.getElementById("athlete-stars-selector");
+  const rating = (starSelector && starSelector.dataset.value) ? parseInt(starSelector.dataset.value) : 0;
 
   // Extrair base64 do background-image se houver
   let photoVal = "";
@@ -204,7 +240,7 @@ async function handleSaveAthlete(photoPreview) {
         return;
       }
 
-      window.App.showToast("Perfil atualizado com sucesso!", "success");
+      window.App.showToast("Perfil atualizado com sucesso! 🎉", "success");
 
       // Sincroniza dados atualizados do backend para o local do front
       const token = localStorage.getItem('token');
@@ -225,6 +261,7 @@ async function handleSaveAthlete(photoPreview) {
         autoavaliacao: rating,
         foto: photoVal || window.Auth.currentUser.foto
       };
+      localStorage.setItem('currentUser', JSON.stringify(window.Auth.currentUser));
 
       const headerName = document.getElementById("header-user-name");
       if (headerName) headerName.textContent = name;
@@ -244,8 +281,6 @@ async function handleSaveAthlete(photoPreview) {
   }
 
   // --- Fluxo de atualização por Gestor ---
-  const players = JSON.parse(localStorage.getItem("players")) || [];
-
   if (id) {
     try {
       window.App.showToast("Atualizando atleta no banco...", "info");
@@ -282,9 +317,8 @@ async function handleSaveAthlete(photoPreview) {
         return;
       }
 
-      window.App.showToast("Atleta atualizado com sucesso!", "success");
+      window.App.showToast("Atleta atualizado com sucesso! 🎉", "success");
 
-      // Recarrega a lista de atletas sincronizada do backend no front
       if (window.App.syncAthletesList) {
         await window.App.syncAthletesList();
       }
@@ -332,9 +366,8 @@ async function handleSaveAthlete(photoPreview) {
         return;
       }
 
-      window.App.showToast("Atleta cadastrado com sucesso!", "success");
+      window.App.showToast("Atleta cadastrado com sucesso! 🎉", "success");
 
-      // Recarrega a lista de atletas sincronizada do backend no front
       if (window.App.syncAthletesList) {
         await window.App.syncAthletesList();
       }
@@ -347,5 +380,9 @@ async function handleSaveAthlete(photoPreview) {
       return;
     }
   }
-
 }
+
+window.App.handleSaveAthleteProxy = async function(e) {
+  if (e) e.preventDefault();
+  await handleSaveAthlete();
+};

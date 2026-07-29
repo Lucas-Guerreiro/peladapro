@@ -3,7 +3,7 @@
   <div class="modal-content">
     <div class="modal-header">
       <h3 id="athlete-modal-title">Cadastrar Novo Atleta</h3>
-      <button class="modal-close" id="btn-close-athlete-modal">&times;</button>
+      <button class="modal-close" id="btn-close-athlete-modal" onclick="window.App.closeModal()">&times;</button>
     </div>
 
     <input type="hidden" id="athlete-edit-id">
@@ -86,7 +86,7 @@
       </div>
     </div>
 
-    <button id="btn-save-athlete" class="btn btn-md btn-primary" style="width: 100%;">
+    <button id="btn-save-athlete" class="btn btn-md btn-primary" style="width: 100%;" onclick="window.App.handleSaveAthleteProxy(event)">
       Salvar Cadastro
     </button>
   </div>
