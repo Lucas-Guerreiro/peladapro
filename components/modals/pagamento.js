@@ -72,7 +72,7 @@ async function handleConfirmPayment() {
 
     const responseData = await res.json();
 
-    if (!res.ok) {
+    if (res.status < 200 || res.status >= 300) {
       window.App.showToast(responseData.error || "Erro ao confirmar presença.", "error");
       return;
     }
