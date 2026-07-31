@@ -40,6 +40,18 @@ window.App.initFormacao = function() {
     btnAddTeam.onclick = criarTimeManual;
   }
 
+  const btnOpenAddPresence = document.getElementById("btn-open-add-presence-modal");
+  if (btnOpenAddPresence) {
+    btnOpenAddPresence.onclick = () => {
+      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+      if (!peladaId) {
+        window.App.showToast("Selecione uma pelada primeiro.", "warning");
+        return;
+      }
+      window.App.openModal("adicionar_presenca", { peladaId: peladaId });
+    };
+  }
+
   const selectStatus = document.getElementById("select-pelada-status");
   if (selectStatus) {
     let _updatingStatus = false;
@@ -113,6 +125,8 @@ window.App.initFormacao = function() {
   window.drop = drop;
   window.renameTeam = renameTeam;
   window.togglePresenter = togglePresenter;
+  window.desconvocarAtleta = desconvocarAtleta;
+  window.App.updateCheckinPlayersList = updateCheckinPlayersList;
 };
 
 // Vinculado dinamicamente para compartilhar presenças

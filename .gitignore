@@ -63,3 +63,5 @@ scratch/
 *.OLD
 *Copia*
 check_users.js
+
+.vercel

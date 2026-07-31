@@ -98,14 +98,14 @@ async function handleConfirmPayment() {
       window.Dashboard.renderPlayerData();
     }
 
-    // Fechar o modal
-    window.App.closeModal();
-
     // Recarregar a lista de confirmados e status da convocação na tela de Convocação!
     if (window.Convocacao) {
       await window.Convocacao.renderConfirmedList(localPelada.id);
       window.Convocacao.updateMyStatus();
     }
+
+    // Fechar o modal
+    window.App.closeModal();
 
   } catch (err) {
     console.error(err);

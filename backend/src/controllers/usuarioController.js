@@ -42,6 +42,17 @@ exports.atualizarPerfil = async (req, res) => {
       }
     }
 
+    // 2.5. Se CPF foi informado, verificar unicidade
+    if (cpf && cpf.trim()) {
+      const { rows: cpfCheck } = await db.query(
+        'SELECT id FROM usuarios WHERE cpf = $1 AND id <> $2',
+        [cpf.trim(), usuario_id]
+      );
+      if (cpfCheck.length > 0) {
+        return res.status(400).json({ error: 'Este CPF já está cadastrado para outro usuário.' });
+      }
+    }
+
     // 3. Tratar senha se informada
     let newHash = null;
     if (senha && senha.trim()) {
@@ -77,7 +88,7 @@ exports.atualizarPerfil = async (req, res) => {
       goleiro !== undefined ? !!goleiro : null,
       cpf ? cpf.trim() : null,
       data_nascimento || null,
-      autoavaliacao !== undefined ? parseInt(autoavaliacao) : null,
+      autoavaliacao !== undefined && parseInt(autoavaliacao) >= 1 && parseInt(autoavaliacao) <= 5 ? parseInt(autoavaliacao) : null,
       usuario_id
     ]);
 
@@ -359,9 +370,9 @@ exports.atualizarPorGestor = async (req, res) => {
           data_nascimento = $4,
           whatsapp = $5,
           goleiro = $6,
-          autoavaliacao = $7,
+          autoavaliacao = COALESCE($7, autoavaliacao),
           foto = $8,
-          avaliacao_media = $9,
+          avaliacao_media = COALESCE($9, avaliacao_media),
           email = COALESCE($10, email),
           senha_hash = COALESCE($11, senha_hash)
       WHERE id = $12
@@ -374,9 +385,9 @@ exports.atualizarPorGestor = async (req, res) => {
       data_nascimento || null,
       whatsapp || null,
       !!goleiro,
-      autoavaliacao !== undefined ? parseInt(autoavaliacao) : 3,
+      autoavaliacao !== undefined && parseInt(autoavaliacao) >= 1 && parseInt(autoavaliacao) <= 5 ? parseInt(autoavaliacao) : null,
       foto || null,
-      autoavaliacao !== undefined ? parseFloat(autoavaliacao) : 3.0,
+      autoavaliacao !== undefined && parseFloat(autoavaliacao) >= 1 && parseFloat(autoavaliacao) <= 5 ? parseFloat(autoavaliacao) : null,
       email ? email.trim().toLowerCase() : null,
       newHash,
       id

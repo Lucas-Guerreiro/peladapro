@@ -1,0 +1,83 @@
+<!-- Modal: Adicionar Jogador à Presença (Atleta ou Convidado) -->
+<div class="modal-backdrop" id="modal-add-presence-backdrop" style="font-family: 'Inter', sans-serif;">
+  <div class="modal-content" style="max-width: 480px; padding: 24px; border-radius: 16px; background: var(--card-background); box-shadow: var(--shadow-lg);">
+    
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-heading);">Adicionar Jogador</h3>
+      <button class="modal-close" id="btn-close-presence-modal" onclick="window.App.closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-caption);">&times;</button>
+    </div>
+
+    <!-- ABAS DO MODAL -->
+    <div style="display: flex; background: var(--background); border-radius: 8px; padding: 4px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+      <button id="tab-add-registered" class="btn-tab-modal active" style="flex: 1; padding: 8px; font-size: 13px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: var(--text-caption); transition: all 0.2s;">
+        Atleta Cadastrado
+      </button>
+      <button id="tab-add-guest" class="btn-tab-modal" style="flex: 1; padding: 8px; font-size: 13px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: var(--text-caption); transition: all 0.2s;">
+        Convidado Novo
+      </button>
+    </div>
+
+    <!-- CONTEÚDO: ATLETA CADASTRADO -->
+    <div id="content-add-registered" style="display: block; margin-bottom: 24px;">
+      <div class="form-group">
+        <label for="select-add-athlete" class="form-label" style="font-weight: 700; margin-bottom: 8px; display: block;">Selecione o Atleta</label>
+        <select id="select-add-athlete" class="form-control" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid var(--border-color); font-family: 'Inter', sans-serif;">
+          <!-- Preenchido via JS -->
+        </select>
+        <span style="font-size: 11px; color: var(--text-caption); margin-top: 6px; display: block;">Apenas atletas do grupo que ainda não estão presentes nesta pelada serão mostrados.</span>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO: CONVIDADO NOVO -->
+    <div id="content-add-guest" style="display: none; margin-bottom: 24px; animation: fadeIn 0.2s ease-out;">
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="input-guest-name" class="form-label" style="font-weight: 700; margin-bottom: 8px; display: block;">Nome do Convidado</label>
+        <input type="text" id="input-guest-name" class="form-control" placeholder="Ex: Lucas do PIX" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);">
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--background); border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+        <div>
+          <span style="font-weight: 700; font-size: 13px; color: var(--text-body); display: block; margin-bottom: 2px;">Posição: Goleiro? 🧤</span>
+          <span style="font-size: 11px; color: var(--text-caption);">Marque se ele for jogar no gol</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="check-guest-gk" class="toggle-input">
+          <span class="toggle-label"></span>
+        </label>
+      </div>
+
+      <div class="form-group" style="text-align: center; background: var(--background); border-radius: 10px; padding: 12px; border: 1px solid var(--border-color);">
+        <label class="form-label" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 13px;">Autoavaliação Técnica</label>
+        <div id="guest-stars-selector" style="display: flex; gap: 8px; justify-content: center; font-size: 24px;" data-value="3">
+          <span class="guest-star" data-value="1" style="cursor: pointer; color: var(--warning); transition: color 0.15s;">★</span>
+          <span class="guest-star" data-value="2" style="cursor: pointer; color: var(--warning); transition: color 0.15s;">★</span>
+          <span class="guest-star" data-value="3" style="cursor: pointer; color: var(--warning); transition: color 0.15s;">★</span>
+          <span class="guest-star" data-value="4" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+          <span class="guest-star" data-value="5" style="cursor: pointer; color: #ccc; transition: color 0.15s;">★</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTÕES DE AÇÃO -->
+    <div style="display: flex; gap: 12px;">
+      <button class="btn btn-outline-secondary" onclick="window.App.closeModal()" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer;">Cancelar</button>
+      <button id="btn-submit-presence" class="btn btn-primary" style="flex: 1.5; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        Adicionar Jogador
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Estilos inline temporários para transições suaves de abas -->
+<style>
+  .btn-tab-modal.active {
+    background: var(--card-background) !important;
+    color: var(--primary) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

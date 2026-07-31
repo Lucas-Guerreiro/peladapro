@@ -216,7 +216,7 @@ exports.desconvocarPorGestor = async (req, res) => {
   try {
     // Verifica se existe a convocação
     const { rows: check } = await db.query(
-      'SELECT id FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
+      'SELECT usuario_id FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
       [pelada_id, usuario_id]
     );
     if (check.length === 0) {
@@ -232,5 +232,78 @@ exports.desconvocarPorGestor = async (req, res) => {
     res.json({ message: 'Atleta desconvocado com sucesso!' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao desconvocar atleta.', detail: err.message });
+  }
+};
+
+exports.adicionarPorGestor = async (req, res) => {
+  const gestorTipo = req.usuarioTipo;
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem adicionar atletas.' });
+  }
+
+  const { pelada_id, usuario_id, convidado } = req.body;
+
+  if (!pelada_id) {
+    return res.status(400).json({ error: 'ID da pelada é obrigatório.' });
+  }
+
+  try {
+    let finalUsuarioId = usuario_id;
+
+    // Se for um novo convidado
+    if (convidado && convidado.nome) {
+      const bcrypt = require('bcrypt');
+      const hash = await bcrypt.hash('123456', 10);
+      const emailFicticio = `convidado_${Date.now()}_${Math.floor(Math.random() * 1000)}@convidado.com`;
+      const autoRating = convidado.autoavaliacao !== undefined ? parseInt(convidado.autoavaliacao) : 3;
+
+      // Inserir na tabela usuarios
+      const insertUserQuery = `
+        INSERT INTO usuarios (nome, email, senha_hash, autoavaliacao, tipo, goleiro, verificado, ativo, saldo, gols, partidas, avaliacao_media)
+        VALUES ($1, $2, $3, $4, 'jogador', $5, true, true, 0.00, 0, 0, $6)
+        RETURNING id`;
+      
+      const { rows: userInserted } = await db.query(insertUserQuery, [
+        convidado.nome.trim(),
+        emailFicticio,
+        hash,
+        autoRating,
+        !!convidado.goleiro,
+        parseFloat(autoRating)
+      ]);
+      finalUsuarioId = userInserted[0].id;
+    }
+
+    if (!finalUsuarioId) {
+      return res.status(400).json({ error: 'É necessário informar um atleta existente ou dados do convidado.' });
+    }
+
+    // Verifica se já existe convocação para esse usuário nesta pelada
+    const { rows: check } = await db.query(
+      'SELECT status FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
+      [pelada_id, finalUsuarioId]
+    );
+
+    if (check.length > 0) {
+      // Se já existir, força a presença como true e status como confirmado
+      await db.query(
+        `UPDATE convocacoes 
+         SET status = 'confirmado', presenca = true, motivo_remocao = null, data_remocao = null 
+         WHERE pelada_id = $1 AND usuario_id = $2`,
+        [pelada_id, finalUsuarioId]
+      );
+    } else {
+      // Se não existir convocação, insere uma nova confirmada e presente
+      await db.query(
+        `INSERT INTO convocacoes (pelada_id, usuario_id, status, presenca, forma_pagamento) 
+         VALUES ($1, $2, 'confirmado', true, 'saldo')`,
+        [pelada_id, finalUsuarioId]
+      );
+    }
+
+    res.status(201).json({ message: 'Jogador adicionado à presença com sucesso!', usuario_id: finalUsuarioId });
+  } catch (err) {
+    console.error('[adicionarPorGestor]', err);
+    res.status(500).json({ error: 'Erro ao adicionar jogador à pelada.', detail: err.message });
   }
 };

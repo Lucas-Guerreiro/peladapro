@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v6'; // ← Incrementado (v5 → v6)
+const CACHE_NAME = 'peladapro-v7'; // ← Incrementado (v6 → v7)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -66,28 +66,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3) Network First com fallback para cache (estático)
+  // 3) Stale-While-Revalidate para recursos estáticos
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, response.clone());
-            return response;
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(request).then((cachedResponse) => {
+        const fetchPromise = fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Em caso de falha de rede total
+            if (request.mode === 'navigate') {
+              return caches.match('/');
+            }
+            return new Response('Conteúdo não disponível', { status: 404 });
           });
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(request).then((cached) => {
-          if (cached) return cached;
-          // 4) Offline e sem cache: para navegação, devolve a página inicial
-          if (request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          return new Response('Conteúdo não disponível', { status: 404 });
-        });
-      })
+        
+        // Retorna a resposta em cache se existir de imediato, senão espera a rede
+        return cachedResponse || fetchPromise;
+      });
+    })
   );
 });
 

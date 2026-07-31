@@ -8,9 +8,14 @@
       <span id="checkin-count" class="badge-status confirmado" style="font-size: 11px;">0 Presentes</span>
     </div>
 
-    <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px;">
-      <button id="btn-presence-all" class="btn btn-sm" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; color: #1e3a8a; background: #e0f2fe; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Confirmar Todos</button>
-      <button id="btn-presence-none" class="btn btn-sm" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Limpar Todos</button>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="btn-presence-all" class="btn btn-sm" style="flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; color: #1e3a8a; background: #e0f2fe; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Confirmar Todos</button>
+        <button id="btn-presence-none" class="btn btn-sm" style="flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Limpar Todos</button>
+      </div>
+      <button id="btn-open-add-presence-modal" class="btn btn-sm btn-primary" style="width: 100%; padding: 8px; font-size: 12px; font-weight: 700; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">
+        ➕ Adicionar Atleta / Convidado
+      </button>
     </div>
     
     <div class="form-group" style="margin-bottom: 16px;">
