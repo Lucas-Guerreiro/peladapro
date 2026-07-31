@@ -2,8 +2,9 @@
 // PÁGINA: GESTOR - FORMAÇÃO E SORTEIO (formacao.js)
 // ==========================================================================
 
-window.App.initFormacao = function() {
-  renderManagerCheckin();
+window.App.initFormacao = async function() {
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  await renderManagerCheckin(peladaId);
 
   const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   const groupId = group ? group.id : null;
@@ -440,6 +441,19 @@ window.App.renderDrawnTeams = async function() {
 
   const activePelada = window.App.activePelada;
 
+  if (activePelada) {
+    const lastActivePeladaId = localStorage.getItem("lastActivePeladaId");
+    if (lastActivePeladaId !== String(activePelada.id)) {
+      localStorage.setItem("lastActivePeladaId", String(activePelada.id));
+      const specificTeams = localStorage.getItem(`teams_${activePelada.id}`);
+      if (specificTeams) {
+        localStorage.setItem("teams", specificTeams);
+      } else {
+        localStorage.removeItem("teams");
+      }
+    }
+  }
+
   // Se a pelada selecionada estiver finalizada, limpa os times sorteados
   if (activePelada && activePelada.status === "finalizada") {
     localStorage.removeItem("teams");
@@ -582,6 +596,16 @@ window.App.renderDrawnTeams = async function() {
 
   if (teamsModificados) {
     localStorage.setItem("teams", JSON.stringify(teams));
+  }
+
+  // Sincroniza o localStorage "teams_${peladaId}" com os times atuais
+  if (activePelada) {
+    const currentTeams = localStorage.getItem("teams");
+    if (currentTeams) {
+      localStorage.setItem(`teams_${activePelada.id}`, currentTeams);
+    } else {
+      localStorage.removeItem(`teams_${activePelada.id}`);
+    }
   }
 
   // Tenta salvar/sincronizar no banco em segundo plano se houver times locais
