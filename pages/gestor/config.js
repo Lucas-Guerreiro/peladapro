@@ -42,6 +42,8 @@ window.App.initConfig = function () {
       const selectedGroup = grupos.find(g => g.id === selectedId);
       if (selectedGroup) {
         window.App.currentGroup = selectedGroup;
+        if (window.Auth) window.Auth.currentGroup = selectedGroup;
+        localStorage.setItem('currentGroup', JSON.stringify(selectedGroup));
         loadConfigs();
       }
       await loadDrawnDates();
@@ -127,18 +129,19 @@ function loadConfigs() {
 // --- Carrega os grupos (peladas) do gestor para agendamento ---------------
 async function loadGestorGroups() {
   const select = document.getElementById("select-schedule-group");
-  if (!select) return;
 
   try {
     const grupos = await Api.getGruposDoGestor();
     window.App.gestorGroups = grupos; // Armazena em cache no global
-    select.innerHTML = "";
+    if (select) select.innerHTML = "";
 
     if (grupos.length === 0) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "Nenhuma pelada criada";
-      select.appendChild(opt);
+      if (select) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Nenhuma pelada criada";
+        select.appendChild(opt);
+      }
       return;
     }
 
@@ -149,20 +152,23 @@ async function loadGestorGroups() {
     if (grupos.length > 0 && (!window.App.currentGroup || !belongsToMe)) {
       window.App.currentGroup = grupos[0];
       if (window.Auth) window.Auth.currentGroup = grupos[0];
+      localStorage.setItem('currentGroup', JSON.stringify(grupos[0]));
 
       // Carrega configurações correspondentes
       loadConfigs();
     }
 
-    grupos.forEach(g => {
-      const opt = document.createElement("option");
-      opt.value = g.id;
-      opt.textContent = g.nome;
-      if (window.App.currentGroup && g.id === window.App.currentGroup.id) {
-        opt.selected = true;
-      }
-      select.appendChild(opt);
-    });
+    if (select) {
+      grupos.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = g.nome;
+        if (window.App.currentGroup && g.id === window.App.currentGroup.id) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
+      });
+    }
   } catch (err) {
     console.error("Erro ao carregar grupos:", err);
   }

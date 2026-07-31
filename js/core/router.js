@@ -107,6 +107,27 @@ const Router = {
     const needsLayout   = isGestorPage || isJogadorPage;
     const newRole       = isGestorPage ? 'gestor' : (isJogadorPage ? 'jogador' : null);
 
+    // Garantir que o grupo ativo do gestor esteja carregado antes de carregar a aba
+    if (isGestorPage && (!Auth.currentGroup || !window.App.currentGroup)) {
+      try {
+        const grupos = await Api.getGruposDoGestor();
+        if (grupos && grupos.length > 0) {
+          const gestorId = Auth.currentUser ? Auth.currentUser.id : null;
+          const groupRaw = localStorage.getItem('currentGroup');
+          const currentGroupLocal = groupRaw ? JSON.parse(groupRaw) : null;
+          const belongsToMe = currentGroupLocal && gestorId && String(currentGroupLocal.gestor_id) === String(gestorId);
+          
+          const activeGroup = (belongsToMe ? currentGroupLocal : null) || grupos.find(g => gestorId && String(g.gestor_id) === String(gestorId)) || grupos[0];
+          
+          Auth.currentGroup = activeGroup;
+          window.App.currentGroup = activeGroup;
+          localStorage.setItem('currentGroup', JSON.stringify(activeGroup));
+        }
+      } catch (err) {
+        console.error('[Router] Erro ao carregar grupos do gestor:', err);
+      }
+    }
+
     // ---- Precisa renderizar o layout principal? ----
     let container = document.getElementById(
       isGestorPage ? 'manager-tab-content-container' : 'player-tab-content-container'
