@@ -454,16 +454,6 @@ window.App.renderDrawnTeams = async function () {
         } catch (e) { }
       }
     }
-    if (peladaId && window.Api && window.Api.obterLiveState) {
-      try {
-        const liveRes = await window.Api.obterLiveState(peladaId);
-        if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams) && liveRes.state.teams.length > 0) {
-          teams = liveRes.state.teams;
-          // ===== CORREÇÃO: salva na chave com ID da pelada =====
-          localStorage.setItem(teamsKey, JSON.stringify(teams));
-        }
-      } catch (e) { }
-    }
   }
   if (!teams || teams.length === 0) {
     container.innerHTML = `
