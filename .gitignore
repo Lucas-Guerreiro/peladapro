@@ -58,3 +58,8 @@ backend/.env.*
 
 # Arquivos de IDE
 .idea/
+
+scratch/
+*.OLD
+*Copia*
+check_users.js
