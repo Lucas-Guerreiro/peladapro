@@ -58,7 +58,7 @@ async function handleConfirmPayment() {
   try {
     window.App.showToast("Confirmando presença no servidor...", "info");
 
-    const res = await fetch('http://localhost:3000/api/convocacoes/confirmar', {
+    const res = await fetch('/api/convocacoes/confirmar', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
