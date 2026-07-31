@@ -36,6 +36,38 @@ window.App.initFormacao = async function() {
     };
   }
 
+  const btnClearTeams = document.getElementById("btn-clear-teams");
+  if (btnClearTeams) {
+    btnClearTeams.onclick = async () => {
+      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+      if (!peladaId) {
+        window.App.showToast("Selecione uma pelada primeiro.", "warning");
+        return;
+      }
+      
+      const confirmClear = confirm("Tem certeza que deseja apagar a formação de times deste dia localmente e na nuvem?");
+      if (!confirmClear) return;
+      
+      try {
+        const token = localStorage.getItem("token");
+        // Limpa no localStorage
+        localStorage.removeItem("teams");
+        localStorage.removeItem(`teams_${peladaId}`);
+        
+        // Salva estado vazio na nuvem
+        if (window.Api && window.Api.atualizarLiveState) {
+          await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, []);
+        }
+        
+        window.App.showToast("Formação de times apagada com sucesso!", "success");
+        window.App.renderDrawnTeams();
+      } catch (err) {
+        console.error("[LimparTimes]", err);
+        window.App.showToast("Erro ao apagar times na nuvem.", "error");
+      }
+    };
+  }
+
   const btnAddTeam = document.getElementById("btn-add-team-manual");
   if (btnAddTeam) {
     btnAddTeam.onclick = criarTimeManual;
