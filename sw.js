@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v5'; // ← Versão incrementada
+const CACHE_NAME = 'peladapro-v6'; // ← Incrementado (v5 → v6)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -31,7 +31,7 @@ self.addEventListener('install', (event) => {
       });
     })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // instala a versão nova imediatamente
 });
 
 self.addEventListener('activate', (event) => {
@@ -46,32 +46,46 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // assume o controle das abas abertas
 });
 
 self.addEventListener('fetch', (event) => {
-  // ✅ CORRIDO: requisições de API passam direto (sem cache)
-  if (event.request.url.includes('/api/') || event.request.url.includes('supabase.co')) {
-    event.respondWith(fetch(event.request).catch(() => {
+  const { request } = event;
+
+  // 1) API / Supabase: SEMPRE direto, nunca cachear
+  if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
+    event.respondWith(fetch(request).catch(() => {
       return new Response('Erro de rede', { status: 503 });
     }));
     return;
   }
 
-  // Estratégia: Network First com fallback para cache
+  // 2) Só faz cache de requisições GET (POST/GET de formulário não podem ser cacheados)
+  if (request.method !== 'GET') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // 3) Network First com fallback para cache (estático)
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        // Atualiza o cache com a resposta nova
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, response.clone());
-          return response;
-        });
+        if (response && response.status === 200) {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, response.clone());
+            return response;
+          });
+        }
+        return response;
       })
       .catch(() => {
-        // Se falhou (offline), tenta do cache
-        return caches.match(event.request).then((cached) => {
-          return cached || new Response('Conteúdo não disponível', { status: 404 });
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // 4) Offline e sem cache: para navegação, devolve a página inicial
+          if (request.mode === 'navigate') {
+            return caches.match('/');
+          }
+          return new Response('Conteúdo não disponível', { status: 404 });
         });
       })
   );

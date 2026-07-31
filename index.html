@@ -64,10 +64,20 @@
   </script>
 
   <script>
+    // ===== ATUALIZAÇÃO AUTOMÁTICA DO APP =====
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js');
+      let refreshing = false;
+
+      // Quando o SW novo assumir o controle, recarrega a página sozinho
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
+
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(() => console.log('[PWA] Service Worker registrado'))
+        .catch(err => console.warn('[PWA] Erro ao registrar SW:', err));
     }
   </script>
 
