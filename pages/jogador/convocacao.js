@@ -6,13 +6,13 @@ var Convocacao = {
 
   _selectedPeladaId: null,
 
-  init: function() {
+  init: function () {
     this.populateGroupSelector();
     this.bindEvents();
   },
 
   // --- Popula o select de grupos (sincronizado com backend real) -----------
-  populateGroupSelector: async function() {
+  populateGroupSelector: async function () {
     var selectGroup = document.getElementById('select-conv-pelada');
     if (!selectGroup) return;
 
@@ -36,8 +36,8 @@ var Convocacao = {
 
     var groups = Api.getGroups();
     selectGroup.innerHTML = '<option value="">▼ Selecione o grupo</option>';
-    
-    groups.forEach(function(g) {
+
+    groups.forEach(function (g) {
       var opt = document.createElement('option');
       opt.value = g.id;
       opt.textContent = g.nome;
@@ -53,7 +53,7 @@ var Convocacao = {
   },
 
   // --- Trata a mudança de grupo e popula as datas correspondentes --------
-  handleGroupChange: async function(groupId) {
+  handleGroupChange: async function (groupId) {
     var selectData = document.getElementById('select-conv-data');
     if (!selectData) return;
 
@@ -61,7 +61,7 @@ var Convocacao = {
       selectData.innerHTML = '<option value="">Selecione um grupo primeiro</option>';
       selectData.disabled = true;
       selectData.style.background = 'var(--background)';
-      
+
       this._selectedPeladaId = null;
       this.renderConfirmedList(null);
       this.updateMyStatus();
@@ -80,7 +80,7 @@ var Convocacao = {
         selectData.innerHTML = '<option value="">Nenhuma data cadastrada</option>';
         selectData.disabled = true;
         selectData.style.background = 'var(--background)';
-        
+
         this._selectedPeladaId = null;
         this.renderConfirmedList(null);
         this.updateMyStatus();
@@ -88,7 +88,7 @@ var Convocacao = {
       }
 
       // Priorizar peladas ativas/agendadas (não finalizadas), ou listar todas se todas estiverem finalizadas
-      var activePeladas = peladas.filter(function(p) {
+      var activePeladas = peladas.filter(function (p) {
         return p.status !== 'finalizada';
       });
       var listToRender = activePeladas.length > 0 ? activePeladas : peladas;
@@ -121,7 +121,7 @@ var Convocacao = {
       selectData.style.background = 'var(--card-background)';
       selectData.innerHTML = '';
 
-      listToRender.forEach(function(p) {
+      listToRender.forEach(function (p) {
         var opt = document.createElement('option');
         opt.value = p.id;
         var dataFmt = window.Utils ? window.Utils.formatDate(p.data) : p.data;
@@ -143,7 +143,7 @@ var Convocacao = {
   },
 
   // --- Atualiza as informações do Pix com base na pelada selecionada --------
-  updatePixInfo: async function(peladaId) {
+  updatePixInfo: async function (peladaId) {
     const keyEl = document.getElementById('pix-display-key');
     const benEl = document.getElementById('pix-display-beneficiario');
     if (!keyEl || !benEl) return;
@@ -163,7 +163,7 @@ var Convocacao = {
           const peladas = await Api.listarDatasDoGrupo(groupId);
           const encontrada = peladas.find(p => String(p.id) === String(peladaId));
           if (encontrada) pelada = encontrada;
-        } catch(e) {}
+        } catch (e) { }
       }
     }
 
@@ -177,8 +177,8 @@ var Convocacao = {
   },
 
   // --- Renderiza a lista de confirmados puxada em tempo real ----------------
-  renderConfirmedList: async function(peladaId) {
-    var listEl    = document.getElementById('confirmed-list');
+  renderConfirmedList: async function (peladaId) {
+    var listEl = document.getElementById('confirmed-list');
     var counterEl = document.getElementById('conv-counter');
     if (!listEl) return;
 
@@ -190,15 +190,15 @@ var Convocacao = {
 
     try {
       listEl.innerHTML = '<div style="padding: 32px; text-align: center;" class="text-inter">Carregando convocados...</div>';
-      
+
       const convocados = await Api.listarConvocados(peladaId);
-      
+
       // Obter max_jogadores da pelada atual local
       var pelada = Api.getPelada(peladaId);
       var max = pelada ? (pelada.max_jogadores || 20) : 20;
 
       // Filtrar confirmados
-      var confirmed = convocados.filter(function(c) {
+      var confirmed = convocados.filter(function (c) {
         return c.status === 'confirmado';
       });
 
@@ -210,10 +210,10 @@ var Convocacao = {
       }
 
       var html = '';
-      confirmed.forEach(function(c) {
-        var nome    = c.apelido || c.nome || 'Desconhecido';
-        var stars   = Utils.starsHTML(c.autoavaliacao || 0, 5);
-        var isMe    = Auth.currentUser && String(c.id) === String(Auth.currentUser.id);
+      confirmed.forEach(function (c) {
+        var nome = c.apelido || c.nome || 'Desconhecido';
+        var stars = Utils.starsHTML(c.autoavaliacao || 0, 5);
+        var isMe = Auth.currentUser && String(c.id) === String(Auth.currentUser.id);
 
         var avatarHTML = '';
         var hasPhoto = c.foto || c.photo;
@@ -222,20 +222,20 @@ var Convocacao = {
         } else {
           avatarHTML = '<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
             nome.charAt(0).toUpperCase() +
-          '</div>';
+            '</div>';
         }
 
         html += '<div style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border-color);">' +
           avatarHTML +
           '<div style="flex: 1;">' +
-            '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading);">' +
-              nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary); background: rgba(0,230,118,0.1); padding: 2px 6px; border-radius: 10px;">Você</span>' : '') +
-              (c.goleiro ? ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' : '') +
-            '</p>' +
-            '<p class="text-inter" style="font-size: 12px; color: var(--warning);">' + stars + '</p>' +
+          '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading);">' +
+          nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary); background: rgba(0,230,118,0.1); padding: 2px 6px; border-radius: 10px;">Você</span>' : '') +
+          (c.goleiro ? ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' : '') +
+          '</p>' +
+          '<p class="text-inter" style="font-size: 12px; color: var(--warning);">' + stars + '</p>' +
           '</div>' +
           '<span class="badge-status confirmado">✅</span>' +
-        '</div>';
+          '</div>';
       });
 
       listEl.innerHTML = html;
@@ -252,7 +252,7 @@ var Convocacao = {
         });
       });
       Api.saveConvocations(localConvocations);
-      
+
     } catch (err) {
       console.error('[Convocacao] Erro ao buscar confirmados:', err);
       listEl.innerHTML = '<div class="empty-state" style="padding: 32px;"><p class="text-inter" style="color:var(--danger)">Erro ao carregar convocados.</p></div>';
@@ -260,20 +260,20 @@ var Convocacao = {
   },
 
   // --- Atualiza o status e saldo do jogador ------------------------------
-  updateMyStatus: async function() {
+  updateMyStatus: async function () {
     if (window.Auth && window.Auth.refreshCurrentUser) {
       await window.Auth.refreshCurrentUser();
     }
-    var user      = Auth.currentUser;
-    var statusEl  = document.getElementById('my-status-badge');
+    var user = Auth.currentUser;
+    var statusEl = document.getElementById('my-status-badge');
     var balanceEl = document.getElementById('my-balance-conv');
-    var btnAdd    = document.getElementById('btn-conv-add');
+    var btnAdd = document.getElementById('btn-conv-add');
     var btnRemove = document.getElementById('btn-conv-remove');
-    
+
     if (balanceEl && user) {
       var saldo = parseFloat(user.saldo || 0);
-      balanceEl.textContent   = Utils.formatCurrency(saldo);
-      balanceEl.style.color   = saldo < 0 ? 'var(--danger)' : 'var(--primary)';
+      balanceEl.textContent = Utils.formatCurrency(saldo);
+      balanceEl.style.color = saldo < 0 ? 'var(--danger)' : 'var(--primary)';
     }
 
     let isConfirmed = false;
@@ -282,23 +282,23 @@ var Convocacao = {
     if (statusEl && user && Convocacao._selectedPeladaId) {
       hasSelected = true;
       var convocations = Api.getConvocations();
-      var myConv = convocations.find(function(c) {
+      var myConv = convocations.find(function (c) {
         return String(c.pelada_id) === String(Convocacao._selectedPeladaId) && String(c.player_id) === String(user.id);
       });
 
       if (myConv && myConv.status === 'confirmado') {
-        statusEl.className  = 'badge-status confirmado';
+        statusEl.className = 'badge-status confirmado';
         statusEl.textContent = '✅ Confirmado';
         isConfirmed = true;
       } else if (myConv && myConv.status === 'cortado') {
-        statusEl.className  = 'badge-status cortado';
+        statusEl.className = 'badge-status cortado';
         statusEl.textContent = '❌ Cortado';
       } else {
-        statusEl.className  = 'badge-status pendente';
+        statusEl.className = 'badge-status pendente';
         statusEl.textContent = '⏳ Pendente';
       }
     } else if (statusEl) {
-      statusEl.className  = 'badge-status pendente';
+      statusEl.className = 'badge-status pendente';
       statusEl.textContent = '⏳ Selecione a pelada';
     }
 
@@ -329,7 +329,7 @@ var Convocacao = {
   },
 
   // --- Bind de eventos ---------------------------------------------------
-  bindEvents: function() {
+  bindEvents: function () {
     var selectGroup = document.getElementById('select-conv-pelada');
     var selectData = document.getElementById('select-conv-data');
     var btnAdd = document.getElementById('btn-conv-add');
@@ -338,13 +338,13 @@ var Convocacao = {
     var btnUploadPix = document.getElementById('btn-upload-pix-receipt');
 
     if (selectGroup) {
-      selectGroup.addEventListener('change', function(e) {
+      selectGroup.addEventListener('change', function (e) {
         Convocacao.handleGroupChange(e.target.value);
       });
     }
 
     if (selectData) {
-      selectData.addEventListener('change', function(e) {
+      selectData.addEventListener('change', function (e) {
         Convocacao._selectedPeladaId = e.target.value;
         Convocacao.renderConfirmedList(e.target.value);
         Convocacao.updateMyStatus();
@@ -353,7 +353,7 @@ var Convocacao = {
     }
 
     if (btnCopyPix) {
-      btnCopyPix.onclick = function() {
+      btnCopyPix.onclick = function () {
         const keyText = document.getElementById('pix-display-key')?.textContent;
         if (!keyText || keyText.includes('Não cadastrada')) {
           Utils.toast('Nenhuma chave Pix válida disponível.', 'warning');
@@ -368,7 +368,7 @@ var Convocacao = {
     }
 
     if (btnUploadPix) {
-      btnUploadPix.onclick = async function() {
+      btnUploadPix.onclick = async function () {
         const fileInput = document.getElementById('pix-receipt-file-input');
         const file = fileInput ? fileInput.files[0] : null;
 
@@ -387,7 +387,7 @@ var Convocacao = {
           btnUploadPix.textContent = '⏳ Analisando comprovante (OCR)...';
 
           const parsedData = await window.PixOCR.processReceiptFile(file, expectedBen, expectedVal, expectedKey);
-          
+
           Utils.toast('Comprovante lido! Enviando para o servidor...', 'info');
 
           const res = await Api.enviarComprovantePix(
@@ -404,7 +404,7 @@ var Convocacao = {
           }
 
           Utils.toast('✅ Pix validado com sucesso! Saldo creditado.', 'success');
-          
+
           // Atualiza saldo do usuário logado localmente
           if (Auth.currentUser) {
             Auth.currentUser.saldo = res.novoSaldo;
@@ -425,7 +425,7 @@ var Convocacao = {
     }
 
     if (btnAdd) {
-      btnAdd.onclick = async function() {
+      btnAdd.onclick = async function () {
         if (!Convocacao._selectedPeladaId) {
           Utils.toast('Selecione uma pelada e data primeiro.', 'warning');
           return;
@@ -454,7 +454,7 @@ var Convocacao = {
     }
 
     if (btnRemove) {
-      btnRemove.onclick = function() {
+      btnRemove.onclick = function () {
         if (!Convocacao._selectedPeladaId) {
           Utils.toast('Selecione uma pelada e data primeiro.', 'warning');
           return;
@@ -467,6 +467,6 @@ var Convocacao = {
 };
 
 // --- Ponto de entrada chamado pelo Router ----------------------------------
-window.App.initConvocacao = function() {
+window.App.initConvocacao = function () {
   Convocacao.init();
 };

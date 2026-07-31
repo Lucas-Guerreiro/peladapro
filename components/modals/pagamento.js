@@ -9,7 +9,8 @@ window.App.initModalPagamento = function (pelada) {
 
   // PostgreSQL retorna números como string — parseFloat garante o tipo correto
   const cost = parseFloat(pelada.valor_convocacao) || 20.00;
-  const saldoUser = parseFloat((window.App.currentUser && window.App.currentUser.saldo) || 0);
+  const user = window.Auth?.currentUser || window.App?.currentUser;
+  const saldoUser = parseFloat((user && user.saldo) || 0);
 
   document.getElementById("payment-match-cost").textContent = `R$ ${cost.toFixed(2).replace(".", ",")}`;
   document.getElementById("payment-my-balance").textContent = `Disponível: R$ ${saldoUser.toFixed(2).replace(".", ",")}`;
