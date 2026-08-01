@@ -221,6 +221,20 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     select.innerHTML = "<option value=''>Erro ao carregar</option>";
   }
 }
+function atualizarContadorPresencas() {
+  const total = (window.App.confirmadosList || []).length;
+  const presentes = (window.App.presentPlayers || []).length;
+  const aConfirmar = Math.max(0, total - presentes);
+  const countEl = document.getElementById("checkin-count");
+  if (countEl) {
+    if (aConfirmar > 0) {
+      countEl.textContent = `${presentes} Presentes (${aConfirmar} a Confirmar)`;
+    } else {
+      countEl.textContent = `${presentes} Presentes`;
+    }
+  }
+}
+
 async function updateCheckinPlayersList(peladaId) {
   const container = document.getElementById("checkin-list-container");
   if (!container) return;
@@ -234,7 +248,8 @@ async function updateCheckinPlayersList(peladaId) {
     container.innerHTML = "";
     if (confirmados.length === 0) {
       container.innerHTML = `<p style="font-size: 13px; text-align: center; color:var(--text-caption); padding: 12px 0;">Sem confirmados nesta partida.</p>`;
-      document.getElementById("checkin-count").textContent = "0 Presentes";
+      window.App.confirmadosList = [];
+      atualizarContadorPresencas();
       return;
     }
     // Sincroniza jogadores com o localStorage local para retrocompatibilidade do Sorteio Técnico
@@ -298,7 +313,8 @@ async function updateCheckinPlayersList(peladaId) {
       container.appendChild(div);
     });
     localStorage.setItem("players", JSON.stringify(playersLocais));
-    document.getElementById("checkin-count").textContent = `${window.App.presentPlayers.length} Presentes`;
+    window.App.confirmadosList = confirmados;
+    atualizarContadorPresencas();
     // Wiring dos botões de lote
     const btnAll = document.getElementById("btn-presence-all");
     const btnNone = document.getElementById("btn-presence-none");
@@ -367,7 +383,7 @@ async function togglePresenter(playerId, checkbox) {
     } else {
       window.App.presentPlayers = window.App.presentPlayers.filter(id => id !== idToFind);
     }
-    document.getElementById("checkin-count").textContent = `${window.App.presentPlayers.length} Presentes`;
+    atualizarContadorPresencas();
     window.App.showToast(checkbox.checked ? "Presença registrada!" : "Presença cancelada.");
   } catch (err) {
     console.error("[togglePresenter]", err);
