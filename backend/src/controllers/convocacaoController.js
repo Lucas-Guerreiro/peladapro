@@ -1,6 +1,25 @@
 const db = require('../config/database');
 const { verificarRegra2Horas } = require('../services/convocacaoService');
 
+function formatarDataDDMM(dataInput) {
+  if (!dataInput) return '';
+  try {
+    const d = new Date(dataInput);
+    if (isNaN(d.getTime())) {
+      const parts = String(dataInput).split('-');
+      if (parts.length >= 3) {
+        return `${parts[2].substring(0, 2)}/${parts[1]}`;
+      }
+      return '';
+    }
+    const dia = String(d.getUTCDate()).padStart(2, '0');
+    const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${dia}/${mes}`;
+  } catch (e) {
+    return '';
+  }
+}
+
 exports.confirmar = async (req, res) => {
   const { pelada_id, forma_pagamento } = req.body;
   const usuario_id = req.usuarioId;
@@ -19,6 +38,7 @@ exports.confirmar = async (req, res) => {
     // Usa COALESCE: valor_convocacao da pelada (override) > config do grupo > 20.00
     const queryConfig = `
       SELECT p.grupo_id,
+             p.data,
              COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo,
              c.limite_saldo_negativo
       FROM peladas p
@@ -30,16 +50,19 @@ exports.confirmar = async (req, res) => {
       throw new Error('Configuração do grupo/pelada não encontrada');
     }
 
-    const { grupo_id, custo, limite_saldo_negativo } = configRes.rows[0];
+    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada } = configRes.rows[0];
     const valorCusto = parseFloat(custo || 0);
     const limiteNegativo = parseFloat(limite_saldo_negativo || 0);
 
     // 2. Buscar informações do usuário
-    const userRes = await client.query('SELECT saldo FROM usuarios WHERE id = $1', [usuario_id]);
+    const userRes = await client.query('SELECT saldo, nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
     if (userRes.rows.length === 0) {
       throw new Error('Usuário não encontrado');
     }
     const saldoAtual = parseFloat(userRes.rows[0].saldo || 0);
+    const atletaNome = userRes.rows[0].apelido || userRes.rows[0].nome || 'Atleta';
+    const dataFmt = formatarDataDDMM(dataPelada);
+    const descText = `Presença de ${atletaNome} no dia ${dataFmt}`;
 
     // 3. Se for pagamento por saldo, validar limite negativo
     if (forma_pagamento === 'saldo') {
@@ -57,14 +80,14 @@ exports.confirmar = async (req, res) => {
       await client.query(`
         INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
         VALUES ($1, $2, $3, 'debito', $4)`,
-        [usuario_id, grupo_id, valorCusto, `Confirmação de presença via Saldo na Pelada #${pelada_id}`]
+        [usuario_id, grupo_id, valorCusto, descText]
       );
     } else {
       // Registrar transação de débito para pagamento via PIX/Dinheiro
       await client.query(`
         INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
         VALUES ($1, $2, $3, 'debito', $4)`,
-        [usuario_id, grupo_id, valorCusto, `Confirmação de presença via PIX na Pelada #${pelada_id}`]
+        [usuario_id, grupo_id, valorCusto, descText]
       );
     }
 
@@ -287,16 +310,18 @@ exports.adicionarPorGestor = async (req, res) => {
 
     // Obter informações do grupo_id e custo para transação
     const configRes = await db.query(`
-      SELECT p.grupo_id, COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo
+      SELECT p.grupo_id, p.data, COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo
       FROM peladas p
       LEFT JOIN configs c ON p.grupo_id = c.grupo_id
       WHERE p.id = $1`, [pelada_id]);
     
     let grupo_id = null;
     let valorCusto = 20.00;
+    let dataPelada = null;
     if (configRes.rows.length > 0) {
       grupo_id = configRes.rows[0].grupo_id;
       valorCusto = parseFloat(configRes.rows[0].custo || 20.00);
+      dataPelada = configRes.rows[0].data;
     }
 
     // Verifica se já existe convocação para esse usuário nesta pelada
@@ -324,7 +349,13 @@ exports.adicionarPorGestor = async (req, res) => {
 
     // Registrar transação de débito no banco
     if (grupo_id) {
-      const descText = convidado ? `Adicionado Convidado à presença pelo gestor na Pelada #${pelada_id}` : `Adicionado Atleta à presença pelo gestor na Pelada #${pelada_id}`;
+      const userRes = await db.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [finalUsuarioId]);
+      let atletaNome = 'Atleta';
+      if (userRes.rows.length > 0) {
+        atletaNome = userRes.rows[0].apelido || userRes.rows[0].nome || 'Atleta';
+      }
+      const dataFmt = formatarDataDDMM(dataPelada);
+      const descText = `Presença de ${atletaNome} no dia ${dataFmt}`;
       await db.query(`
         INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
         VALUES ($1, $2, $3, 'debito', $4)`,
