@@ -26,11 +26,9 @@ window.App.initModalPagamento = function (pelada) {
   if (willBeNegative) {
     balanceRadio.disabled = true;
     balanceRadio.checked = false;
-    document.getElementById("pay-method-pix").checked = true;
-    document.getElementById("pix-qr-area").classList.remove("hidden");
     balanceLabel.style.opacity = "0.5";
     balanceLabel.style.cursor = "not-allowed";
-    window.App.showToast("Saldo insuficiente. Pague com PIX.", "warning");
+    window.App.showToast("Saldo insuficiente. Adicione saldo enviando o comprovante Pix na tela anterior.", "warning");
   }
 
   // Escutas
