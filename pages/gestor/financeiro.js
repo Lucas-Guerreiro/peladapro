@@ -136,7 +136,8 @@ window.App.renderFinanceiroData = async function() {
   const balBody = document.getElementById("finances-athlete-balances-body");
   if (balBody) {
     balBody.innerHTML = "";
-    const sorted = [...(players || [])].sort((a,b) => {
+    const ativos = (players || []).filter(p => p.ativo !== false);
+    const sorted = [...ativos].sort((a,b) => {
       const sA = isNaN(parseFloat(a.saldo)) ? 0 : parseFloat(a.saldo);
       const sB = isNaN(parseFloat(b.saldo)) ? 0 : parseFloat(b.saldo);
       return sA - sB;
