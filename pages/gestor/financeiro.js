@@ -24,7 +24,12 @@ window.App.renderFinanceiroData = async function() {
   let players = [];
 
   try {
-    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    if (!group || !group.id) {
+      try {
+        group = JSON.parse(localStorage.getItem("currentGroup"));
+      } catch (e) {}
+    }
     let rawTx = [];
 
     if (group && group.id && window.Api && window.Api.listarTransacoesDoGrupo) {
@@ -52,7 +57,7 @@ window.App.renderFinanceiroData = async function() {
     }
 
     const localTx = JSON.parse(localStorage.getItem("transactions")) || [];
-    const localManuais = localTx.filter(t => t.tipo === "despesa" || t.tipo === "receita_manual" || t.tipo === "acerto" || String(t.id).startsWith("t_"));
+    const localManuais = localTx.filter(t => t.tipo === "despesa" || t.tipo === "receita" || t.tipo === "acerto" || String(t.id).startsWith("t_"));
     const idsBanco = new Set(rawTx.map(t => String(t.id)));
     const manuaisUnicas = localManuais.filter(t => !idsBanco.has(String(t.id)));
 
