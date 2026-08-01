@@ -423,3 +423,27 @@ exports.obterLiveState = async (req, res) => {
   }
 };
 
+exports.listarTransacoesDoGrupo = async (req, res) => {
+  const { grupoId } = req.params;
+  if (!grupoId) {
+    return res.status(400).json({ error: 'grupoId é obrigatório' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `SELECT t.*, u.nome as usuario_nome, u.apelido as usuario_apelido
+       FROM transacoes t
+       LEFT JOIN usuarios u ON t.usuario_id = u.id
+       WHERE t.grupo_id = $1
+       ORDER BY t.data DESC`,
+      [grupoId]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error('[listarTransacoesDoGrupo]', err);
+    res.status(500).json({ error: 'Erro ao listar transações do grupo.', detail: err.message });
+  }
+};
+
+

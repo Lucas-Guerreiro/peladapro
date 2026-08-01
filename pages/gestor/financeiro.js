@@ -24,17 +24,49 @@ window.App.renderFinanceiroData = async function() {
   let players = [];
 
   try {
-    const rawTx = JSON.parse(localStorage.getItem("transactions")) || [];
-    // Purga transações fictícias pré-existentes do seed legado
-    transactions = rawTx.filter(t => t.id !== "t1" && t.id !== "t2" && t.id !== "t3" &&
+    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    let rawTx = [];
+
+    if (group && group.id && window.Api && window.Api.listarTransacoesDoGrupo) {
+      try {
+        const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
+        if (Array.isArray(dbTx)) {
+          rawTx = dbTx.map(t => {
+            const atletaNome = t.usuario_nome || t.usuario_apelido || 'Atleta';
+            return {
+              id: t.id,
+              pelada_id: t.pelada_id,
+              valor: parseFloat(t.valor),
+              value: parseFloat(t.valor),
+              jogador_id: t.usuario_id,
+              tipo: t.tipo === 'debito' ? 'Presença' : 'Recarga Pix',
+              descricao: t.descricao || `Lançamento: Atleta ${atletaNome}`,
+              sinal: 'credito',
+              data: t.data
+            };
+          });
+        }
+      } catch (err) {
+        console.error('[renderFinanceiroData] Erro ao carregar transações da API:', err);
+      }
+    }
+
+    const localTx = JSON.parse(localStorage.getItem("transactions")) || [];
+    const localManuais = localTx.filter(t => t.tipo === "despesa" || t.tipo === "receita_manual" || t.tipo === "acerto" || String(t.id).startsWith("t_"));
+    const idsBanco = new Set(rawTx.map(t => String(t.id)));
+    const manuaisUnicas = localManuais.filter(t => !idsBanco.has(String(t.id)));
+
+    transactions = [...rawTx, ...manuaisUnicas];
+
+    transactions = transactions.filter(t => t.id !== "t1" && t.id !== "t2" && t.id !== "t3" &&
       !String(t.descricao).includes("Carlos Henrique") &&
       !String(t.descricao).includes("Bruno Henrique") &&
       !String(t.descricao).includes("Mensalidade do Campo Society"));
-    
-    if (transactions.length !== rawTx.length) {
-      localStorage.setItem("transactions", JSON.stringify(transactions));
-    }
-  } catch(e) {}
+
+    localStorage.setItem("transactions", JSON.stringify(transactions));
+  } catch (e) {
+    console.error('[renderFinanceiroData]', e);
+  }
   try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
 
   // Carrega lista atualizada de atletas via API se a memória local estiver vazia ou nula

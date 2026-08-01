@@ -12,5 +12,6 @@ router.put('/:id/config', authMiddleware, peladaController.atualizarConfigPartid
 router.put('/:id/status', authMiddleware, peladaController.atualizarStatus);
 router.post('/:id/live', authMiddleware, peladaController.atualizarLiveState);
 router.get('/:id/live', authMiddleware, peladaController.obterLiveState);
+router.get('/grupo/:grupoId/transacoes', authMiddleware, peladaController.listarTransacoesDoGrupo);
 
 module.exports = router;

@@ -59,6 +59,13 @@ exports.confirmar = async (req, res) => {
         VALUES ($1, $2, $3, 'debito', $4)`,
         [usuario_id, grupo_id, valorCusto, `Confirmação de presença via Saldo na Pelada #${pelada_id}`]
       );
+    } else {
+      // Registrar transação de débito para pagamento via PIX/Dinheiro
+      await client.query(`
+        INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+        VALUES ($1, $2, $3, 'debito', $4)`,
+        [usuario_id, grupo_id, valorCusto, `Confirmação de presença via PIX na Pelada #${pelada_id}`]
+      );
     }
 
     // 4. Inserir ou atualizar convocação
@@ -278,6 +285,20 @@ exports.adicionarPorGestor = async (req, res) => {
       return res.status(400).json({ error: 'É necessário informar um atleta existente ou dados do convidado.' });
     }
 
+    // Obter informações do grupo_id e custo para transação
+    const configRes = await db.query(`
+      SELECT p.grupo_id, COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo
+      FROM peladas p
+      LEFT JOIN configs c ON p.grupo_id = c.grupo_id
+      WHERE p.id = $1`, [pelada_id]);
+    
+    let grupo_id = null;
+    let valorCusto = 20.00;
+    if (configRes.rows.length > 0) {
+      grupo_id = configRes.rows[0].grupo_id;
+      valorCusto = parseFloat(configRes.rows[0].custo || 20.00);
+    }
+
     // Verifica se já existe convocação para esse usuário nesta pelada
     const { rows: check } = await db.query(
       'SELECT status FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
@@ -298,6 +319,16 @@ exports.adicionarPorGestor = async (req, res) => {
         `INSERT INTO convocacoes (pelada_id, usuario_id, status, presenca, forma_pagamento) 
          VALUES ($1, $2, 'confirmado', true, 'saldo')`,
         [pelada_id, finalUsuarioId]
+      );
+    }
+
+    // Registrar transação de débito no banco
+    if (grupo_id) {
+      const descText = convidado ? `Adicionado Convidado à presença pelo gestor na Pelada #${pelada_id}` : `Adicionado Atleta à presença pelo gestor na Pelada #${pelada_id}`;
+      await db.query(`
+        INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+        VALUES ($1, $2, $3, 'debito', $4)`,
+        [finalUsuarioId, grupo_id, valorCusto, descText]
       );
     }
 

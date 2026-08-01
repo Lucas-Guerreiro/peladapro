@@ -305,6 +305,17 @@ const Api = {
     return res.json();
   },
 
+  async listarTransacoesDoGrupo(grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    const res = await fetch(`/api/peladas/grupo/${grupoId}/transacoes`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return res.json();
+  },
+
   async deletarData(id) {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -478,6 +489,24 @@ const Api = {
       return Array.isArray(data) ? data : [];
     } catch(e) {
       console.warn('[Api] Erro ao listar datas do grupo:', e);
+      return [];
+    }
+  },
+
+  async listarTransacoesDoGrupo(grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    try {
+      const res = await fetch(`/api/peladas/grupo/${grupoId}/transacoes`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch(e) {
+      console.warn('[Api] Erro ao listar transacoes do grupo:', e);
       return [];
     }
   },
