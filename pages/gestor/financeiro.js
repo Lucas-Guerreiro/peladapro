@@ -41,7 +41,7 @@ window.App.renderFinanceiroData = async function() {
               jogador_id: t.usuario_id,
               tipo: t.tipo === 'debito' ? 'Presença' : 'Recarga Pix',
               descricao: t.descricao || `Lançamento: Atleta ${atletaNome}`,
-              sinal: 'credito',
+              sinal: t.tipo === 'credito' ? 'credito' : 'neutro',
               data: t.data
             };
           });
@@ -88,7 +88,7 @@ window.App.renderFinanceiroData = async function() {
     const numVal = isNaN(parsedVal) ? 0 : parsedVal;
 
     if (t.sinal === "credito") receipts += numVal;
-    else expenses += numVal;
+    else if (t.sinal === "debito") expenses += numVal;
   });
 
   const net = receipts - expenses;
@@ -113,8 +113,18 @@ window.App.renderFinanceiroData = async function() {
       [...transactions].reverse().slice(0, 15).forEach(t => {
         const tr = document.createElement("tr");
         const dateFormatted = window.Utils ? window.Utils.formatDate(t.data) : (t.data ? new Date(t.data).toLocaleDateString("pt-BR") : '—');
-        const valColor = t.sinal === "credito" ? "var(--success)" : "var(--danger)";
-        const sign = t.sinal === "credito" ? "+" : "-";
+        let valColor = "var(--text-caption)";
+        let sign = "";
+        if (t.sinal === "credito") {
+          valColor = "var(--success)";
+          sign = "+";
+        } else if (t.sinal === "debito") {
+          valColor = "var(--danger)";
+          sign = "-";
+        } else if (t.sinal === "neutro") {
+          valColor = "var(--text-caption)";
+          sign = "-";
+        }
 
         const rawVal = t.valor !== undefined && t.valor !== null ? t.valor : t.value;
         const valNum = isNaN(parseFloat(rawVal)) ? 0 : parseFloat(rawVal);
