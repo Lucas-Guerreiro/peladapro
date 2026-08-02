@@ -471,13 +471,13 @@ exports.redefinirSenha = async (req, res) => {
     const senhaHash = await bcrypt.hash(String(novaSenha), 10);
 
     await db.query(
-      'UPDATE usuarios SET senha = $1, recuperacao_codigo = NULL, recuperacao_expira = NULL WHERE id = $2',
+      'UPDATE usuarios SET senha_hash = $1, recuperacao_codigo = NULL, recuperacao_expira = NULL WHERE id = $2',
       [senhaHash, usuario.id]
     );
 
     res.json({ success: true, message: 'Senha redefinida com sucesso! Faça login.' });
   } catch (err) {
     console.error('[REDEFINIR SENHA] Erro:', err);
-    return res.status(500).json({ error: 'Erro ao redefinir a senha.', detalhe: err.message });
+    return res.status(500).json({ error: 'Erro ao redefinir a senha.' });
   }
 };
