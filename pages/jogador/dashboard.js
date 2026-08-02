@@ -80,59 +80,73 @@ var Dashboard = {
 
   // --- Próximas peladas ---------------------------------------------------
   renderNextMatches: async function() {
+    console.log('[Dashboard] renderNextMatches iniciado');
     var listEl = document.getElementById('next-matches-list');
-    if (!listEl) return;
+    if (!listEl) {
+      console.log('[Dashboard] listEl nao encontrado!');
+      return;
+    }
 
     // Função interna para renderizar o estado atual das peladas
     const buildListHTML = () => {
-      var peladas = Api.getPeladas() || [];
-      var group = Auth.currentGroup;
-      if (!group) {
-        try {
-          group = JSON.parse(localStorage.getItem('currentGroup'));
-        } catch (e) {}
+      console.log('[Dashboard] buildListHTML chamada');
+      try {
+        var peladas = Api.getPeladas() || [];
+        console.log('[Dashboard] peladas locais:', peladas);
+        var group = Auth.currentGroup;
+        if (!group) {
+          try {
+            group = JSON.parse(localStorage.getItem('currentGroup'));
+          } catch (e) {}
+        }
+        var groupId = group ? group.id : null;
+        var userId = Auth.currentUser ? Auth.currentUser.id : null;
+        console.log('[Dashboard] groupId:', groupId, 'userId:', userId);
+
+        var today = new Date().toISOString().split('T')[0];
+        var upcoming = peladas.filter(function(p) {
+          return p.status === 'agendada' && p.data >= today &&
+                 (!groupId || p.grupo_id === groupId);
+        }).sort(function(a, b) { return a.data.localeCompare(b.data); }).slice(0, 4);
+        console.log('[Dashboard] upcoming peladas:', upcoming);
+
+        var convocations = Api.getConvocations() || [];
+        console.log('[Dashboard] convocations locais:', convocations);
+
+        if (upcoming.length === 0) {
+          listEl.innerHTML = '<div class="empty-state" style="padding: 32px;"><span style="font-size: 32px;">🏟️</span><p class="text-inter" style="font-size: 14px;">Nenhuma pelada futura agendada.</p></div>';
+          return;
+        }
+
+        var html = '';
+        upcoming.forEach(function(p, idx) {
+          var myConv = convocations.find(function(c) { return c.pelada_id === p.id && c.player_id === userId; });
+          var status = myConv ? myConv.status : 'pendente';
+          var isLast = idx === upcoming.length - 1;
+
+          var statusMap = {
+            confirmado: { label: '✅ Confirmado', color: 'var(--success)' },
+            pendente:   { label: '⏳ Pendente',   color: 'var(--warning)' },
+            cortado:    { label: '❌ Cortado',    color: 'var(--danger)'  }
+          };
+          var s = statusMap[status] || statusMap.pendente;
+
+          var dateFormatted = Utils.formatDate(p.data);
+          html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
+            (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
+            '<div>' +
+              '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
+              '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
+            '</div>' +
+            '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
+          '</div>';
+        });
+
+        listEl.innerHTML = html;
+        console.log('[Dashboard] HTML renderizado com sucesso!');
+      } catch (err) {
+        console.error('[Dashboard] Erro interno em buildListHTML:', err);
       }
-      var groupId = group ? group.id : null;
-      var userId = Auth.currentUser ? Auth.currentUser.id : null;
-
-      var today = new Date().toISOString().split('T')[0];
-      var upcoming = peladas.filter(function(p) {
-        return p.status === 'agendada' && p.data >= today &&
-               (!groupId || p.grupo_id === groupId);
-      }).sort(function(a, b) { return a.data.localeCompare(b.data); }).slice(0, 4);
-
-      var convocations = Api.getConvocations() || [];
-
-      if (upcoming.length === 0) {
-        listEl.innerHTML = '<div class="empty-state" style="padding: 32px;"><span style="font-size: 32px;">🏟️</span><p class="text-inter" style="font-size: 14px;">Nenhuma pelada futura agendada.</p></div>';
-        return;
-      }
-
-      var html = '';
-      upcoming.forEach(function(p, idx) {
-        var myConv = convocations.find(function(c) { return c.pelada_id === p.id && c.player_id === userId; });
-        var status = myConv ? myConv.status : 'pendente';
-        var isLast = idx === upcoming.length - 1;
-
-        var statusMap = {
-          confirmado: { label: '✅ Confirmado', color: 'var(--success)' },
-          pendente:   { label: '⏳ Pendente',   color: 'var(--warning)' },
-          cortado:    { label: '❌ Cortado',    color: 'var(--danger)'  }
-        };
-        var s = statusMap[status] || statusMap.pendente;
-
-        var dateFormatted = Utils.formatDate(p.data);
-        html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
-          (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
-          '<div>' +
-            '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
-            '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
-          '</div>' +
-          '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
-        '</div>';
-      });
-
-      listEl.innerHTML = html;
     };
 
     // 1. Renderiza imediatamente com o cache local
@@ -142,7 +156,9 @@ var Dashboard = {
     var token = localStorage.getItem('token');
     if (token && window.Api && window.Api.getGruposDoGestor) {
       try {
+        console.log('[Dashboard] Buscando grupos do servidor...');
         const grupos = await window.Api.getGruposDoGestor();
+        console.log('[Dashboard] grupos retornados:', grupos);
         if (Array.isArray(grupos) && grupos.length > 0) {
           window.Api.saveGroups(grupos);
 
@@ -158,11 +174,15 @@ var Dashboard = {
           let todasPeladas = [];
           for (const g of grupos) {
             try {
+              console.log('[Dashboard] Buscando peladas do grupo:', g.id);
               const peladasGrupo = await window.Api.listarDatasDoGrupo(g.id);
+              console.log('[Dashboard] peladas do grupo:', g.id, peladasGrupo);
               if (Array.isArray(peladasGrupo)) {
                 todasPeladas = todasPeladas.concat(peladasGrupo);
               }
-            } catch (e) {}
+            } catch (e) {
+              console.error('[Dashboard] Erro ao buscar peladas do grupo:', g.id, e);
+            }
           }
 
           if (todasPeladas.length > 0) {
@@ -174,7 +194,9 @@ var Dashboard = {
             let localConvocations = window.Api.getConvocations() || [];
             for (const p of upcoming) {
               try {
+                console.log('[Dashboard] Buscando convocações para pelada:', p.id);
                 const convocados = await window.Api.listarConvocados(p.id);
+                console.log('[Dashboard] convocados para pelada:', p.id, convocados);
                 if (Array.isArray(convocados)) {
                   localConvocations = localConvocations.filter(c => String(c.pelada_id) !== String(p.id));
                   convocados.forEach(c => {
@@ -187,7 +209,9 @@ var Dashboard = {
                     });
                   });
                 }
-              } catch (e) {}
+              } catch (e) {
+                console.error('[Dashboard] Erro ao buscar convocados para pelada:', p.id, e);
+              }
             }
             window.Api.saveConvocations(localConvocations);
 
