@@ -79,53 +79,99 @@ var Dashboard = {
   },
 
   // --- Próximas peladas ---------------------------------------------------
-  renderNextMatches: function() {
+  renderNextMatches: async function() {
     var listEl = document.getElementById('next-matches-list');
     if (!listEl) return;
 
-    var peladas = Api.getPeladas();
-    var group   = Auth.currentGroup;
+    // Função interna para renderizar o estado atual das peladas
+    const buildListHTML = () => {
+      var peladas = Api.getPeladas() || [];
+      var group = Auth.currentGroup;
+      var groupId = group ? group.id : null;
+      var userId = Auth.currentUser ? Auth.currentUser.id : null;
+
+      var today = new Date().toISOString().split('T')[0];
+      var upcoming = peladas.filter(function(p) {
+        return p.status === 'agendada' && p.data >= today &&
+               (!groupId || p.grupo_id === groupId);
+      }).sort(function(a, b) { return a.data.localeCompare(b.data); }).slice(0, 4);
+
+      var convocations = Api.getConvocations() || [];
+
+      if (upcoming.length === 0) {
+        listEl.innerHTML = '<div class="empty-state" style="padding: 32px;"><span style="font-size: 32px;">🏟️</span><p class="text-inter" style="font-size: 14px;">Nenhuma pelada futura agendada.</p></div>';
+        return;
+      }
+
+      var html = '';
+      upcoming.forEach(function(p, idx) {
+        var myConv = convocations.find(function(c) { return c.pelada_id === p.id && c.player_id === userId; });
+        var status = myConv ? myConv.status : 'pendente';
+        var isLast = idx === upcoming.length - 1;
+
+        var statusMap = {
+          confirmado: { label: '✅ Confirmado', color: 'var(--success)' },
+          pendente:   { label: '⏳ Pendente',   color: 'var(--warning)' },
+          cortado:    { label: '❌ Cortado',    color: 'var(--danger)'  }
+        };
+        var s = statusMap[status] || statusMap.pendente;
+
+        var dateFormatted = Utils.formatDate(p.data);
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
+          (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
+          '<div>' +
+            '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
+            '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || Auth.currentGroup?.nome || '') + '</p>' +
+          '</div>' +
+          '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
+        '</div>';
+      });
+
+      listEl.innerHTML = html;
+    };
+
+    // 1. Renderiza imediatamente com o cache local
+    buildListHTML();
+
+    // 2. Busca dados em tempo real na nuvem de forma assíncrona
+    var group = Auth.currentGroup;
     var groupId = group ? group.id : null;
+    if (groupId && window.Api && window.Api.listarDatasDoGrupo) {
+      try {
+        const peladasServidor = await window.Api.listarDatasDoGrupo(groupId);
+        if (Array.isArray(peladasServidor)) {
+          window.Api.savePeladas(peladasServidor);
 
-    var today = new Date().toISOString().split('T')[0];
-    var upcoming = peladas.filter(function(p) {
-      return p.status === 'agendada' && p.data >= today &&
-             (!groupId || p.grupo_id === groupId);
-    }).sort(function(a, b) { return a.data.localeCompare(b.data); }).slice(0, 4);
+          const today = new Date().toISOString().split('T')[0];
+          const upcoming = peladasServidor.filter(p => p.status === 'agendada' && p.data >= today).slice(0, 4);
 
-    var convocations = Api.getConvocations();
-    var userId       = Auth.currentUser ? Auth.currentUser.id : null;
+          let localConvocations = window.Api.getConvocations() || [];
+          for (const p of upcoming) {
+            try {
+              const convocados = await window.Api.listarConvocados(p.id);
+              if (Array.isArray(convocados)) {
+                localConvocations = localConvocations.filter(c => String(c.pelada_id) !== String(p.id));
+                convocados.forEach(c => {
+                  localConvocations.push({
+                    id: 'c_' + c.id + '_' + p.id,
+                    pelada_id: parseInt(p.id),
+                    player_id: c.id,
+                    status: c.status,
+                    forma_pagamento: c.forma_pagamento
+                  });
+                });
+              }
+            } catch (e) {}
+          }
+          window.Api.saveConvocations(localConvocations);
 
-    if (upcoming.length === 0) {
-      listEl.innerHTML = '<div class="empty-state" style="padding: 32px;"><span style="font-size: 32px;">🏟️</span><p class="text-inter" style="font-size: 14px;">Nenhuma pelada futura agendada.</p></div>';
-      return;
+          // 3. Renderiza novamente com os dados atualizados
+          buildListHTML();
+        }
+      } catch (err) {
+        console.error('[Dashboard] Erro na sincronização reativa:', err);
+      }
     }
-
-    var html = '';
-    upcoming.forEach(function(p, idx) {
-      var myConv  = convocations.find(function(c) { return c.pelada_id === p.id && c.player_id === userId; });
-      var status  = myConv ? myConv.status : 'pendente';
-      var isLast  = idx === upcoming.length - 1;
-
-      var statusMap = {
-        confirmado: { label: '✅ Confirmado', color: 'var(--success)' },
-        pendente:   { label: '⏳ Pendente',   color: 'var(--warning)' },
-        cortado:    { label: '❌ Cortado',    color: 'var(--danger)'  }
-      };
-      var s = statusMap[status] || statusMap.pendente;
-
-      var dateFormatted = Utils.formatDate(p.data);
-      html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
-        (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
-        '<div>' +
-          '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
-          '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || Auth.currentGroup?.nome || '') + '</p>' +
-        '</div>' +
-        '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
-      '</div>';
-    });
-
-    listEl.innerHTML = html;
   },
 
   // --- Utilitário de timer ------------------------------------------------
