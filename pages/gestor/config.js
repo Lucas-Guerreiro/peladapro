@@ -100,9 +100,20 @@ async function handleSendCustomPush() {
     url: targetUrl
   };
 
+  // UX Failsafe: Se o usuário selecionou um atleta no dropdown mas esqueceu de clicar em "Adicionar",
+  // nós incluímos esse atleta automaticamente no envio.
+  const selectAthlete = document.getElementById("push-select-athlete");
+  let targetUserIds = pushSelectedAthletes.map(a => a.id);
+  if (selectAthlete && selectAthlete.value) {
+    const val = parseInt(selectAthlete.value);
+    if (val && !targetUserIds.includes(val)) {
+      targetUserIds.push(val);
+    }
+  }
+
   // Se houver atletas selecionados na lista, envia direcionado
-  if (pushSelectedAthletes.length > 0) {
-    payload.usuarioIds = pushSelectedAthletes.map(a => a.id);
+  if (targetUserIds.length > 0) {
+    payload.usuarioIds = targetUserIds;
   }
 
   try {
@@ -117,6 +128,7 @@ async function handleSendCustomPush() {
       window.App.showToast(`Notificação enviada com sucesso para ${data.successCount || 0} dispositivo(s)! 🚀`, "success");
       if (titleInput) titleInput.value = "";
       if (bodyInput) bodyInput.value = "";
+      if (selectAthlete) selectAthlete.value = "";
       
       // Limpa os selecionados
       pushSelectedAthletes = [];
