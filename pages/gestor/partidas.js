@@ -53,7 +53,7 @@ function startTimerLoop() {
   }, 1000);
 }
 
-window.App.initPartidas = async function() {
+window.App.initPartidas = async function () {
   initPartidasPeladaSelect();
 
   // Resolve a pelada ativa imediatamente se estiver nula
@@ -68,7 +68,7 @@ window.App.initPartidas = async function() {
           window.App.activePelada = obj;
         }
       }
-    } catch(e) {}
+    } catch (e) { }
   }
   if (!peladaId) {
     const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
@@ -83,7 +83,7 @@ window.App.initPartidas = async function() {
             localStorage.setItem("activePelada", JSON.stringify(activeP));
           }
         }
-      } catch(e) {}
+      } catch (e) { }
     }
   }
 
@@ -99,7 +99,7 @@ window.App.initPartidas = async function() {
   if (isFinished) {
     const liveCol = document.querySelector('.gestor-score-card');
     const queueCard = document.getElementById('gestor-queue-card');
-    
+
     if (liveCol) {
       liveCol.innerHTML = `
         <div style="background-color: #10B981; color: #FFF; border-radius: 12px; padding: 28px; text-align: center;">
@@ -216,11 +216,11 @@ window.App.initPartidas = async function() {
     }
   }
 
-  window.App.updateAcompanhamentoUI = async function() {
+  window.App.updateAcompanhamentoUI = async function () {
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
     if (peladaId && window.Api && window.Api.atualizarLiveState) {
       let teams = [];
-      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
       await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
     }
     renderLiveMatchUI();
@@ -271,7 +271,7 @@ function startGestorPolling() {
           const obj = JSON.parse(raw);
           if (obj && obj.id) peladaId = obj.id;
         }
-      } catch(e) {}
+      } catch (e) { }
     }
 
     if (peladaId && window.Api && window.Api.obterLiveState) {
@@ -289,7 +289,7 @@ function startGestorPolling() {
           let currentQueue = res.state.waitingQueue || [];
           let currentTeams = res.state.teams || [];
           if (!currentTeams || currentTeams.length === 0) {
-            try { currentTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+            try { currentTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
           }
 
           if ((!currentQueue || currentQueue.length === 0) && Array.isArray(currentTeams) && currentTeams.length > 2) {
@@ -307,7 +307,7 @@ function startGestorPolling() {
           window.App.waitingQueue = currentQueue;
           localStorage.setItem("waitingQueue", JSON.stringify(currentQueue));
         }
-      } catch (err) {}
+      } catch (err) { }
     }
 
     if (!window.App.isFinishingMatch) {
@@ -333,7 +333,7 @@ function onGestorStorageChange(e) {
       if (e.key === 'liveMatch' && e.newValue) window.App.liveMatch = JSON.parse(e.newValue);
       if (e.key === 'waitingQueue' && e.newValue) window.App.waitingQueue = JSON.parse(e.newValue);
       if (e.key === 'activePelada' && e.newValue) window.App.activePelada = JSON.parse(e.newValue);
-    } catch(err) {}
+    } catch (err) { }
     renderLiveMatchUI();
     renderWaitingQueue();
     renderRecentMatches();
@@ -341,13 +341,26 @@ function onGestorStorageChange(e) {
 }
 
 function renderLiveMatchUI() {
+  // Se a pelada ativa estiver finalizada, não renderiza o confronto ao vivo
+  const activePelada = window.App.activePelada || {};
+  if (activePelada.status === "finalizada") {
+    const timerCont = document.getElementById("gestor-timer-container");
+    const scoreCont = document.getElementById("gestor-scoreboard-container");
+    const finishCont = document.getElementById("gestor-finish-container");
+    const queueCard = document.getElementById("gestor-queue-card");
+    if (timerCont) timerCont.style.display = "none";
+    if (scoreCont) scoreCont.style.display = "none";
+    if (finishCont) finishCont.style.display = "none";
+    if (queueCard) queueCard.style.display = "none";
+    return;
+  }
   // Verificar se existem times sorteados
   let teamsList = [];
   try {
     teamsList = (window.App && window.App.teams && window.App.teams.length > 0)
       ? window.App.teams
       : JSON.parse(localStorage.getItem("teams")) || [];
-  } catch(e) {}
+  } catch (e) { }
 
   const timerCont = document.getElementById("gestor-timer-container");
   const scoreCont = document.getElementById("gestor-scoreboard-container");
@@ -440,7 +453,7 @@ function renderLiveMatchUI() {
   // Renderiza emblemas dos times (busca no localStorage)
   if (window.TeamEmblems) {
     let teams = [];
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
     const tA = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (teamA || '').toLowerCase().trim()) || teams[0];
     const tB = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (teamB || '').toLowerCase().trim()) || teams[1];
 
@@ -495,7 +508,7 @@ function renderLiveMatchUI() {
   const goalsAEl = document.getElementById("match-control-team-a-goals");
   if (goalsAEl) {
     const goalsA = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'a' || (g.teamName && teamA && g.teamName.toLowerCase() === teamA.toLowerCase()));
-    
+
     if (goalsA.length === 0) {
       goalsAEl.innerHTML = "";
     } else {
@@ -514,7 +527,7 @@ function renderLiveMatchUI() {
   const goalsBEl = document.getElementById("match-control-team-b-goals");
   if (goalsBEl) {
     const goalsB = (window.App.liveMatch.goals || []).filter(g => g.teamKey === 'b' || (g.teamName && teamB && g.teamName.toLowerCase() === teamB.toLowerCase()));
-    
+
     if (goalsB.length === 0) {
       goalsBEl.innerHTML = "";
     } else {
@@ -582,6 +595,13 @@ function renderLiveMatchUI() {
 }
 
 function renderWaitingQueue() {
+  const activePelada = window.App.activePelada || {};
+  if (activePelada.status === "finalizada") {
+    const queueCard = document.getElementById("gestor-queue-card");
+    if (queueCard) queueCard.style.display = "none";
+    return;
+  }
+
   const container = document.getElementById("wait-queue-container");
   const counterEl = document.getElementById("queue-count");
 
@@ -607,7 +627,7 @@ function renderWaitingQueue() {
     : [];
 
   if (!queue || queue.length === 0) {
-    try { queue = JSON.parse(localStorage.getItem("waitingQueue")) || []; } catch(e) {}
+    try { queue = JSON.parse(localStorage.getItem("waitingQueue")) || []; } catch (e) { }
   }
 
   // 2. Obtém os times sorteados/cadastrados de todas as fontes possíveis
@@ -616,10 +636,10 @@ function renderWaitingQueue() {
     : ((window.App.drawnTeams && Array.isArray(window.App.drawnTeams) && window.App.drawnTeams.length > 0) ? window.App.drawnTeams : []);
 
   if (!teams || teams.length === 0) {
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
   }
   if (!teams || teams.length === 0) {
-    try { teams = Api.getTeams() || []; } catch(e) {}
+    try { teams = Api.getTeams() || []; } catch (e) { }
   }
 
   // 3. Failsafe: se a fila estiver vazia mas houver mais de 2 times sorteados, reconstrói a fila
@@ -638,7 +658,7 @@ function renderWaitingQueue() {
 
     if (queue.length > 0) {
       window.App.waitingQueue = queue;
-      try { localStorage.setItem("waitingQueue", JSON.stringify(queue)); } catch(e) {}
+      try { localStorage.setItem("waitingQueue", JSON.stringify(queue)); } catch (e) { }
     }
   }
 
@@ -699,7 +719,7 @@ function renderWaitingQueue() {
       const tName = btn.getAttribute("data-team");
       let allTeams = (window.App.teams && window.App.teams.length > 0) ? window.App.teams : [];
       if (!allTeams || allTeams.length === 0) {
-        try { allTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+        try { allTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
       }
       const teamObj = allTeams.find(t => (t.nome || t.name) === tName) || { nome: tName, players: [] };
       window.App.openModal("ver_time", { teamName: teamObj.nome || tName, players: teamObj.players || teamObj.jogadores || [] });
@@ -748,20 +768,20 @@ function resetLiveTimer(silent = false) {
   clearInterval(timerInterval);
   timerInterval = null;
   window.App.liveMatch.isPlaying = false;
-  
+
   // Reseta para o tempo padrão configurado para o grupo
   const groupConfigs = window.Api.getConfigs() || [];
   const currentGrp = window.Auth.currentGroup;
   const grpConfig = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
   const durationMin = grpConfig ? (grpConfig.tempo_partida || 8) : 8;
   window.App.liveMatch.timerSeconds = durationMin * 60;
-  
+
   const btnToggle = document.getElementById("btn-timer-toggle");
   if (btnToggle) {
     btnToggle.textContent = "Iniciar";
     btnToggle.className = "btn btn-sm btn-primary";
   }
-  
+
   saveLiveMatchState();
   updateTimerDisplay();
   renderLiveMatchUI();
@@ -905,7 +925,7 @@ async function handleFinishMatch() {
       // Se o vencedor bateu o limite de vitórias permitidas seguidas
       if (currentWins >= winsLimit) {
         window.App.showToast(`O ${winner} atingiu o limite de ${winsLimit} vitórias consecutivas e vai sair para revezamento!`, "info");
-        
+
         // Zera o contador do vencedor que está saindo
         if (winner === teamAName) {
           window.App.liveMatch.consecutiveWinsA = 0;
@@ -936,7 +956,7 @@ async function handleFinishMatch() {
           // Se só tem 1 time na fila de espera, ele entra no lugar do derrotado. O vencedor (limite) e perdedor saem.
           const next = window.App.waitingQueue.shift();
           window.App.waitingQueue.push(loser);
-          
+
           if (exitRule === "fora_1_jogo") {
             window.App.waitingQueue.unshift(winner);
           } else {
@@ -1013,7 +1033,7 @@ async function renderRecentMatches() {
         const obj = JSON.parse(raw);
         if (obj && obj.id) peladaId = obj.id;
       }
-    } catch(e) {}
+    } catch (e) { }
   }
 
   // 4. Se ainda nulo, busca a pelada ativa do grupo via API
@@ -1030,7 +1050,7 @@ async function renderRecentMatches() {
             localStorage.setItem("activePelada", JSON.stringify(active));
           }
         }
-      } catch(e) {}
+      } catch (e) { }
     }
   }
 
@@ -1054,7 +1074,7 @@ async function renderRecentMatches() {
     window.App.openGoalPanels = window.App.openGoalPanels || {};
 
     let teams = [];
-    try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
     partidas.forEach(p => {
       const isOpen = !!window.App.openGoalPanels[p.id];
@@ -1079,7 +1099,7 @@ async function renderRecentMatches() {
       if (p.autores_gols) {
         try {
           goalsList = typeof p.autores_gols === 'string' ? JSON.parse(p.autores_gols) : p.autores_gols;
-        } catch(e) {}
+        } catch (e) { }
       }
 
       item.innerHTML = `
@@ -1104,11 +1124,10 @@ async function renderRecentMatches() {
           </div>
         </div>
         <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-heading);">
-          ${
-            goalsList.length > 0 
-              ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome || 'Jogador'}${g.assistNome ? ` <span style="color:#0F172A; font-weight:600;">(Ass: ${g.assistNome} 👟)</span>` : ''} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
-              : `<span style="font-size:11px; color:var(--text-caption);">Placar final: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
-          }
+          ${goalsList.length > 0
+          ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome || 'Jogador'}${g.assistNome ? ` <span style="color:#0F172A; font-weight:600;">(Ass: ${g.assistNome} 👟)</span>` : ''} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
+          : `<span style="font-size:11px; color:var(--text-caption);">Placar final: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
+        }
         </div>
       `;
       container.appendChild(item);
@@ -1144,14 +1163,14 @@ function setupHistoryActions() {
       const partidaData = JSON.parse(btn.getAttribute("data-partida"));
 
       let teams = [];
-      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
       const peladaId = partidaData.pelada_id || (window.App.activePelada ? window.App.activePelada.id : null);
       let allPartidas = [];
 
       if (peladaId && window.Api) {
         if (window.Api.listarPartidas) {
-          try { allPartidas = await window.Api.listarPartidas(peladaId); } catch(e) {}
+          try { allPartidas = await window.Api.listarPartidas(peladaId); } catch (e) { }
         }
         if ((!teams || teams.length === 0) && window.Api.obterLiveState) {
           try {
@@ -1160,7 +1179,7 @@ function setupHistoryActions() {
               teams = liveRes.state.teams;
               localStorage.setItem("teams", JSON.stringify(teams));
             }
-          } catch(e) {}
+          } catch (e) { }
         }
       }
 
@@ -1203,7 +1222,7 @@ function saveLiveMatchState() {
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
     let teams = [];
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
     window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
   }
 }
@@ -1275,22 +1294,22 @@ function playAlarmSound() {
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
     const now = ctx.currentTime;
-    
+
     // Toca 3 bips eletrônicos em sequência rápida
     for (let i = 0; i < 3; i++) {
       const osc = ctx.createOscillator();
       const gainNode = ctx.createGain();
-      
+
       osc.type = 'sine'; // Tom limpo senoidal
       osc.frequency.setValueAtTime(800, now + (i * 0.4)); // Frequência do bip (Nota Sol 5)
-      
+
       gainNode.gain.setValueAtTime(0, now + (i * 0.4));
       gainNode.gain.linearRampToValueAtTime(0.8, now + (i * 0.4) + 0.05); // Fade in rápido
       gainNode.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.4) + 0.35); // Fade out suave
-      
+
       osc.connect(gainNode);
       gainNode.connect(ctx.destination);
-      
+
       osc.start(now + (i * 0.4));
       osc.stop(now + (i * 0.4) + 0.35);
     }
@@ -1301,6 +1320,17 @@ function playAlarmSound() {
 
 async function carregarLiveStateDaPelada(peladaId) {
   if (!peladaId) return;
+  // Se a pelada estiver finalizada, não carrega confronto/fila (limpa tudo)
+  const peladaAtiva = window.App.activePelada || {};
+  if (peladaAtiva.status === "finalizada") {
+    window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
+    window.App.waitingQueue = [];
+    window.App.teams = [];
+    localStorage.removeItem("teams");
+    localStorage.setItem("waitingQueue", "[]");
+    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+    return;
+  }
 
   const groupConfigs = window.Api.getConfigs() || [];
   const currentGrp = window.Auth.currentGroup;
@@ -1347,7 +1377,7 @@ async function carregarLiveStateDaPelada(peladaId) {
         }
         stateCarregado = true;
       }
-    } catch(e) {
+    } catch (e) {
       console.error("[Partidas] Erro ao obter live state da pelada:", e);
     }
   }
@@ -1403,7 +1433,7 @@ async function initPartidasPeladaSelect() {
     window.App.activePelada = activePelada;
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
-    
+
     await carregarLiveStateDaPelada(activePelada.id);
     await renderRecentMatches();
 
@@ -1413,16 +1443,16 @@ async function initPartidasPeladaSelect() {
       if (found) {
         window.App.activePelada = found;
         localStorage.setItem("activePelada", JSON.stringify(found));
-        
+
         await carregarLiveStateDaPelada(found.id);
-        
+
         renderLiveMatchUI();
         renderWaitingQueue();
         await renderRecentMatches();
         window.App.showToast(`Pelada selecionada: ${window.Utils ? window.Utils.formatDate(found.data) : found.data}`);
       }
     };
-  } catch(e) {
+  } catch (e) {
     console.error('[Partidas] Erro ao carregar datas das peladas:', e);
     select.innerHTML = `<option value="">Erro ao carregar datas</option>`;
   }
