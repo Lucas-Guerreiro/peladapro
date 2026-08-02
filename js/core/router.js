@@ -265,8 +265,8 @@ const Router = {
 
       const toggleMobileHTML = isDual ? `
         <div style="padding: 4px 0; margin-bottom: 8px;">
-          <button class="btn btn-outline btn-md" style="width:100%; border-color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; font-size:13px;" onclick="Auth.toggleRole()">
-            🔄 Alternar para Modo ${activeRole === 'gestor' ? 'Jogador ⚽' : 'Gestor 🏆'}
+          <button class="btn btn-outline btn-md" style="width:100%; border-color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; font-size:13px; font-weight:700;" onclick="Auth.toggleRole()">
+            MODO ${activeRole === 'gestor' ? 'JOGADOR' : 'GESTOR'}
           </button>
         </div>
       ` : '';
