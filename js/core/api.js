@@ -316,6 +316,34 @@ const Api = {
     return res.json();
   },
 
+  async criarTransacaoManual(grupoId, valor, tipo, descricao) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/peladas/grupo/${grupoId}/transacao`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ valor, tipo, descricao })
+    });
+    return res.json();
+  },
+
+  async ajustarSaldoAtleta(atletaId, grupoId, valor) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/peladas/atleta/${atletaId}/ajuste-saldo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ grupoId, valor })
+    });
+    return res.json();
+  },
+
   async deletarData(id) {
     const token = localStorage.getItem('token');
     if (!token) {

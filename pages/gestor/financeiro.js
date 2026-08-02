@@ -194,7 +194,7 @@ window.App.renderFinanceiroData = async function() {
   }
 };
 
-function manualFinanceSettlement(playerId) {
+async function manualFinanceSettlement(playerId) {
   const players = JSON.parse(localStorage.getItem("players")) || [];
   const p = players.find(x => String(x.id) === String(playerId));
   if (!p) return;
@@ -205,28 +205,37 @@ function manualFinanceSettlement(playerId) {
   const amt = parseFloat(inputAmount.replace(",", "."));
   if (isNaN(amt) || amt === 0) return;
 
-  const currentSaldo = isNaN(parseFloat(p.saldo)) ? 0 : parseFloat(p.saldo);
-  p.saldo = currentSaldo + amt;
+  let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  if (!group || !group.id) {
+    try {
+      group = JSON.parse(localStorage.getItem("currentGroup"));
+    } catch (e) {}
+  }
 
-  const transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-  transactions.push({
-    id: "t_" + Date.now(),
-    pelada_id: null,
-    valor: Math.abs(amt),
-    value: Math.abs(amt),
-    jogador_id: p.id,
-    tipo: "acerto",
-    descricao: `Acerto manual: ${p.nome || 'Atleta'}`,
-    sinal: amt > 0 ? "credito" : "debito",
-    data: new Date().toISOString()
-  });
+  if (!group || !group.id) {
+    window.App.showToast("Grupo de referência não encontrado.", "error");
+    return;
+  }
 
-  localStorage.setItem("players", JSON.stringify(players));
-  localStorage.setItem("transactions", JSON.stringify(transactions));
+  try {
+    window.App.showToast("Salvando ajuste de saldo no banco remoto...", "info");
+    const res = await window.Api.ajustarSaldoAtleta(p.id, group.id, amt);
+    if (res.error) {
+      window.App.showToast(res.error, "error");
+      return;
+    }
 
-  const toastVal = window.Utils ? window.Utils.formatCurrency(amt) : `R$ ${amt.toFixed(2)}`;
-  window.App.showToast(`Ajuste de ${toastVal} realizado.`);
-  window.App.renderFinanceiroData();
+    // Atualiza o saldo localmente do player para sincronizar a lista
+    p.saldo = res.novoSaldo;
+    localStorage.setItem("players", JSON.stringify(players));
+
+    const toastVal = window.Utils ? window.Utils.formatCurrency(amt) : `R$ ${amt.toFixed(2)}`;
+    window.App.showToast(`Ajuste de ${toastVal} realizado e salvo na nuvem!`, "success");
+    window.App.renderFinanceiroData();
+  } catch (err) {
+    console.error('[manualFinanceSettlement]', err);
+    window.App.showToast("Erro ao conectar ao servidor para ajustar o saldo.", "error");
+  }
 }
 
 window.renderPixAuditoria = async function() {

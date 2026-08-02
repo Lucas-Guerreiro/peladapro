@@ -13,5 +13,7 @@ router.put('/:id/status', authMiddleware, peladaController.atualizarStatus);
 router.post('/:id/live', authMiddleware, peladaController.atualizarLiveState);
 router.get('/:id/live', authMiddleware, peladaController.obterLiveState);
 router.get('/grupo/:grupoId/transacoes', authMiddleware, peladaController.listarTransacoesDoGrupo);
+router.post('/grupo/:grupoId/transacao', authMiddleware, peladaController.criarTransacaoManual);
+router.post('/atleta/:atletaId/ajuste-saldo', authMiddleware, peladaController.ajustarSaldoAtleta);
 
 module.exports = router;

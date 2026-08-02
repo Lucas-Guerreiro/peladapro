@@ -446,4 +446,84 @@ exports.listarTransacoesDoGrupo = async (req, res) => {
   }
 };
 
+exports.criarTransacaoManual = async (req, res) => {
+  const { grupoId } = req.params;
+  const { valor, tipo, descricao } = req.body;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Acesso restrito ao gestor.' });
+  }
+
+  if (!grupoId || !valor || !tipo || !descricao) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios (grupoId, valor, tipo, descricao).' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao, data)
+       VALUES (NULL, $1, $2, $3, $4, NOW())
+       RETURNING *`,
+      [grupoId, parseFloat(valor), tipo, descricao]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[criarTransacaoManual]', err);
+    res.status(500).json({ error: 'Erro ao criar transação manual no banco.', detail: err.message });
+  }
+};
+
+exports.ajustarSaldoAtleta = async (req, res) => {
+  const { atletaId } = req.params;
+  const { grupoId, valor } = req.body;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Acesso restrito ao gestor.' });
+  }
+
+  if (!atletaId || !grupoId || valor === undefined || isNaN(parseFloat(valor))) {
+    return res.status(400).json({ error: 'Atleta, grupo e valor do ajuste são obrigatórios.' });
+  }
+
+  const amt = parseFloat(valor);
+  let client;
+
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Obter saldo atual do atleta
+    const userRes = await client.query('SELECT saldo, nome FROM usuarios WHERE id = $1', [atletaId]);
+    if (userRes.rows.length === 0) {
+      throw new Error('Atleta não encontrado.');
+    }
+    const currentSaldo = parseFloat(userRes.rows[0].saldo || 0);
+    const atletaNome = userRes.rows[0].nome;
+    const novoSaldo = currentSaldo + amt;
+
+    // 2. Atualizar saldo do atleta
+    await client.query('UPDATE usuarios SET saldo = $1 WHERE id = $2', [novoSaldo, atletaId]);
+
+    // 3. Inserir transação de acerto no banco
+    const tipoTx = amt > 0 ? 'credito' : 'debito';
+    const descTx = `Acerto manual: ${atletaNome}`;
+    await client.query(
+      `INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao, data)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [atletaId, grupoId, Math.abs(amt), tipoTx, descTx]
+    );
+
+    await client.query('COMMIT');
+    res.json({ message: 'Saldo ajustado com sucesso!', novoSaldo });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[ajustarSaldoAtleta]', err);
+    res.status(500).json({ error: 'Erro ao ajustar saldo do atleta no banco.', detail: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
 
