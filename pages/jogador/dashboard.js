@@ -87,6 +87,11 @@ var Dashboard = {
     const buildListHTML = () => {
       var peladas = Api.getPeladas() || [];
       var group = Auth.currentGroup;
+      if (!group) {
+        try {
+          group = JSON.parse(localStorage.getItem('currentGroup'));
+        } catch (e) {}
+      }
       var groupId = group ? group.id : null;
       var userId = Auth.currentUser ? Auth.currentUser.id : null;
 
@@ -121,7 +126,7 @@ var Dashboard = {
           (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
           '<div>' +
             '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
-            '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || Auth.currentGroup?.nome || '') + '</p>' +
+            '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
           '</div>' +
           '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
         '</div>';
@@ -134,39 +139,61 @@ var Dashboard = {
     buildListHTML();
 
     // 2. Busca dados em tempo real na nuvem de forma assíncrona
-    var group = Auth.currentGroup;
-    var groupId = group ? group.id : null;
-    if (groupId && window.Api && window.Api.listarDatasDoGrupo) {
+    var token = localStorage.getItem('token');
+    if (token && window.Api && window.Api.getGruposDoGestor) {
       try {
-        const peladasServidor = await window.Api.listarDatasDoGrupo(groupId);
-        if (Array.isArray(peladasServidor)) {
-          window.Api.savePeladas(peladasServidor);
+        const grupos = await window.Api.getGruposDoGestor();
+        if (Array.isArray(grupos) && grupos.length > 0) {
+          window.Api.saveGroups(grupos);
 
-          const today = new Date().toISOString().split('T')[0];
-          const upcoming = peladasServidor.filter(p => p.status === 'agendada' && p.data >= today).slice(0, 4);
+          // Se não houver grupo selecionado, define o primeiro como currentGroup
+          if (!Auth.currentGroup) {
+            Auth.currentGroup = grupos[0];
+            localStorage.setItem('currentGroup', JSON.stringify(grupos[0]));
+            // Atualiza o nome do grupo na UI
+            var groupNameEl = document.getElementById('dashboard-group-name');
+            if (groupNameEl) groupNameEl.textContent = grupos[0].nome;
+          }
 
-          let localConvocations = window.Api.getConvocations() || [];
-          for (const p of upcoming) {
+          let todasPeladas = [];
+          for (const g of grupos) {
             try {
-              const convocados = await window.Api.listarConvocados(p.id);
-              if (Array.isArray(convocados)) {
-                localConvocations = localConvocations.filter(c => String(c.pelada_id) !== String(p.id));
-                convocados.forEach(c => {
-                  localConvocations.push({
-                    id: 'c_' + c.id + '_' + p.id,
-                    pelada_id: parseInt(p.id),
-                    player_id: c.id,
-                    status: c.status,
-                    forma_pagamento: c.forma_pagamento
-                  });
-                });
+              const peladasGrupo = await window.Api.listarDatasDoGrupo(g.id);
+              if (Array.isArray(peladasGrupo)) {
+                todasPeladas = todasPeladas.concat(peladasGrupo);
               }
             } catch (e) {}
           }
-          window.Api.saveConvocations(localConvocations);
 
-          // 3. Renderiza novamente com os dados atualizados
-          buildListHTML();
+          if (todasPeladas.length > 0) {
+            window.Api.savePeladas(todasPeladas);
+
+            const today = new Date().toISOString().split('T')[0];
+            const upcoming = todasPeladas.filter(p => p.status === 'agendada' && p.data >= today).slice(0, 4);
+
+            let localConvocations = window.Api.getConvocations() || [];
+            for (const p of upcoming) {
+              try {
+                const convocados = await window.Api.listarConvocados(p.id);
+                if (Array.isArray(convocados)) {
+                  localConvocations = localConvocations.filter(c => String(c.pelada_id) !== String(p.id));
+                  convocados.forEach(c => {
+                    localConvocations.push({
+                      id: 'c_' + c.id + '_' + p.id,
+                      pelada_id: parseInt(p.id),
+                      player_id: c.id,
+                      status: c.status,
+                      forma_pagamento: c.forma_pagamento
+                    });
+                  });
+                }
+              } catch (e) {}
+            }
+            window.Api.saveConvocations(localConvocations);
+
+            // 3. Renderiza novamente com os dados atualizados
+            buildListHTML();
+          }
         }
       } catch (err) {
         console.error('[Dashboard] Erro na sincronização reativa:', err);
