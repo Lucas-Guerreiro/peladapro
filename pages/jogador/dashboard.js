@@ -125,7 +125,7 @@ var Dashboard = {
 
           const condData = (pDateStr >= today);
 
-          console.log(`[Dashboard Filter] Pelada ID: ${p.id}, status: ${p.status} (ok? ${condStatus}), data original: ${p.data}, data ISO: ${pDateStr}, today: ${today} (ok? ${condData}), grupo: ${p.grupo_id} === ${groupId} (ok? ${condGroup})`);
+          console.log(`[Dashboard Filter] Pelada ID: ${p.id}, status: ${p.status} (ok? ${condStatus}), data original: ${p.data}, data ISO: ${pDateStr}, today: ${today} (ok? ${condData})`);
 
           return condStatus && condData;
         }).sort(function (a, b) {
