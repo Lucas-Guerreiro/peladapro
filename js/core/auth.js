@@ -267,6 +267,11 @@ const Auth = {
       Router.navigate('#/jogador/dashboard');
     }
 
+    // Sincroniza subscrição de notificação push com o novo token de sessão
+    if (window.PWAPush && window.PWAPush.subscribeUserSilently) {
+      window.PWAPush.subscribeUserSilently();
+    }
+
     // Verifica se o e-mail cadastrado é temporário (@teste.com)
     this.checkUserEmailTest();
   },

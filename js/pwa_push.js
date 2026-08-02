@@ -159,15 +159,20 @@ window.PWAPush = {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     try {
+      console.log('📱 [PWAPush] Tentando registrar subscrição no backend...', { temToken: !!token });
       const res = await fetch('/api/push/register', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(subscription)
       });
       const data = await res.json();
-      console.log('📱 [PWAPush] Servidor confirmou registro:', data.message);
+      if (res.ok) {
+        console.log('📱 [PWAPush] Servidor confirmou registro com sucesso:', data.message || data);
+      } else {
+        console.warn('📱 [PWAPush] Servidor recusou registro:', res.status, data.error || data.message || data);
+      }
     } catch (err) {
-      console.error('📱 [PWAPush] Erro ao enviar subscription para o backend:', err);
+      console.error('📱 [PWAPush] Erro de rede ao enviar subscription para o backend:', err);
     }
   },
 
