@@ -55,7 +55,7 @@ exports.registerSubscription = async (req, res) => {
 };
 
 // Função utilitária para envio interno via backend
-async function sendNotificationInternal({ title, body, url, icon, payload, usuarioId, usuarioIds }) {
+async function sendNotificationInternal({ title, body, url, icon, payload, usuarioId, usuarioIds, onlyGestores }) {
   if (!title || !body) return { successCount: 0, failureCount: 0 };
 
   const notificationPayload = JSON.stringify({
@@ -72,7 +72,14 @@ async function sendNotificationInternal({ title, body, url, icon, payload, usuar
     let query = 'SELECT endpoint, keys, usuario_id FROM push_subscriptions';
     let params = [];
 
-    if (usuarioIds && Array.isArray(usuarioIds) && usuarioIds.length > 0) {
+    if (onlyGestores) {
+      query = `
+        SELECT ps.endpoint, ps.keys, ps.usuario_id 
+        FROM push_subscriptions ps
+        INNER JOIN usuarios u ON u.id = ps.usuario_id
+        WHERE u.tipo = 'gestor' OR u.tipo = 'ambos' OR u.tipo = 'admin'`;
+      params = [];
+    } else if (usuarioIds && Array.isArray(usuarioIds) && usuarioIds.length > 0) {
       query = 'SELECT endpoint, keys, usuario_id FROM push_subscriptions WHERE usuario_id = ANY($1)';
       params = [usuarioIds];
     } else if (usuarioId) {
@@ -93,7 +100,7 @@ async function sendNotificationInternal({ title, body, url, icon, payload, usuar
   }
 
   // Se a consulta no banco falhou ou não retornou nada E for envio geral, usa fallback em memória
-  if (subscriptionsList.length === 0 && !usuarioId && (!usuarioIds || usuarioIds.length === 0)) {
+  if (subscriptionsList.length === 0 && !usuarioId && (!usuarioIds || usuarioIds.length === 0) && !onlyGestores) {
     memorySubscriptions.forEach(v => subscriptionsList.push(v.subscription));
   } else if (subscriptionsList.length === 0 && (usuarioId || (usuarioIds && usuarioIds.length > 0))) {
     // Se for direcionado, busca da memória apenas para os usuários específicos
@@ -135,16 +142,16 @@ exports.sendNotificationInternal = sendNotificationInternal;
 
 // 3. Disparar Notificação Push via Rota HTTP (Painel do Gestor)
 exports.sendNotification = async (req, res) => {
-  const { title, body, url, icon, payload, usuarioId, usuarioIds } = req.body;
+  const { title, body, url, icon, payload, usuarioId, usuarioIds, onlyGestores } = req.body;
 
   if (!title || !body) {
-    return res.status(400).json({ error: 'Título e corpo da notificação são obrigatórios.' });
+    return res.status(400).json({ error: 'Título e mensagem são obrigatórios.' });
   }
 
-  const result = await sendNotificationInternal({ title, body, url, icon, payload, usuarioId, usuarioIds });
-
-  res.json({
-    message: `Notificações disparadas! Sucesso: ${result.successCount}, Falhas: ${result.failureCount}`,
-    ...result
-  });
+  try {
+    const result = await sendNotificationInternal({ title, body, url, icon, payload, usuarioId, usuarioIds, onlyGestores });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao disparar notificação push.', detail: err.message });
+  }
 };

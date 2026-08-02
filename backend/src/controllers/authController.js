@@ -83,6 +83,17 @@ exports.registrar = async (req, res) => {
     
     await db.query(query, [nome.trim(), email.trim().toLowerCase(), hash]);
 
+    // Notifica todos os gestores por push sobre o novo cadastro pendente
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      sendNotificationInternal({
+        title: '👤 Novo Atleta Pendente!',
+        body: `${nome.trim()} se cadastrou e aguarda aprovação para acessar o app.`,
+        url: '/#/gestor/atletas',
+        onlyGestores: true
+      }).catch(e => console.warn('[Push] Erro ao disparar push de novo cadastro para gestores:', e.message));
+    } catch(e) {}
+
     res.status(201).json({
       status: 'aprovacao_pendente',
       email: email.trim().toLowerCase(),

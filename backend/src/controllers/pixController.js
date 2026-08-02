@@ -71,6 +71,22 @@ exports.enviarComprovante = async (req, res) => {
     );
 
     await client.query('COMMIT');
+
+    // Notifica todos os gestores por push sobre o novo comprovante recebido
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      // Busca o nome ou apelido do atleta
+      const uRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+      const nomeExibir = uRes.rows.length > 0 ? (uRes.rows[0].apelido || uRes.rows[0].nome) : 'Um atleta';
+      
+      sendNotificationInternal({
+        title: '💸 Novo Comprovante Pix!',
+        body: `${nomeExibir} enviou um comprovante de R$ ${valorNum.toFixed(2)}. Saldo creditado automaticamente!`,
+        url: '/#/gestor/financeiro',
+        onlyGestores: true
+      }).catch(e => console.warn('[Push] Erro ao disparar push de comprovante para gestores:', e.message));
+    } catch(e) {}
+
     res.json({
       message: 'Comprovante Pix aprovado e saldo creditado com sucesso!',
       novoSaldo: userRes.rows[0].saldo,
