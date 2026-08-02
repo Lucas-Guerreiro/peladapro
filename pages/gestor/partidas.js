@@ -257,6 +257,19 @@ function startGestorPolling() {
     if (!window.App || window.App.gestorPollingInterval === null) return;
 
     if (window.App.isFinishingMatch) {
+
+      if (window.App.gestorPollingInterval !== null) {
+        window.App.gestorPollingInterval = setTimeout(runGestorPolling, getIntervalTime());
+      }
+      return;
+    }
+
+    // Se a pelada ativa NÃO estiver em andamento, limpa e NÃO recarrega confronto/fila
+    const peladaAtivaPoll = window.App.activePelada || {};
+    if (peladaAtivaPoll.status !== "ativa") {
+      limparEstadoPartida();
+      renderLiveMatchUI();
+      renderWaitingQueue();
       if (window.App.gestorPollingInterval !== null) {
         window.App.gestorPollingInterval = setTimeout(runGestorPolling, getIntervalTime());
       }
