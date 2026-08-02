@@ -38,15 +38,31 @@ window.App.renderFinanceiroData = async function() {
         if (Array.isArray(dbTx)) {
           rawTx = dbTx.map(t => {
             const atletaNome = t.usuario_nome || t.usuario_apelido || 'Atleta';
+            let sinal = 'neutro';
+            let tipo = 'Geral';
+            
+            if (t.tipo === 'credito') {
+              sinal = 'credito';
+              tipo = t.usuario_id ? 'Recarga Pix' : 'Receita';
+            } else if (t.tipo === 'debito') {
+              if (t.usuario_id) {
+                sinal = 'credito'; // Presença do atleta é receita para o caixa da pelada
+                tipo = 'Presença';
+              } else {
+                sinal = 'debito'; // Despesa manual sem atleta é saída de caixa
+                tipo = 'Despesa';
+              }
+            }
+
             return {
               id: t.id,
               pelada_id: t.pelada_id,
               valor: parseFloat(t.valor),
               value: parseFloat(t.valor),
               jogador_id: t.usuario_id,
-              tipo: t.tipo === 'debito' ? 'Presença' : 'Recarga Pix',
-              descricao: t.descricao || `Lançamento: Atleta ${atletaNome}`,
-              sinal: t.tipo === 'credito' ? 'credito' : 'neutro',
+              tipo: tipo,
+              descricao: t.descricao || `Lançamento: ${tipo}`,
+              sinal: sinal,
               data: t.data
             };
           });
