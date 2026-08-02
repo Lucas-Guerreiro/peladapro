@@ -282,13 +282,13 @@
         </div>
       </div>
       
+      {{ROLE_TOGGLE_HEADER_MOBILE}}
+      
       <div class="gestor-mobile-dropdown" id="gestor-mobile-dropdown">
         <div style="font-size: 13px; font-weight: 700; color: #0F172A; padding: 4px 8px; margin-bottom: 4px; display:flex; align-items:center; justify-content:space-between;">
           <span>{{USER_NAME}}</span>
           <span class="gestor-badge-role">Gestor</span>
         </div>
-
-        {{ROLE_TOGGLE_MOBILE}}
 
         <button class="tab-btn" onclick="window.PWAInstaller.triggerInstall(); GestorGlobal.closeMobileMenu();" style="color: #0284C7; font-weight: 700;">INSTALAR APP</button>
         <button class="tab-btn" data-name="atletas" onclick="Router.navigate('#/gestor/atletas'); GestorGlobal.closeMobileMenu();">👥 Elenco Atletas</button>

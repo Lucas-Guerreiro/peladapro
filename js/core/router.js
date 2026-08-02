@@ -263,17 +263,24 @@ const Router = {
         </div>
       ` : '';
 
-      const toggleMobileHTML = isDual ? `
-        <div style="padding: 4px 0; margin-bottom: 8px;">
-          <button class="btn btn-outline btn-md" style="width:100%; border-color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; color:${activeRole === 'gestor' ? '#0284C7' : '#059669'}; font-size:13px; font-weight:700;" onclick="Auth.toggleRole()">
-            MODO ${activeRole === 'gestor' ? 'JOGADOR' : 'GESTOR'}
-          </button>
+      const toggleHeaderMobileHTML = isDual ? `
+        <div style="margin-top: 10px; display: flex; justify-content: flex-start; width: 100%;">
+          <div 
+            class="role-toggle-switch ${activeRole === 'gestor' ? 'is-gestor' : 'is-jogador'}" 
+            onclick="Auth.toggleRole()"
+            title="Clique para alternar entre perfil de Gestor e Jogador"
+            style="width: 100%; display: inline-flex; justify-content: space-around; padding: 2px;"
+          >
+            <span class="role-toggle-option role-opt-jogador" style="flex: 1; text-align: center; padding: 4px 0; font-size: 11px;">⚽ Jogador</span>
+            <span class="role-toggle-option role-opt-gestor" style="flex: 1; text-align: center; padding: 4px 0; font-size: 11px;">🏆 Gestor</span>
+            <div class="role-toggle-slider" style="width: calc(50% - 2px);"></div>
+          </div>
         </div>
       ` : '';
 
       layoutHTML = layoutHTML.replace(/\{\{USER_NAME\}\}/g, userName)
                              .replace(/\{\{ROLE_TOGGLE\}\}/g, toggleHTML)
-                             .replace(/\{\{ROLE_TOGGLE_MOBILE\}\}/g, toggleMobileHTML);
+                             .replace(/\{\{ROLE_TOGGLE_HEADER_MOBILE\}\}/g, toggleHeaderMobileHTML);
 
       app.innerHTML = layoutHTML;
 
