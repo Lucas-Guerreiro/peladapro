@@ -126,6 +126,18 @@ exports.agendarData = async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    // 4. Envia notificação push para todos avisando que a convocação está aberta
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      const dataFmt = data.split('-').reverse().join('/');
+      sendNotificationInternal({
+        title: '📋 Convocação Aberta!',
+        body: `A pelada do dia ${dataFmt} às ${horario} no ${local} está com convocações abertas! Confirme sua presença no app.`,
+        url: '/#/jogador/convocacao'
+      }).catch(e => console.warn('[Push] Erro ao disparar push de agendamento:', e.message));
+    } catch(e) {}
+
     res.status(201).json({
       message: 'Partida agendada e convocações abertas com sucesso!',
       pelada,

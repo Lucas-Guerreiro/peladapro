@@ -100,6 +100,18 @@ exports.confirmar = async (req, res) => {
     await client.query(queryConv, [pelada_id, usuario_id, forma_pagamento]);
 
     await client.query('COMMIT');
+
+    // 5. Dispara notificação push de confirmação para o próprio usuário
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      sendNotificationInternal({
+        usuarioId: usuario_id,
+        title: 'Presença Confirmada! ⚽',
+        body: `Você confirmou presença na pelada de ${dataFmt} via ${forma_pagamento.toUpperCase()}. Bom jogo!`,
+        url: '/#/jogador/convocacao'
+      }).catch(e => console.warn('[Push] Erro ao disparar push de presenca:', e.message));
+    } catch(e) {}
+
     res.json({ message: 'Presença confirmada!', custo: valorCusto });
   } catch (err) {
     if (client) await client.query('ROLLBACK');

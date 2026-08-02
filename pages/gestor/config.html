@@ -133,8 +133,21 @@
         </select>
       </div>
 
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="push-select-athlete" class="form-label" style="font-weight: 700;">Enviar para Atletas Específicos (Opcional - Em branco envia para todos)</label>
+        <div style="display: flex; gap: 8px;">
+          <select id="push-select-athlete" class="form-control" style="flex: 1;">
+            <option value="">-- Selecione um atleta para adicionar --</option>
+          </select>
+          <button id="btn-push-add-athlete" class="btn btn-sm btn-outline" style="height: 38px; font-weight: 700; white-space: nowrap; cursor: pointer;">Adicionar Atleta</button>
+        </div>
+        <div id="push-selected-athletes-container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+          <!-- Tags dos atletas selecionados serão inseridas aqui dinamicamente -->
+        </div>
+      </div>
+
       <button id="btn-send-custom-push" class="btn btn-md btn-accent" style="font-weight: 700; height: 42px; width: 100%;">
-        🚀 Disparar Notificação para Todos os Atletas
+        🚀 Disparar Notificação
       </button>
     </div>
 

@@ -55,7 +55,7 @@ exports.registerSubscription = async (req, res) => {
 };
 
 // Função utilitária para envio interno via backend
-async function sendNotificationInternal({ title, body, url, icon, payload }) {
+async function sendNotificationInternal({ title, body, url, icon, payload, usuarioId, usuarioIds }) {
   if (!title || !body) return { successCount: 0, failureCount: 0 };
 
   const notificationPayload = JSON.stringify({
@@ -69,20 +69,40 @@ async function sendNotificationInternal({ title, body, url, icon, payload }) {
   let subscriptionsList = [];
 
   try {
-    const { rows } = await db.query('SELECT endpoint, keys FROM push_subscriptions');
+    let query = 'SELECT endpoint, keys, usuario_id FROM push_subscriptions';
+    let params = [];
+
+    if (usuarioIds && Array.isArray(usuarioIds) && usuarioIds.length > 0) {
+      query = 'SELECT endpoint, keys, usuario_id FROM push_subscriptions WHERE usuario_id = ANY($1)';
+      params = [usuarioIds];
+    } else if (usuarioId) {
+      query = 'SELECT endpoint, keys, usuario_id FROM push_subscriptions WHERE usuario_id = $1';
+      params = [usuarioId];
+    }
+
+    const { rows } = await db.query(query, params);
     subscriptionsList = rows.map(r => {
       let keysObj = r.keys;
       if (typeof keysObj === 'string') {
         try { keysObj = JSON.parse(keysObj); } catch(e) {}
       }
-      return { endpoint: r.endpoint, keys: keysObj };
+      return { endpoint: r.endpoint, keys: keysObj, usuario_id: r.usuario_id };
     });
   } catch(e) {
     console.warn('[PushController] Falha ao consultar Supabase, usando memória fallback:', e.message);
   }
 
-  if (subscriptionsList.length === 0) {
+  // Se a consulta no banco falhou ou não retornou nada E for envio geral, usa fallback em memória
+  if (subscriptionsList.length === 0 && !usuarioId && (!usuarioIds || usuarioIds.length === 0)) {
     memorySubscriptions.forEach(v => subscriptionsList.push(v.subscription));
+  } else if (subscriptionsList.length === 0 && (usuarioId || (usuarioIds && usuarioIds.length > 0))) {
+    // Se for direcionado, busca da memória apenas para os usuários específicos
+    const targetIds = usuarioIds ? usuarioIds.map(String) : [String(usuarioId)];
+    memorySubscriptions.forEach(v => {
+      if (v.usuario_id && targetIds.includes(String(v.usuario_id))) {
+        subscriptionsList.push(v.subscription);
+      }
+    });
   }
 
   if (subscriptionsList.length === 0) {
@@ -115,13 +135,13 @@ exports.sendNotificationInternal = sendNotificationInternal;
 
 // 3. Disparar Notificação Push via Rota HTTP (Painel do Gestor)
 exports.sendNotification = async (req, res) => {
-  const { title, body, url, icon, payload } = req.body;
+  const { title, body, url, icon, payload, usuarioId, usuarioIds } = req.body;
 
   if (!title || !body) {
     return res.status(400).json({ error: 'Título e corpo da notificação são obrigatórios.' });
   }
 
-  const result = await sendNotificationInternal({ title, body, url, icon, payload });
+  const result = await sendNotificationInternal({ title, body, url, icon, payload, usuarioId, usuarioIds });
 
   res.json({
     message: `Notificações disparadas! Sucesso: ${result.successCount}, Falhas: ${result.failureCount}`,

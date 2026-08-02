@@ -2,12 +2,24 @@
 // PÁGINA: GESTOR - CONFIGURAÇÕES (config.js)
 // ==========================================================================
 
+let pushSelectedAthletes = [];
+
 window.App.initConfig = function () {
+  pushSelectedAthletes = [];
   loadConfigs();
   loadGestorGroups().then(() => {
     loadDrawnDates();
   });
   loadGestorLocations();
+
+  // Sincroniza atletas e popula o select
+  if (window.App.syncAthletesList) {
+    window.App.syncAthletesList().then(() => {
+      populatePushAthleteSelect();
+    });
+  } else {
+    populatePushAthleteSelect();
+  }
 
   // Expor a função de recarregamento para o modal partida_config
   window.App.syncDrawnDates = loadDrawnDates;
@@ -62,6 +74,9 @@ window.App.initConfig = function () {
   const btnSendPush = document.getElementById("btn-send-custom-push");
   if (btnSendPush) btnSendPush.onclick = handleSendCustomPush;
 
+  const btnAddPushAthlete = document.getElementById("btn-push-add-athlete");
+  if (btnAddPushAthlete) btnAddPushAthlete.onclick = handleAddPushAthlete;
+
   if (window.feather) feather.replace();
 };
 
@@ -79,22 +94,33 @@ async function handleSendCustomPush() {
     return;
   }
 
+  const payload = {
+    title: title,
+    body: body,
+    url: targetUrl
+  };
+
+  // Se houver atletas selecionados na lista, envia direcionado
+  if (pushSelectedAthletes.length > 0) {
+    payload.usuarioIds = pushSelectedAthletes.map(a => a.id);
+  }
+
   try {
-    window.App.showToast("Disparando notificação push para todos os atletas...", "info");
+    window.App.showToast("Disparando notificação push...", "info");
     const res = await fetch("/api/push/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: title,
-        body: body,
-        url: targetUrl
-      })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
     if (res.ok) {
       window.App.showToast(`Notificação enviada com sucesso para ${data.successCount || 0} dispositivo(s)! 🚀`, "success");
       if (titleInput) titleInput.value = "";
       if (bodyInput) bodyInput.value = "";
+      
+      // Limpa os selecionados
+      pushSelectedAthletes = [];
+      renderSelectedPushAthletes();
     } else {
       window.App.showToast(data.error || "Erro ao disparar notificação.", "error");
     }
@@ -102,6 +128,78 @@ async function handleSendCustomPush() {
     console.error(e);
     window.App.showToast("Erro ao conectar ao servidor de push.", "error");
   }
+}
+
+function populatePushAthleteSelect() {
+  const select = document.getElementById("push-select-athlete");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">-- Selecione um atleta para adicionar --</option>`;
+
+  const players = JSON.parse(localStorage.getItem("players")) || [];
+  const approved = players.filter(p => p.verificado === true);
+
+  approved.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.nome + (p.apelido ? ` (${p.apelido})` : "");
+    select.appendChild(opt);
+  });
+}
+
+function handleAddPushAthlete() {
+  const select = document.getElementById("push-select-athlete");
+  if (!select) return;
+
+  const val = select.value;
+  if (!val) return;
+
+  if (pushSelectedAthletes.some(a => String(a.id) === String(val))) {
+    window.App.showToast("Atleta já adicionado à lista.", "warning");
+    return;
+  }
+
+  const players = JSON.parse(localStorage.getItem("players")) || [];
+  const player = players.find(p => String(p.id) === String(val));
+  if (player) {
+    pushSelectedAthletes.push({ id: player.id, nome: player.nome });
+    renderSelectedPushAthletes();
+    select.value = ""; // limpa o select
+  }
+}
+
+function renderSelectedPushAthletes() {
+  const container = document.getElementById("push-selected-athletes-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  pushSelectedAthletes.forEach(a => {
+    const badge = document.createElement("span");
+    badge.style.cssText = `
+      background: rgba(2, 132, 199, 0.1);
+      color: #0284C7;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Inter', sans-serif;
+    `;
+
+    badge.innerHTML = `
+      ${a.nome}
+      <span style="cursor: pointer; color: #ef4444; font-size: 16px; line-height: 1; font-weight: bold;" title="Remover atleta">&times;</span>
+    `;
+
+    badge.querySelector("span").onclick = () => {
+      pushSelectedAthletes = pushSelectedAthletes.filter(x => String(x.id) !== String(a.id));
+      renderSelectedPushAthletes();
+    };
+
+    container.appendChild(badge);
+  });
 }
 
 function loadConfigs() {
