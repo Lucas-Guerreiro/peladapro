@@ -7,15 +7,15 @@ var Dashboard = {
 
   _pollingTimer: null,
 
-  init: function() {
+  init: function () {
     const user = Auth.currentUser;
 
     // O perfil só é considerado incompleto se o usuário NÃO for verificado/ativo E faltarem dados essenciais
-    const isComplete = !user || 
-                       (user.verificado === true) || 
-                       (user.ativo === true) || 
-                       (user.cadastro_completo === true) ||
-                       (user.nome && user.whatsapp && (user.cpf || user.data_nascimento || user.autoavaliacao > 0));
+    const isComplete = !user ||
+      (user.verificado === true) ||
+      (user.ativo === true) ||
+      (user.cadastro_completo === true) ||
+      (user.nome && user.whatsapp && (user.cpf || user.data_nascimento || user.autoavaliacao > 0));
 
     if (user && !isComplete) {
       this.renderCompletionScreen();
@@ -31,7 +31,7 @@ var Dashboard = {
   },
 
   // --- Dados do jogador logado -------------------------------------------
-  renderPlayerData: function() {
+  renderPlayerData: function () {
     var user = Auth.currentUser;
     if (!user) return;
 
@@ -79,7 +79,7 @@ var Dashboard = {
   },
 
   // --- Próximas peladas ---------------------------------------------------
-  renderNextMatches: async function() {
+  renderNextMatches: async function () {
     console.log('[Dashboard] renderNextMatches iniciado');
     var listEl = document.getElementById('next-matches-list');
     if (!listEl) {
@@ -97,16 +97,16 @@ var Dashboard = {
         if (!group) {
           try {
             group = JSON.parse(localStorage.getItem('currentGroup'));
-          } catch (e) {}
+          } catch (e) { }
         }
         var groupId = group ? group.id : null;
         var userId = Auth.currentUser ? Auth.currentUser.id : null;
         console.log('[Dashboard] groupId:', groupId, 'userId:', userId);
 
         var today = new Date().toISOString().split('T')[0];
-        var upcoming = peladas.filter(function(p) {
+        var upcoming = peladas.filter(function (p) {
           const condStatus = (p.status === 'agendada');
-          
+
           let pDateStr = '';
           if (p.data) {
             if (p.data.includes('T')) {
@@ -124,15 +124,14 @@ var Dashboard = {
           }
 
           const condData = (pDateStr >= today);
-          const condGroup = (!groupId || String(p.grupo_id) === String(groupId));
-          
+
           console.log(`[Dashboard Filter] Pelada ID: ${p.id}, status: ${p.status} (ok? ${condStatus}), data original: ${p.data}, data ISO: ${pDateStr}, today: ${today} (ok? ${condData}), grupo: ${p.grupo_id} === ${groupId} (ok? ${condGroup})`);
-          
+
           return condStatus && condData && condGroup;
-        }).sort(function(a, b) { 
+        }).sort(function (a, b) {
           const dateA = a.data && a.data.includes('T') ? a.data.split('T')[0] : a.data;
           const dateB = b.data && b.data.includes('T') ? b.data.split('T')[0] : b.data;
-          return dateA.localeCompare(dateB); 
+          return dateA.localeCompare(dateB);
         }).slice(0, 4);
         console.log('[Dashboard] upcoming peladas:', upcoming);
 
@@ -145,15 +144,15 @@ var Dashboard = {
         }
 
         var html = '';
-        upcoming.forEach(function(p, idx) {
-          var myConv = convocations.find(function(c) { return c.pelada_id === p.id && c.player_id === userId; });
+        upcoming.forEach(function (p, idx) {
+          var myConv = convocations.find(function (c) { return c.pelada_id === p.id && c.player_id === userId; });
           var status = myConv ? myConv.status : 'pendente';
           var isLast = idx === upcoming.length - 1;
 
           var statusMap = {
             confirmado: { label: '✅ Confirmado', color: 'var(--success)' },
-            pendente:   { label: '⏳ Pendente',   color: 'var(--warning)' },
-            cortado:    { label: '❌ Cortado',    color: 'var(--danger)'  }
+            pendente: { label: '⏳ Pendente', color: 'var(--warning)' },
+            cortado: { label: '❌ Cortado', color: 'var(--danger)' }
           };
           var s = statusMap[status] || statusMap.pendente;
 
@@ -161,11 +160,11 @@ var Dashboard = {
           html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
             (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
             '<div>' +
-              '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
-              '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
+            '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
+            '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
             '</div>' +
             '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
-          '</div>';
+            '</div>';
         });
 
         listEl.innerHTML = html;
@@ -252,7 +251,7 @@ var Dashboard = {
   },
 
   // --- Utilitário de timer ------------------------------------------------
-  _formatTimer: function(secs) {
+  _formatTimer: function (secs) {
     var m = Math.floor(secs / 60);
     var s = secs % 60;
     return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
@@ -261,7 +260,7 @@ var Dashboard = {
   // --- Tela de complemento cadastral em tela cheia ------------------------
   _currentRating: 0,
 
-  renderCompletionScreen: function() {
+  renderCompletionScreen: function () {
     // 1. Ocultar barra de abas para impedir navegação
     const tabsNav = document.getElementById('jogador-tabs-nav');
     if (tabsNav) tabsNav.style.display = 'none';
@@ -296,7 +295,7 @@ var Dashboard = {
             if (!isNaN(d.getTime())) {
               nascimentoInput.value = d.toISOString().split('T')[0];
             }
-          } catch(e) {}
+          } catch (e) { }
         }
         if (whatsappInput && u.whatsapp) whatsappInput.value = Utils.maskPhone(u.whatsapp);
         if (goleiroCheck) goleiroCheck.checked = !!u.goleiro;
@@ -338,7 +337,7 @@ var Dashboard = {
       });
   },
 
-  handleSaveCompletion: async function() {
+  handleSaveCompletion: async function () {
     const nome = document.getElementById('comp-nome')?.value.trim();
     const apelido = document.getElementById('comp-apelido')?.value.trim();
     const cpf = document.getElementById('comp-cpf')?.value.trim();
@@ -385,7 +384,7 @@ var Dashboard = {
       // Se for um novo usuário pendente de aprovação do gestor
       if (!Auth.currentUser.verificado || !Auth.currentUser.ativo) {
         const userNome = nome;
-        
+
         // Limpa a sessão local de forma silenciosa
         Auth.currentUser = null;
         Auth.currentGroup = null;
@@ -424,7 +423,7 @@ var Dashboard = {
 };
 
 // --- Ponto de entrada chamado pelo Router ----------------------------------
-window.App.initDashboard = async function() {
+window.App.initDashboard = async function () {
   if (window.Auth && window.Auth.refreshCurrentUser) {
     await window.Auth.refreshCurrentUser();
   }
