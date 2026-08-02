@@ -192,10 +192,65 @@ var Acompanhamento = {
       if (rawPelada) window.App.activePelada = JSON.parse(rawPelada);
     } catch(e) {}
 
-    this.renderTimer();
-    this.renderScore();
-    this.renderQueue();
-    this.renderRule();
+    var teams = [];
+    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+
+    const timerCard = document.querySelector('.acomp-timer-wrapper-clear');
+    const scoreCard = document.querySelector('.acomp-score-card-clear');
+    const queueCard = document.getElementById('acomp-queue-list')?.closest('.acomp-card-clear');
+    const ruleCard = document.getElementById('acomp-rule-desc-clear')?.closest('.acomp-card-clear') || document.querySelector('.acomp-rule-title-clear')?.closest('.acomp-card-clear');
+    let infoCard = document.getElementById('acomp-no-teams-card');
+
+    if (!teams || teams.length < 2) {
+      if (timerCard) timerCard.style.display = 'none';
+      if (scoreCard) scoreCard.style.display = 'none';
+      if (queueCard) queueCard.style.display = 'none';
+      if (ruleCard) ruleCard.style.display = 'none';
+
+      if (!infoCard) {
+        infoCard = document.createElement('div');
+        infoCard.id = 'acomp-no-teams-card';
+        infoCard.className = 'acomp-card-clear';
+        infoCard.style.textAlign = 'center';
+        infoCard.style.padding = '32px 20px';
+        infoCard.style.display = 'flex';
+        infoCard.style.flexDirection = 'column';
+        infoCard.style.alignItems = 'center';
+        infoCard.style.justifyContent = 'center';
+        infoCard.style.gap = '12px';
+        
+        infoCard.innerHTML = `
+          <div style="font-size: 40px; line-height: 1;">⚽</div>
+          <h4 class="text-inter" style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin: 0;">Aguardando Sorteio</h4>
+          <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin: 0; max-width: 320px; line-height: 1.5;">
+            O gestor ainda não realizou o sorteio dos times para esta pelada. Assim que for feito, o placar e a fila de espera aparecerão aqui em tempo real!
+          </p>
+        `;
+        const container = document.getElementById('player-tab-content-container');
+        if (container) {
+          const recentCard = document.querySelector('.acomp-card-clear:last-child');
+          if (recentCard && recentCard !== infoCard) {
+            container.insertBefore(infoCard, recentCard);
+          } else {
+            container.appendChild(infoCard);
+          }
+        }
+      } else {
+        infoCard.style.display = 'flex';
+      }
+    } else {
+      if (timerCard) timerCard.style.display = 'flex';
+      if (scoreCard) scoreCard.style.display = 'flex';
+      if (queueCard) queueCard.style.display = 'flex';
+      if (ruleCard) ruleCard.style.display = 'flex';
+      if (infoCard) infoCard.style.display = 'none';
+
+      this.renderTimer();
+      this.renderScore();
+      this.renderQueue();
+      this.renderRule();
+    }
+
     this.renderRecentMatches();
   },
 

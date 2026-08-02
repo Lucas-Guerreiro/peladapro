@@ -356,6 +356,86 @@ function onGestorStorageChange(e) {
 }
 
 function renderLiveMatchUI() {
+  // Verificar se existem times sorteados
+  let teamsList = [];
+  try {
+    teamsList = (window.App && window.App.teams && window.App.teams.length > 0)
+      ? window.App.teams
+      : JSON.parse(localStorage.getItem("teams")) || [];
+  } catch(e) {}
+
+  const timerCont = document.getElementById("gestor-timer-container");
+  const scoreCont = document.getElementById("gestor-scoreboard-container");
+  const finishCont = document.getElementById("gestor-finish-container");
+  const queueCard = document.getElementById("gestor-queue-card");
+  let infoCard = document.getElementById("gestor-no-teams-card");
+
+  if (!teamsList || teamsList.length < 2) {
+    if (timerCont) timerCont.style.display = "none";
+    if (scoreCont) scoreCont.style.display = "none";
+    if (finishCont) finishCont.style.display = "none";
+    if (queueCard) queueCard.style.display = "none";
+
+    const badgeEl = document.getElementById("match-live-status-badge");
+    if (badgeEl) {
+      badgeEl.textContent = "AGUARDANDO SORTEIO";
+      badgeEl.style.background = "#FEF3C7";
+      badgeEl.style.color = "#D97706";
+    }
+
+    if (!infoCard) {
+      infoCard = document.createElement("div");
+      infoCard.id = "gestor-no-teams-card";
+      infoCard.className = "gestor-card-clear";
+      infoCard.style.textAlign = "center";
+      infoCard.style.padding = "32px 20px";
+      infoCard.style.display = "flex";
+      infoCard.style.flexDirection = "column";
+      infoCard.style.alignItems = "center";
+      infoCard.style.justifyContent = "center";
+      infoCard.style.gap = "16px";
+      infoCard.style.background = "#FFFFFF";
+      infoCard.style.borderRadius = "16px";
+      infoCard.style.border = "1px solid rgba(0, 0, 0, 0.04)";
+      infoCard.style.boxShadow = "0 4px 14px rgba(30, 41, 59, 0.03)";
+      infoCard.style.width = "100%";
+      infoCard.style.boxSizing = "border-box";
+
+      infoCard.innerHTML = `
+        <div style="font-size: 40px; line-height: 1;">📋</div>
+        <h4 class="text-inter" style="font-size: 16px; font-weight: 700; color: #0F172A; margin: 0;">Nenhum Time Sorteado</h4>
+        <p class="text-inter" style="font-size: 13px; color: #64748B; margin: 0; max-width: 340px; line-height: 1.5;">
+          Para iniciar o controle da partida ao vivo e da fila de espera, é necessário sortear os times primeiro.
+        </p>
+        <button class="btn" style="background: #0284C7; color: #FFF; font-weight: 700; font-size: 13px; border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;" onclick="Router.navigate('#/gestor/formacao')">
+          ⚡ Sortear Times Agora
+        </button>
+      `;
+
+      const parent = document.getElementById("manager-tab-content-container") || (timerCont ? timerCont.parentElement.parentElement : null);
+      if (parent) {
+        // Insere antes do histórico de partidas (que é o último card do container)
+        const cards = parent.querySelectorAll(".gestor-card-clear");
+        const lastCard = cards[cards.length - 1];
+        if (lastCard && lastCard !== infoCard) {
+          parent.insertBefore(infoCard, lastCard);
+        } else {
+          parent.appendChild(infoCard);
+        }
+      }
+    } else {
+      infoCard.style.display = "flex";
+    }
+    return;
+  }
+
+  // Se houver times sorteados, exibir os elementos normalmente e ocultar o infoCard
+  if (timerCont) timerCont.style.display = "block";
+  if (scoreCont) scoreCont.style.display = "block";
+  if (finishCont) finishCont.style.display = "flex";
+  if (queueCard) queueCard.style.display = "block";
+  if (infoCard) infoCard.style.display = "none";
+
   const teamA = window.App.liveMatch.teamA || "Time A";
   const teamB = window.App.liveMatch.teamB || "Time B";
   const scoreA = window.App.liveMatch.scoreA || 0;

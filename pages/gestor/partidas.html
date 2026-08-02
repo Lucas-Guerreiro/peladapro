@@ -236,9 +236,8 @@
       </div>
       <span class="badge-status" id="match-live-status-badge" style="background: #E2E8F0; color: #475569; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 20px;">AGUARDANDO SORTEIO</span>
     </div>
-    
-    <!-- Cronômetro Central -->
-    <div class="gestor-timer-wrapper" style="margin-bottom: 24px;">
+       <!-- Cronômetro Central -->
+    <div class="gestor-timer-wrapper" id="gestor-timer-container" style="margin-bottom: 24px;">
       <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
         <button id="btn-timer-minus" class="btn-adjust-score" title="Subtrair 1 minuto">-1</button>
         <div class="gestor-timer-time" id="match-control-timer">08:00</div>
@@ -260,7 +259,7 @@
     </div>
 
     <!-- Placar Central e Controle de Placar -->
-    <div style="background: #F8FAFC; padding: 12px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 20px; width: 100%; box-sizing: border-box; overflow: hidden;">
+    <div id="gestor-scoreboard-container" style="background: #F8FAFC; padding: 12px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 20px; width: 100%; box-sizing: border-box; overflow: hidden;">
       
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; box-sizing: border-box;">
         
@@ -312,14 +311,14 @@
         <div style="width: 20px; flex-shrink: 0;"></div>
         <div id="match-control-team-b-goals" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; font-weight: 700; color: #0F172A;"></div>
       </div>
-
     </div>
 
     <!-- Rodapé de Ação: Concluir Partida -->
-    <div style="display: flex; border-top: 1px solid #E2E8F0; padding-top: 16px; width: 100%;">
+    <div id="gestor-finish-container" style="display: flex; border-top: 1px solid #E2E8F0; padding-top: 16px; width: 100%;">
       <button id="btn-finish-match" class="btn" style="flex: 1; background: #10B981; color: #FFF; font-weight: 700; font-size: 14px; border-radius: 12px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);">
         <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Lançar Resultado (Concluir Jogo)
       </button>
+    </div>     </button>
     </div>
   </div>
 
