@@ -97,9 +97,13 @@ async function handleConfirmPayment() {
     }
 
     // Recarregar a lista de confirmados e status da convocação na tela de Convocação!
-    if (window.Convocacao) {
-      await window.Convocacao.renderConfirmedList(localPelada.id);
-      window.Convocacao.updateMyStatus();
+    try {
+      if (window.Convocacao) {
+        await window.Convocacao.renderConfirmedList(localPelada.id);
+        window.Convocacao.updateMyStatus();
+      }
+    } catch (uiErr) {
+      console.warn("[pagamento] Erro secundário ao atualizar UI de convocados:", uiErr);
     }
 
     // Fechar o modal
