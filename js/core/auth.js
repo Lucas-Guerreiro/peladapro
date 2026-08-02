@@ -245,11 +245,37 @@ const Auth = {
       }
       // Mostra o box com código + nova senha
       document.getElementById('recover-codigo-box').classList.remove('hidden');
-      // Mostra o código para o gestor repassar ao atleta
-      alert('Código de recuperação: ' + data.codigo + '\n\nVálido por 15 minutos.\nRepasse este código ao atleta pelo WhatsApp.');
+      // Preenche o quadro com o código para o atleta copiar
+      document.getElementById('recover-codigo-exibido').textContent = data.codigo;
     } catch (e) {
       console.error('[SOLICITAR CODIGO] Erro:', e);
       alert('Erro ao solicitar código. Tente novamente.');
+    }
+  },
+
+  copiarCodigo() {
+    const codigo = document.getElementById('recover-codigo-exibido').textContent;
+    if (!codigo || codigo === '------') {
+      alert('Nenhum código gerado ainda.');
+      return;
+    }
+    const copiarFallback = () => {
+      const temp = document.createElement('textarea');
+      temp.value = codigo;
+      temp.style.position = 'fixed';
+      temp.style.opacity = '0';
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      alert('Código copiado! Cole no campo abaixo.');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codigo)
+        .then(() => alert('Código copiado! Cole no campo abaixo.'))
+        .catch(() => copiarFallback());
+    } else {
+      copiarFallback();
     }
   },
 
