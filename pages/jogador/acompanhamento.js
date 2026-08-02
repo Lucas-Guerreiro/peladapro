@@ -672,7 +672,7 @@ var Acompanhamento = {
 
   // --- Polling & Eventos -------------------------------------------------
   _startPolling: function() {
-    if (Acompanhamento._pollingTimer) clearInterval(Acompanhamento._pollingTimer);
+    if (Acompanhamento._pollingTimer) clearTimeout(Acompanhamento._pollingTimer);
     if (Acompanhamento._localTimer) clearInterval(Acompanhamento._localTimer);
 
     // Fetch inicial do servidor
@@ -680,11 +680,25 @@ var Acompanhamento = {
       Acompanhamento.render();
     });
 
-    // Polling do backend a cada 1000ms para sync multi-dispositivo instantâneo
-    Acompanhamento._pollingTimer = setInterval(async function() {
-      await Acompanhamento._fetchServerLiveState();
-      Acompanhamento.render();
-    }, 1000);
+    // Polling inteligente e econômico (8s ao vivo, 30s inativo)
+    const getIntervalTime = () => {
+      var match = window.App.liveMatch;
+      return (match && match.isPlaying) ? 8000 : 30000;
+    };
+
+    const runPolling = async () => {
+      if (!window.Acompanhamento || Acompanhamento._pollingTimer === null) return;
+      try {
+        await Acompanhamento._fetchServerLiveState();
+        Acompanhamento.render();
+      } catch (e) {}
+
+      if (Acompanhamento._pollingTimer !== null) {
+        Acompanhamento._pollingTimer = setTimeout(runPolling, getIntervalTime());
+      }
+    };
+
+    Acompanhamento._pollingTimer = setTimeout(runPolling, getIntervalTime());
 
     // Loop do cronômetro local para decremento fluido do relógio a cada segundo
     Acompanhamento._localTimer = setInterval(function() {
@@ -707,6 +721,8 @@ var Acompanhamento = {
     }
   }
 };
+
+window.Acompanhamento = Acompanhamento;
 
 // --- Ponto de entrada chamado pelo Router ----------------------------------
 window.App.initAcompanhamento = function() {

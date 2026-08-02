@@ -102,6 +102,36 @@ const Router = {
     const app = document.getElementById('app');
     if (!app) return;
 
+    // --- Limpeza Preventiva de Pollings de Background ---
+    try {
+      if (window.Acompanhamento) {
+        if (window.Acompanhamento._pollingTimer) {
+          clearTimeout(window.Acompanhamento._pollingTimer);
+          window.Acompanhamento._pollingTimer = null;
+        }
+        if (window.Acompanhamento._localTimer) {
+          clearInterval(window.Acompanhamento._localTimer);
+          window.Acompanhamento._localTimer = null;
+        }
+      }
+      if (window.App) {
+        if (window.App.gestorPollingInterval) {
+          clearTimeout(window.App.gestorPollingInterval);
+          window.App.gestorPollingInterval = null;
+        }
+        if (window.App.timerInterval) {
+          clearInterval(window.App.timerInterval);
+          window.App.timerInterval = null;
+        }
+      }
+      if (window.gestorPollingInterval) {
+        clearInterval(window.gestorPollingInterval);
+        window.gestorPollingInterval = null;
+      }
+    } catch (e) {
+      console.warn('[Router] Erro na limpeza de timers:', e);
+    }
+
     const isGestorPage  = route.page.startsWith('gestor/');
     const isJogadorPage = route.page.startsWith('jogador/');
     const needsLayout   = isGestorPage || isJogadorPage;

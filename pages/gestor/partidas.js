@@ -257,14 +257,26 @@ window.App.initPartidas = async function() {
 var gestorPollingInterval = null;
 
 function startGestorPolling() {
-  if (gestorPollingInterval) {
-    clearInterval(gestorPollingInterval);
-    gestorPollingInterval = null;
+  if (window.App.gestorPollingInterval) {
+    clearTimeout(window.App.gestorPollingInterval);
+    window.App.gestorPollingInterval = null;
   }
 
-  // Polling do backend a cada 1000ms para sync instantâneo entre gestor e atleta
-  gestorPollingInterval = setInterval(async () => {
-    if (window.App.isFinishingMatch) return;
+  // Polling inteligente e econômico (8s ao vivo, 30s inativo)
+  const getIntervalTime = () => {
+    var match = window.App.liveMatch;
+    return (match && match.isPlaying) ? 8000 : 30000;
+  };
+
+  const runGestorPolling = async () => {
+    if (!window.App || window.App.gestorPollingInterval === null) return;
+
+    if (window.App.isFinishingMatch) {
+      if (window.App.gestorPollingInterval !== null) {
+        window.App.gestorPollingInterval = setTimeout(runGestorPolling, getIntervalTime());
+      }
+      return;
+    }
 
     let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
     if (!peladaId) {
@@ -318,7 +330,13 @@ function startGestorPolling() {
       renderWaitingQueue();
       renderRecentMatches();
     }
-  }, 1000);
+
+    if (window.App.gestorPollingInterval !== null) {
+      window.App.gestorPollingInterval = setTimeout(runGestorPolling, getIntervalTime());
+    }
+  };
+
+  window.App.gestorPollingInterval = setTimeout(runGestorPolling, getIntervalTime());
 
   window.removeEventListener('storage', onGestorStorageChange);
   window.addEventListener('storage', onGestorStorageChange);
