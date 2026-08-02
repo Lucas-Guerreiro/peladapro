@@ -53,6 +53,7 @@ async function handleConfirmPayment() {
     return;
   }
 
+  let confirmed = false;
   try {
     window.App.showToast("Confirmando presença no servidor...", "info");
 
@@ -75,26 +76,31 @@ async function handleConfirmPayment() {
       return;
     }
 
+    confirmed = true; // ✅ Pagamento confirmado com sucesso
+
     // Sucesso!
     window.App.showToast("Presença confirmada no Supabase!", "success");
 
     // Sincronizar o saldo atualizado do jogador logado de volta na sessão local!
-    if (method === 'saldo') {
-      window.App.currentUser.saldo -= cost;
+    if (method === 'saldo' && window.App.currentUser) {
+      window.App.currentUser.saldo = (parseFloat(window.App.currentUser.saldo) || 0) - cost;
 
-      // Sincronizar também na lista de players do localStorage
-      const players = JSON.parse(localStorage.getItem("players")) || [];
-      const p = players.find(x => String(x.id) === String(window.App.currentUser.id));
-      if (p) {
-        p.saldo = window.App.currentUser.saldo;
-        localStorage.setItem("players", JSON.stringify(players));
-      }
+      try {
+        const players = JSON.parse(localStorage.getItem("players")) || [];
+        const p = players.find(x => String(x.id) === String(window.App.currentUser.id));
+        if (p) {
+          p.saldo = window.App.currentUser.saldo;
+          localStorage.setItem("players", JSON.stringify(players));
+        }
+      } catch (e) { console.warn("[pagamento] Erro ao sincronizar saldo local:", e); }
     }
 
     // Atualizar a dashboard do jogador (se tiver o saldo visível)
-    if (window.Dashboard && typeof window.Dashboard.renderPlayerData === 'function') {
-      window.Dashboard.renderPlayerData();
-    }
+    try {
+      if (window.Dashboard && typeof window.Dashboard.renderPlayerData === 'function') {
+        window.Dashboard.renderPlayerData();
+      }
+    } catch (uiErr) { console.warn("[pagamento] Erro ao atualizar dashboard:", uiErr); }
 
     // Recarregar a lista de confirmados e status da convocação na tela de Convocação!
     try {
@@ -110,7 +116,10 @@ async function handleConfirmPayment() {
     window.App.closeModal();
 
   } catch (err) {
-    console.error(err);
-    window.App.showToast("Erro ao conectar ao servidor para confirmar presença.", "error");
+    console.error("[pagamento] Erro ao confirmar presença:", err);
+    // Só mostra o erro de conexão se o pagamento NÃO foi confirmado
+    if (!confirmed) {
+      window.App.showToast("Erro ao conectar ao servidor para confirmar presença.", "error");
+    }
   }
 }
