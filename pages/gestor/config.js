@@ -118,9 +118,13 @@ async function handleSendCustomPush() {
 
   try {
     window.App.showToast("Disparando notificação push...", "info");
+    const token = localStorage.getItem("token");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     const res = await fetch("/api/push/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
       body: JSON.stringify(payload)
     });
     const data = await res.json();

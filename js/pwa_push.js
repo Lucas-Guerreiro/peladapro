@@ -177,9 +177,13 @@ window.PWAPush = {
         alert('Por favor, ative as notificações primeiro clicando no botão 🔔 Ativar Notificações.');
         return;
       }
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/push/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({
           title: 'Pelada Confirmada! ⚽',
           body: 'Notificação de teste do PeladaPro enviada com sucesso!',
