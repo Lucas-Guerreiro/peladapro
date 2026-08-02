@@ -161,6 +161,13 @@ var Acompanhamento = {
       }
     }
 
+    const groupConfigs = window.Api.getConfigs() || [];
+    const currentGrp = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    const grpCfg = currentGrp ? groupConfigs.find(function(c) { return c.grupo_id === currentGrp.id; }) : null;
+    const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
+
+    let stateCarregado = false;
+
     if (peladaId && Api.obterLiveState) {
       try {
         var res = await Api.obterLiveState(peladaId);
@@ -168,16 +175,55 @@ var Acompanhamento = {
           if (res.state.liveMatch) {
             window.App.liveMatch = res.state.liveMatch;
             localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+          } else {
+            window.App.liveMatch = {
+              teamA: 'Time A',
+              teamB: 'Time B',
+              scoreA: 0,
+              scoreB: 0,
+              isPlaying: false,
+              timerRunning: false,
+              timerSeconds: durationMin * 60,
+              goals: []
+            };
+            localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
           }
+
           if (res.state.waitingQueue) {
             window.App.waitingQueue = res.state.waitingQueue;
             localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
+          } else {
+            window.App.waitingQueue = [];
+            localStorage.setItem("waitingQueue", "[]");
           }
-          if (res.state.teams) {
+
+          if (res.state.teams && res.state.teams.length > 0) {
             localStorage.setItem("teams", JSON.stringify(res.state.teams));
+          } else {
+            localStorage.removeItem("teams");
           }
+          stateCarregado = true;
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error('[Acompanhamento] Erro ao obter liveState do servidor:', e);
+      }
+    }
+
+    if (!stateCarregado) {
+      window.App.liveMatch = {
+        teamA: 'Time A',
+        teamB: 'Time B',
+        scoreA: 0,
+        scoreB: 0,
+        isPlaying: false,
+        timerRunning: false,
+        timerSeconds: durationMin * 60,
+        goals: []
+      };
+      localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+      window.App.waitingQueue = [];
+      localStorage.setItem("waitingQueue", "[]");
+      localStorage.removeItem("teams");
     }
   },
 

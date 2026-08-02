@@ -88,23 +88,8 @@ window.App.initPartidas = async function() {
   }
 
   // Busca imediatamente o liveState do servidor para obter a fila de espera antes de renderizar
-  if (peladaId && window.Api && window.Api.obterLiveState) {
-    try {
-      const res = await window.Api.obterLiveState(peladaId);
-      if (res && res.state) {
-        if (res.state.liveMatch) {
-          window.App.liveMatch = res.state.liveMatch;
-          localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
-        }
-        if (res.state.teams) {
-          localStorage.setItem("teams", JSON.stringify(res.state.teams));
-        }
-        if (res.state.waitingQueue) {
-          window.App.waitingQueue = res.state.waitingQueue;
-          localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
-        }
-      }
-    } catch(e) {}
+  if (peladaId) {
+    await carregarLiveStateDaPelada(peladaId);
   }
 
   const activePelada = window.App.activePelada || {};
@@ -1314,6 +1299,78 @@ function playAlarmSound() {
   }
 }
 
+async function carregarLiveStateDaPelada(peladaId) {
+  if (!peladaId) return;
+
+  const groupConfigs = window.Api.getConfigs() || [];
+  const currentGrp = window.Auth.currentGroup;
+  const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+  const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
+
+  let stateCarregado = false;
+
+  if (window.Api && window.Api.obterLiveState) {
+    try {
+      const res = await window.Api.obterLiveState(peladaId);
+      if (res && res.state) {
+        if (res.state.liveMatch) {
+          window.App.liveMatch = res.state.liveMatch;
+          localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+        } else {
+          window.App.liveMatch = {
+            teamA: "Time A",
+            teamB: "Time B",
+            scoreA: 0,
+            scoreB: 0,
+            isPlaying: false,
+            timerRunning: false,
+            timerSeconds: durationMin * 60,
+            goals: []
+          };
+          localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+        }
+
+        if (res.state.teams && res.state.teams.length > 0) {
+          localStorage.setItem("teams", JSON.stringify(res.state.teams));
+          window.App.teams = res.state.teams;
+        } else {
+          localStorage.removeItem("teams");
+          window.App.teams = [];
+        }
+
+        if (res.state.waitingQueue) {
+          window.App.waitingQueue = res.state.waitingQueue;
+          localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
+        } else {
+          window.App.waitingQueue = [];
+          localStorage.setItem("waitingQueue", "[]");
+        }
+        stateCarregado = true;
+      }
+    } catch(e) {
+      console.error("[Partidas] Erro ao obter live state da pelada:", e);
+    }
+  }
+
+  if (!stateCarregado) {
+    window.App.liveMatch = {
+      teamA: "Time A",
+      teamB: "Time B",
+      scoreA: 0,
+      scoreB: 0,
+      isPlaying: false,
+      timerRunning: false,
+      timerSeconds: durationMin * 60,
+      goals: []
+    };
+    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+    localStorage.removeItem("teams");
+    window.App.teams = [];
+    window.App.waitingQueue = [];
+    localStorage.setItem("waitingQueue", "[]");
+  }
+}
+
 async function initPartidasPeladaSelect() {
   const select = document.getElementById("partidas-select-pelada-date");
   if (!select) return;
@@ -1346,6 +1403,8 @@ async function initPartidasPeladaSelect() {
     window.App.activePelada = activePelada;
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
+    
+    await carregarLiveStateDaPelada(activePelada.id);
     await renderRecentMatches();
 
     select.onchange = async () => {
@@ -1354,7 +1413,9 @@ async function initPartidasPeladaSelect() {
       if (found) {
         window.App.activePelada = found;
         localStorage.setItem("activePelada", JSON.stringify(found));
-        saveLiveMatchState();
+        
+        await carregarLiveStateDaPelada(found.id);
+        
         renderLiveMatchUI();
         renderWaitingQueue();
         await renderRecentMatches();
