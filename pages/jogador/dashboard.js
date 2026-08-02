@@ -127,7 +127,7 @@ var Dashboard = {
 
           console.log(`[Dashboard Filter] Pelada ID: ${p.id}, status: ${p.status} (ok? ${condStatus}), data original: ${p.data}, data ISO: ${pDateStr}, today: ${today} (ok? ${condData}), grupo: ${p.grupo_id} === ${groupId} (ok? ${condGroup})`);
 
-          return condStatus;
+          return condStatus && condData;
         }).sort(function (a, b) {
           const dateA = a.data && a.data.includes('T') ? a.data.split('T')[0] : a.data;
           const dateB = b.data && b.data.includes('T') ? b.data.split('T')[0] : b.data;
