@@ -478,6 +478,6 @@ exports.redefinirSenha = async (req, res) => {
     res.json({ success: true, message: 'Senha redefinida com sucesso! Faça login.' });
   } catch (err) {
     console.error('[REDEFINIR SENHA] Erro:', err);
-    return res.status(500).json({ error: 'Erro ao redefinir a senha.' });
+    return res.status(500).json({ error: 'Erro ao redefinir a senha.', detalhe: err.message });
   }
 };
