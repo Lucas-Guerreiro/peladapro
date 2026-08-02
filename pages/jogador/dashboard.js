@@ -105,9 +105,35 @@ var Dashboard = {
 
         var today = new Date().toISOString().split('T')[0];
         var upcoming = peladas.filter(function(p) {
-          return p.status === 'agendada' && p.data >= today &&
-                 (!groupId || p.grupo_id === groupId);
-        }).sort(function(a, b) { return a.data.localeCompare(b.data); }).slice(0, 4);
+          const condStatus = (p.status === 'agendada');
+          
+          let pDateStr = '';
+          if (p.data) {
+            if (p.data.includes('T')) {
+              pDateStr = p.data.split('T')[0];
+            } else if (p.data.includes('/')) {
+              const partes = p.data.split('/');
+              if (partes.length === 3) {
+                pDateStr = `${partes[2]}-${partes[1]}-${partes[0]}`;
+              } else {
+                pDateStr = p.data;
+              }
+            } else {
+              pDateStr = p.data;
+            }
+          }
+
+          const condData = (pDateStr >= today);
+          const condGroup = (!groupId || String(p.grupo_id) === String(groupId));
+          
+          console.log(`[Dashboard Filter] Pelada ID: ${p.id}, status: ${p.status} (ok? ${condStatus}), data original: ${p.data}, data ISO: ${pDateStr}, today: ${today} (ok? ${condData}), grupo: ${p.grupo_id} === ${groupId} (ok? ${condGroup})`);
+          
+          return condStatus && condData && condGroup;
+        }).sort(function(a, b) { 
+          const dateA = a.data && a.data.includes('T') ? a.data.split('T')[0] : a.data;
+          const dateB = b.data && b.data.includes('T') ? b.data.split('T')[0] : b.data;
+          return dateA.localeCompare(dateB); 
+        }).slice(0, 4);
         console.log('[Dashboard] upcoming peladas:', upcoming);
 
         var convocations = Api.getConvocations() || [];
