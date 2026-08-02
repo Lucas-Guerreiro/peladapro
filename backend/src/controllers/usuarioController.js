@@ -147,6 +147,18 @@ exports.aprovarAtleta = async (req, res) => {
     }
 
     console.log(`✅ [Gestor] Atleta aprovado com sucesso: ${rows[0].email}`);
+
+    // Notifica o atleta que o cadastro dele foi aprovado
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      sendNotificationInternal({
+        title: '🎉 Cadastro Aprovado!',
+        body: 'Seu acesso ao PeladaPro foi aprovado pelo gestor. Entre no app para ver os detalhes!',
+        url: '/#/login',
+        usuarioId: id
+      }).catch(e => console.warn('[Push] Erro ao disparar push de aprovacao para o atleta:', e.message));
+    } catch(e) {}
+
     res.json({ message: 'Atleta aprovado com sucesso!', atleta: rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao aprovar atleta.', detail: err.message });
