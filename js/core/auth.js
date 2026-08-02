@@ -4,7 +4,7 @@
 // ==========================================================================
 
 const Auth = {
-  currentUser:  null,
+  currentUser: null,
   currentGroup: null,
   _selectedRole: 'jogador',  // 'jogador' | 'gestor'
 
@@ -30,13 +30,13 @@ const Auth = {
 
   // --- Login Real (conecta ao Backend Node.js / Supabase) -----------------
   async login() {
-    const userInput  = document.getElementById('login-user');
-    const passInput  = document.getElementById('login-pass');
+    const userInput = document.getElementById('login-user');
+    const passInput = document.getElementById('login-pass');
 
     if (!userInput || !passInput) return;
 
     const emailInput = userInput.value.trim().toLowerCase();
-    const password   = passInput.value ? passInput.value.trim() : '';
+    const password = passInput.value ? passInput.value.trim() : '';
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailInput || !emailRegex.test(emailInput)) {
@@ -51,7 +51,7 @@ const Auth = {
 
     try {
       Utils.toast('Autenticando...', 'info', 1000);
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,6 +82,90 @@ const Auth = {
     } catch (err) {
       console.error(err);
       Utils.toast('Erro ao conectar ao servidor backend.', 'error');
+    }
+  },
+
+  // --- Solicitar Código de Recuperação de Senha ---------------------------
+  async solicitarCodigo() {
+    const emailInput = document.getElementById('recover-email');
+    if (!emailInput) return;
+    const email = emailInput.value.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      Utils.toast('Informe um e-mail válido.', 'warning');
+      return;
+    }
+    try {
+      Utils.toast('Gerando código de recuperação...', 'info', 1000);
+      const response = await fetch('/api/auth/recuperar-senha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Utils.toast(data.error || 'Não foi possível gerar o código.', 'error');
+        return;
+      }
+      // Exibe o código na tela (o gestor repassa ao atleta)
+      const codigoBox = document.getElementById('recover-codigo-box');
+      if (codigoBox) codigoBox.classList.remove('hidden');
+      const codigoDisplay = document.getElementById('recover-codigo-display');
+      if (codigoDisplay) codigoDisplay.textContent = data.codigo || 'XXXXXX';
+      Utils.toast('Código gerado! Repasse ao atleta.', 'success');
+    } catch (err) {
+      console.error(err);
+      Utils.toast('Erro ao conectar ao servidor.', 'error');
+    }
+  },
+
+  // --- Redefinir Senha com Código ------------------------------------------
+  async redefinirSenha() {
+    const emailInput = document.getElementById('recover-email');
+    const codigoInput = document.getElementById('recover-codigo');
+    const newPassInput = document.getElementById('recover-new-pass');
+    const confirmPassInput = document.getElementById('recover-confirm-pass');
+    if (!emailInput || !codigoInput || !newPassInput || !confirmPassInput) return;
+    const email = emailInput.value.trim().toLowerCase();
+    const codigo = codigoInput.value.trim();
+    const novaSenha = newPassInput.value ? newPassInput.value.trim() : '';
+    const confirm = confirmPassInput.value ? confirmPassInput.value.trim() : '';
+    if (!email || !codigo || codigo.length !== 6) {
+      Utils.toast('Informe o e-mail e o código de 6 dígitos.', 'warning');
+      return;
+    }
+    if (!novaSenha || novaSenha.length < 6) {
+      Utils.toast('A nova senha deve ter pelo menos 6 caracteres.', 'warning');
+      return;
+    }
+    if (novaSenha !== confirm) {
+      Utils.toast('As senhas não conferem.', 'warning');
+      return;
+    }
+    try {
+      Utils.toast('Redefinindo senha...', 'info', 1000);
+      const response = await fetch('/api/auth/redefinir-senha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, codigo: codigo, novaSenha: novaSenha })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Utils.toast(data.error || 'Não foi possível redefinir a senha.', 'error');
+        return;
+      }
+      Utils.toast('Senha redefinida com sucesso! Faça login.', 'success');
+      // Volta para o formulário de login
+      document.getElementById('auth-recover-form').classList.add('hidden');
+      document.getElementById('auth-login-form').classList.remove('hidden');
+      // Limpa os campos
+      if (emailInput) emailInput.value = '';
+      if (codigoInput) codigoInput.value = '';
+      if (newPassInput) newPassInput.value = '';
+      if (confirmPassInput) confirmPassInput.value = '';
+    } catch (err) {
+      console.error(err);
+      Utils.toast('Erro ao conectar ao servidor.', 'error');
     }
   },
 
@@ -116,7 +200,7 @@ const Auth = {
 
     try {
       Utils.toast('Criando sua conta...', 'info', 1000);
-      
+
       const response = await fetch('/api/auth/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,6 +223,74 @@ const Auth = {
     } catch (err) {
       console.error(err);
       Utils.toast('Erro ao conectar ao servidor para registro.', 'error');
+    }
+  },
+
+  async solicitarCodigo() {
+    const email = document.getElementById('recover-email').value.trim();
+    if (!email) {
+      alert('Informe seu e-mail cadastrado.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/auth/recuperar-senha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Erro ao gerar código. Tente novamente.');
+        return;
+      }
+      // Mostra o box com código + nova senha
+      document.getElementById('recover-codigo-box').classList.remove('hidden');
+      // Mostra o código para o gestor repassar ao atleta
+      alert('Código de recuperação: ' + data.codigo + '\n\nVálido por 15 minutos.\nRepasse este código ao atleta pelo WhatsApp.');
+    } catch (e) {
+      console.error('[SOLICITAR CODIGO] Erro:', e);
+      alert('Erro ao solicitar código. Tente novamente.');
+    }
+  },
+
+  async redefinirSenha() {
+    const email = document.getElementById('recover-email').value.trim();
+    const codigo = document.getElementById('recover-codigo').value.trim();
+    const novaSenha = document.getElementById('recover-new-pass').value;
+    const confirmPass = document.getElementById('recover-confirm-pass').value;
+
+    if (!email || !codigo || !novaSenha) {
+      alert('Preencha e-mail, código e nova senha.');
+      return;
+    }
+    if (novaSenha !== confirmPass) {
+      alert('As senhas não conferem.');
+      return;
+    }
+    if (novaSenha.length < 6) {
+      alert('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/redefinir-senha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, codigo, novaSenha })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Erro ao redefinir senha.');
+        return;
+      }
+      alert(data.message || 'Senha redefinida com sucesso!');
+      // Volta para o formulário de login
+      document.getElementById('auth-recover-form').classList.add('hidden');
+      document.getElementById('auth-login-form').classList.remove('hidden');
+      document.getElementById('recover-codigo-box').classList.add('hidden');
+    } catch (e) {
+      console.error('[REDEFINIR SENHA] Erro:', e);
+      alert('Erro ao redefinir senha. Tente novamente.');
     }
   },
 
@@ -165,7 +317,7 @@ const Auth = {
 
     try {
       Utils.toast('Autenticando acesso rápido...', 'info', 1000);
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +332,7 @@ const Auth = {
 
       localStorage.setItem('token', data.token);
       await this._syncDataFromBackend(data.token);
-      
+
       this._startSession(data.usuario);
     } catch (err) {
       console.error(err);
@@ -206,7 +358,7 @@ const Auth = {
       localStorage.setItem('ultimo_perfil', role);
       localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
       Utils.toast(`Perfil alterado para ${role === 'gestor' ? 'Gestor' : 'Jogador'}!`, 'info');
-      
+
       if (role === 'gestor') {
         Router.navigate('#/gestor/atletas');
       } else {
@@ -219,7 +371,7 @@ const Auth = {
   _startSession(player, forcedRole = null) {
     this.currentUser = player;
 
-    const isGestorOnly  = (player.tipo === 'gestor');
+    const isGestorOnly = (player.tipo === 'gestor');
     const isJogadorOnly = (player.tipo === 'jogador');
     let activeRole = 'jogador';
 
@@ -256,7 +408,7 @@ const Auth = {
     }
 
     // Expiração de 30 dias para a sessão no PWA
-    const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); 
+    const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
     localStorage.setItem('session_expiry', String(expiryTime));
 
     Utils.toast(`Acessando como ${activeRole === 'gestor' ? 'Gestor 🏆' : 'Jogador ⚽'}!`, 'success');
@@ -309,7 +461,7 @@ const Auth = {
 
       this.currentUser = JSON.parse(playerRaw);
       this.currentGroup = groupRaw ? JSON.parse(groupRaw) : null;
-      
+
       const savedRole = localStorage.getItem('ultimo_perfil');
       if (savedRole === 'gestor' || savedRole === 'jogador') {
         this._selectedRole = savedRole;
@@ -387,7 +539,7 @@ const Auth = {
 
   // --- Logout -------------------------------------------------------------
   logout() {
-    this.currentUser  = null;
+    this.currentUser = null;
     this.currentGroup = null;
     localStorage.removeItem('token');
     localStorage.removeItem('currentUser');
@@ -399,7 +551,7 @@ const Auth = {
 
 // Submissão da atualização obrigatória de e-mail
 window.App = window.App || {};
-window.App.submitUpdatedEmail = async function() {
+window.App.submitUpdatedEmail = async function () {
   const input = document.getElementById('input-new-real-email');
   if (!input) {
     console.error('[submitUpdatedEmail] Elemento #input-new-real-email não encontrado.');
@@ -442,17 +594,17 @@ window.App.submitUpdatedEmail = async function() {
     }
 
     Utils.toast('E-mail atualizado com sucesso! 🎉', 'success');
-    
+
     // Fecha e remove o modal
     const backdrop = document.getElementById('modal-update-email-backdrop') || document.querySelector('.modal-backdrop');
     if (backdrop) backdrop.remove();
     const root = document.getElementById('modal-container-root');
     if (root) root.innerHTML = '';
-  } catch(err) {
+  } catch (err) {
     console.error(err);
     Utils.toast('Erro de conexão ao atualizar e-mail.', 'error');
   }
 };
 
 window.Auth = Auth;
-window.App.selectRole = function(role) { Auth.selectRole(role); };
+window.App.selectRole = function (role) { Auth.selectRole(role); };

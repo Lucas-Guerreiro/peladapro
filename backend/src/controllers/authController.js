@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 // --- Registrar Novo Usuário (Jogador) com Verificação OTP via Supabase Auth ------
 exports.registrar = async (req, res) => {
   const { email, senha, nome } = req.body;
-  
+
   if (!email || !senha || !nome) {
     return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
   }
@@ -80,7 +80,7 @@ exports.registrar = async (req, res) => {
       INSERT INTO usuarios (nome, email, senha_hash, tipo, saldo, gols, partidas, verificado, ativo)
       VALUES ($1, $2, $3, 'jogador', 0.00, 0, 0, false, false) 
       RETURNING id, email, tipo, verificado`;
-    
+
     await db.query(query, [nome.trim(), email.trim().toLowerCase(), hash]);
 
     // Notifica todos os gestores por push sobre o novo cadastro pendente
@@ -92,7 +92,7 @@ exports.registrar = async (req, res) => {
         url: '/#/gestor/atletas',
         onlyGestores: true
       }).catch(e => console.warn('[Push] Erro ao disparar push de novo cadastro para gestores:', e.message));
-    } catch(e) {}
+    } catch (e) { }
 
     res.status(201).json({
       status: 'aprovacao_pendente',
@@ -136,7 +136,7 @@ exports.verificarCodigo = async (req, res) => {
 
     // 2. Se confirmado com sucesso no Supabase, ativar o usuário localmente
     const { rows } = await db.query('SELECT * FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
-    
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado localmente' });
     }
@@ -150,23 +150,23 @@ exports.verificarCodigo = async (req, res) => {
 
     // Gerar Token JWT
     const token = jwt.sign(
-      { id: usuario.id, tipo: usuario.tipo }, 
-      process.env.JWT_SECRET, 
+      { id: usuario.id, tipo: usuario.tipo },
+      process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
     res.json({
       message: 'E-mail confirmado com sucesso!',
       token,
-      usuario: { 
-        id: usuario.id, 
-        nome: usuario.nome, 
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
         email: usuario.email,
         cpf: usuario.cpf,
         data_nascimento: usuario.data_nascimento,
         whatsapp: usuario.whatsapp,
         autoavaliacao: usuario.autoavaliacao,
-        tipo: usuario.tipo, 
+        tipo: usuario.tipo,
         goleiro: usuario.goleiro,
         apelido: usuario.apelido,
         foto: usuario.foto,
@@ -209,8 +209,8 @@ exports.login = async (req, res) => {
     // Se o cadastro está pendente de aprovação do gestor, bloquear o login
     if (!usuario.verificado) {
       console.log(`⚠️ [Login Attempt - Blocked] Usuário pendente de aprovação do gestor: ${usuario.email}`);
-      return res.json({ 
-        status: 'aprovacao_pendente', 
+      return res.json({
+        status: 'aprovacao_pendente',
         email: usuario.email,
         nome: usuario.nome,
         message: 'Seu cadastro está pendente de aprovação pelo gestor. Por favor, aguarde a liberação do seu acesso!'
@@ -225,22 +225,22 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, usuario_id: usuario.id, email: usuario.email, tipo: tipoFinal }, 
-      process.env.JWT_SECRET, 
+      { id: usuario.id, usuario_id: usuario.id, email: usuario.email, tipo: tipoFinal },
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    res.json({ 
-      token, 
-      usuario: { 
-        id: usuario.id, 
-        nome: usuario.nome, 
+    res.json({
+      token,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
         email: usuario.email,
         cpf: usuario.cpf,
         data_nascimento: usuario.data_nascimento,
         whatsapp: usuario.whatsapp,
         autoavaliacao: usuario.autoavaliacao,
-        tipo: tipoFinal, 
+        tipo: tipoFinal,
         goleiro: usuario.goleiro,
         apelido: usuario.apelido,
         foto: usuario.foto,
@@ -249,7 +249,7 @@ exports.login = async (req, res) => {
         partidas: usuario.partidas,
         avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
         verificado: true
-      } 
+      }
     });
   } catch (err) {
     res.status(500).json({ error: 'Erro no servidor', detail: err.message });
@@ -314,8 +314,8 @@ exports.googleSupabase = async (req, res) => {
 
     // 3. Gerar o JWT do Express para nossa sessão local
     const token = jwt.sign(
-      { id: usuario.id, tipo: usuario.tipo }, 
-      process.env.JWT_SECRET, 
+      { id: usuario.id, tipo: usuario.tipo },
+      process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
@@ -401,5 +401,83 @@ exports.verify = async (req, res) => {
     });
   } catch (err) {
     return res.status(401).json({ valid: false, error: 'Sessão expirada ou token inválido.' });
+  }
+};
+
+// --- POST /api/auth/recuperar-senha — Gerar código de 6 dígitos ---
+exports.recuperarSenha = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Informe o e-mail cadastrado.' });
+  }
+
+  try {
+    const { rows } = await db.query('SELECT * FROM usuarios WHERE email = $1', [String(email).toLowerCase().trim()]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'E-mail não encontrado. Verifique e tente novamente.' });
+    }
+
+    const usuario = rows[0];
+    const codigo = String(Math.floor(100000 + Math.random() * 900000)); // 6 dígitos
+    const expiraEm = new Date(Date.now() + 15 * 60 * 1000); // válido por 15 minutos
+
+    await db.query(
+      'UPDATE usuarios SET recuperacao_codigo = $1, recuperacao_expira = $2 WHERE id = $3',
+      [codigo, expiraEm, usuario.id]
+    );
+
+    // Retorna o código para o gestor repassar ao atleta
+    res.json({
+      success: true,
+      message: 'Código gerado com sucesso. Repasse ao atleta.',
+      codigo: codigo,
+      expiraEm: expiraEm
+    });
+  } catch (err) {
+    console.error('[RECUPERAR SENHA] Erro:', err);
+    return res.status(500).json({ error: 'Erro ao gerar código de recuperação.' });
+  }
+};
+
+// --- POST /api/auth/redefinir-senha — Validar código e definir nova senha ---
+exports.redefinirSenha = async (req, res) => {
+  const { email, codigo, novaSenha } = req.body;
+
+  if (!email || !codigo || !novaSenha) {
+    return res.status(400).json({ error: 'Informe e-mail, código e nova senha.' });
+  }
+
+  if (String(novaSenha).length < 6) {
+    return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres.' });
+  }
+
+  try {
+    const { rows } = await db.query('SELECT * FROM usuarios WHERE email = $1', [String(email).toLowerCase().trim()]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'E-mail não encontrado.' });
+    }
+
+    const usuario = rows[0];
+
+    if (!usuario.recuperacao_codigo || usuario.recuperacao_codigo !== String(codigo).trim()) {
+      return res.status(400).json({ error: 'Código inválido. Verifique e tente novamente.' });
+    }
+
+    if (!usuario.recuperacao_expira || new Date(usuario.recuperacao_expira) < new Date()) {
+      return res.status(400).json({ error: 'Código expirado. Solicite um novo código.' });
+    }
+
+    const senhaHash = await bcrypt.hash(String(novaSenha), 10);
+
+    await db.query(
+      'UPDATE usuarios SET senha = $1, recuperacao_codigo = NULL, recuperacao_expira = NULL WHERE id = $2',
+      [senhaHash, usuario.id]
+    );
+
+    res.json({ success: true, message: 'Senha redefinida com sucesso! Faça login.' });
+  } catch (err) {
+    console.error('[REDEFINIR SENHA] Erro:', err);
+    return res.status(500).json({ error: 'Erro ao redefinir a senha.' });
   }
 };
