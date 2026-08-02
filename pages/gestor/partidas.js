@@ -594,6 +594,16 @@ function renderLiveMatchUI() {
   updateTimerDisplay();
 }
 
+function limparEstadoPartida() {
+  window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
+  window.App.waitingQueue = [];
+  window.App.teams = [];
+  localStorage.removeItem("teams");
+  localStorage.setItem("waitingQueue", "[]");
+  localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+  console.log("🧹 [LIMPAR] Estado da partida limpo (sem confronto/fila).");
+}
+
 function renderWaitingQueue() {
   const activePelada = window.App.activePelada || {};
   if (activePelada.status === "finalizada") {
@@ -1320,15 +1330,10 @@ function playAlarmSound() {
 
 async function carregarLiveStateDaPelada(peladaId) {
   if (!peladaId) return;
-  // Se a pelada estiver finalizada, não carrega confronto/fila (limpa tudo)
+  // Se a pelada ativa NÃO estiver em andamento (não for 'ativa'), limpa confronto/fila
   const peladaAtiva = window.App.activePelada || {};
-  if (peladaAtiva.status === "finalizada") {
-    window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
-    window.App.waitingQueue = [];
-    window.App.teams = [];
-    localStorage.removeItem("teams");
-    localStorage.setItem("waitingQueue", "[]");
-    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+  if (peladaAtiva.status !== "ativa") {
+    limparEstadoPartida();
     return;
   }
 
@@ -1442,6 +1447,10 @@ async function initPartidasPeladaSelect() {
       const found = peladas.find(p => String(p.id) === String(selectedId));
       if (found) {
         window.App.activePelada = found;
+        // Se a pelada selecionada não estiver em andamento, limpa confronto/fila
+        if (found.status !== "ativa") {
+          limparEstadoPartida();
+        }
         localStorage.setItem("activePelada", JSON.stringify(found));
 
         await carregarLiveStateDaPelada(found.id);
