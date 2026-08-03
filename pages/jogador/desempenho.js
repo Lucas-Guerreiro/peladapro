@@ -64,7 +64,7 @@ var Desempenho = {
         statsMap[nome] = {
           id: p.id,
           nome: nome,
-          gols: p.gols || 0,
+          gols: 0,
           pontos: 0,
           vitorias: 0,
           balizaZero: 0,
@@ -78,8 +78,47 @@ var Desempenho = {
 
     try {
       var partidas = [];
+      const escalacoesPorPelada = {};
+      const token = localStorage.getItem('token');
+
+      // Helper assíncrono para obter escalação real de uma pelada na nuvem
+      const carregarEscalacao = async (pId) => {
+        if (escalacoesPorPelada[pId]) return;
+        try {
+          const resTimes = await fetch(`/api/formacao/pelada/${pId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resTimes.ok) {
+            const times = await resTimes.json();
+            escalacoesPorPelada[pId] = {};
+            (times || []).forEach(t => {
+              const tName = (t.nome || '').trim().toLowerCase();
+              if (tName) {
+                escalacoesPorPelada[pId][tName] = new Set();
+                (t.jogadores || []).forEach(p => {
+                  const pApelido = (p.apelido || '').trim().toLowerCase();
+                  const pNome = (p.nome || '').trim().toLowerCase();
+                  if (pApelido) {
+                    escalacoesPorPelada[pId][tName].add(pApelido);
+                    escalacoesPorPelada[pId][tName].add(pApelido.split(" ")[0]);
+                  }
+                  if (pNome) {
+                    escalacoesPorPelada[pId][tName].add(pNome);
+                    escalacoesPorPelada[pId][tName].add(pNome.split(" ")[0]);
+                  }
+                  escalacoesPorPelada[pId][tName].add(String(p.id));
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.warn(`[Desempenho] Erro ao carregar times da pelada ${pId}:`, e);
+        }
+      };
+
       if (peladaId) {
         partidas = await Api.listarPartidas(peladaId);
+        await carregarEscalacao(peladaId);
       } else {
         var group = Auth.currentGroup;
         if (group && group.id) {
@@ -87,65 +126,16 @@ var Desempenho = {
           if (Array.isArray(peladasGroup)) {
             for (var i = 0; i < peladasGroup.length; i++) {
               var listP = await Api.listarPartidas(peladasGroup[i].id);
-              if (Array.isArray(listP)) partidas = partidas.concat(listP);
+              if (Array.isArray(listP) && listP.length > 0) {
+                partidas = partidas.concat(listP);
+                await carregarEscalacao(peladasGroup[i].id);
+              }
             }
           }
         }
       }
 
       if (Array.isArray(partidas) && partidas.length > 0) {
-        var teams = [];
-        try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
-        if (!teams || teams.length === 0) teams = Api.getTeams() || [];
-
-        var teamPlayersMap = {};
-        (teams || []).forEach(function(t) {
-          var tName = (t.nome || t.name || '').trim().toLowerCase();
-          if (tName) {
-            if (!teamPlayersMap[tName]) teamPlayersMap[tName] = new Set();
-            var pList = t.jogadores || t.players || [];
-            pList.forEach(function(p) {
-              var pApelido = (p.apelido || '').trim().toLowerCase();
-              var pNome = (p.nome || '').trim().toLowerCase();
-              if (pApelido) teamPlayersMap[tName].add(pApelido);
-              if (pNome) teamPlayersMap[tName].add(pNome);
-            });
-          }
-        });
-
-        // 1. Contabiliza partidas disputadas por cada TIME
-        var teamMatchesCount = {};
-        var playerTeamFromGoals = {};
-
-        partidas.forEach(function(m) {
-          var tA = (m.time_a_nome || '').trim();
-          var tB = (m.time_b_nome || '').trim();
-
-          if (tA) {
-            var keyA = tA.toLowerCase();
-            teamMatchesCount[keyA] = (teamMatchesCount[keyA] || 0) + 1;
-          }
-          if (tB) {
-            var keyB = tB.toLowerCase();
-            teamMatchesCount[keyB] = (teamMatchesCount[keyB] || 0) + 1;
-          }
-
-          let goalsList = [];
-          if (m.autores_gols) {
-            try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
-          }
-          (goalsList || []).forEach(function(g) {
-            var teamNameOfPlayer = g.teamName || (g.teamKey === 'a' ? tA : (g.teamKey === 'b' ? tB : null));
-            if (g.autorNome && teamNameOfPlayer) {
-              playerTeamFromGoals[g.autorNome.trim().toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
-            }
-            if (g.assistNome && teamNameOfPlayer) {
-              playerTeamFromGoals[g.assistNome.trim().toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
-            }
-          });
-        });
-
-        // 2. Processa os pontos obtidos em cada partida
         partidas.forEach(function(m) {
           var tA = (m.time_a_nome || '').trim();
           var tB = (m.time_b_nome || '').trim();
@@ -182,11 +172,13 @@ var Desempenho = {
           var playersA = new Set();
           var playersB = new Set();
 
-          if (tA && teamPlayersMap[tA.toLowerCase()]) {
-            teamPlayersMap[tA.toLowerCase()].forEach(function(nome) { playersA.add(nome); });
+          const escalacaoPelada = escalacoesPorPelada[m.pelada_id] || {};
+
+          if (tA && escalacaoPelada[tA.toLowerCase()]) {
+            escalacaoPelada[tA.toLowerCase()].forEach(function(nome) { playersA.add(nome); });
           }
-          if (tB && teamPlayersMap[tB.toLowerCase()]) {
-            teamPlayersMap[tB.toLowerCase()].forEach(function(nome) { playersB.add(nome); });
+          if (tB && escalacaoPelada[tB.toLowerCase()]) {
+            escalacaoPelada[tB.toLowerCase()].forEach(function(nome) { playersB.add(nome); });
           }
 
           let goalsList = [];
@@ -199,6 +191,12 @@ var Desempenho = {
               var aName = g.autorNome.trim().toLowerCase();
               if (playerTeam === tA.toLowerCase()) playersA.add(aName);
               else if (playerTeam === tB.toLowerCase()) playersB.add(aName);
+
+              Object.keys(statsMap).forEach(function(nomeKey) {
+                if (nomeKey.toLowerCase() === aName || (statsMap[nomeKey].id && String(statsMap[nomeKey].id) === String(g.autorId))) {
+                  statsMap[nomeKey].gols += 1;
+                }
+              });
             }
             if (g.assistNome) {
               var assName = g.assistNome.trim().toLowerCase();
@@ -207,11 +205,12 @@ var Desempenho = {
             }
           });
 
-          // Pontuação para o Time A
+          // Pontuação e contagem de jogos para o Time A
           playersA.forEach(function(lowerName) {
             Object.keys(statsMap).forEach(function(nomeKey) {
-              if (nomeKey.toLowerCase() === lowerName) {
+              if (nomeKey.toLowerCase() === lowerName || String(statsMap[nomeKey].id) === lowerName) {
                 statsMap[nomeKey].pontos += ptsA;
+                statsMap[nomeKey].jogos += 1;
                 if (isWinA) statsMap[nomeKey].vitorias += 1;
                 if (isCleanA) statsMap[nomeKey].balizaZero += 1;
                 if (!isWinA && ptsA > 0) statsMap[nomeKey].empates += 1;
@@ -220,11 +219,12 @@ var Desempenho = {
             });
           });
 
-          // Pontuação para o Time B
+          // Pontuação e contagem de jogos para o Time B
           playersB.forEach(function(lowerName) {
             Object.keys(statsMap).forEach(function(nomeKey) {
-              if (nomeKey.toLowerCase() === lowerName) {
+              if (nomeKey.toLowerCase() === lowerName || String(statsMap[nomeKey].id) === lowerName) {
                 statsMap[nomeKey].pontos += ptsB;
+                statsMap[nomeKey].jogos += 1;
                 if (isWinB) statsMap[nomeKey].vitorias += 1;
                 if (isCleanB) statsMap[nomeKey].balizaZero += 1;
                 if (!isWinB && ptsB > 0) statsMap[nomeKey].empates += 1;
@@ -233,36 +233,6 @@ var Desempenho = {
             });
           });
 
-        });
-
-        // Helper para resolver a quantidade exata de jogos disputados pelo time do atleta
-        function getGamesForPlayer(nomeKey) {
-          var lowerKey = nomeKey.toLowerCase();
-          
-          var teamFromGoal = playerTeamFromGoals[lowerKey];
-          if (teamFromGoal && teamMatchesCount[teamFromGoal]) {
-            return teamMatchesCount[teamFromGoal];
-          }
-
-          var maxGames = 0;
-          Object.keys(teamPlayersMap).forEach(function(tName) {
-            if (teamPlayersMap[tName].has(lowerKey)) {
-              maxGames = Math.max(maxGames, teamMatchesCount[tName] || 0);
-            }
-          });
-
-          if (maxGames > 0) return maxGames;
-
-          var allTeamGames = Object.values(teamMatchesCount);
-          if (allTeamGames.length > 0) {
-            return Math.max.apply(null, allTeamGames);
-          }
-          return 1;
-        }
-
-        // 3. Aplica a quantidade exata de jogos calculada para cada jogador (idêntica ao Acompanhamento e à Artilharia)
-        Object.keys(statsMap).forEach(function(nomeKey) {
-          statsMap[nomeKey].jogos = getGamesForPlayer(nomeKey);
         });
       }
     } catch (e) {
