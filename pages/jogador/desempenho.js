@@ -390,18 +390,11 @@ var Desempenho = {
     var golsEl     = document.getElementById('my-stat-gols');
     var partidasEl = document.getElementById('my-stat-partidas');
     var ratingEl   = document.getElementById('my-stat-rating');
-    var saldoEl    = document.getElementById('my-stat-saldo');
-
     if (golsEl)     golsEl.textContent     = (myGoals !== undefined ? myGoals : (user ? (user.gols || 0) : 0));
     if (partidasEl) partidasEl.textContent = (myGames !== undefined ? myGames : (user ? (user.partidas || 0) : 0));
     if (ratingEl) {
       var pts = (myPoints !== undefined ? myPoints : 0);
       ratingEl.textContent = pts > 0 ? (pts.toFixed(1).replace('.', ',')) : '0,0';
-    }
-    if (saldoEl && user) {
-      var saldo = user.saldo || 0;
-      saldoEl.textContent = window.Utils ? window.Utils.formatCurrency(saldo) : ('R$ ' + saldo);
-      saldoEl.style.color = saldo < 0 ? 'var(--danger)' : 'var(--primary)';
     }
   },
 

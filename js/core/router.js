@@ -16,6 +16,7 @@ const Router = {
     '#/jogador/acompanhamento': { page: 'jogador/acompanhamento', permission: 'jogador' },
     '#/jogador/ranking':     { page: 'jogador/ranking',     permission: 'jogador' },
     '#/jogador/desempenho':  { page: 'jogador/desempenho',  permission: 'jogador' },
+    '#/jogador/financeiro':  { page: 'jogador/financeiro',  permission: 'jogador' },
     '#/gestor/atletas':      { page: 'gestor/atletas',      permission: 'gestor'  },
     '#/gestor/formacao':     { page: 'gestor/formacao',     permission: 'gestor'  },
     '#/gestor/partidas':     { page: 'gestor/partidas',     permission: 'gestor'  },
