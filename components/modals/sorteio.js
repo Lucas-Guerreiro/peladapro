@@ -2,7 +2,7 @@
 // MODAL: SORTEIO (sorteio.js)
 // ==========================================================================
 
-window.App.initModalSorteio = function() {
+window.App.initModalSorteio = function () {
   document.getElementById("btn-close-sorteio-modal").onclick = window.App.closeModal;
   document.getElementById("btn-execute-sorteio").onclick = handleExecuteSorteio;
 };
@@ -91,7 +91,7 @@ function handleExecuteSorteio() {
 
   for (let i = 0; i < qtyTeams; i++) {
     const teamObj = {
-      id: `team_${i+1}`,
+      id: `team_${i + 1}`,
       nome: `Time ${getColoName(i)}`,
       cor: teamColors[i] || "#777",
       emblema: i % 10,
@@ -187,12 +187,22 @@ function handleExecuteSorteio() {
   // Salvar no localStorage local de forma segura usando a chave específica por data/pelada e a genérica
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
-  if (window.App && window.App.safeLocalStorageSetItem) {
-    window.App.safeLocalStorageSetItem(teamsKey, JSON.stringify(drawnTeams));
-    window.App.safeLocalStorageSetItem("teams", JSON.stringify(drawnTeams));
-  } else {
-    try { localStorage.setItem(teamsKey, JSON.stringify(drawnTeams)); } catch(e) {}
-    try { localStorage.setItem("teams", JSON.stringify(drawnTeams)); } catch(e) {}
+
+  // Remove emblemas base64 embutidos antes de salvar — evita estourar o limite (~5MB) do localStorage
+  const teamsParaSalvar = drawnTeams.map(t => {
+    const copia = { ...t };
+    delete copia.emblema_url;
+    delete copia.emblemaUrl;
+    return copia;
+  });
+
+  try {
+    localStorage.setItem(teamsKey, JSON.stringify(teamsParaSalvar));
+    localStorage.setItem("teams", JSON.stringify(teamsParaSalvar));
+  } catch (e) {
+    console.error("[Sorteio] Falha ao salvar times no localStorage:", e);
+    window.App.showToast("Erro ao salvar os times: " + (e && e.message ? e.message : e), "error");
+    return;
   }
 
   // Reset e alimentação da fila de espera global
@@ -216,7 +226,7 @@ function handleExecuteSorteio() {
     window.App.liveMatch.scoreA = 0;
     window.App.liveMatch.scoreB = 0;
     window.App.liveMatch.isPlaying = false;
-    
+
     const teamAEl = document.getElementById("match-control-team-a");
     const teamBEl = document.getElementById("match-control-team-b");
     const scoreAEl = document.getElementById("match-control-score-a");
@@ -233,8 +243,8 @@ function handleExecuteSorteio() {
     window.App.safeLocalStorageSetItem("liveMatch", JSON.stringify(window.App.liveMatch));
     window.App.safeLocalStorageSetItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
   } else {
-    try { localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch)); } catch(e) {}
-    try { localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue)); } catch(e) {}
+    try { localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch)); } catch (e) { }
+    try { localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue)); } catch (e) { }
   }
 
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
@@ -248,7 +258,7 @@ function handleExecuteSorteio() {
 
 function getColoName(idx) {
   const names = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
-  return names[idx] || `${idx+1}`;
+  return names[idx] || `${idx + 1}`;
 }
 
 function balanceDrawnTeams(drawnTeams) {
@@ -279,7 +289,7 @@ function balanceDrawnTeams(drawnTeams) {
         if (pMax.autoavaliacao > pMin.autoavaliacao) {
           const idxMax = maxTeam.players.indexOf(pMax);
           const idxMin = minTeam.players.indexOf(pMin);
-          
+
           maxTeam.players[idxMax] = pMin;
           minTeam.players[idxMin] = pMax;
 
