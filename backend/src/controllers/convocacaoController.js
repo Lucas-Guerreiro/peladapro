@@ -20,106 +20,26 @@ function formatarDataDDMM(dataInput) {
   }
 }
 
-exports.confirmar = async (req, res) => {
-  const { pelada_id, forma_pagamento } = req.body;
-  const usuario_id = req.usuarioId;
+// 4. Inserir ou atualizar convocação (lista oficial ou fila de espera)
+let statusConv = 'confirmado';
+let posicaoFila = null;
 
-  if (!pelada_id || !forma_pagamento) {
-    return res.status(400).json({ error: 'Pelada e forma de pagamento são obrigatórias' });
-  }
+if (vaiParaFila) {
+  statusConv = 'espera';
+  const filaRes = await client.query(
+    `SELECT COALESCE(MAX(posicao_fila), 0)::int AS ultima
+         FROM convocacoes WHERE pelada_id = $1 AND status = 'espera'`,
+    [pelada_id]
+  );
+  posicaoFila = filaRes.rows[0].ultima + 1;
+}
 
-  let client;
-
-  try {
-    client = await db.pool.connect();
-    await client.query('BEGIN');
-
-    // 1. Obter informações da pelada, custos e limites
-    // Usa COALESCE: valor_convocacao da pelada (override) > config do grupo > 20.00
-    const queryConfig = `
-      SELECT p.grupo_id,
-             p.data,
-             COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo,
-             c.limite_saldo_negativo
-      FROM peladas p
-      LEFT JOIN configs c ON p.grupo_id = c.grupo_id
-      WHERE p.id = $1`;
-    const configRes = await client.query(queryConfig, [pelada_id]);
-
-    if (configRes.rows.length === 0) {
-      throw new Error('Configuração do grupo/pelada não encontrada');
-    }
-
-    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada } = configRes.rows[0];
-    const valorCusto = parseFloat(custo || 0);
-    const limiteNegativo = parseFloat(limite_saldo_negativo || 0);
-
-    // 2. Buscar informações do usuário
-    const userRes = await client.query('SELECT saldo, nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
-    if (userRes.rows.length === 0) {
-      throw new Error('Usuário não encontrado');
-    }
-    const saldoAtual = parseFloat(userRes.rows[0].saldo || 0);
-    const atletaNome = userRes.rows[0].apelido || userRes.rows[0].nome || 'Atleta';
-    const dataFmt = formatarDataDDMM(dataPelada);
-    const descText = `Presença de ${atletaNome} no dia ${dataFmt}`;
-
-    // 3. Se for pagamento por saldo, validar limite negativo
-    if (forma_pagamento === 'saldo') {
-      const novoSaldo = saldoAtual - valorCusto;
-      if (novoSaldo < -limiteNegativo) {
-        return res.status(400).json({ 
-          error: `Saldo insuficiente. O custo da pelada é R$ ${valorCusto.toFixed(2)}, mas seu saldo é R$ ${saldoAtual.toFixed(2)} (limite negativo: R$ ${limiteNegativo.toFixed(2)}). Selecione PIX.` 
-        });
-      }
-
-      // Atualizar saldo do usuário
-      await client.query('UPDATE usuarios SET saldo = $1 WHERE id = $2', [novoSaldo, usuario_id]);
-
-      // Registrar transação de débito
-      await client.query(`
-        INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-        VALUES ($1, $2, $3, 'debito', $4)`,
-        [usuario_id, grupo_id, valorCusto, descText]
-      );
-    } else {
-      // Registrar transação de débito para pagamento via PIX/Dinheiro
-      await client.query(`
-        INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-        VALUES ($1, $2, $3, 'debito', $4)`,
-        [usuario_id, grupo_id, valorCusto, descText]
-      );
-    }
-
-    // 4. Inserir ou atualizar convocação
-    const queryConv = `
-      INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao)
-      VALUES ($1, $2, 'confirmado', $3, NOW())
+const queryConv = `
+      INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao, posicao_fila)
+      VALUES ($1, $2, $3, $4, NOW(), $5)
       ON CONFLICT (pelada_id, usuario_id) 
-      DO UPDATE SET status = 'confirmado', forma_pagamento = $3, data_convocacao = NOW()`;
-    await client.query(queryConv, [pelada_id, usuario_id, forma_pagamento]);
-
-    await client.query('COMMIT');
-
-    // 5. Dispara notificação push de confirmação para o próprio usuário
-    try {
-      const { sendNotificationInternal } = require('./pushController');
-      sendNotificationInternal({
-        usuarioId: usuario_id,
-        title: 'Presença Confirmada! ⚽',
-        body: `Você confirmou presença na pelada de ${dataFmt} via ${forma_pagamento.toUpperCase()}. Bom jogo!`,
-        url: '/#/jogador/convocacao'
-      }).catch(e => console.warn('[Push] Erro ao disparar push de presenca:', e.message));
-    } catch(e) {}
-
-    res.json({ message: 'Presença confirmada!', custo: valorCusto });
-  } catch (err) {
-    if (client) await client.query('ROLLBACK');
-    res.status(400).json({ error: err.message });
-  } finally {
-    if (client) client.release();
-  }
-};
+      DO UPDATE SET status = $3, forma_pagamento = $4, data_convocacao = NOW(), posicao_fila = $5`;
+await client.query(queryConv, [pelada_id, usuario_id, statusConv, forma_pagamento, posicaoFila]);
 
 exports.remover = async (req, res) => {
   const { pelada_id, opcao_remocao } = req.body; // 'estorno', 'caixa', 'cortado'
@@ -162,7 +82,7 @@ exports.remover = async (req, res) => {
         FROM peladas p
         LEFT JOIN configs c ON p.grupo_id = c.grupo_id
         WHERE p.id = $1`, [pelada_id]);
-      
+
       if (configRes.rows.length > 0) {
         const { custo, grupo_id } = configRes.rows[0];
         const valorCusto = parseFloat(custo || 0);
@@ -186,6 +106,52 @@ exports.remover = async (req, res) => {
       SET status = $1, motivo_remocao = $2, data_remocao = NOW()
       WHERE pelada_id = $3 AND usuario_id = $4`;
     await client.query(queryUpdate, [statusFinal, opcao_remocao, pelada_id, usuario_id]);
+
+    // 4.5 Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
+    if (convRes.rows[0].status === 'confirmado') {
+      const filaRes = await client.query(
+        `SELECT * FROM convocacoes
+         WHERE pelada_id = $1 AND status = 'espera'
+         ORDER BY posicao_fila ASC
+         LIMIT 1 FOR UPDATE`,
+        [pelada_id]
+      );
+
+      if (filaRes.rows.length > 0) {
+        const promovido = filaRes.rows[0];
+        await client.query(
+          `UPDATE convocacoes
+           SET status = 'confirmado', posicao_fila = NULL
+           WHERE id = $1`,
+          [promovido.id]
+        );
+
+        // Reordena a fila restante (posições 1, 2, 3...)
+        const restantesRes = await client.query(
+          `SELECT id FROM convocacoes
+           WHERE pelada_id = $1 AND status = 'espera'
+           ORDER BY posicao_fila ASC`,
+          [pelada_id]
+        );
+        for (let i = 0; i & lt; restantesRes.rows.length; i++) {
+          await client.query(
+            'UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2',
+            [i + 1, restantesRes.rows[i].id]
+          );
+        }
+
+        // Notificação push ao atleta promovido
+        try {
+          const { sendNotificationInternal } = require('./pushController');
+          sendNotificationInternal({
+            usuarioId: promovido.usuario_id,
+            title: 'Você entrou na lista oficial! 🎉',
+            body: 'Um atleta desistiu e você foi promovido da fila de espera para a lista oficial.',
+            url: '/#/jogador/convocacao'
+          }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
+        } catch (e) { }
+      }
+    }
 
     await client.query('COMMIT');
     res.json({ message: 'Remoção processada com sucesso!', estornado: podeEstornar && opcao_remocao === 'estorno' });
@@ -304,7 +270,7 @@ exports.adicionarPorGestor = async (req, res) => {
         INSERT INTO usuarios (nome, email, senha_hash, autoavaliacao, tipo, goleiro, verificado, ativo, saldo, gols, partidas, avaliacao_media)
         VALUES ($1, $2, $3, $4, 'jogador', $5, true, true, 0.00, 0, 0, $6)
         RETURNING id`;
-      
+
       const { rows: userInserted } = await db.query(insertUserQuery, [
         convidado.nome.trim(),
         emailFicticio,
@@ -326,7 +292,7 @@ exports.adicionarPorGestor = async (req, res) => {
       FROM peladas p
       LEFT JOIN configs c ON p.grupo_id = c.grupo_id
       WHERE p.id = $1`, [pelada_id]);
-    
+
     let grupo_id = null;
     let valorCusto = 20.00;
     let dataPelada = null;
@@ -379,5 +345,46 @@ exports.adicionarPorGestor = async (req, res) => {
   } catch (err) {
     console.error('[adicionarPorGestor]', err);
     res.status(500).json({ error: 'Erro ao adicionar jogador à pelada.', detail: err.message });
+  }
+};
+
+// --- PUT /api/convocacoes/:peladaId/limite — Gestor define o limite de atletas ---
+exports.alterarLimite = async (req, res) => {
+  const gestorTipo = req.usuarioTipo;
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem alterar o limite.' });
+  }
+
+  const { peladaId } = req.params;
+  const { limite } = req.body;
+
+  if (!limite || limite & lt; 2 || limite > 100) {
+    return res.status(400).json({ error: 'Limite inválido (mín. 2, máx. 100).' });
+  }
+
+  try {
+    // Conta quantos estão na lista oficial
+    const { rows: contagem } = await db.query(
+      `SELECT COUNT(*)::int AS total FROM convocacoes
+       WHERE pelada_id = $1 AND status = 'confirmado'`,
+      [peladaId]
+    );
+    const oficiais = contagem[0].total;
+
+    // Se o novo limite é menor que o nº de oficiais, avisa quantos serão movidos
+    if (oficiais > limite) {
+      const excedente = oficiais - limite;
+      if (req.body.confirmacao !== true) {
+        return res.status(409).json({
+          error: `O novo limite (${limite}) é menor que o número de atletas confirmados (${oficiais}). ${excedente} atleta(s) serão movidos para a fila de espera.`,
+          excedente
+        });
+      }
+    }
+
+    await db.query('UPDATE peladas SET limite_atletas = $1 WHERE id = $2', [limite, peladaId]);
+    res.json({ success: true, limite });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao alterar limite.', detail: err.message });
   }
 };

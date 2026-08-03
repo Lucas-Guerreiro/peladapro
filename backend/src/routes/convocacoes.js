@@ -9,5 +9,6 @@ router.delete('/desconvocar', authMiddleware, convocacaoController.desconvocarPo
 router.put('/presenca', authMiddleware, convocacaoController.atualizarPresenca);
 router.post('/adicionar', authMiddleware, convocacaoController.adicionarPorGestor);
 router.get('/pelada/:peladaId', authMiddleware, convocacaoController.listarConvocados);
+router.put('/:peladaId/limite', authMiddleware, convocacaoController.alterarLimite);
 
 module.exports = router;
