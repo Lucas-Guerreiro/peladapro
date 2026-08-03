@@ -146,15 +146,24 @@ var Dashboard = {
         var html = '';
         upcoming.forEach(function (p, idx) {
           var myConv = convocations.find(function (c) { return c.pelada_id === p.id && c.player_id === userId; });
-          var status = myConv ? myConv.status : 'pendente';
           var isLast = idx === upcoming.length - 1;
 
-          var statusMap = {
-            confirmado: { label: '✅ Confirmado', color: 'var(--success)' },
-            pendente: { label: '⏳ Pendente', color: 'var(--warning)' },
-            cortado: { label: '❌ Cortado', color: 'var(--danger)' }
-          };
-          var s = statusMap[status] || statusMap.pendente;
+          let statusLabel = '⏳ Pendente';
+          let statusColor = 'var(--warning)';
+
+          if (myConv) {
+            if (myConv.status === 'confirmado') {
+              statusLabel = '✅ Confirmado';
+              statusColor = 'var(--success)';
+            } else if (myConv.status === 'espera') {
+              const pos = myConv.posicao_fila ? ` (#${myConv.posicao_fila})` : '';
+              statusLabel = `⏳ Em Espera${pos}`;
+              statusColor = '#F59E0B';
+            } else if (myConv.status === 'cortado') {
+              statusLabel = '❌ Cortado';
+              statusColor = 'var(--danger)';
+            }
+          }
 
           var dateFormatted = Utils.formatDate(p.data);
           html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
@@ -163,7 +172,7 @@ var Dashboard = {
             '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
             '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
             '</div>' +
-            '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + s.color + ';">' + s.label + '</span>' +
+            '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + statusColor + ';">' + statusLabel + '</span>' +
             '</div>';
         });
 
@@ -230,7 +239,8 @@ var Dashboard = {
                       pelada_id: parseInt(p.id),
                       player_id: c.id,
                       status: c.status,
-                      forma_pagamento: c.forma_pagamento
+                      forma_pagamento: c.forma_pagamento,
+                      posicao_fila: c.posicao_fila
                     });
                   });
                 }
