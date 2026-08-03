@@ -178,10 +178,14 @@ function handleExecuteSorteio() {
   // 5. Ajustar médias de autoavaliação (refinamento fino de balanceamento)
   balanceDrawnTeams(drawnTeams);
 
-  // Salvar no localStorage local de forma segura
+  // Salvar no localStorage local de forma segura usando a chave específica por data/pelada e a genérica
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
   if (window.App && window.App.safeLocalStorageSetItem) {
+    window.App.safeLocalStorageSetItem(teamsKey, JSON.stringify(drawnTeams));
     window.App.safeLocalStorageSetItem("teams", JSON.stringify(drawnTeams));
   } else {
+    try { localStorage.setItem(teamsKey, JSON.stringify(drawnTeams)); } catch(e) {}
     try { localStorage.setItem("teams", JSON.stringify(drawnTeams)); } catch(e) {}
   }
 
