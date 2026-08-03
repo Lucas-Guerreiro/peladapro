@@ -117,11 +117,19 @@ var FinanceiroAtleta = {
         const valNum = isNaN(parseFloat(t.valor)) ? 0 : parseFloat(t.valor);
         const valText = window.Utils ? window.Utils.formatCurrency(valNum) : `R$ ${valNum.toFixed(2).replace(".", ",")}`;
 
-        // Se a descrição for de comprovante Pix, a gente limpa a string ou exibe como Recarga
+        // Se for crédito (entrada) e a descrição começar com "Presença de", alteramos para "Entrada Pix - Presença de"
+        // E se for acerto manual, mostramos como "Recarga/Ajuste de Saldo"
         let desc = t.descricao || 'Lançamento';
-        if (desc.startsWith("Recarga Pix") || desc.startsWith("Presença de")) {
-          // Mantém ou formata para exibição amigável
-          desc = t.descricao;
+        if (t.tipo === 'credito') {
+          if (desc.startsWith("Presença de")) {
+            desc = desc.replace("Presença de", "Entrada Pix - Presença de");
+          } else if (desc.startsWith("Acerto manual:")) {
+            desc = "Crédito Manual (Ajuste de Saldo)";
+          }
+        } else if (t.tipo === 'debito') {
+          if (desc.startsWith("Acerto manual:")) {
+            desc = "Débito Manual (Ajuste de Saldo)";
+          }
         }
 
         html += `
