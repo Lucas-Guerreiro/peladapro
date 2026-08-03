@@ -133,7 +133,7 @@ exports.remover = async (req, res) => {
            ORDER BY posicao_fila ASC`,
           [pelada_id]
         );
-        for (let i = 0; i & lt; restantesRes.rows.length; i++) {
+        for (let i = 0; i < restantesRes.rows.length; i++) {
           await client.query(
             'UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2',
             [i + 1, restantesRes.rows[i].id]
@@ -358,7 +358,7 @@ exports.alterarLimite = async (req, res) => {
   const { peladaId } = req.params;
   const { limite } = req.body;
 
-  if (!limite || limite & lt; 2 || limite > 100) {
+  if (!limite || limite < 2 || limite > 100) {
     return res.status(400).json({ error: 'Limite inválido (mín. 2, máx. 100).' });
   }
 
