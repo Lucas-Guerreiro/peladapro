@@ -8,7 +8,8 @@ window.App.initModalSorteio = function() {
 };
 
 function handleExecuteSorteio() {
-  const type = document.querySelector('input[name="sorteio-type"]:checked').value;
+  const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
+  const type = checkedRadio ? checkedRadio.value : "todos";
   window.App.closeModal();
 
   const players = JSON.parse(localStorage.getItem("players")) || [];
@@ -17,11 +18,16 @@ function handleExecuteSorteio() {
   const peladaAtiva = window.App.activePelada || {};
   const grupoAtivo = window.App.currentGroup || {};
 
-  const playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
-  const maxTeams = parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
+  let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
+  if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 6;
+
+  let maxTeams = parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
+  if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
 
   // Filtra apenas jogadores que o gestor marcou manualmente como presentes (check-in ativo)
-  const activePresent = players.filter(p => window.App.presentPlayers.includes(p.id));
+  const activePresent = players.filter(p => {
+    return (window.App.presentPlayers || []).some(id => String(id) === String(p.id));
+  });
 
   if (activePresent.length < 2) {
     window.App.showToast("Número insuficiente de jogadores para o sorteio.", "error");
@@ -50,7 +56,7 @@ function handleExecuteSorteio() {
       selectedPlayers = sortedBySkill.slice(0, totalCapacity);
       waitingQueue = sortedBySkill.slice(totalCapacity).map(p => p.nome);
     } else {
-      qtyTeams = Math.max(1, qtyTeamsNeeded);
+      qtyTeams = Math.max(1, isNaN(qtyTeamsNeeded) ? 1 : qtyTeamsNeeded);
     }
   }
 
