@@ -197,14 +197,14 @@ exports.remover = async (req, res) => {
       [pelada_id, usuario_id]
     );
 
-    if (convRes.rows.length === 0 || convRes.rows[0].status !== 'confirmado') {
-      return res.status(400).json({ error: 'Você não está confirmado nesta pelada' });
+    if (convRes.rows.length === 0 || (convRes.rows[0].status !== 'confirmado' && convRes.rows[0].status !== 'espera')) {
+      return res.status(400).json({ error: 'Você não tem convocação ativa nesta pelada' });
     }
 
-    const { forma_pagamento } = convRes.rows[0];
+    const { status: statusAntes, forma_pagamento } = convRes.rows[0];
 
-    // 3. Executar lógica de reembolso se aplicável
-    if (forma_pagamento === 'saldo' && opcao_remocao === 'estorno' && podeEstornar) {
+    // 3. Executar lógica de reembolso se aplicável (apenas se estava confirmado e pagou com saldo)
+    if (statusAntes === 'confirmado' && forma_pagamento === 'saldo' && opcao_remocao === 'estorno' && podeEstornar) {
       // Obter custo real da pelada (respeitando override por data)
       const configRes = await client.query(`
         SELECT COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo, p.grupo_id
@@ -232,12 +232,12 @@ exports.remover = async (req, res) => {
     const statusFinal = opcao_remocao === 'cortado' ? 'cortado' : 'pendente';
     const queryUpdate = `
       UPDATE convocacoes 
-      SET status = $1, motivo_remocao = $2, data_remocao = NOW()
+      SET status = $1, motivo_remocao = $2, data_remocao = NOW(), posicao_fila = NULL
       WHERE pelada_id = $3 AND usuario_id = $4`;
     await client.query(queryUpdate, [statusFinal, opcao_remocao, pelada_id, usuario_id]);
 
     // 4.5 Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
-    if (convRes.rows[0].status === 'confirmado') {
+    if (statusAntes === 'confirmado') {
       const filaRes = await client.query(
         `SELECT * FROM convocacoes
          WHERE pelada_id = $1 AND status = 'espera'
@@ -255,20 +255,6 @@ exports.remover = async (req, res) => {
           [promovido.id]
         );
 
-        // Reordena a fila restante (posições 1, 2, 3...)
-        const restantesRes = await client.query(
-          `SELECT id FROM convocacoes
-           WHERE pelada_id = $1 AND status = 'espera'
-           ORDER BY posicao_fila ASC`,
-          [pelada_id]
-        );
-        for (let i = 0; i < restantesRes.rows.length; i++) {
-          await client.query(
-            'UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2',
-            [i + 1, restantesRes.rows[i].id]
-          );
-        }
-
         // Notificação push ao atleta promovido
         try {
           const { sendNotificationInternal } = require('./pushController');
@@ -282,8 +268,22 @@ exports.remover = async (req, res) => {
       }
     }
 
+    // Reordena a fila restante de forma incondicional para preencher quaisquer buracos
+    const restantesRes = await client.query(
+      `SELECT id FROM convocacoes
+       WHERE pelada_id = $1 AND status = 'espera'
+       ORDER BY posicao_fila ASC`,
+      [pelada_id]
+    );
+    for (let i = 0; i < restantesRes.rows.length; i++) {
+      await client.query(
+        'UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2',
+        [i + 1, restantesRes.rows[i].id]
+      );
+    }
+
     await client.query('COMMIT');
-    res.json({ message: 'Remoção processada com sucesso!', estornado: podeEstornar && opcao_remocao === 'estorno' });
+    res.json({ message: 'Remoção processada com sucesso!', estornado: statusAntes === 'confirmado' && podeEstornar && opcao_remocao === 'estorno' });
   } catch (err) {
     if (client) await client.query('ROLLBACK');
     res.status(400).json({ error: err.message });
@@ -350,25 +350,81 @@ exports.desconvocarPorGestor = async (req, res) => {
     return res.status(400).json({ error: 'pelada_id e usuario_id são obrigatórios.' });
   }
 
+  let client;
   try {
-    // Verifica se existe a convocação
-    const { rows: check } = await db.query(
-      'SELECT usuario_id FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // Verifica se existe a convocação e qual o status dela
+    const { rows: check } = await client.query(
+      'SELECT status FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
       [pelada_id, usuario_id]
     );
     if (check.length === 0) {
       return res.status(404).json({ error: 'Convocação não encontrada.' });
     }
 
+    const statusRemovido = check[0].status;
+
     // Remove a convocação completamente
-    await db.query(
+    await client.query(
       'DELETE FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
       [pelada_id, usuario_id]
     );
 
+    // Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
+    if (statusRemovido === 'confirmado') {
+      const filaRes = await client.query(
+        `SELECT * FROM convocacoes
+         WHERE pelada_id = $1 AND status = 'espera'
+         ORDER BY posicao_fila ASC
+         LIMIT 1 FOR UPDATE`,
+        [pelada_id]
+      );
+
+      if (filaRes.rows.length > 0) {
+        const promovido = filaRes.rows[0];
+        await client.query(
+          `UPDATE convocacoes
+           SET status = 'confirmado', posicao_fila = NULL
+           WHERE id = $1`,
+          [promovido.id]
+        );
+
+        // Notificação push ao atleta promovido
+        try {
+          const { sendNotificationInternal } = require('./pushController');
+          sendNotificationInternal({
+            usuarioId: promovido.usuario_id,
+            title: 'Você entrou na lista oficial! 🎉',
+            body: 'Um atleta desistiu e você foi promovido da fila de espera para a lista oficial.',
+            url: '/#/jogador/convocacao'
+          }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
+        } catch (e) { }
+      }
+    }
+
+    // Reordena a fila restante (posições 1, 2, 3...)
+    const restantesRes = await client.query(
+      `SELECT id FROM convocacoes
+       WHERE pelada_id = $1 AND status = 'espera'
+       ORDER BY posicao_fila ASC`,
+      [pelada_id]
+    );
+    for (let i = 0; i < restantesRes.rows.length; i++) {
+      await client.query(
+        `UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2`,
+        [i + 1, restantesRes.rows[i].id]
+      );
+    }
+
+    await client.query('COMMIT');
     res.json({ message: 'Atleta desconvocado com sucesso!' });
   } catch (err) {
+    if (client) await client.query('ROLLBACK');
     res.status(500).json({ error: 'Erro ao desconvocar atleta.', detail: err.message });
+  } finally {
+    if (client) client.release();
   }
 };
 
