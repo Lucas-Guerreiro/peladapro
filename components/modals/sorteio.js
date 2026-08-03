@@ -188,22 +188,31 @@ function handleExecuteSorteio() {
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
 
-  // Remove emblemas base64 embutidos antes de salvar — evita estourar o limite (~5MB) do localStorage
+  // Enxuga: remove emblemas e fotos base64 dos times — só o essencial para o sorteio
   const teamsParaSalvar = drawnTeams.map(t => {
     const copia = { ...t };
     delete copia.emblema_url;
     delete copia.emblemaUrl;
+    copia.players = t.players.map(p => {
+      const leve = { ...p };
+      delete leve.foto;          // foto base64 pesada
+      delete leve.emblema_url;
+      delete leve.emblemaUrl;
+      return leve;
+    });
     return copia;
   });
 
   try {
     localStorage.setItem(teamsKey, JSON.stringify(teamsParaSalvar));
-    localStorage.setItem("teams", JSON.stringify(teamsParaSalvar));
   } catch (e) {
-    console.error("[Sorteio] Falha ao salvar times no localStorage:", e);
+    console.error("[Sorteio] Falha ao salvar times:", e);
     window.App.showToast("Erro ao salvar os times: " + (e && e.message ? e.message : e), "error");
     return;
   }
+
+  // Cópia genérica (fallback para outras telas): melhor esforço, NÃO bloqueia o sorteio se falhar
+  try { localStorage.setItem("teams", JSON.stringify(teamsParaSalvar)); } catch (e) { }
 
   // Reset e alimentação da fila de espera global
   window.App.waitingQueue.length = 0;
