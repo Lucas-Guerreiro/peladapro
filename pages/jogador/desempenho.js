@@ -220,8 +220,16 @@ var Desempenho = {
               }
             }
 
-            // Fallback gols/assistências
-            if (!jogouNoTime) {
+            // Verifica se o atleta está escalado oficialmente em algum time nesta pelada
+            let estaEscaladoNestaPelada = false;
+            Object.values(escalacaoPelada).forEach(set => {
+              if (set.has(pIdStr) || set.has(pNome)) {
+                estaEscaladoNestaPelada = true;
+              }
+            });
+
+            // Fallback gols/assistências: só se ele não estiver jogando oficialmente no seu time, E se ele não estiver escalado em nenhum time da pelada
+            if (!jogouNoTime && !estaEscaladoNestaPelada) {
               if (playersA.has(pNome) || playersA.has(pIdStr)) {
                 jogouNoTime = 'a';
               } else if (playersB.has(pNome) || playersB.has(pIdStr)) {
