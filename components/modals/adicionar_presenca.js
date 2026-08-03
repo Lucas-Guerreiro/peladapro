@@ -27,6 +27,39 @@ window.App.initModalAdicionar_presenca = function (data = {}) {
 
   let activeTab = "registered"; // "registered" | "guest"
 
+  // --- Controle dos Meios de Pagamento ---
+  const radioSaldo = document.getElementById("radio-pay-saldo");
+  const radioPix = document.getElementById("radio-pay-pix");
+  const labelSaldo = document.getElementById("label-pay-saldo");
+  const labelPix = document.getElementById("label-pay-pix");
+
+  function updatePaymentUI() {
+    if (!radioSaldo || !radioPix || !labelSaldo || !labelPix) return;
+    
+    if (radioSaldo.checked) {
+      labelSaldo.style.border = "1.5px solid var(--primary)";
+      labelSaldo.style.background = "rgba(2, 132, 199, 0.04)";
+      labelSaldo.style.color = "var(--primary)";
+      
+      labelPix.style.border = "1.5px solid var(--border-color)";
+      labelPix.style.background = "#FFFFFF";
+      labelPix.style.color = "var(--text-body)";
+    } else {
+      labelPix.style.border = "1.5px solid var(--primary)";
+      labelPix.style.background = "rgba(2, 132, 199, 0.04)";
+      labelPix.style.color = "var(--primary)";
+      
+      labelSaldo.style.border = "1.5px solid var(--border-color)";
+      labelSaldo.style.background = "#FFFFFF";
+      labelSaldo.style.color = "var(--text-body)";
+    }
+  }
+
+  if (radioSaldo && radioPix) {
+    radioSaldo.onchange = updatePaymentUI;
+    radioPix.onchange = updatePaymentUI;
+  }
+
   // --- Controle das Abas ---
   if (tabRegistered && tabGuest && contentRegistered && contentGuest) {
     tabRegistered.onclick = () => {
@@ -137,8 +170,10 @@ window.App.initModalAdicionar_presenca = function (data = {}) {
 
       try {
         const token = localStorage.getItem("token");
+        const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || "saldo";
         let bodyPayload = {
-          pelada_id: parseInt(peladaId)
+          pelada_id: parseInt(peladaId),
+          forma_pagamento: paymentMethod
         };
 
         if (activeTab === "registered") {

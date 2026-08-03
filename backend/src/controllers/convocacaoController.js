@@ -434,7 +434,8 @@ exports.adicionarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem adicionar atletas.' });
   }
 
-  const { pelada_id, usuario_id, convidado } = req.body;
+  const { pelada_id, usuario_id, convidado, forma_pagamento } = req.body;
+  const finalFormaPagamento = forma_pagamento === 'pix' ? 'pix' : 'saldo';
 
   if (!pelada_id) {
     return res.status(400).json({ error: 'ID da pelada é obrigatório.' });
@@ -497,17 +498,22 @@ exports.adicionarPorGestor = async (req, res) => {
       // Se já existir, força a presença como true e status como confirmado
       await db.query(
         `UPDATE convocacoes 
-         SET status = 'confirmado', presenca = true, motivo_remocao = null, data_remocao = null 
+         SET status = 'confirmado', presenca = true, motivo_remocao = null, data_remocao = null, forma_pagamento = $3 
          WHERE pelada_id = $1 AND usuario_id = $2`,
-        [pelada_id, finalUsuarioId]
+        [pelada_id, finalUsuarioId, finalFormaPagamento]
       );
     } else {
       // Se não existir convocação, insere uma nova confirmada e presente
       await db.query(
         `INSERT INTO convocacoes (pelada_id, usuario_id, status, presenca, forma_pagamento) 
-         VALUES ($1, $2, 'confirmado', true, 'saldo')`,
-        [pelada_id, finalUsuarioId]
+         VALUES ($1, $2, 'confirmado', true, $3)`,
+        [pelada_id, finalUsuarioId, finalFormaPagamento]
       );
+    }
+
+    // Se for saldo, desconta do saldo do atleta no banco
+    if (finalFormaPagamento === 'saldo') {
+      await db.query('UPDATE usuarios SET saldo = COALESCE(saldo, 0) - $1 WHERE id = $2', [valorCusto, finalUsuarioId]);
     }
 
     // Registrar transação de débito no banco
