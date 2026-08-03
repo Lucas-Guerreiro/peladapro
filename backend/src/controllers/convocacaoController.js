@@ -20,26 +20,155 @@ function formatarDataDDMM(dataInput) {
   }
 }
 
-// 4. Inserir ou atualizar convocação (lista oficial ou fila de espera)
-let statusConv = 'confirmado';
-let posicaoFila = null;
+exports.confirmar = async (req, res) => {
+  const { pelada_id, forma_pagamento } = req.body;
+  const usuario_id = req.usuarioId;
 
-if (vaiParaFila) {
-  statusConv = 'espera';
-  const filaRes = await client.query(
-    `SELECT COALESCE(MAX(posicao_fila), 0)::int AS ultima
+  if (!pelada_id || !forma_pagamento) {
+    return res.status(400).json({ error: 'Pelada e forma de pagamento são obrigatórias' });
+  }
+
+  let client;
+
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Obter informações da pelada, custos, limites e configurações do grupo
+    const queryConfig = `
+      SELECT p.grupo_id,
+             p.data,
+             p.limite_atletas,
+             COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo,
+             c.limite_saldo_negativo
+      FROM peladas p
+      LEFT JOIN configs c ON p.grupo_id = c.grupo_id
+      WHERE p.id = $1`;
+    const configRes = await client.query(queryConfig, [pelada_id]);
+
+    if (configRes.rows.length === 0) {
+      throw new Error('Configuração do grupo/pelada não encontrada');
+    }
+
+    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada, limite_atletas } = configRes.rows[0];
+    const valorCusto = parseFloat(custo || 0);
+    const limiteNegativo = parseFloat(limite_saldo_negativo || 0);
+    const limiteMaxAtletas = limite_atletas || 20; // fallback se limite_atletas for null
+
+    // 2. Contar quantos atletas confirmados já estão na pelada (lista oficial)
+    const countRes = await client.query(
+      `SELECT COUNT(*)::int AS total FROM convocacoes 
+       WHERE pelada_id = $1 AND status = 'confirmado'`,
+      [pelada_id]
+    );
+    const confirmados = countRes.rows[0].total;
+
+    // Verificar se o próprio usuário já tem uma convocação
+    const userConvRes = await client.query(
+      `SELECT status FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2`,
+      [pelada_id, usuario_id]
+    );
+    const jaConvocado = userConvRes.rows.length > 0;
+    const statusAtual = jaConvocado ? userConvRes.rows[0].status : null;
+
+    // Se ele já estava confirmado, o status não muda e não conta como novo
+    // Se ele não estava confirmado, e já atingiu o limite, ele vai para a fila
+    const vaiParaFila = (statusAtual !== 'confirmado') && (confirmados >= limiteMaxAtletas);
+
+    // 3. Buscar informações do usuário
+    const userRes = await client.query('SELECT saldo, nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userRes.rows.length === 0) {
+      throw new Error('Usuário não encontrado');
+    }
+    const saldoAtual = parseFloat(userRes.rows[0].saldo || 0);
+    const atletaNome = userRes.rows[0].apelido || userRes.rows[0].nome || 'Atleta';
+    const dataFmt = formatarDataDDMM(dataPelada);
+    const descText = `Presença de ${atletaNome} no dia ${dataFmt}`;
+
+    // Só debita o saldo/registra transação se o atleta de fato entrar na lista oficial (não vai para fila)
+    if (!vaiParaFila) {
+      if (forma_pagamento === 'saldo') {
+        const novoSaldo = saldoAtual - valorCusto;
+        if (novoSaldo < -limiteNegativo) {
+          return res.status(400).json({ 
+            error: `Saldo insuficiente. O custo da pelada é R$ ${valorCusto.toFixed(2)}, mas seu saldo é R$ ${saldoAtual.toFixed(2)} (limite negativo: R$ ${limiteNegativo.toFixed(2)}). Selecione PIX.` 
+          });
+        }
+
+        // Atualizar saldo do usuário
+        await client.query('UPDATE usuarios SET saldo = $1 WHERE id = $2', [novoSaldo, usuario_id]);
+
+        // Registrar transação de débito
+        await client.query(`
+          INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+          VALUES ($1, $2, $3, 'debito', $4)`,
+          [usuario_id, grupo_id, valorCusto, descText]
+        );
+      } else {
+        // Registrar transação de débito para pagamento via PIX/Dinheiro
+        await client.query(`
+          INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+          VALUES ($1, $2, $3, 'debito', $4)`,
+          [usuario_id, grupo_id, valorCusto, descText]
+        );
+      }
+    }
+
+    // 4. Inserir ou atualizar convocação (lista oficial ou fila de espera)
+    let statusConv = 'confirmado';
+    let posicaoFila = null;
+
+    if (vaiParaFila) {
+      statusConv = 'espera';
+      const filaRes = await client.query(
+        `SELECT COALESCE(MAX(posicao_fila), 0)::int AS ultima
          FROM convocacoes WHERE pelada_id = $1 AND status = 'espera'`,
-    [pelada_id]
-  );
-  posicaoFila = filaRes.rows[0].ultima + 1;
-}
+        [pelada_id]
+      );
+      posicaoFila = filaRes.rows[0].ultima + 1;
+    }
 
-const queryConv = `
+    const queryConv = `
       INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao, posicao_fila)
       VALUES ($1, $2, $3, $4, NOW(), $5)
       ON CONFLICT (pelada_id, usuario_id) 
       DO UPDATE SET status = $3, forma_pagamento = $4, data_convocacao = NOW(), posicao_fila = $5`;
-await client.query(queryConv, [pelada_id, usuario_id, statusConv, forma_pagamento, posicaoFila]);
+    await client.query(queryConv, [pelada_id, usuario_id, statusConv, forma_pagamento, posicaoFila]);
+
+    await client.query('COMMIT');
+
+    // 5. Dispara notificação push de confirmação para o próprio usuário
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      if (vaiParaFila) {
+        sendNotificationInternal({
+          usuarioId: usuario_id,
+          title: 'Fila de Espera! ⏳',
+          body: `A lista oficial está cheia. Você está na fila de espera (Posição #${posicaoFila}) para a pelada de ${dataFmt}.`,
+          url: '/#/jogador/convocacao'
+        }).catch(e => console.warn('[Push] Erro ao disparar push de fila de espera:', e.message));
+      } else {
+        sendNotificationInternal({
+          usuarioId: usuario_id,
+          title: 'Presença Confirmada! ⚽',
+          body: `Você confirmou presença na pelada de ${dataFmt} via ${forma_pagamento.toUpperCase()}. Bom jogo!`,
+          url: '/#/jogador/convocacao'
+        }).catch(e => console.warn('[Push] Erro ao disparar push de presenca:', e.message));
+      }
+    } catch(e) {}
+
+    if (vaiParaFila) {
+      res.json({ message: 'Você foi adicionado à fila de espera!', custo: 0, naFila: true, posicao: posicaoFila });
+    } else {
+      res.json({ message: 'Presença confirmada!', custo: valorCusto, naFila: false });
+    }
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    res.status(400).json({ error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
 
 exports.remover = async (req, res) => {
   const { pelada_id, opcao_remocao } = req.body; // 'estorno', 'caixa', 'cortado'
