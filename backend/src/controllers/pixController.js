@@ -1,5 +1,24 @@
 const db = require('../config/database');
 
+function formatarDataDDMM(dataInput) {
+  if (!dataInput) return '';
+  try {
+    const d = new Date(dataInput);
+    if (isNaN(d.getTime())) {
+      const parts = String(dataInput).split('-');
+      if (parts.length >= 3) {
+        return `${parts[2].substring(0, 2)}/${parts[1]}`;
+      }
+      return '';
+    }
+    const dia = String(d.getUTCDate()).padStart(2, '0');
+    const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${dia}/${mes}`;
+  } catch (e) {
+    return '';
+  }
+}
+
 // 1. Enviar e Validar Comprovante Pix (Atleta)
 exports.enviarComprovante = async (req, res) => {
   const { pelada_id, e2e_id, valor, beneficiario_nome, comprovante_url } = req.body;
@@ -35,14 +54,20 @@ exports.enviarComprovante = async (req, res) => {
       }
     }
 
-    // Obter o grupo_id associado à pelada
+    // Obter o grupo_id e data associados à pelada
     let grupo_id = null;
+    let dataPelada = null;
     if (pelada_id) {
-      const peladaRes = await client.query('SELECT grupo_id FROM peladas WHERE id = $1', [pelada_id]);
+      const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
       if (peladaRes.rows.length > 0) {
         grupo_id = peladaRes.rows[0].grupo_id;
+        dataPelada = peladaRes.rows[0].data;
       }
     }
+
+    // Busca o nome ou apelido do atleta
+    const uRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    const nomeExibir = uRes.rows.length > 0 ? (uRes.rows[0].apelido || uRes.rows[0].nome) : 'Atleta';
 
     // a. Trava de Duplicidade pelo E2E ID do Pix
     const checkE2E = await client.query('SELECT id, status FROM comprovantes_pix WHERE e2e_id = $1', [cleanE2E]);
@@ -71,8 +96,9 @@ exports.enviarComprovante = async (req, res) => {
       WHERE id = $2 RETURNING saldo`;
     const userRes = await client.query(updateSaldo, [valorNum, usuario_id]);
 
-    // d. Registrar transação de crédito Pix (limitando a descrição a 140 chars max para VARCHAR(150))
-    const descTx = `Recarga Pix (Autenticação ${cleanE2E})`.substring(0, 140);
+    // d. Registrar transação de crédito Pix no formato padronizado: Presença de "Apelido" no dia "DD/MM"
+    const dataFmt = formatarDataDDMM(dataPelada);
+    const descTx = `Presença de ${nomeExibir} no dia ${dataFmt}`.substring(0, 140);
     await client.query(`
       INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
       VALUES ($1, $2, $3, 'credito', $4)`,
@@ -84,9 +110,6 @@ exports.enviarComprovante = async (req, res) => {
     // Notifica todos os gestores por push sobre o novo comprovante recebido
     try {
       const { sendNotificationInternal } = require('./pushController');
-      // Busca o nome ou apelido do atleta
-      const uRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
-      const nomeExibir = uRes.rows.length > 0 ? (uRes.rows[0].apelido || uRes.rows[0].nome) : 'Um atleta';
       
       sendNotificationInternal({
         title: '💸 Novo Comprovante Pix!',
@@ -160,12 +183,14 @@ exports.estornarTransacao = async (req, res) => {
       throw new Error('Esta transação já foi estornada anteriormente.');
     }
 
-    // Obter o grupo_id associado à pelada do comprovante
+    // Obter o grupo_id e data associados à pelada do comprovante
     let grupo_id = null;
+    let dataPelada = null;
     if (pix.pelada_id) {
-      const peladaRes = await client.query('SELECT grupo_id FROM peladas WHERE id = $1', [pix.pelada_id]);
+      const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pix.pelada_id]);
       if (peladaRes.rows.length > 0) {
         grupo_id = peladaRes.rows[0].grupo_id;
+        dataPelada = peladaRes.rows[0].data;
       }
     }
 
@@ -173,18 +198,22 @@ exports.estornarTransacao = async (req, res) => {
     await client.query("UPDATE comprovantes_pix SET status = 'estornado_pelo_gestor' WHERE id = $1", [comprovante_id]);
 
     // c. Reverter saldo do atleta (débito do valor)
-    const userRes = await client.query('SELECT id, saldo FROM usuarios WHERE LOWER(email) = LOWER($1)', [pix.atleta_email]);
+    const userRes = await client.query('SELECT id, saldo, nome, apelido FROM usuarios WHERE LOWER(email) = LOWER($1)', [pix.atleta_email]);
     if (userRes.rows.length > 0) {
       const user = userRes.rows[0];
       const novoSaldo = parseFloat(user.saldo || 0) - parseFloat(pix.valor);
 
       await client.query('UPDATE usuarios SET saldo = $1 WHERE id = $2', [novoSaldo, user.id]);
 
+      const nomeExibir = user.apelido || user.nome || 'Atleta';
+      const dataFmt = formatarDataDDMM(dataPelada);
+      const descEstorno = `Estorno de presença de ${nomeExibir} no dia ${dataFmt}`;
+
       // Registrar transação de estorno pelo gestor
       await client.query(`
         INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
         VALUES ($1, $2, $3, 'debito', $4)`,
-        [user.id, grupo_id, pix.valor, `Estorno de Pix pelo gestor (Ref E2E ${pix.e2e_id})`]
+        [user.id, grupo_id, pix.valor, descEstorno]
       );
     }
 
