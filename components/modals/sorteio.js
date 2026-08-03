@@ -237,7 +237,6 @@ function handleExecuteSorteio() {
     try { localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue)); } catch(e) {}
   }
 
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
     window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, drawnTeams);
   }
