@@ -1,6 +1,29 @@
-// ==========================================================================
-// CONTROLADOR PRINCIPAL E ROTEADOR SPA CLÁSSICO (app.js)
-// ==========================================================================
+// --- INTERCEPTADOR DO LOCALSTORAGE PARA EVITAR QUOTAEXCEEDEDERROR ---
+(function() {
+  const originalSetItem = localStorage.setItem;
+  localStorage.setItem = function(key, value) {
+    try {
+      originalSetItem.apply(this, arguments);
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22) {
+        console.warn('[Storage] Cota do localStorage excedida. Tentando liberar espaço limpando caches não-essenciais...');
+        const keysToClear = ['players', 'transactions', 'groupEmblems', 'performanceData'];
+        keysToClear.forEach(k => {
+          try { localStorage.removeItem(k); } catch(err) {}
+        });
+        
+        try {
+          originalSetItem.apply(this, arguments);
+          console.log(`[Storage] Chave '${key}' salva após limpeza de cache.`);
+        } catch (retryErr) {
+          console.error(`[Storage] Falha crítica ao salvar '${key}' mesmo após limpeza. O dado não foi salvo localmente:`, retryErr);
+        }
+      } else {
+        console.error(`[Storage] Erro ao salvar no localStorage para '${key}':`, e);
+      }
+    }
+  };
+})();
 
 // --- ESCOPO GLOBAL DA SPA ---
 window.App = {
@@ -26,7 +49,8 @@ window.App = {
   closeModal,
   renderGroupSelectors,
   triggerAbaNavigation,
-  loadScript
+  loadScript,
+  safeLocalStorageSetItem
 };
 
 // --- FUNÇÃO PARA CARREGAR SCRIPT DINÂMICO CLÁSSICO ---
@@ -454,4 +478,31 @@ function showToast(message, type = "success") {
     toast.style.animation = "toastOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards";
     setTimeout(() => toast.remove(), 300);
   }, 3500);
+}
+
+function safeLocalStorageSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22) {
+      console.warn('[Storage] Cota do localStorage excedida. Tentando liberar espaço limpando caches não-essenciais...');
+      const keysToClear = ['players', 'transactions', 'groupEmblems', 'performanceData'];
+      
+      keysToClear.forEach(k => {
+        try { localStorage.removeItem(k); } catch(err) {}
+      });
+      
+      try {
+        localStorage.setItem(key, value);
+        console.log(`[Storage] Chave '${key}' salva com sucesso após limpeza de cache.`);
+        return true;
+      } catch (retryErr) {
+        console.error(`[Storage] Falha crítica ao salvar '${key}' mesmo após limpeza:`, retryErr);
+        return false;
+      }
+    }
+    console.error(`[Storage] Erro ao salvar no localStorage para '${key}':`, e);
+    return false;
+  }
+  return true;
 }

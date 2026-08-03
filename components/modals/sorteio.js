@@ -178,8 +178,12 @@ function handleExecuteSorteio() {
   // 5. Ajustar médias de autoavaliação (refinamento fino de balanceamento)
   balanceDrawnTeams(drawnTeams);
 
-  // Salvar no localStorage local
-  localStorage.setItem("teams", JSON.stringify(drawnTeams));
+  // Salvar no localStorage local de forma segura
+  if (window.App && window.App.safeLocalStorageSetItem) {
+    window.App.safeLocalStorageSetItem("teams", JSON.stringify(drawnTeams));
+  } else {
+    try { localStorage.setItem("teams", JSON.stringify(drawnTeams)); } catch(e) {}
+  }
 
   // Reset e alimentação da fila de espera global
   window.App.waitingQueue.length = 0;
@@ -215,8 +219,13 @@ function handleExecuteSorteio() {
   }
 
   // Persiste imediatamente a fila, o jogo ao vivo e os times sorteados no localStorage e no servidor
-  localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-  localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+  if (window.App && window.App.safeLocalStorageSetItem) {
+    window.App.safeLocalStorageSetItem("liveMatch", JSON.stringify(window.App.liveMatch));
+    window.App.safeLocalStorageSetItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+  } else {
+    try { localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch)); } catch(e) {}
+    try { localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue)); } catch(e) {}
+  }
 
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
