@@ -256,8 +256,9 @@ function handleExecuteSorteio() {
     try { localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue)); } catch (e) { }
   }
 
-  if (peladaId && window.Api && window.Api.atualizarLiveState) {
-    window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, drawnTeams);
+  if (peladaId && window.App && window.App.syncDrawnTeamsToCloud) {
+    // Dispara o sync com a versão leve (sem fotos) já salva no localStorage
+    window.App.syncDrawnTeamsToCloud(false);
   }
 
   window.App.showToast("Equipes geradas!");
