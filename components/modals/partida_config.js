@@ -17,8 +17,9 @@ window.App.initModalPartida_config = function(data) {
   document.getElementById("partida-config-players").value = data.jogadores_por_time || 7;
   document.getElementById("partida-config-teams").value = data.quantidade_times || 2;
   document.getElementById("partida-config-value").value = data.valor_convocacao ? parseFloat(data.valor_convocacao).toFixed(2) : "20.00";
+  document.getElementById("partida-config-limite").value = data.limite_atletas || data.max_jogadores || 20;
   document.getElementById("partida-config-pix-key").value = data.chave_pix || "";
-  document.getElementById("partida-config-pix-name").value = data.chave_pix_nome || "";
+  document.getElementById("partida-config-pix-name").value = data.chave_pix_name || "";
 
   // Ligar eventos de fechamento
   document.getElementById("btn-close-partida-config").onclick = () => window.App.closeModal();
@@ -33,6 +34,7 @@ window.App.initModalPartida_config = function(data) {
     const players = parseInt(document.getElementById("partida-config-players").value);
     const teams = parseInt(document.getElementById("partida-config-teams").value);
     const value = parseFloat(document.getElementById("partida-config-value").value) || 20.00;
+    const limiteAtletas = parseInt(document.getElementById("partida-config-limite").value) || 20;
     const pixKey = document.getElementById("partida-config-pix-key").value;
     const pixName = document.getElementById("partida-config-pix-name").value;
 
@@ -49,6 +51,10 @@ window.App.initModalPartida_config = function(data) {
       window.App.showToast("A quantidade de times deve ser entre 2 e 10.", "warning");
       return;
     }
+    if (limiteAtletas < 2 || limiteAtletas > 100) {
+      window.App.showToast("O limite de vagas deve ser entre 2 e 100.", "warning");
+      return;
+    }
 
     try {
       window.App.showToast("Salvando regras específicas da partida...", "info");
@@ -60,7 +66,8 @@ window.App.initModalPartida_config = function(data) {
         quantidade_times: teams,
         valor_convocacao: value,
         chave_pix: pixKey,
-        chave_pix_nome: pixName
+        chave_pix_name: pixName,
+        limite_atletas: limiteAtletas
       });
 
       if (res.error) {

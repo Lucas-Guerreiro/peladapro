@@ -56,9 +56,15 @@
     </div>
 
     <!-- Finanças (Valor da Convocação e Pix) -->
-    <div class="form-group" style="margin-bottom: 16px;">
-      <label for="partida-config-value" class="form-label" style="font-weight: 700;">Valor da Convocação (R$)</label>
-      <input type="number" id="partida-config-value" class="form-control" step="0.50">
+    <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="partida-config-value" class="form-label" style="font-weight: 700;">Valor da Convocação (R$)</label>
+        <input type="number" id="partida-config-value" class="form-control" step="0.50">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="partida-config-limite" class="form-label" style="font-weight: 700;">Limite de Vagas</label>
+        <input type="number" id="partida-config-limite" class="form-control" min="2" max="100" placeholder="Ex: 24">
+      </div>
     </div>
 
     <div class="grid-2" style="gap: 16px; margin-bottom: 24px;">

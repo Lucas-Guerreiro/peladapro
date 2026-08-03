@@ -98,8 +98,8 @@ exports.agendarData = async (req, res) => {
 
     // 1. Inserir a partida na tabela 'peladas'
     const queryPelada = `
-      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome)
-      VALUES ($1, $2, $3, 'agendada', $4, $5, $6, $7, $8) RETURNING id, data, horario, local, chave_pix, chave_pix_nome`;
+      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, limite_atletas, valor_convocacao, chave_pix, chave_pix_nome)
+      VALUES ($1, $2, $3, 'agendada', $4, $5, $5, $6, $7, $8) RETURNING id, data, horario, local, chave_pix, chave_pix_nome`;
     const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00, chave_pix || null, chave_pix_nome || null]);
     const pelada = peladaRes.rows[0];
 
@@ -206,7 +206,7 @@ exports.listarDatasDoGrupo = async (req, res) => {
     }
 
     const query = `
-      SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.chave_pix, p.chave_pix_nome,
+      SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.limite_atletas, p.chave_pix, p.chave_pix_nome,
              COALESCE(p.criterio_empate, c.criterio_empate, 'ambos_permanecem') as criterio_empate,
              COALESCE(p.vitorias_para_sair, c.vitorias_para_sair, 2) as vitorias_para_sair,
              COALESCE(p.jogadores_por_time, c.jogadores_por_time, 7) as jogadores_por_time,
@@ -229,7 +229,7 @@ exports.atualizarConfigPartida = async (req, res) => {
   const { id } = req.params;
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
-  const { criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome } = req.body;
+  const { criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
 
   if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
@@ -255,8 +255,10 @@ exports.atualizarConfigPartida = async (req, res) => {
           regra_saida = $5,
           valor_convocacao = $6,
           chave_pix = $7,
-          chave_pix_nome = $8
-      WHERE id = $9 RETURNING id`;
+          chave_pix_nome = $8,
+          limite_atletas = $9,
+          max_jogadores = $9
+      WHERE id = $10 RETURNING id`;
     await db.query(queryUpdate, [
       criterio_empate || null,
       vitorias_para_sair !== undefined ? parseInt(vitorias_para_sair) : null,
@@ -266,6 +268,7 @@ exports.atualizarConfigPartida = async (req, res) => {
       valor_convocacao !== undefined ? parseFloat(valor_convocacao) : null,
       chave_pix !== undefined ? chave_pix : null,
       chave_pix_nome !== undefined ? chave_pix_nome : null,
+      limite_atletas !== undefined ? parseInt(limite_atletas) : 20,
       id
     ]);
 
