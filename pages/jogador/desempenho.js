@@ -85,14 +85,16 @@ var Desempenho = {
       const carregarEscalacao = async (pId) => {
         if (escalacoesPorPelada[pId]) return;
         try {
-          const resTimes = await fetch(`/api/formacao/pelada/${pId}`, {
+          const resLive = await fetch(`/api/peladas/${pId}/live`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (resTimes.ok) {
-            const times = await resTimes.json();
+          if (resLive.ok) {
+            const data = await resLive.json();
+            const liveState = data.state || data || {};
+            const times = liveState.teams || [];
             escalacoesPorPelada[pId] = {};
             (times || []).forEach(t => {
-              const tName = (t.nome || '').trim().toLowerCase();
+              const tName = (t.nome || t.name || '').trim().toLowerCase();
               if (tName) {
                 escalacoesPorPelada[pId][tName] = new Set();
                 (t.jogadores || []).forEach(p => {
