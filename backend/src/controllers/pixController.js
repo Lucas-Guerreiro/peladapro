@@ -35,6 +35,15 @@ exports.enviarComprovante = async (req, res) => {
       }
     }
 
+    // Obter o grupo_id associado à pelada
+    let grupo_id = null;
+    if (pelada_id) {
+      const peladaRes = await client.query('SELECT grupo_id FROM peladas WHERE id = $1', [pelada_id]);
+      if (peladaRes.rows.length > 0) {
+        grupo_id = peladaRes.rows[0].grupo_id;
+      }
+    }
+
     // a. Trava de Duplicidade pelo E2E ID do Pix
     const checkE2E = await client.query('SELECT id, status FROM comprovantes_pix WHERE e2e_id = $1', [cleanE2E]);
     if (checkE2E.rows.length > 0) {
@@ -65,9 +74,9 @@ exports.enviarComprovante = async (req, res) => {
     // d. Registrar transação de crédito Pix (limitando a descrição a 140 chars max para VARCHAR(150))
     const descTx = `Recarga Pix (Autenticação ${cleanE2E})`.substring(0, 140);
     await client.query(`
-      INSERT INTO transacoes (usuario_id, valor, tipo, descricao)
-      VALUES ($1, $2, 'credito', $3)`,
-      [usuario_id, valorNum, descTx]
+      INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+      VALUES ($1, $2, $3, 'credito', $4)`,
+      [usuario_id, grupo_id, valorNum, descTx]
     );
 
     await client.query('COMMIT');
@@ -151,6 +160,15 @@ exports.estornarTransacao = async (req, res) => {
       throw new Error('Esta transação já foi estornada anteriormente.');
     }
 
+    // Obter o grupo_id associado à pelada do comprovante
+    let grupo_id = null;
+    if (pix.pelada_id) {
+      const peladaRes = await client.query('SELECT grupo_id FROM peladas WHERE id = $1', [pix.pelada_id]);
+      if (peladaRes.rows.length > 0) {
+        grupo_id = peladaRes.rows[0].grupo_id;
+      }
+    }
+
     // b. Atualizar status do comprovante para estornado
     await client.query("UPDATE comprovantes_pix SET status = 'estornado_pelo_gestor' WHERE id = $1", [comprovante_id]);
 
@@ -164,9 +182,9 @@ exports.estornarTransacao = async (req, res) => {
 
       // Registrar transação de estorno pelo gestor
       await client.query(`
-        INSERT INTO transacoes (usuario_id, valor, tipo, descricao)
-        VALUES ($1, $2, 'debito', $3)`,
-        [user.id, pix.valor, `Estorno de Pix pelo gestor (Ref E2E ${pix.e2e_id})`]
+        INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+        VALUES ($1, $2, $3, 'debito', $4)`,
+        [user.id, grupo_id, pix.valor, `Estorno de Pix pelo gestor (Ref E2E ${pix.e2e_id})`]
       );
     }
 
