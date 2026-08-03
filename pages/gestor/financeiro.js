@@ -37,15 +37,15 @@ window.App.renderFinanceiroData = async function() {
         const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
         if (Array.isArray(dbTx)) {
           const dbTxFiltrado = dbTx.filter(t => {
-            // Se usuario_id for nulo, exibe sempre (receitas e despesas manuais)
+            // Se usuario_id for nulo, exibe sempre (receitas e despesas manuais do gestor)
             if (!t.usuario_id) return true;
 
             // Se usuario_id estiver preenchido, exibimos apenas:
-            // 1. Créditos de comprovantes Pix (descrição começa com "Presença de")
-            // 2. Débitos de estorno de Pix (descrição começa com "Estorno de")
+            // 1. Débitos de atletas correspondentes ao pagamento da convocação (descrição começa com "Presença de")
+            // 2. Créditos de atletas correspondentes ao estorno da presença (descrição começa com "Estorno de presença")
             const desc = t.descricao || "";
-            if (t.tipo === 'credito' && desc.startsWith("Presença de")) return true;
-            if (t.tipo === 'debito' && desc.startsWith("Estorno de")) return true;
+            if (t.tipo === 'debito' && desc.startsWith("Presença de")) return true;
+            if (t.tipo === 'credito' && desc.startsWith("Estorno de presença")) return true;
 
             return false;
           });
@@ -54,12 +54,23 @@ window.App.renderFinanceiroData = async function() {
             let sinal = 'neutro';
             let tipo = 'Geral';
             
-            if (t.tipo === 'credito') {
-              sinal = 'credito';
-              tipo = t.usuario_id ? 'Recarga Pix' : 'Receita';
-            } else if (t.tipo === 'debito') {
-              sinal = 'debito';
-              tipo = t.usuario_id ? 'Estorno Pix' : 'Despesa';
+            if (!t.usuario_id) {
+              if (t.tipo === 'credito') {
+                sinal = 'credito';
+                tipo = 'Receita';
+              } else if (t.tipo === 'debito') {
+                sinal = 'debito';
+                tipo = 'Despesa';
+              }
+            } else {
+              // Transações de atletas: invertemos o sinal para representar o caixa da pelada
+              if (t.tipo === 'debito') {
+                sinal = 'credito'; // O débito do atleta vira crédito/receita para a pelada
+                tipo = 'Presença';
+              } else if (t.tipo === 'credito') {
+                sinal = 'debito'; // O crédito/estorno para o atleta vira débito/saída para a pelada
+                tipo = 'Estorno Presença';
+              }
             }
 
             return {
