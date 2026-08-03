@@ -139,7 +139,7 @@ window.App.renderFinanceiroData = async function() {
     if (!transactions || transactions.length === 0) {
       transBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhum lançamento registrado.</td></tr>`;
     } else {
-      [...transactions].reverse().slice(0, 15).forEach(t => {
+      [...transactions].reverse().forEach(t => {
         const tr = document.createElement("tr");
         const dateFormatted = window.Utils ? window.Utils.formatDate(t.data) : (t.data ? new Date(t.data).toLocaleDateString("pt-BR") : '—');
         let valColor = "var(--text-caption)";
