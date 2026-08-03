@@ -248,7 +248,8 @@ var Convocacao = {
           pelada_id: parseInt(peladaId),
           player_id: c.id,
           status: c.status,
-          forma_pagamento: c.forma_pagamento
+          forma_pagamento: c.forma_pagamento,
+          posicao_fila: c.posicao_fila
         });
       });
       Api.saveConvocations(localConvocations);
@@ -269,6 +270,8 @@ var Convocacao = {
     var balanceEl = document.getElementById('my-balance-conv');
     var btnAdd = document.getElementById('btn-conv-add');
     var btnRemove = document.getElementById('btn-conv-remove');
+    var waitlistAlert = document.getElementById('waitlist-alert');
+    var waitlistAlertText = document.getElementById('waitlist-alert-text');
 
     if (balanceEl && user) {
       var saldo = parseFloat(user.saldo || 0);
@@ -277,7 +280,9 @@ var Convocacao = {
     }
 
     let isConfirmed = false;
+    let isWaiting = false;
     let hasSelected = false;
+    let posicaoFila = 1;
 
     if (statusEl && user && Convocacao._selectedPeladaId) {
       hasSelected = true;
@@ -290,6 +295,11 @@ var Convocacao = {
         statusEl.className = 'badge-status confirmado';
         statusEl.textContent = '✅ Confirmado';
         isConfirmed = true;
+      } else if (myConv && myConv.status === 'espera') {
+        statusEl.className = 'badge-status pendente';
+        statusEl.textContent = '⏳ Fila de Espera';
+        isWaiting = true;
+        posicaoFila = myConv.posicao_fila || 1;
       } else if (myConv && myConv.status === 'cortado') {
         statusEl.className = 'badge-status cortado';
         statusEl.textContent = '❌ Cortado';
@@ -302,9 +312,22 @@ var Convocacao = {
       statusEl.textContent = '⏳ Selecione a pelada';
     }
 
+    // Exibe ou oculta o alerta de fila de espera
+    if (waitlistAlert && waitlistAlertText) {
+      if (isWaiting && Convocacao._selectedPeladaId) {
+        var pelada = Api.getPelada(Convocacao._selectedPeladaId);
+        var limite = pelada ? (pelada.limite_atletas || pelada.max_jogadores || 20) : 20;
+        
+        waitlistAlert.style.display = 'flex';
+        waitlistAlertText.innerHTML = `Lista cheia (${limite} vagas). Você entrou na <b>fila de espera (posição #${posicaoFila})</b>.`;
+      } else {
+        waitlistAlert.style.display = 'none';
+      }
+    }
+
     // Habilita/Desabilita os botões de ação dinamicamente
     if (btnAdd) {
-      if (!hasSelected || isConfirmed) {
+      if (!hasSelected || isConfirmed || isWaiting) {
         btnAdd.disabled = true;
         btnAdd.style.opacity = "0.5";
         btnAdd.style.cursor = "not-allowed";
@@ -316,7 +339,7 @@ var Convocacao = {
     }
 
     if (btnRemove) {
-      if (!hasSelected || !isConfirmed) {
+      if (!hasSelected || (!isConfirmed && !isWaiting)) {
         btnRemove.disabled = true;
         btnRemove.style.opacity = "0.5";
         btnRemove.style.cursor = "not-allowed";
