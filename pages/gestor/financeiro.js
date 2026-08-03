@@ -36,8 +36,21 @@ window.App.renderFinanceiroData = async function() {
       try {
         const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
         if (Array.isArray(dbTx)) {
-          rawTx = dbTx.map(t => {
-            const atletaNome = t.usuario_nome || t.usuario_apelido || 'Atleta';
+          const dbTxFiltrado = dbTx.filter(t => {
+            // Se usuario_id for nulo, exibe sempre (receitas e despesas manuais)
+            if (!t.usuario_id) return true;
+
+            // Se usuario_id estiver preenchido, exibimos apenas:
+            // 1. Créditos de comprovantes Pix (descrição começa com "Presença de")
+            // 2. Débitos de estorno de Pix (descrição começa com "Estorno de")
+            const desc = t.descricao || "";
+            if (t.tipo === 'credito' && desc.startsWith("Presença de")) return true;
+            if (t.tipo === 'debito' && desc.startsWith("Estorno de")) return true;
+
+            return false;
+          });
+
+          rawTx = dbTxFiltrado.map(t => {
             let sinal = 'neutro';
             let tipo = 'Geral';
             
@@ -45,13 +58,8 @@ window.App.renderFinanceiroData = async function() {
               sinal = 'credito';
               tipo = t.usuario_id ? 'Recarga Pix' : 'Receita';
             } else if (t.tipo === 'debito') {
-              if (t.usuario_id) {
-                sinal = 'credito'; // Presença do atleta é receita para o caixa da pelada
-                tipo = 'Presença';
-              } else {
-                sinal = 'debito'; // Despesa manual sem atleta é saída de caixa
-                tipo = 'Despesa';
-              }
+              sinal = 'debito';
+              tipo = t.usuario_id ? 'Estorno Pix' : 'Despesa';
             }
 
             return {
