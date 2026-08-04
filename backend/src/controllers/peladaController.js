@@ -136,7 +136,7 @@ exports.agendarData = async (req, res) => {
         body: `A pelada do dia ${dataFmt} às ${horario} no ${local} está com convocações abertas! Confirme sua presença no app.`,
         url: '/#/jogador/convocacao'
       }).catch(e => console.warn('[Push] Erro ao disparar push de agendamento:', e.message));
-    } catch(e) {}
+    } catch (e) { }
 
     res.status(201).json({
       message: 'Partida agendada e convocações abertas com sucesso!',
@@ -327,7 +327,7 @@ exports.atualizarStatus = async (req, res) => {
           body: 'A pelada de hoje foi encerrada! Acesse o app para conferir seu desempenho, gols marcados e a tabela do ranking.',
           url: '/#/jogador/ranking'
         }).catch(e => console.warn('[Push] Erro ao disparar notificação de encerramento:', e));
-      } catch(e) {}
+      } catch (e) { }
     }
 
     res.json({ message: 'Status da pelada atualizado com sucesso!', pelada: rows[0] });
@@ -352,7 +352,7 @@ exports.atualizarLiveState = async (req, res) => {
     const selectRes = await db.query('SELECT live_state FROM peladas WHERE id = $1', [id]);
     let existing = {};
     if (selectRes.rows.length > 0 && selectRes.rows[0].live_state) {
-      try { existing = JSON.parse(selectRes.rows[0].live_state) || {}; } catch(e) {}
+      try { existing = JSON.parse(selectRes.rows[0].live_state) || {}; } catch (e) { }
     }
 
     const currentMatch = liveMatch !== undefined ? liveMatch : (existing.liveMatch || {});
@@ -387,6 +387,46 @@ exports.atualizarLiveState = async (req, res) => {
     // Atualiza cache em memória
     liveStateMap.set(String(id), updatedState);
 
+    // ===== Persistência relacional: tabelas times e times_jogadores =====
+    // Idempotente: apaga os registros antigos da pelada e recria (transacional)
+    if (Array.isArray(currentTeams) && currentTeams.length > 0) {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+
+        await client.query(
+          'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
+          [id]
+        );
+        await client.query('DELETE FROM times WHERE pelada_id = $1', [id]);
+
+        for (const [i, t] of currentTeams.entries()) {
+          const timeRes = await client.query(
+            `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
+             VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
+             RETURNING id`,
+            [id, t.nome || ('Time ' + (i + 1)), t.cor || null, t.emblema ?? null, t.emblema_url || null]
+          );
+          const timeId = timeRes.rows[0].id;
+
+          for (const p of (t.players || [])) {
+            if (p.id == null) continue;
+            await client.query(
+              'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2)',
+              [timeId, p.id]
+            );
+          }
+        }
+
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('[atualizarLiveState] Erro ao persistir times nas tabelas (não bloqueia o live_state):', e.message);
+      } finally {
+        client.release();
+      }
+    }
+
     res.json({ message: 'Estado ao vivo atualizado com sucesso no banco de dados', state: updatedState });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao salvar estado ao vivo no banco', detail: err.message });
@@ -409,7 +449,7 @@ exports.obterLiveState = async (req, res) => {
         try {
           state = JSON.parse(selectRes.rows[0].live_state);
           if (state) liveStateMap.set(String(id), state);
-        } catch(e) {}
+        } catch (e) { }
       }
     }
 
