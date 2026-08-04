@@ -264,9 +264,9 @@ function startGestorPolling() {
       return;
     }
 
-    // Se a pelada ativa NÃO estiver em andamento, limpa e NÃO recarrega confronto/fila
+    // Se a pelada ativa estiver finalizada, limpa o estado e NÃO recarrega confronto/fila
     const peladaAtivaPoll = window.App.activePelada || {};
-    if (peladaAtivaPoll.status !== "ativa") {
+    if (peladaAtivaPoll.status === "finalizada") {
       limparEstadoPartida();
       renderLiveMatchUI();
       renderWaitingQueue();
@@ -1345,7 +1345,7 @@ async function carregarLiveStateDaPelada(peladaId) {
   if (!peladaId) return;
   // Se a pelada ativa NÃO estiver em andamento (não for 'ativa'), limpa confronto/fila
   const peladaAtiva = window.App.activePelada || {};
-  if (peladaAtiva.status !== "ativa") {
+  if (peladaAtiva.status === "finalizada") {
     limparEstadoPartida();
     return;
   }
