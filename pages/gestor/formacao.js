@@ -204,6 +204,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     }
     // Puxa a lista de convocados da data selecionada
     await updateCheckinPlayersList(activePelada.id);
+    // Carrega os times salvos na nuvem (sincroniza entre dispositivos)
+    window.App.carregarTimesDoServidor(activePelada.id);
     select.onchange = async (e) => {
       if (e.target.value) {
         const sel = peladas.find(p => String(p.id) === String(e.target.value));
@@ -212,6 +214,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         // Limpa o cache local de times da data anterior para atualizar os cards
         localStorage.removeItem("teams");
         await updateCheckinPlayersList(e.target.value);
+        window.App.carregarTimesDoServidor(e.target.value);
         window.App.renderDrawnTeams();
         window.App.updateAcompanhamentoUI();
       }
