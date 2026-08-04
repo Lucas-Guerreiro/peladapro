@@ -276,31 +276,38 @@ var Ranking = {
         (goalsList || []).forEach(function(g) {
           var teamNameOfPlayer = g.teamName || (g.teamKey === 'a' ? tA : (g.teamKey === 'b' ? tB : null));
 
-          if (g.autorNome) {
-            var aNome = g.autorNome.trim();
-            matchGols[aNome] = (matchGols[aNome] || 0) + 1;
-            if (teamNameOfPlayer) playerTeamFromGoals[aNome.toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
+          // Usa autorId como chave quando disponível — evita duplicar atletas com nomes diferentes
+          var golKey = g.autorId ? String(g.autorId) : (g.autorNome ? g.autorNome.trim() : null);
+          if (golKey) {
+            var aNome = g.autorNome ? g.autorNome.trim() : golKey;
+            if (!matchGols[golKey]) matchGols[golKey] = { nome: aNome, count: 0 };
+            // Mantém o apelido mais curto/canônico (evita "Lucas Fernandes Guerreiro" vs "Lucas")
+            if (aNome.length < matchGols[golKey].nome.length) matchGols[golKey].nome = aNome;
+            matchGols[golKey].count++;
+            if (teamNameOfPlayer) playerTeamFromGoals[golKey] = teamNameOfPlayer.trim().toLowerCase();
           }
 
-          if (g.assistNome) {
-            var assNome = g.assistNome.trim();
-            matchAssists[assNome] = (matchAssists[assNome] || 0) + 1;
-            if (teamNameOfPlayer) playerTeamFromGoals[assNome.toLowerCase()] = teamNameOfPlayer.trim().toLowerCase();
+          var assKey = g.assistId ? String(g.assistId) : (g.assistNome ? g.assistNome.trim() : null);
+          if (assKey) {
+            var assNome = g.assistNome ? g.assistNome.trim() : assKey;
+            if (!matchAssists[assKey]) matchAssists[assKey] = { nome: assNome, count: 0 };
+            if (assNome.length < matchAssists[assKey].nome.length) matchAssists[assKey].nome = assNome;
+            matchAssists[assKey].count++;
+            if (teamNameOfPlayer) playerTeamFromGoals[assKey] = teamNameOfPlayer.trim().toLowerCase();
           }
         });
       });
 
       // Helper para encontrar os jogos do time de um atleta
-      function getGamesForPlayer(nomeKey) {
-        var lowerKey = nomeKey.toLowerCase();
-        
+      function getGamesForPlayer(key) {
         // 1. Tenta pelo time gravado nos gols da partida
-        var teamFromGoal = playerTeamFromGoals[lowerKey];
+        var teamFromGoal = playerTeamFromGoals[key];
         if (teamFromGoal && teamMatchesCount[teamFromGoal]) {
           return teamMatchesCount[teamFromGoal];
         }
 
-        // 2. Tenta pelo time sorteado
+        // 2. Tenta pelo time sorteado (nome do atleta)
+        var lowerKey = key.toLowerCase();
         var maxGames = 0;
         Object.keys(teamPlayersMap).forEach(function(tName) {
           if (teamPlayersMap[tName].has(lowerKey)) {
@@ -310,7 +317,7 @@ var Ranking = {
 
         if (maxGames > 0) return maxGames;
 
-        // 3. Fallback para maior número de jogos de time registrado se houver gols
+        // 3. Fallback para maior número de jogos registrado
         var allTeamGames = Object.values(teamMatchesCount);
         if (allTeamGames.length > 0) {
           return Math.max.apply(null, allTeamGames);
@@ -318,26 +325,29 @@ var Ranking = {
         return 1;
       }
 
-      Object.keys(matchGols).forEach(function(nome) {
-        scorersMap[nome] = {
-          nome: nome,
-          gols: matchGols[nome] || 0,
-          assistencias: matchAssists[nome] || 0,
-          jogos: getGamesForPlayer(nome)
+      Object.keys(matchGols).forEach(function(key) {
+        scorersMap[key] = {
+          id: key,
+          nome: matchGols[key].nome,
+          gols: matchGols[key].count || 0,
+          assistencias: matchAssists[key] ? matchAssists[key].count : 0,
+          jogos: getGamesForPlayer(key)
         };
       });
 
-      Object.keys(matchAssists).forEach(function(nome) {
-        if (!scorersMap[nome]) {
-          scorersMap[nome] = {
-            nome: nome,
-            gols: matchGols[nome] || 0,
-            assistencias: matchAssists[nome] || 0,
-            jogos: getGamesForPlayer(nome)
+      Object.keys(matchAssists).forEach(function(key) {
+        if (!scorersMap[key]) {
+          scorersMap[key] = {
+            id: key,
+            nome: matchAssists[key].nome,
+            gols: 0,
+            assistencias: matchAssists[key].count || 0,
+            jogos: getGamesForPlayer(key)
           };
         }
       });
     }
+
 
     var scorers = Object.values(scorersMap)
       .filter(function(p) { return p.gols > 0 || p.assistencias > 0; })
