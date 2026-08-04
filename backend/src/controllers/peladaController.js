@@ -388,20 +388,21 @@ exports.atualizarLiveState = async (req, res) => {
     liveStateMap.set(String(id), updatedState);
 
     // ===== Persistência relacional: tabelas times e times_jogadores =====
-    // Idempotente: apaga os registros antigos da pelada e recria (transacional)
-    if (Array.isArray(currentTeams) && currentTeams.length > 0) {
-      const client = await db.connect();
-      try {
-        await client.query('BEGIN');
-
-        await client.query(
+    // Melhor esforço usando apenas db.query (o wrapper do projeto não expõe db.connect).
+    // Fluxo idempotente: a próxima sincronização apaga e recria — falha parcial se autocorrige.
+    // Nunca derruba o live_state (erro só é logado).
+    try {
+      if (Array.isArray(currentTeams) && currentTeams.length > 0) {
+        // 1. Remove registros anteriores da pelada (evita duplicação)
+        await db.query(
           'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
           [id]
         );
-        await client.query('DELETE FROM times WHERE pelada_id = $1', [id]);
+        await db.query('DELETE FROM times WHERE pelada_id = $1', [id]);
 
+        // 2. Insere cada time e seus jogadores
         for (const [i, t] of currentTeams.entries()) {
-          const timeRes = await client.query(
+          const timeRes = await db.query(
             `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
              VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
              RETURNING id`,
@@ -411,20 +412,15 @@ exports.atualizarLiveState = async (req, res) => {
 
           for (const p of (t.players || [])) {
             if (p.id == null) continue;
-            await client.query(
+            await db.query(
               'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2)',
               [timeId, p.id]
             );
           }
         }
-
-        await client.query('COMMIT');
-      } catch (e) {
-        await client.query('ROLLBACK');
-        console.error('[atualizarLiveState] Erro ao persistir times nas tabelas (não bloqueia o live_state):', e.message);
-      } finally {
-        client.release();
       }
+    } catch (persistErr) {
+      console.error('[atualizarLiveState] Erro ao persistir times nas tabelas (não bloqueia o live_state):', persistErr.message);
     }
 
     res.json({ message: 'Estado ao vivo atualizado com sucesso no banco de dados', state: updatedState });
