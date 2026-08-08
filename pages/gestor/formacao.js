@@ -142,6 +142,7 @@ window.App.initFormacao = async function () {
   window.renameTeam = renameTeam;
   window.togglePresenter = togglePresenter;
   window.desconvocarAtleta = desconvocarAtleta;
+  window.estornarSaldoAtleta = estornarSaldoAtleta;
   window.App.updateCheckinPlayersList = updateCheckinPlayersList;
 };
 // Vinculado dinamicamente para compartilhar presenças
@@ -310,6 +311,10 @@ async function updateCheckinPlayersList(peladaId) {
             <input type="checkbox" class="toggle-input" ${c.presenca ? 'checked' : ''} onchange="togglePresenter('${c.id}', this)">
             <span class="toggle-label"></span>
           </label>
+          ${(!c.presenca && c.forma_pagamento === 'saldo' && !c.saldo_estornado)
+            ? `<button title="Estornar saldo" onclick="estornarSaldoAtleta('${c.id}', '${nameStr}')" style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; cursor:pointer; color:#16a34a; font-size:12px; padding:3px 7px; font-weight:700; white-space:nowrap; line-height:1.4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">💰 Estornar</button>`
+            : (c.saldo_estornado ? `<span style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; color:#16a34a; font-size:11px; padding:3px 7px; font-weight:700;">✓ Estornado</span>` : '')
+          }
           <button title="Desconvocar atleta" onclick="desconvocarAtleta('${c.id}', '${nameStr}')" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
         </div>
       `;
@@ -419,6 +424,33 @@ async function desconvocarAtleta(atletaId, atletaNome) {
     await updateCheckinPlayersList(peladaId);
   } catch (err) {
     console.error("[desconvocarAtleta]", err);
+    window.App.showToast("Erro ao conectar no servidor.", "error");
+  }
+}
+async function estornarSaldoAtleta(atletaId, atletaNome) {
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!peladaId) { window.App.showToast("Selecione uma pelada primeiro.", "error"); return; }
+  if (!confirm(`Devolver o saldo de ${atletaNome}?\nO valor da pelada será creditado de volta na carteira do atleta.`)) return;
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/convocacoes/estornar-saldo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({
+        pelada_id: parseInt(peladaId),
+        usuario_id: parseInt(atletaId)
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      window.App.showToast(data.error || "Erro ao estornar saldo.", "error");
+      return;
+    }
+    const valorFmt = data.valor ? `R$ ${parseFloat(data.valor).toFixed(2).replace('.', ',')}` : '';
+    window.App.showToast(`Saldo de ${atletaNome} estornado! ${valorFmt} devolvidos.`, "success");
+    await updateCheckinPlayersList(peladaId);
+  } catch (err) {
+    console.error("[estornarSaldoAtleta]", err);
     window.App.showToast("Erro ao conectar no servidor.", "error");
   }
 }

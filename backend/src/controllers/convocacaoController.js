@@ -297,7 +297,8 @@ exports.listarConvocados = async (req, res) => {
   const { peladaId } = req.params;
   try {
     const query = `
-      SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.foto, c.status, c.forma_pagamento, c.data_convocacao, c.presenca, c.posicao_fila
+      SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.foto, u.saldo,
+             c.status, c.forma_pagamento, c.data_convocacao, c.presenca, c.posicao_fila, c.saldo_estornado
       FROM convocacoes c
       JOIN usuarios u ON c.usuario_id = u.id
       WHERE c.pelada_id = $1
@@ -577,5 +578,95 @@ exports.alterarLimite = async (req, res) => {
     res.json({ success: true, limite });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao alterar limite.', detail: err.message });
+  }
+};
+
+// --- POST /api/convocacoes/estornar-saldo — Gestor estorna o saldo de um atleta ausente ---
+exports.estornarSaldo = async (req, res) => {
+  const gestorTipo = req.usuarioTipo;
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem estornar saldo.' });
+  }
+
+  const { pelada_id, usuario_id } = req.body;
+  if (!pelada_id || !usuario_id) {
+    return res.status(400).json({ error: 'pelada_id e usuario_id são obrigatórios.' });
+  }
+
+  let client;
+  try {
+    // Garante que a coluna saldo_estornado existe (idempotente)
+    await db.query('ALTER TABLE convocacoes ADD COLUMN IF NOT EXISTS saldo_estornado BOOLEAN DEFAULT FALSE');
+
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Busca a convocação e verifica condições
+    const { rows: conv } = await client.query(
+      `SELECT c.forma_pagamento, c.presenca, c.saldo_estornado,
+              p.grupo_id, p.data AS data_pelada,
+              COALESCE(p.valor_convocacao, cfg.valor_convocacao, 20.00) AS custo
+       FROM convocacoes c
+       JOIN peladas p ON p.id = c.pelada_id
+       LEFT JOIN configs cfg ON cfg.grupo_id = p.grupo_id
+       WHERE c.pelada_id = $1 AND c.usuario_id = $2`,
+      [pelada_id, usuario_id]
+    );
+
+    if (conv.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Convocação não encontrada.' });
+    }
+
+    const { forma_pagamento, presenca, saldo_estornado, grupo_id, data_pelada, custo } = conv[0];
+    const valorCusto = parseFloat(custo || 20.00);
+
+    if (forma_pagamento !== 'saldo') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Somente pagamentos por saldo podem ser estornados aqui.' });
+    }
+
+    if (presenca) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'O atleta marcou presença — não é possível estornar.' });
+    }
+
+    if (saldo_estornado) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'O saldo deste atleta já foi estornado anteriormente.' });
+    }
+
+    // 2. Credita o valor de volta no saldo do atleta
+    await client.query(
+      'UPDATE usuarios SET saldo = COALESCE(saldo, 0) + $1 WHERE id = $2',
+      [valorCusto, usuario_id]
+    );
+
+    // 3. Registra transação de crédito no histórico
+    if (grupo_id) {
+      const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+      const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
+      const dataFmt = formatarDataDDMM(data_pelada);
+      await client.query(
+        `INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+         VALUES ($1, $2, $3, 'credito', $4)`,
+        [usuario_id, grupo_id, valorCusto, `Estorno de ausência de ${atletaNome} no dia ${dataFmt}`]
+      );
+    }
+
+    // 4. Marca a convocação como estornada (evita duplo estorno)
+    await client.query(
+      'UPDATE convocacoes SET saldo_estornado = TRUE WHERE pelada_id = $1 AND usuario_id = $2',
+      [pelada_id, usuario_id]
+    );
+
+    await client.query('COMMIT');
+    res.json({ message: 'Saldo estornado com sucesso!', valor: valorCusto });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[estornarSaldo]', err);
+    res.status(500).json({ error: 'Erro ao estornar saldo.', detail: err.message });
+  } finally {
+    if (client) client.release();
   }
 };
