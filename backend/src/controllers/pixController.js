@@ -72,7 +72,31 @@ exports.enviarComprovante = async (req, res) => {
     // a. Trava de Duplicidade pelo E2E ID do Pix
     const checkE2E = await client.query('SELECT id, status FROM comprovantes_pix WHERE e2e_id = $1', [cleanE2E]);
     if (checkE2E.rows.length > 0) {
-      throw new Error('Este comprovante Pix já foi utilizado e cadastrado no sistema.');
+      // E2E oficial do Banco Central (E + 31 chars): bloqueia sempre — é único por lei
+      const isE2EOficial = /^E[A-Z0-9]{31}$/.test(cleanE2E);
+      // E2E gerado por heurística (prefixo PIX_ ou hash genérico): pode colidir entre imagens diferentes.
+      // Nesse caso, só bloqueia se o MESMO USUÁRIO enviou um comprovante com o MESMO VALOR nas últimas 24h.
+      const isHeuristico = cleanE2E.startsWith('PIX_') || cleanE2E.length < 32;
+      if (isE2EOficial) {
+        throw new Error('Este comprovante Pix já foi utilizado e cadastrado no sistema.');
+      } else if (isHeuristico) {
+        const checkDuplaUsario = await client.query(
+          `SELECT id FROM comprovantes_pix
+           WHERE atleta_email = $1 AND valor = $2 AND created_at >= NOW() - INTERVAL '24 hours'`,
+          [atleta_email, valorNum]
+        );
+        if (checkDuplaUsario.rows.length > 0) {
+          throw new Error(
+            'Identificamos um comprovante com o mesmo valor já enviado por você nas últimas 24 horas. ' +
+            'Se este é um novo pagamento, aguarde ou entre em contato com o gestor.'
+          );
+        }
+        // Hash colidiu mas é outro atleta ou outro valor: permite prosseguir (sobrescreve a verificação)
+        // O sistema aceita e registra normalmente.
+      } else {
+        // Código de banco com confiança média: bloqueia normalmente
+        throw new Error('Este comprovante Pix já foi utilizado e cadastrado no sistema.');
+      }
     }
 
     // b. Registrar comprovante na tabela comprovantes_pix

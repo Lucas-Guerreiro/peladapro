@@ -146,32 +146,36 @@ window.PixOCR = {
 
     // 2. Extrair Código E2E / Autenticação
     let e2e_id = null;
+    let e2eConfianca = 'alta'; // 'alta' = E2E oficial, 'media' = padrão banco, 'baixa' = fallback
 
     // Padrão E2E oficial do Banco Central (Começa com E + 31 caracteres alfanuméricos)
     const matchE2E = upperText.match(/E[A-Z0-9]{31}/);
     if (matchE2E) {
       e2e_id = matchE2E[0];
+      e2eConfianca = 'alta';
     } else {
       // Outros termos comuns de Autenticação / TXID nos bancos brasileiros (Nubank, Itaú, Bradesco, Inter, Caixa, BB, Santander, etc.)
       const matchAuth = upperText.match(/(?:AUTENTICA[ÇC][AÃ]O|ID DA TRANSA[ÇC][AÃ]O|ID TRANSA[ÇC][AÃ]O|CÓDIGO DA OPERA[ÇC][AÃ]O|CONTROLE|TXID|PROTOCOLO|COMPROVANTE|VIA DO CLIENTE)[:\s#]+([A-Z0-9-]{8,45})/i);
       if (matchAuth && matchAuth[1] && matchAuth[1].replace(/[^A-Z0-9]/g, '').length >= 8) {
         e2e_id = matchAuth[1].replace(/[^A-Z0-9]/g, '');
+        e2eConfianca = 'media';
       } else {
-        // Busca qualquer hash de 16 a 40 caracteres contínuos no comprovante
-        const matchGenericHash = upperText.match(/[A-Z0-9]{16,40}/);
-        if (matchGenericHash) {
-          e2e_id = matchGenericHash[0];
-        } else {
-          // Fallback determinístico: se o OCR for ruidoso mas houver texto legível, gera um ID único baseado na assinatura do texto
-          const cleanChars = normText.replace(/[^a-z0-9]/g, '');
-          if (cleanChars.length >= 8) {
-            let hash = 0;
-            for (let i = 0; i < cleanChars.length; i++) {
-              hash = ((hash << 5) - hash) + cleanChars.charCodeAt(i);
-              hash |= 0;
-            }
-            e2e_id = 'PIX_' + Math.abs(hash).toString(36).toUpperCase() + '_' + cleanChars.substring(0, 8).toUpperCase();
+        // Tenta extrair data e hora do comprovante para incluir no hash (aumenta unicidade)
+        const matchDataHora = text.match(/(\d{2})[\/-](\d{2})[\/-](\d{2,4})[\s,]+(?:às?|as|,)?[\s]*(\d{2}):(\d{2})/);
+        const sufixoTempo = matchDataHora
+          ? `${matchDataHora[1]}${matchDataHora[2]}${matchDataHora[5]}${matchDataHora[4]}` // DDMMmmHH
+          : String(Date.now()).slice(-6);
+
+        // Fallback determinístico: gera ID único baseado na assinatura do texto + sufixo temporal
+        const cleanChars = normText.replace(/[^a-z0-9]/g, '');
+        if (cleanChars.length >= 8) {
+          let hash = 0;
+          for (let i = 0; i < cleanChars.length; i++) {
+            hash = ((hash << 5) - hash) + cleanChars.charCodeAt(i);
+            hash |= 0;
           }
+          e2e_id = 'PIX_' + Math.abs(hash).toString(36).toUpperCase() + '_' + sufixoTempo + '_' + cleanChars.substring(0, 6).toUpperCase();
+          e2eConfianca = 'baixa';
         }
       }
     }
@@ -195,6 +199,7 @@ window.PixOCR = {
     return {
       rawText,
       e2e_id,
+      e2eConfianca: e2eConfianca || 'alta',
       isAgendamento,
       valor,
       beneficiario
@@ -207,6 +212,23 @@ window.PixOCR = {
   async processReceiptFile(file, expectedBeneficiario = '', expectedValor = 0) {
     const rawText = await this.extractText(file);
     const parsed = this.parseText(rawText);
+    const normRawText = this._normalizeStr(rawText);
+
+    // Validação 0: Confirmar que o arquivo parece ser um comprovante Pix real
+    // Pelo menos 2 dos termos abaixo devem estar presentes no texto extraído.
+    const termosComprovante = [
+      'pix', 'transferencia', 'transferência', 'pagamento', 'recebido', 'enviado',
+      'valor', 'autenticacao', 'autenticação', 'autenticação', 'r$', 'reais',
+      'banco', 'agencia', 'agência', 'conta', 'cpf', 'cnpj', 'chave',
+      'recebedor', 'favorecido', 'destinatario', 'destinatário', 'beneficiario', 'beneficiário'
+    ];
+    const termosEncontrados = termosComprovante.filter(t => normRawText.includes(t));
+    if (termosEncontrados.length < 2) {
+      throw new Error(
+        'A imagem enviada não parece ser um comprovante Pix válido. ' +
+        'Envie a captura de tela do comprovante diretamente do app do seu banco.'
+      );
+    }
 
     // Validação 1: Proibir Agendamentos
     if (parsed.isAgendamento) {
@@ -217,8 +239,6 @@ window.PixOCR = {
     if (!parsed.e2e_id) {
       throw new Error('Não foi possível identificar o Código de Autenticação no comprovante. Verifique a qualidade da imagem.');
     }
-
-    const normRawText = this._normalizeStr(rawText);
 
     // Validação 3: Conferir Apenas o Nome do Beneficiário (se configurado pelo gestor)
     if (expectedBeneficiario && expectedBeneficiario.trim()) {
