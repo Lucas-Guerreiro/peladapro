@@ -296,9 +296,13 @@ exports.remover = async (req, res) => {
 exports.listarConvocados = async (req, res) => {
   const { peladaId } = req.params;
   try {
+    // Garante que a coluna saldo_estornado existe (idempotente — só executa DDL se necessário)
+    await db.query('ALTER TABLE convocacoes ADD COLUMN IF NOT EXISTS saldo_estornado BOOLEAN DEFAULT FALSE');
+
     const query = `
       SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.foto, u.saldo,
-             c.status, c.forma_pagamento, c.data_convocacao, c.presenca, c.posicao_fila, c.saldo_estornado
+             c.status, c.forma_pagamento, c.data_convocacao, c.presenca, c.posicao_fila,
+             COALESCE(c.saldo_estornado, FALSE) AS saldo_estornado
       FROM convocacoes c
       JOIN usuarios u ON c.usuario_id = u.id
       WHERE c.pelada_id = $1
