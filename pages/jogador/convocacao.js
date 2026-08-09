@@ -217,9 +217,9 @@ var Convocacao = {
         var avatarHTML = '';
         var hasPhoto = c.foto || c.photo;
         if (hasPhoto) {
-          avatarHTML = '<img src="' + hasPhoto + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2.5px solid var(--secondary); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
+          avatarHTML = '<img src="' + hasPhoto + '" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 3px solid var(--secondary); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
         } else {
-          avatarHTML = '<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
+          avatarHTML = '<div style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 24px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
             nome.charAt(0).toUpperCase() +
             '</div>';
         }

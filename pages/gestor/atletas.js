@@ -67,7 +67,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
         item.innerHTML = `
           <div class="athlete-info">
-            <div style="width: 48px; height: 48px; border-radius:50%; background-color: var(--accent); color: #FFF; display:flex; align-items:center; justify-content:center; font-family: 'Inter', sans-serif; font-size:18px;">
+            <div style="width: 64px; height: 64px; border-radius:50%; background-color: var(--accent); color: #FFF; display:flex; align-items:center; justify-content:center; font-family: 'Inter', sans-serif; font-size:24px; flex-shrink: 0;">
               ${initials}
             </div>
             <div class="athlete-details">
@@ -137,8 +137,8 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
     const estrelasText = p.autoavaliacao !== null && p.autoavaliacao !== undefined ? `${p.autoavaliacao} estrelas` : 'N/A';
 
     const avatarHTML = p.foto 
-      ? `<img src="${p.foto}" class="athlete-avatar" alt="${p.nome}" style="width: 48px; height: 48px; min-width: 48px; min-height: 48px; max-width: 48px; max-height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1;" />`
-      : `<div class="athlete-avatar-placeholder" style="width: 48px; height: 48px; min-width: 48px; min-height: 48px; max-width: 48px; max-height: 48px; border-radius: 50%; background-color: var(--primary); color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 18px; flex-shrink: 0; aspect-ratio: 1/1;">${initials}</div>`;
+      ? `<img src="${p.foto}" class="athlete-avatar" alt="${p.nome}" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1;" />`
+      : `<div class="athlete-avatar-placeholder" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; background-color: var(--primary); color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 24px; flex-shrink: 0; aspect-ratio: 1/1;">${initials}</div>`;
 
     card.innerHTML = `
       <div class="athlete-info">

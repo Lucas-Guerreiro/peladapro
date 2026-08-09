@@ -321,8 +321,8 @@ async function updateCheckinPlayersList(peladaId) {
       const fotoUrl = c.foto || (pLocal && pLocal.foto) || null;
       const initial = nameStr.charAt(0).toUpperCase();
       const avatarHtml = fotoUrl
-        ? `<img src="${fotoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;" alt="${nameStr}">`
-        : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;">${initial}</div>`;
+        ? `<img src="${fotoUrl}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;" alt="${nameStr}">`
+        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 24px; border: 3px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;">${initial}</div>`;
       div.innerHTML = `
         <div style="display:flex; align-items:center; gap:12px; flex:1;">
           ${avatarHtml}
@@ -604,8 +604,8 @@ window.App.renderDrawnTeams = async function () {
       const nameStr = p.apelido || p.nome || 'Atleta';
       const initial = nameStr.charAt(0).toUpperCase();
       const avatarHtml = fotoUrl
-        ? `<img src="${fotoUrl}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2.5px solid ${team.cor || '#0284C7'}; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="${nameStr}">`
-        : `<div style="width: 44px; height: 44px; border-radius: 50%; background: ${team.cor || '#0284C7'}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${initial}</div>`;
+        ? `<img src="${fotoUrl}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid ${team.cor || '#0284C7'}; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="${nameStr}">`
+        : `<div style="width: 60px; height: 60px; border-radius: 50%; background: ${team.cor || '#0284C7'}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; border: 3px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${initial}</div>`;
       pDiv.innerHTML = `
         <div style="display: flex; align-items: center; gap: 8px;">
           ${avatarHtml}

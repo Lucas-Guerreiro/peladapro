@@ -589,7 +589,7 @@
 
 .card-athlete { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius-card); background-color: var(--surface); transition: var(--transition); gap: 16px; }
 .athlete-info { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
-.athlete-avatar, .athlete-avatar-placeholder { width: 48px !important; height: 48px !important; min-width: 48px !important; min-height: 48px !important; max-width: 48px !important; max-height: 48px !important; border-radius: 50% !important; object-fit: cover !important; border: 2px solid var(--border-color); flex-shrink: 0 !important; aspect-ratio: 1/1 !important; }
+.athlete-avatar, .athlete-avatar-placeholder { width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; border: 2.5px solid var(--border-color); flex-shrink: 0 !important; aspect-ratio: 1/1 !important; font-size: 24px !important; }
 .athlete-details { flex: 1; min-width: 0; }
 .athlete-details h4 { font-size: 16px; font-weight: 600; color: var(--text-heading); margin: 0; }
 .card-athlete-right { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }

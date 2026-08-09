@@ -389,8 +389,8 @@ var Ranking = {
       var initial = (p.nome || '?').charAt(0).toUpperCase();
 
       var avatarHTML = fotoUrl
-        ? '<img src="' + fotoUrl + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid #10B981; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + p.nome + '">'
-        : '<div style="width: 48px; height: 48px; border-radius: 50%; background: #10B981; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
+        ? '<img src="' + fotoUrl + '" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #10B981; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + p.nome + '">'
+        : '<div style="width: 64px; height: 64px; border-radius: 50%; background: #10B981; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; border: 3px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
 
       html += '<tr>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +

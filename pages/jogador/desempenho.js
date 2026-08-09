@@ -305,8 +305,8 @@ var Desempenho = {
       var initial = (p.nome || '?').charAt(0).toUpperCase();
 
       var avatarHTML = fotoUrl
-        ? '<img src="' + fotoUrl + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid #D97706; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + p.nome + '">'
-        : '<div style="width: 48px; height: 48px; border-radius: 50%; background: #D97706; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
+        ? '<img src="' + fotoUrl + '" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #D97706; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + p.nome + '">'
+        : '<div style="width: 64px; height: 64px; border-radius: 50%; background: #D97706; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; border: 3px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
 
       var ptsFmt = p.pontos.toFixed(1).replace('.', ',');
       html += '<tr' + (p.isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
@@ -354,8 +354,8 @@ var Desempenho = {
       var initial = (name || '?').charAt(0).toUpperCase();
 
       var avatarHTML = fotoUrl
-        ? '<img src="' + fotoUrl + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid #0284C7; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + name + '">'
-        : '<div style="width: 48px; height: 48px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; border: 2.5px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
+        ? '<img src="' + fotoUrl + '" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #0284C7; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + name + '">'
+        : '<div style="width: 64px; height: 64px; border-radius: 50%; background: #0284C7; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; border: 3px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
 
       html += '<tr' + (isMe ? ' style="background: rgba(0,230,118,0.05);"' : '') + '>' +
         '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
