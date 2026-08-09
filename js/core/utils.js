@@ -150,6 +150,53 @@ const Utils = {
     } catch (e) {
       return null;
     }
+  },
+
+  /**
+   * Baixa a imagem (Base64 ou URL remota) diretamente para o dispositivo do usuário.
+   */
+  async downloadImage(imageUrl, athleteName = 'Atleta') {
+    if (!imageUrl) {
+      if (window.App && window.App.showToast) window.App.showToast("Nenhuma foto disponível para download.", "warning");
+      return;
+    }
+
+    try {
+      if (window.App && window.App.showToast) window.App.showToast(`Iniciando download da foto de ${athleteName}...`, "info");
+      const cleanName = (athleteName || "Atleta").replace(/[^a-zA-Z0-9_]/g, "_");
+
+      if (imageUrl.startsWith("data:")) {
+        const mime = imageUrl.split(";")[0].split(":")[1] || "image/png";
+        const ext = mime.split("/")[1] || "png";
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.download = `Foto_${cleanName}.${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        if (window.App && window.App.showToast) window.App.showToast(`Foto de ${athleteName} baixada com sucesso! 📥`, "success");
+        return;
+      }
+
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const ext = (blob.type && blob.type.includes("/")) ? blob.type.split("/")[1] : "jpg";
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `Foto_${cleanName}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+
+      if (window.App && window.App.showToast) window.App.showToast(`Foto de ${athleteName} baixada com sucesso! 📥`, "success");
+    } catch (err) {
+      console.error("[downloadImage]", err);
+      window.open(imageUrl, "_blank");
+      if (window.App && window.App.showToast) window.App.showToast("Foto aberta em nova aba para salvar.", "info");
+    }
   }
 };
 

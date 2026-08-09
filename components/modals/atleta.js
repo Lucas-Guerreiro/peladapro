@@ -108,15 +108,23 @@ window.App.initModalAtleta = function (data = {}) {
       }
 
       photoBase64 = p.foto || p.photo || "";
+      const btnDownloadModalPhoto = document.getElementById("btn-download-modal-photo");
       if (photoPreview) {
-        if (photoBase64) {
+        if (photoBase64 && !photoBase64.includes("unsplash.com")) {
           photoPreview.style.backgroundImage = `url('${photoBase64}')`;
+          if (btnDownloadModalPhoto) {
+            btnDownloadModalPhoto.style.display = "inline-flex";
+            btnDownloadModalPhoto.onclick = () => window.Utils.downloadImage(photoBase64, p.nome || "Atleta");
+          }
         } else {
           photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
+          if (btnDownloadModalPhoto) btnDownloadModalPhoto.style.display = "none";
         }
       }
     }
   } else {
+    const btnDownloadModalPhoto = document.getElementById("btn-download-modal-photo");
+    if (btnDownloadModalPhoto) btnDownloadModalPhoto.style.display = "none";
     if (title) title.textContent = "Cadastrar Novo Atleta";
     if (formId) formId.value = "";
     if (name) name.value = "";

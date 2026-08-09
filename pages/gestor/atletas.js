@@ -137,8 +137,12 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
     const estrelasText = p.autoavaliacao !== null && p.autoavaliacao !== undefined ? `${p.autoavaliacao} estrelas` : 'N/A';
 
     const avatarHTML = p.foto 
-      ? `<img src="${p.foto}" class="athlete-avatar" alt="${p.nome}" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1;" />`
+      ? `<img src="${p.foto}" class="athlete-avatar btn-download-avatar" alt="${p.nome}" title="Clique para baixar foto do perfil" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1; cursor: pointer; transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" />`
       : `<div class="athlete-avatar-placeholder" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; background-color: var(--primary); color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 24px; flex-shrink: 0; aspect-ratio: 1/1;">${initials}</div>`;
+
+    const downloadBtnHTML = p.foto 
+      ? `<button class="btn btn-sm btn-outline btn-download-athlete-photo" data-id="${p.id}" title="Baixar foto do perfil">📷 Baixar</button>` 
+      : ``;
 
     card.innerHTML = `
       <div class="athlete-info">
@@ -154,6 +158,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
           <strong style="color: ${balanceColor}; font-size:15px;">R$ ${balanceText}</strong>
         </div>
         <div class="athlete-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
+          ${downloadBtnHTML}
           <button class="btn btn-sm btn-secondary btn-saldo-athlete" data-id="${p.id}" title="Lançar Crédito / Patrocínio / Ajuste">💰 Saldo</button>
           <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}" title="Editar Atleta">✏️ Editar</button>
           <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}" title="Excluir Atleta">🗑️ Excluir</button>
@@ -161,6 +166,14 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
       </div>
     `;
     
+    if (p.foto) {
+      const avatarImg = card.querySelector(".btn-download-avatar");
+      if (avatarImg) avatarImg.onclick = () => window.Utils.downloadImage(p.foto, p.nome);
+
+      const downloadBtn = card.querySelector(".btn-download-athlete-photo");
+      if (downloadBtn) downloadBtn.onclick = () => window.Utils.downloadImage(p.foto, p.nome);
+    }
+
     card.querySelector(".btn-saldo-athlete").onclick = () => {
       if (window.manualFinanceSettlement) window.manualFinanceSettlement(p.id);
     };

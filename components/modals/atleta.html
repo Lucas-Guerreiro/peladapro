@@ -29,7 +29,10 @@
         " id="athlete-photo-overlay">📷</div>
       </div>
       <input type="file" id="athlete-photo-input" accept="image/*" style="display: none;">
-      <span class="text-inter" style="font-size: 12px; color: var(--text-caption);">Clique na foto para alterar</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <span class="text-inter" style="font-size: 12px; color: var(--text-caption);">Clique na foto para alterar</span>
+        <button type="button" id="btn-download-modal-photo" class="btn btn-sm btn-outline" style="font-size: 11px; padding: 3px 8px; display: none;" title="Baixar foto em alta resolução">📥 Baixar Foto</button>
+      </div>
     </div>
 
     <!-- NOME E APELIDO -->
