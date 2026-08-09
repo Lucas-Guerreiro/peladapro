@@ -153,13 +153,17 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
           <span style="font-size:11px; display:block; text-transform:uppercase; color: var(--text-caption); font-weight: 700;">Saldo</span>
           <strong style="color: ${balanceColor}; font-size:15px;">R$ ${balanceText}</strong>
         </div>
-        <div class="athlete-actions">
+        <div class="athlete-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-secondary btn-saldo-athlete" data-id="${p.id}" title="Lançar Crédito / Patrocínio / Ajuste">💰 Saldo</button>
           <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}" title="Editar Atleta">✏️ Editar</button>
           <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}" title="Excluir Atleta">🗑️ Excluir</button>
         </div>
       </div>
     `;
     
+    card.querySelector(".btn-saldo-athlete").onclick = () => {
+      if (window.manualFinanceSettlement) window.manualFinanceSettlement(p.id);
+    };
     card.querySelector(".btn-edit-athlete").onclick = () => window.App.openModal("atleta", { id: p.id });
     card.querySelector(".btn-delete-athlete").onclick = () => deleteAthlete(p.id, p.nome);
 

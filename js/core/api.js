@@ -330,7 +330,7 @@ const Api = {
     return res.json();
   },
 
-  async ajustarSaldoAtleta(atletaId, grupoId, valor) {
+  async ajustarSaldoAtleta(atletaId, grupoId, valor, descricao = '') {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Token não encontrado' };
     const res = await fetch(`/api/peladas/atleta/${atletaId}/ajuste-saldo`, {
@@ -339,7 +339,7 @@ const Api = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ grupoId, valor })
+      body: JSON.stringify({ grupoId, valor, descricao })
     });
     return res.json();
   },

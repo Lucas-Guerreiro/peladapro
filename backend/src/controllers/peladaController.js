@@ -527,7 +527,7 @@ exports.criarTransacaoManual = async (req, res) => {
 
 exports.ajustarSaldoAtleta = async (req, res) => {
   const { atletaId } = req.params;
-  const { grupoId, valor } = req.body;
+  const { grupoId, valor, descricao } = req.body;
   const gestorTipo = req.usuarioTipo;
 
   if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
@@ -546,12 +546,12 @@ exports.ajustarSaldoAtleta = async (req, res) => {
     await client.query('BEGIN');
 
     // 1. Obter saldo atual do atleta
-    const userRes = await client.query('SELECT saldo, nome FROM usuarios WHERE id = $1', [atletaId]);
+    const userRes = await client.query('SELECT saldo, nome, apelido FROM usuarios WHERE id = $1', [atletaId]);
     if (userRes.rows.length === 0) {
       throw new Error('Atleta não encontrado.');
     }
     const currentSaldo = parseFloat(userRes.rows[0].saldo || 0);
-    const atletaNome = userRes.rows[0].nome;
+    const atletaNome = userRes.rows[0].apelido || userRes.rows[0].nome || 'Atleta';
     const novoSaldo = currentSaldo + amt;
 
     // 2. Atualizar saldo do atleta
@@ -559,7 +559,10 @@ exports.ajustarSaldoAtleta = async (req, res) => {
 
     // 3. Inserir transação de acerto no banco
     const tipoTx = amt > 0 ? 'credito' : 'debito';
-    const descTx = `Acerto manual: ${atletaNome}`;
+    const descTx = (descricao && String(descricao).trim())
+      ? String(descricao).trim()
+      : `Acerto manual: ${atletaNome}`;
+
     await client.query(
       `INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao, data)
        VALUES ($1, $2, $3, $4, $5, NOW())`,
@@ -567,7 +570,7 @@ exports.ajustarSaldoAtleta = async (req, res) => {
     );
 
     await client.query('COMMIT');
-    res.json({ message: 'Saldo ajustado com sucesso!', novoSaldo });
+    res.json({ message: 'Saldo ajustado com sucesso!', novoSaldo, descricao: descTx });
   } catch (err) {
     if (client) await client.query('ROLLBACK');
     console.error('[ajustarSaldoAtleta]', err);
