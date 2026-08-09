@@ -605,6 +605,7 @@ function renderLiveMatchUI() {
   }
 
   updateTimerDisplay();
+  renderTournamentUI();
 }
 
 function limparEstadoPartida() {
@@ -911,100 +912,173 @@ async function handleFinishMatch() {
     window.App.liveMatch.consecutiveWinsA = window.App.liveMatch.consecutiveWinsA || 0;
     window.App.liveMatch.consecutiveWinsB = window.App.liveMatch.consecutiveWinsB || 0;
 
-    if (isTie) {
-      // Em caso de empate, zera o contador do time que sair
-      if (tieRule === "saem_ambos") {
-        window.App.liveMatch.consecutiveWinsA = 0;
-        window.App.liveMatch.consecutiveWinsB = 0;
+    // =========================================================================
+    // LÓGICA DE AVANÇO DE PARTIDA: MODO TORNEIO VS PELADA NORMAL
+    // =========================================================================
+    const tState = window.App.liveMatch.tournamentState || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null);
 
-        if (window.App.waitingQueue.length >= 2) {
-          const nextA = window.App.waitingQueue.shift();
-          const nextB = window.App.waitingQueue.shift();
-          window.App.waitingQueue.push(teamAName, teamBName);
-          window.App.liveMatch.teamA = nextA;
-          window.App.liveMatch.teamB = nextB;
+    if ((peladaAtiva.modo === 'torneio' || tState) && window.TournamentEngine && tState) {
+      let currentMatchObj = null;
+
+      // 1. Encontra a partida atual no torneio
+      if (tState.fase === 'grupo') {
+        currentMatchObj = (tState.matches || []).find(m => m.status !== 'encerrado');
+      } else if (tState.fase === 'mata_mata') {
+        currentMatchObj = (tState.knockoutMatches || []).find(m => m.status !== 'encerrado');
+      } else if (tState.fase === 'finais') {
+        currentMatchObj = (tState.finalsMatches || []).find(m => m.status !== 'encerrado');
+      }
+
+      if (currentMatchObj) {
+        currentMatchObj.golsA = scoreA;
+        currentMatchObj.golsB = scoreB;
+        currentMatchObj.status = 'encerrado';
+        currentMatchObj.vencedor = scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : (currentMatchObj.teamA));
+      }
+
+      // 2. Recalcula classificação se estiver na fase de grupos
+      if (tState.fase === 'grupo') {
+        tState.standings = window.TournamentEngine.calculateStandings(tState.teams, tState.matches);
+
+        // Verifica se TODOS os jogos da fase de grupos terminaram
+        const allGroupDone = (tState.matches || []).length > 0 && tState.matches.every(m => m.status === 'encerrado');
+        if (allGroupDone) {
+          tState.fase = 'mata_mata';
+          tState.knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
+          window.App.showToast("🏆 Fase de Grupos encerrada! Semifinais geradas!", "success");
         }
-      } else if (tieRule === "time_entrando") {
-        // Time B (ou o que estava desafiando) sai, o que estava na fila entra no lugar dele
-        window.App.liveMatch.consecutiveWinsB = 0;
-        if (window.App.waitingQueue.length > 0) {
-          const next = window.App.waitingQueue.shift();
-          window.App.waitingQueue.push(teamBName);
-          window.App.liveMatch.teamB = next;
+      }
+
+      if (tState.fase === 'mata_mata') {
+        const allKnockoutDone = (tState.knockoutMatches || []).length > 0 && tState.knockoutMatches.every(m => m.status === 'encerrado');
+        if (allKnockoutDone) {
+          tState.fase = 'finais';
+          tState.finalsMatches = window.TournamentEngine.generateFinalsMatches(tState.knockoutMatches, tState.standings);
+          window.App.showToast("🔥 Semifinais encerradas! Disputa de 3º Lugar e Grande Final geradas!", "success");
         }
+      }
+
+      if (tState.fase === 'finais') {
+        const allFinalsDone = (tState.finalsMatches || []).length > 0 && tState.finalsMatches.every(m => m.status === 'encerrado');
+        if (allFinalsDone) {
+          tState.fase = 'finalizado';
+          tState.podium = window.TournamentEngine.determinePodium(tState.finalsMatches, tState.standings);
+          window.App.showToast("🎉 MINI TORNEIO FINALIZADO! Confira os Campeões!", "success");
+        }
+      }
+
+      // 3. Define a PRÓXIMA partida a ser jogada no liveMatch
+      let nextMatchObj = null;
+      if (tState.fase === 'grupo') {
+        nextMatchObj = (tState.matches || []).find(m => m.status !== 'encerrado');
+      } else if (tState.fase === 'mata_mata') {
+        nextMatchObj = (tState.knockoutMatches || []).find(m => m.status !== 'encerrado');
+      } else if (tState.fase === 'finais') {
+        nextMatchObj = (tState.finalsMatches || []).find(m => m.status !== 'encerrado');
+      }
+
+      if (nextMatchObj) {
+        nextMatchObj.status = 'em_andamento';
+        window.App.liveMatch.teamA = nextMatchObj.teamA;
+        window.App.liveMatch.teamB = nextMatchObj.teamB;
+        window.App.liveMatch.tournamentMatchId = nextMatchObj.id;
+      } else if (tState.podium) {
+        window.App.liveMatch.teamA = tState.podium.primeiro || "Campeão";
+        window.App.liveMatch.teamB = tState.podium.segundo || "Vice";
+      }
+
+      window.App.liveMatch.tournamentState = tState;
+      try { localStorage.setItem("tournamentState", JSON.stringify(tState)); } catch (e) { }
+      if (peladaId) {
+        try { localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState)); } catch (e) { }
       }
     } else {
-      // Incrementa o contador do vencedor e zera o do perdedor
-      if (winner === teamAName) {
-        window.App.liveMatch.consecutiveWinsA++;
-        window.App.liveMatch.consecutiveWinsB = 0;
-      } else {
-        window.App.liveMatch.consecutiveWinsB++;
-        window.App.liveMatch.consecutiveWinsA = 0;
-      }
-
-      const currentWins = winner === teamAName ? window.App.liveMatch.consecutiveWinsA : window.App.liveMatch.consecutiveWinsB;
-
-      // Se o vencedor bateu o limite de vitórias permitidas seguidas
-      if (currentWins >= winsLimit) {
-        window.App.showToast(`O ${winner} atingiu o limite de ${winsLimit} vitórias consecutivas e vai sair para revezamento!`, "info");
-
-        // Zera o contador do vencedor que está saindo
-        if (winner === teamAName) {
+      // -----------------------------------------------------------------------
+      // LÓGICA DE REVEZAMENTO PELADA NORMAL (REINA CAMPO)
+      // -----------------------------------------------------------------------
+      if (isTie) {
+        if (tieRule === "saem_ambos") {
           window.App.liveMatch.consecutiveWinsA = 0;
-        } else {
           window.App.liveMatch.consecutiveWinsB = 0;
-        }
 
-        // Ambos os times saem de campo!
-        if (window.App.waitingQueue.length >= 2) {
-          const nextA = window.App.waitingQueue.shift();
-          const nextB = window.App.waitingQueue.shift();
-
-          // 1. O derrotado sempre vai para o final da fila de espera
-          window.App.waitingQueue.push(loser);
-
-          // 2. O vencedor limitado depende da regra_saida ('fora_1_jogo' ou 'final_fila')
-          if (exitRule === "fora_1_jogo") {
-            // Vai para a primeira fila (início da fila) para entrar no próximo jogo
-            window.App.waitingQueue.unshift(winner);
-          } else {
-            // Vai para o final da fila
-            window.App.waitingQueue.push(winner);
+          if (window.App.waitingQueue.length >= 2) {
+            const nextA = window.App.waitingQueue.shift();
+            const nextB = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(teamAName, teamBName);
+            window.App.liveMatch.teamA = nextA;
+            window.App.liveMatch.teamB = nextB;
           }
-
-          window.App.liveMatch.teamA = nextA;
-          window.App.liveMatch.teamB = nextB;
-        } else if (window.App.waitingQueue.length === 1) {
-          // Se só tem 1 time na fila de espera, ele entra no lugar do derrotado. O vencedor (limite) e perdedor saem.
-          const next = window.App.waitingQueue.shift();
-          window.App.waitingQueue.push(loser);
-
-          if (exitRule === "fora_1_jogo") {
-            window.App.waitingQueue.unshift(winner);
-          } else {
-            window.App.waitingQueue.push(winner);
-          }
-
-          if (winner === teamAName) {
+        } else if (tieRule === "time_entrando") {
+          window.App.liveMatch.consecutiveWinsB = 0;
+          if (window.App.waitingQueue.length > 0) {
+            const next = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(teamBName);
             window.App.liveMatch.teamB = next;
-          } else {
-            window.App.liveMatch.teamA = next;
           }
         }
       } else {
-        // Fluxo normal de vitória: Vencedor continua, perdedor sai
-        if (window.App.waitingQueue.length > 0) {
-          const nextTeam = window.App.waitingQueue.shift();
-          window.App.waitingQueue.push(loser);
+        if (winner === teamAName) {
+          window.App.liveMatch.consecutiveWinsA++;
+          window.App.liveMatch.consecutiveWinsB = 0;
+        } else {
+          window.App.liveMatch.consecutiveWinsB++;
+          window.App.liveMatch.consecutiveWinsA = 0;
+        }
+
+        const currentWins = winner === teamAName ? window.App.liveMatch.consecutiveWinsA : window.App.liveMatch.consecutiveWinsB;
+
+        if (currentWins >= winsLimit) {
+          window.App.showToast(`O ${winner} atingiu o limite de ${winsLimit} vitórias consecutivas e vai sair para revezamento!`, "info");
+
           if (winner === teamAName) {
-            window.App.liveMatch.teamB = nextTeam;
+            window.App.liveMatch.consecutiveWinsA = 0;
           } else {
-            window.App.liveMatch.teamA = nextTeam;
+            window.App.liveMatch.consecutiveWinsB = 0;
+          }
+
+          if (window.App.waitingQueue.length >= 2) {
+            const nextA = window.App.waitingQueue.shift();
+            const nextB = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(loser);
+
+            if (exitRule === "fora_1_jogo") {
+              window.App.waitingQueue.unshift(winner);
+            } else {
+              window.App.waitingQueue.push(winner);
+            }
+
+            window.App.liveMatch.teamA = nextA;
+            window.App.liveMatch.teamB = nextB;
+          } else if (window.App.waitingQueue.length === 1) {
+            const next = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(loser);
+
+            if (exitRule === "fora_1_jogo") {
+              window.App.waitingQueue.unshift(winner);
+            } else {
+              window.App.waitingQueue.push(winner);
+            }
+
+            if (winner === teamAName) {
+              window.App.liveMatch.teamB = next;
+            } else {
+              window.App.liveMatch.teamA = next;
+            }
+          }
+        } else {
+          if (window.App.waitingQueue.length > 0) {
+            const nextTeam = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(loser);
+            if (winner === teamAName) {
+              window.App.liveMatch.teamB = nextTeam;
+            } else {
+              window.App.liveMatch.teamA = nextTeam;
+            }
           }
         }
       }
     }
+
 
     // Para o cronômetro, reseta placar e autores de gols e volta ao tempo configurado
     window.App.liveMatch.scoreA = 0;
@@ -1474,8 +1548,148 @@ async function initPartidasPeladaSelect() {
         window.App.showToast(`Pelada selecionada: ${window.Utils ? window.Utils.formatDate(found.data) : found.data}`);
       }
     };
-  } catch (e) {
-    console.error('[Partidas] Erro ao carregar datas das peladas:', e);
-    select.innerHTML = `<option value="">Erro ao carregar datas</option>`;
+  } catch (err) {
+    console.error("[initPartidasPeladaSelect]", err);
+  }
+}
+
+function renderTournamentUI() {
+  const tournamentCard = document.getElementById("gestor-tournament-card");
+  const queueCard = document.getElementById("gestor-queue-card");
+  if (!tournamentCard) return;
+
+  const peladaAtiva = window.App.activePelada || {};
+  const liveMatch = window.App.liveMatch || {};
+  const tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null);
+
+  const isTorneio = (peladaAtiva.modo === 'torneio') || !!tState;
+
+  if (!isTorneio || !tState) {
+    tournamentCard.style.display = "none";
+    if (queueCard) queueCard.style.display = "block";
+    return;
+  }
+
+  // Se for torneio: exibe card de torneio e oculta a fila simples
+  tournamentCard.style.display = "block";
+  if (queueCard) queueCard.style.display = "none";
+
+  // Badge da Fase
+  const badgeEl = document.getElementById("tournament-phase-badge");
+  if (badgeEl) {
+    if (tState.fase === 'grupo') {
+      badgeEl.textContent = "FASE DE GRUPOS (TABELA MISTA)";
+      badgeEl.style.background = "#FEF3C7"; badgeEl.style.color = "#B45309";
+    } else if (tState.fase === 'mata_mata') {
+      badgeEl.textContent = "SEMIFINAIS (MATA-MATA)";
+      badgeEl.style.background = "#E0F2FE"; badgeEl.style.color = "#0369A1";
+    } else if (tState.fase === 'finais') {
+      badgeEl.textContent = "FINAIS & DISPUTA DE 3º LUGAR";
+      badgeEl.style.background = "#FCE7F3"; badgeEl.style.color = "#9D174D";
+    } else if (tState.fase === 'finalizado') {
+      badgeEl.textContent = "🏆 TORNEIO FINALIZADO";
+      badgeEl.style.background = "#D1FAE5"; badgeEl.style.color = "#065F46";
+    }
+  }
+
+  // 1. Tabela de Classificação
+  const standingsBody = document.getElementById("tournament-standings-body");
+  if (standingsBody) {
+    const standings = tState.standings || [];
+    if (standings.length === 0) {
+      standingsBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:12px; color:#64748B;">Nenhum time sorteado ainda.</td></tr>`;
+    } else {
+      let html = '';
+      standings.forEach((st, idx) => {
+        const medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+        html += `
+          <tr style="${idx === 0 ? 'font-weight:700; background:rgba(254,243,199,0.3);' : ''}">
+            <td style="text-align:center; font-weight:700;">${idx + 1}</td>
+            <td style="font-weight:700; color:#0F172A;">${medal}${st.nome}</td>
+            <td style="text-align:center;">${st.jogos}</td>
+            <td style="text-align:center;">${st.vitorias}</td>
+            <td style="text-align:center;">${st.empates}</td>
+            <td style="text-align:center;">${st.derrotas}</td>
+            <td style="text-align:center;">${st.golsPro}</td>
+            <td style="text-align:center;">${st.golsContra}</td>
+            <td style="text-align:center;">${st.saldoGols > 0 ? '+' + st.saldoGols : st.saldoGols}</td>
+            <td style="text-align:center; font-weight:800; color:#D97706; font-size:13px;">${st.pontos}</td>
+          </tr>
+        `;
+      });
+      standingsBody.innerHTML = html;
+    }
+  }
+
+  // 2. Lista de Jogos do Torneio
+  const matchesList = document.getElementById("tournament-matches-list");
+  if (matchesList) {
+    let allMatches = [];
+    if (Array.isArray(tState.matches)) allMatches.push(...tState.matches);
+    if (Array.isArray(tState.knockoutMatches)) allMatches.push(...tState.knockoutMatches);
+    if (Array.isArray(tState.finalsMatches)) allMatches.push(...tState.finalsMatches);
+
+    if (allMatches.length === 0) {
+      matchesList.innerHTML = `<div style="text-align:center; padding:12px; color:#64748B;">Nenhum jogo gerado.</div>`;
+    } else {
+      let html = '';
+      allMatches.forEach((m, idx) => {
+        const isCurrent = m.id === (liveMatch.tournamentMatchId) || (m.status === 'em_andamento');
+        const isDone = m.status === 'encerrado';
+
+        const statusTag = isDone
+          ? `<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ${m.golsA} x ${m.golsB}</span>`
+          : (isCurrent
+            ? `<span style="font-size:10px; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px; font-weight:700;">⚽ EM ANDAMENTO</span>`
+            : `<span style="font-size:10px; background:#F1F5F9; color:#64748B; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>`);
+
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:${isCurrent ? '#FFFBEB' : '#F8FAFC'}; border:1px solid ${isCurrent ? '#FCD34D' : '#E2E8F0'}; border-radius:8px; font-size:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:700; color:#64748B; font-size:11px;">${m.faseNome || 'Jogo ' + (idx + 1)}:</span>
+              <strong style="color:#0F172A;">${m.teamA}</strong>
+              <span style="color:#94A3B8; font-size:11px;">vs</span>
+              <strong style="color:#0F172A;">${m.teamB}</strong>
+            </div>
+            <div>${statusTag}</div>
+          </div>
+        `;
+      });
+      matchesList.innerHTML = html;
+    }
+  }
+
+  // 3. Pódio do Torneio
+  const podiumCont = document.getElementById("tournament-podium-container");
+  const podiumCards = document.getElementById("tournament-podium-cards");
+  if (podiumCont && podiumCards) {
+    if (tState.podium || tState.fase === 'finalizado') {
+      const pod = tState.podium || (window.TournamentEngine ? window.TournamentEngine.determinePodium(tState.finalsMatches, tState.standings) : {});
+      podiumCont.style.display = "block";
+      podiumCards.innerHTML = `
+        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #FCD34D; flex:1; min-width:110px;">
+          <div style="font-size:24px;">🥇</div>
+          <div style="font-size:10px; color:#B45309; font-weight:700;">CAMPEÃO</div>
+          <strong style="font-size:13px; color:#0F172A;">${pod.primeiro || '—'}</strong>
+        </div>
+        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #CBD5E1; flex:1; min-width:110px;">
+          <div style="font-size:24px;">🥈</div>
+          <div style="font-size:10px; color:#475569; font-weight:700;">VICE-CAMPEÃO</div>
+          <strong style="font-size:13px; color:#0F172A;">${pod.segundo || '—'}</strong>
+        </div>
+        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #FDBA74; flex:1; min-width:110px;">
+          <div style="font-size:24px;">🥉</div>
+          <div style="font-size:10px; color:#C2410C; font-weight:700;">3º LUGAR</div>
+          <strong style="font-size:13px; color:#0F172A;">${pod.terceiro || '—'}</strong>
+        </div>
+        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #E2E8F0; flex:1; min-width:110px;">
+          <div style="font-size:24px;">4️⃣</div>
+          <div style="font-size:10px; color:#64748B; font-weight:700;">4º LUGAR</div>
+          <strong style="font-size:13px; color:#0F172A;">${pod.quarto || '—'}</strong>
+        </div>
+      `;
+    } else {
+      podiumCont.style.display = "none";
+    }
   }
 }

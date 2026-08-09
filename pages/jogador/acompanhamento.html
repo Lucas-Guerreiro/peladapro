@@ -416,6 +416,60 @@
   </div>
 </div>
 
+<!-- MINI TORNEIO AO VIVO (Classificação & Jogos do Torneio) -->
+<div id="acomp-tournament-card" class="acomp-card-clear" style="display: none; border-left: 4px solid #F59E0B; padding: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+    <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #D97706; display: flex; align-items: center; gap: 8px;">
+      🏆 Mini Torneio Rápido
+    </h3>
+    <span id="acomp-tournament-phase-badge" style="font-size: 11px; background: #FEF3C7; color: #B45309; font-weight: 700; padding: 4px 12px; border-radius: 20px;">
+      FASE DE GRUPOS
+    </span>
+  </div>
+
+  <!-- Pódio do Torneio (quando finalizado) -->
+  <div id="acomp-tournament-podium-container" style="display: none; margin-bottom: 20px; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #FCD34D; border-radius: 12px; padding: 16px; text-align: center;">
+    <h4 style="margin: 0 0 12px 0; color: #B45309; font-size: 16px; font-weight: 800;">🎉 CERIMÔNIA DO PÓDIO</h4>
+    <div style="display: flex; justify-content: space-around; align-items: flex-end; gap: 8px; flex-wrap: wrap;" id="acomp-tournament-podium-cards">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- Tabela de Classificação do Torneio -->
+  <div style="margin-bottom: 20px;">
+    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #0F172A;">📊 Tabela de Classificação</h4>
+    <div class="table-responsive" style="overflow-x: auto;">
+      <table class="table-custom" style="font-size: 12px; width: 100%;">
+        <thead>
+          <tr>
+            <th style="text-align: center; width: 36px;">#</th>
+            <th>Time</th>
+            <th style="text-align: center;">J</th>
+            <th style="text-align: center;">V</th>
+            <th style="text-align: center;">E</th>
+            <th style="text-align: center;">D</th>
+            <th style="text-align: center;">GP</th>
+            <th style="text-align: center;">GC</th>
+            <th style="text-align: center;">SG</th>
+            <th style="text-align: center; font-weight: 800; color: #D97706;">PTS</th>
+          </tr>
+        </thead>
+        <tbody id="acomp-tournament-standings-body">
+          <!-- Preenchido via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Agenda de Jogos do Torneio -->
+  <div>
+    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #0F172A;">🗓️ Agenda de Jogos do Torneio</h4>
+    <div id="acomp-tournament-matches-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto;">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+</div>
+
 <!-- FILA DE ESPERA -->
 <div class="acomp-card-clear acomp-queue-wrapper-clear" style="padding: 16px;">
   <div class="acomp-queue-header-clear">

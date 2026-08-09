@@ -228,24 +228,56 @@ function handleExecuteSorteio() {
     });
   }
 
-  // Carregar os 2 primeiros times na partida ativa
-  if (drawnTeams.length >= 2) {
-    window.App.liveMatch.teamA = drawnTeams[0].nome;
-    window.App.liveMatch.teamB = drawnTeams[1].nome;
-    window.App.liveMatch.scoreA = 0;
-    window.App.liveMatch.scoreB = 0;
-    window.App.liveMatch.isPlaying = false;
+  // Se o modo da pelada for 'torneio', gera o calendário de Tabela Mista (Round-Robin)
+  if (peladaAtiva && peladaAtiva.modo === 'torneio' && window.TournamentEngine) {
+    const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams);
+    const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
+    const tState = {
+      modo: 'torneio',
+      fase: 'grupo',
+      teams: drawnTeams,
+      matches: matches,
+      currentIndex: 0,
+      standings: standings,
+      knockoutMatches: [],
+      finalsMatches: [],
+      podium: null
+    };
 
-    const teamAEl = document.getElementById("match-control-team-a");
-    const teamBEl = document.getElementById("match-control-team-b");
-    const scoreAEl = document.getElementById("match-control-score-a");
-    const scoreBEl = document.getElementById("match-control-score-b");
+    window.App.liveMatch.tournamentState = tState;
+    try { localStorage.setItem("tournamentState", JSON.stringify(tState)); } catch(e) {}
+    if (peladaId) {
+      try { localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState)); } catch(e) {}
+    }
 
-    if (teamAEl) teamAEl.textContent = window.App.liveMatch.teamA;
-    if (teamBEl) teamBEl.textContent = window.App.liveMatch.teamB;
-    if (scoreAEl) scoreAEl.textContent = "0";
-    if (scoreBEl) scoreBEl.textContent = "0";
+    if (matches.length > 0) {
+      window.App.liveMatch.teamA = matches[0].teamA;
+      window.App.liveMatch.teamB = matches[0].teamB;
+      window.App.liveMatch.scoreA = 0;
+      window.App.liveMatch.scoreB = 0;
+      window.App.liveMatch.isPlaying = false;
+      window.App.liveMatch.tournamentMatchId = matches[0].id;
+    }
+  } else {
+    // Carregar os 2 primeiros times na partida ativa
+    if (drawnTeams.length >= 2) {
+      window.App.liveMatch.teamA = drawnTeams[0].nome;
+      window.App.liveMatch.teamB = drawnTeams[1].nome;
+      window.App.liveMatch.scoreA = 0;
+      window.App.liveMatch.scoreB = 0;
+      window.App.liveMatch.isPlaying = false;
+    }
   }
+
+  const teamAEl = document.getElementById("match-control-team-a");
+  const teamBEl = document.getElementById("match-control-team-b");
+  const scoreAEl = document.getElementById("match-control-score-a");
+  const scoreBEl = document.getElementById("match-control-score-b");
+
+  if (teamAEl) teamAEl.textContent = window.App.liveMatch.teamA;
+  if (teamBEl) teamBEl.textContent = window.App.liveMatch.teamB;
+  if (scoreAEl) scoreAEl.textContent = "0";
+  if (scoreBEl) scoreBEl.textContent = "0";
 
   // Persiste imediatamente a fila, o jogo ao vivo e os times sorteados no localStorage e no servidor
   if (window.App && window.App.safeLocalStorageSetItem) {
@@ -261,7 +293,7 @@ function handleExecuteSorteio() {
     window.App.syncDrawnTeamsToCloud(false);
   }
 
-  window.App.showToast("Equipes geradas!");
+  window.App.showToast(peladaAtiva.modo === 'torneio' ? "🏆 Mini Torneio gerado com sucesso!" : "Equipes geradas!");
   window.App.renderDrawnTeams();
   window.App.updateAcompanhamentoUI();
 }

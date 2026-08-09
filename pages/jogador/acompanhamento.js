@@ -655,6 +655,8 @@ var Acompanhamento = {
         }
       };
     });
+
+    this.renderAcompanhamentoTournamentUI();
   },
 
   // --- Histórico de Partidas Recentes ------------------------------------
@@ -836,6 +838,140 @@ var Acompanhamento = {
 
     window.removeEventListener('storage', Acompanhamento._onStorageChange);
     window.addEventListener('storage', Acompanhamento._onStorageChange);
+  },
+
+  renderAcompanhamentoTournamentUI: function () {
+    var tournamentCard = document.getElementById('acomp-tournament-card');
+    var queueWrapper = document.querySelector('.acomp-queue-wrapper-clear');
+    if (!tournamentCard) return;
+
+    var peladaAtiva = window.App.activePelada || {};
+    var liveMatch = window.App.liveMatch || {};
+    var tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem('tournamentState_' + peladaAtiva.id) || 'null') : null);
+
+    var isTorneio = (peladaAtiva.modo === 'torneio') || !!tState;
+
+    if (!isTorneio || !tState) {
+      tournamentCard.style.display = 'none';
+      if (queueWrapper) queueWrapper.style.display = 'block';
+      return;
+    }
+
+    tournamentCard.style.display = 'block';
+    if (queueWrapper) queueWrapper.style.display = 'none';
+
+    // Badge de Fase
+    var badgeEl = document.getElementById('acomp-tournament-phase-badge');
+    if (badgeEl) {
+      if (tState.fase === 'grupo') {
+        badgeEl.textContent = 'FASE DE GRUPOS (TABELA MISTA)';
+        badgeEl.style.background = '#FEF3C7'; badgeEl.style.color = '#B45309';
+      } else if (tState.fase === 'mata_mata') {
+        badgeEl.textContent = 'SEMIFINAIS (MATA-MATA)';
+        badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
+      } else if (tState.fase === 'finais') {
+        badgeEl.textContent = 'FINAIS & 3º LUGAR';
+        badgeEl.style.background = '#FCE7F3'; badgeEl.style.color = '#9D174D';
+      } else if (tState.fase === 'finalizado') {
+        badgeEl.textContent = '🏆 TORNEIO FINALIZADO';
+        badgeEl.style.background = '#D1FAE5'; badgeEl.style.color = '#065F46';
+      }
+    }
+
+    // 1. Tabela de Classificação
+    var standingsBody = document.getElementById('acomp-tournament-standings-body');
+    if (standingsBody) {
+      var standings = tState.standings || [];
+      if (standings.length === 0) {
+        standingsBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:12px; color:#64748B;">Aguardando sorteio...</td></tr>';
+      } else {
+        var html = '';
+        standings.forEach(function (st, idx) {
+          var medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+          html += '<tr style="' + (idx === 0 ? 'font-weight:700; background:rgba(254,243,199,0.3);' : '') + '">' +
+            '<td style="text-align:center; font-weight:700;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:700; color:#0F172A;">' + medal + st.nome + '</td>' +
+            '<td style="text-align:center;">' + st.jogos + '</td>' +
+            '<td style="text-align:center;">' + st.vitorias + '</td>' +
+            '<td style="text-align:center;">' + st.empates + '</td>' +
+            '<td style="text-align:center;">' + st.derrotas + '</td>' +
+            '<td style="text-align:center;">' + st.golsPro + '</td>' +
+            '<td style="text-align:center;">' + st.golsContra + '</td>' +
+            '<td style="text-align:center;">' + (st.saldoGols > 0 ? '+' + st.saldoGols : st.saldoGols) + '</td>' +
+            '<td style="text-align:center; font-weight:800; color:#D97706; font-size:13px;">' + st.pontos + '</td>' +
+            '</tr>';
+        });
+        standingsBody.innerHTML = html;
+      }
+    }
+
+    // 2. Lista de Jogos
+    var matchesList = document.getElementById('acomp-tournament-matches-list');
+    if (matchesList) {
+      var allMatches = [];
+      if (Array.isArray(tState.matches)) allMatches.push.apply(allMatches, tState.matches);
+      if (Array.isArray(tState.knockoutMatches)) allMatches.push.apply(allMatches, tState.knockoutMatches);
+      if (Array.isArray(tState.finalsMatches)) allMatches.push.apply(allMatches, tState.finalsMatches);
+
+      if (allMatches.length === 0) {
+        matchesList.innerHTML = '<div style="text-align:center; padding:12px; color:#64748B;">Nenhum jogo gerado.</div>';
+      } else {
+        var mHtml = '';
+        allMatches.forEach(function (m, idx) {
+          var isCurrent = m.id === (liveMatch.tournamentMatchId) || (m.status === 'em_andamento');
+          var isDone = m.status === 'encerrado';
+
+          var statusTag = isDone
+            ? '<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ' + m.golsA + ' x ' + m.golsB + '</span>'
+            : (isCurrent
+              ? '<span style="font-size:10px; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px; font-weight:700;">⚽ EM ANDAMENTO</span>'
+              : '<span style="font-size:10px; background:#F1F5F9; color:#64748B; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>');
+
+          mHtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:' + (isCurrent ? '#FFFBEB' : '#F8FAFC') + '; border:1px solid ' + (isCurrent ? '#FCD34D' : '#E2E8F0') + '; border-radius:8px; font-size:12px;">' +
+            '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<span style="font-weight:700; color:#64748B; font-size:11px;">' + (m.faseNome || 'Jogo ' + (idx + 1)) + ':</span>' +
+            '<strong style="color:#0F172A;">' + m.teamA + '</strong>' +
+            '<span style="color:#94A3B8; font-size:11px;">vs</span>' +
+            '<strong style="color:#0F172A;">' + m.teamB + '</strong>' +
+            '</div>' +
+            '<div>' + statusTag + '</div>' +
+            '</div>';
+        });
+        matchesList.innerHTML = mHtml;
+      }
+    }
+
+    // 3. Pódio do Torneio
+    var podiumCont = document.getElementById('acomp-tournament-podium-container');
+    var podiumCards = document.getElementById('acomp-tournament-podium-cards');
+    if (podiumCont && podiumCards) {
+      if (tState.podium || tState.fase === 'finalizado') {
+        var pod = tState.podium || (window.TournamentEngine ? window.TournamentEngine.determinePodium(tState.finalsMatches, tState.standings) : {});
+        podiumCont.style.display = 'block';
+        podiumCards.innerHTML = '<div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #FCD34D; flex:1; min-width:110px;">' +
+          '<div style="font-size:24px;">🥇</div>' +
+          '<div style="font-size:10px; color:#B45309; font-weight:700;">CAMPEÃO</div>' +
+          '<strong style="font-size:13px; color:#0F172A;">' + (pod.primeiro || '—') + '</strong>' +
+          '</div>' +
+          '<div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #CBD5E1; flex:1; min-width:110px;">' +
+          '<div style="font-size:24px;">🥈</div>' +
+          '<div style="font-size:10px; color:#475569; font-weight:700;">VICE-CAMPEÃO</div>' +
+          '<strong style="font-size:13px; color:#0F172A;">' + (pod.segundo || '—') + '</strong>' +
+          '</div>' +
+          '<div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #FDBA74; flex:1; min-width:110px;">' +
+          '<div style="font-size:24px;">🥉</div>' +
+          '<div style="font-size:10px; color:#C2410C; font-weight:700;">3º LUGAR</div>' +
+          '<strong style="font-size:13px; color:#0F172A;">' + (pod.terceiro || '—') + '</strong>' +
+          '</div>' +
+          '<div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #E2E8F0; flex:1; min-width:110px;">' +
+          '<div style="font-size:24px;">4️⃣</div>' +
+          '<div style="font-size:10px; color:#64748B; font-weight:700;">4º LUGAR</div>' +
+          '<strong style="font-size:13px; color:#0F172A;">' + (pod.quarto || '—') + '</strong>' +
+          '</div>';
+      } else {
+        podiumCont.style.display = 'none';
+      }
+    }
   },
 
   _onStorageChange: function (e) {

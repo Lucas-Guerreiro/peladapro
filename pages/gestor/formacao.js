@@ -199,9 +199,29 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     window.App.activePelada = activePelada;
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
-    // Sincroniza o select de status da rodada
-    if (selectStatus) {
-      selectStatus.value = activePelada.status || "agendada";
+    const selectModo = document.getElementById("select-pelada-modo");
+    if (selectModo) {
+      selectModo.value = activePelada.modo || "normal";
+      selectModo.onchange = async (e) => {
+        const newModo = e.target.value;
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) return;
+        try {
+          const res = await Api.atualizarConfigPartida(peladaId, { modo: newModo });
+          if (res && res.error) {
+            window.App.showToast(res.error, "error");
+            selectModo.value = window.App.activePelada.modo || "normal";
+            return;
+          }
+          window.App.activePelada.modo = newModo;
+          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          const desc = newModo === 'torneio' ? "🏆 Modo Mini Torneio ativado para esta data!" : "⚽ Modo Pelada Normal ativado!";
+          window.App.showToast(desc, "success");
+        } catch (err) {
+          console.error("[selectModo]", err);
+          window.App.showToast("Erro ao atualizar formato da pelada.", "error");
+        }
+      };
     }
     // Puxa a lista de convocados da data selecionada
     await updateCheckinPlayersList(activePelada.id);
@@ -212,6 +232,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         const sel = peladas.find(p => String(p.id) === String(e.target.value));
         window.App.activePelada = sel;
         if (selectStatus) selectStatus.value = sel.status || "agendada";
+        if (selectModo) selectModo.value = sel.modo || "normal";
         // Limpa o cache local de times da data anterior para atualizar os cards
         localStorage.removeItem("teams");
         await updateCheckinPlayersList(e.target.value);

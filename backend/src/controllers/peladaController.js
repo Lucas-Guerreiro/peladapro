@@ -196,6 +196,9 @@ exports.listarDatasDoGrupo = async (req, res) => {
   const tipo = req.usuarioTipo;
 
   try {
+    // Garante que a coluna modo existe na tabela peladas (idempotente)
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
+
     // Valida se o gestor é dono do grupo apenas se for gestor
     if (tipo === 'gestor') {
       const queryGrupo = `SELECT id FROM grupos WHERE id = $1 AND gestor_id = $2`;
@@ -207,6 +210,7 @@ exports.listarDatasDoGrupo = async (req, res) => {
 
     const query = `
       SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.limite_atletas, p.chave_pix, p.chave_pix_nome,
+             COALESCE(p.modo, 'normal') as modo,
              COALESCE(p.criterio_empate, c.criterio_empate, 'ambos_permanecem') as criterio_empate,
              COALESCE(p.vitorias_para_sair, c.vitorias_para_sair, 2) as vitorias_para_sair,
              COALESCE(p.jogadores_por_time, c.jogadores_por_time, 7) as jogadores_por_time,
@@ -229,13 +233,15 @@ exports.atualizarConfigPartida = async (req, res) => {
   const { id } = req.params;
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
-  const { criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
+  const { modo, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
 
   if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
   }
 
   try {
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
+
     // Validar se a pelada pertence a um grupo do gestor
     const queryCheck = `
       SELECT p.id FROM peladas p
@@ -248,18 +254,20 @@ exports.atualizarConfigPartida = async (req, res) => {
 
     const queryUpdate = `
       UPDATE peladas
-      SET criterio_empate = $1,
-          vitorias_para_sair = $2,
-          jogadores_por_time = $3,
-          quantidade_times = $4,
-          regra_saida = $5,
-          valor_convocacao = $6,
-          chave_pix = $7,
-          chave_pix_nome = $8,
-          limite_atletas = $9,
-          max_jogadores = $9
-      WHERE id = $10 RETURNING id`;
+      SET modo = COALESCE($1, modo, 'normal'),
+          criterio_empate = $2,
+          vitorias_para_sair = $3,
+          jogadores_por_time = $4,
+          quantidade_times = $5,
+          regra_saida = $6,
+          valor_convocacao = $7,
+          chave_pix = $8,
+          chave_pix_nome = $9,
+          limite_atletas = $10,
+          max_jogadores = $10
+      WHERE id = $11 RETURNING id, modo`;
     await db.query(queryUpdate, [
+      modo || null,
       criterio_empate || null,
       vitorias_para_sair !== undefined ? parseInt(vitorias_para_sair) : null,
       jogadores_por_time !== undefined ? parseInt(jogadores_por_time) : null,
