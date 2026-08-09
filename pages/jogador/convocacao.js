@@ -212,7 +212,6 @@ var Convocacao = {
       var html = '';
       confirmed.forEach(function (c) {
         var nome = c.apelido || c.nome || 'Desconhecido';
-        var stars = Utils.starsHTML(c.autoavaliacao || 0, 5);
         var isMe = Auth.currentUser && String(c.id) === String(Auth.currentUser.id);
 
         var avatarHTML = '';
@@ -228,11 +227,10 @@ var Convocacao = {
         html += '<div style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border-color);">' +
           avatarHTML +
           '<div style="flex: 1;">' +
-          '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading);">' +
+          '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading); margin: 0;">' +
           nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary); background: rgba(0,230,118,0.1); padding: 2px 6px; border-radius: 10px;">Você</span>' : '') +
           (c.goleiro ? ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' : '') +
           '</p>' +
-          '<p class="text-inter" style="font-size: 12px; color: var(--warning);">' + stars + '</p>' +
           '</div>' +
           '<span class="badge-status confirmado">✅</span>' +
           '</div>';
