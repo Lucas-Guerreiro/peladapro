@@ -79,6 +79,10 @@ window.App.initFormacao = async function () {
       window.App.openModal("adicionar_presenca", { peladaId: peladaId });
     };
   }
+  const btnExportExcel = document.getElementById("btn-export-presence-excel");
+  if (btnExportExcel) {
+    btnExportExcel.onclick = exportConvocadosExcel;
+  }
   const selectStatus = document.getElementById("select-pelada-status");
   if (selectStatus) {
     let _updatingStatus = false;
@@ -1032,3 +1036,58 @@ window.handleCustomEmblemUpload = function (event) {
     window.App.showToast("Novo emblema gravado no sistema e aplicado ao time! 🛡️");
   });
 };
+
+async function exportConvocadosExcel() {
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!peladaId) {
+    window.App.showToast("Selecione uma pelada para exportar a lista.", "warning");
+    return;
+  }
+
+  try {
+    window.App.showToast("Gerando arquivo Excel...", "info");
+    const convocados = await Api.listarConvocados(peladaId);
+    if (!convocados || convocados.length === 0) {
+      window.App.showToast("Nenhum atleta convocado para esta pelada.", "warning");
+      return;
+    }
+
+    const peladaData = window.App.activePelada ? (window.App.activePelada.data || "") : "";
+    const dataFmt = peladaData ? peladaData.split("T")[0].split("-").reverse().join("/") : "Data";
+
+    // Cabeçalho e dados em formato CSV UTF-8 com BOM para abertura perfeita no Microsoft Excel
+    let csv = "\uFEFF";
+    csv += "Nº;Nome Completo;Apelido;Posição;Autoavaliação (Estrelas);Status Convocação;Presença (Check-in);Forma de Pagamento;Data da Convocação\n";
+
+    convocados.forEach((c, index) => {
+      const num = index + 1;
+      const nome = `"${(c.nome || '').replace(/"/g, '""')}"`;
+      const apelido = `"${(c.apelido || c.nome || '').replace(/"/g, '""')}"`;
+      const pos = c.goleiro ? "Goleiro 🧤" : "Linha";
+      const estrelas = `${c.autoavaliacao || 3} ★`;
+      const statusStr = c.status === "confirmado" ? "Confirmado" : (c.status === "fila_espera" ? "Fila de Espera" : (c.status || "Pendente"));
+      const presencaStr = c.presenca ? "Presente (Check-in ✅)" : "Ausente";
+      const pagto = c.forma_pagamento ? c.forma_pagamento.toUpperCase() : "Não informado";
+      const dataConv = c.data_convocacao ? new Date(c.data_convocacao).toLocaleString("pt-BR") : "";
+
+      csv += `${num};${nome};${apelido};${pos};${estrelas};${statusStr};${presencaStr};${pagto};${dataConv}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const filename = `Convocados_Pelada_${dataFmt.replace(/\//g, "-")}.csv`;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.App.showToast("Lista de convocados exportada com sucesso! 📊", "success");
+  } catch (err) {
+    console.error("[exportConvocadosExcel]", err);
+    window.App.showToast("Erro ao exportar lista para Excel.", "error");
+  }
+}
+
+window.exportConvocadosExcel = exportConvocadosExcel;
