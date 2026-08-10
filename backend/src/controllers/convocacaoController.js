@@ -345,12 +345,9 @@ exports.atualizarPresenca = async (req, res) => {
 };
 
 exports.desconvocarPorGestor = async (req, res) => {
-  const gestorTipo = req.usuarioTipo;
-  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
-    return res.status(403).json({ error: 'Apenas gestores podem desconvocar atletas.' });
-  }
+  const pelada_id = req.body.pelada_id || req.query.pelada_id;
+  const usuario_id = req.body.usuario_id || req.query.usuario_id;
 
-  const { pelada_id, usuario_id } = req.body;
   if (!pelada_id || !usuario_id) {
     return res.status(400).json({ error: 'pelada_id e usuario_id são obrigatórios.' });
   }
@@ -366,7 +363,8 @@ exports.desconvocarPorGestor = async (req, res) => {
       [pelada_id, usuario_id]
     );
     if (check.length === 0) {
-      return res.status(404).json({ error: 'Convocação não encontrada.' });
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Convocação não encontrada para esta pelada.' });
     }
 
     const statusRemovido = check[0].status;
@@ -381,8 +379,8 @@ exports.desconvocarPorGestor = async (req, res) => {
     if (statusRemovido === 'confirmado') {
       const filaRes = await client.query(
         `SELECT * FROM convocacoes
-         WHERE pelada_id = $1 AND status = 'espera'
-         ORDER BY posicao_fila ASC
+         WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
+         ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC
          LIMIT 1 FOR UPDATE`,
         [pelada_id]
       );
@@ -412,8 +410,8 @@ exports.desconvocarPorGestor = async (req, res) => {
     // Reordena a fila restante (posições 1, 2, 3...)
     const restantesRes = await client.query(
       `SELECT id FROM convocacoes
-       WHERE pelada_id = $1 AND status = 'espera'
-       ORDER BY posicao_fila ASC`,
+       WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
+       ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC`,
       [pelada_id]
     );
     for (let i = 0; i < restantesRes.rows.length; i++) {
@@ -427,6 +425,7 @@ exports.desconvocarPorGestor = async (req, res) => {
     res.json({ message: 'Atleta desconvocado com sucesso!' });
   } catch (err) {
     if (client) await client.query('ROLLBACK');
+    console.error('[desconvocarPorGestor]', err);
     res.status(500).json({ error: 'Erro ao desconvocar atleta.', detail: err.message });
   } finally {
     if (client) client.release();
