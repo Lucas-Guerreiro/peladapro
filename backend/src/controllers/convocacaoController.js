@@ -90,6 +90,7 @@ exports.confirmar = async (req, res) => {
       if (forma_pagamento === 'saldo') {
         const novoSaldo = saldoAtual - valorCusto;
         if (novoSaldo < -limiteNegativo) {
+          await client.query('ROLLBACK');
           return res.status(400).json({ 
             error: `Saldo insuficiente. O custo da pelada é R$ ${valorCusto.toFixed(2)}, mas seu saldo é R$ ${saldoAtual.toFixed(2)} (limite negativo: R$ ${limiteNegativo.toFixed(2)}). Selecione PIX.` 
           });
@@ -188,6 +189,7 @@ exports.remover = async (req, res) => {
     const podeEstornar = await verificarRegra2Horas(pelada_id);
 
     if (!podeEstornar && opcao_remocao === 'estorno') {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Prazo de estorno expirado (menos de 2h para a pelada)' });
     }
 
@@ -198,6 +200,7 @@ exports.remover = async (req, res) => {
     );
 
     if (convRes.rows.length === 0 || (convRes.rows[0].status !== 'confirmado' && convRes.rows[0].status !== 'espera')) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Você não tem convocação ativa nesta pelada' });
     }
 

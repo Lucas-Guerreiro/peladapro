@@ -442,7 +442,9 @@ async function desconvocarAtleta(atletaId, atletaNome) {
     });
     const data = await res.json();
     if (!res.ok) {
-      window.App.showToast(data.error || "Erro ao desconvocar atleta.", "error");
+      console.error("[desconvocarAtleta] Erro backend:", data);
+      const msg = data.detail ? `${data.error || 'Erro'} (${data.detail})` : (data.error || "Erro ao desconvocar atleta.");
+      window.App.showToast(msg, "error");
       return;
     }
     window.App.showToast(`${atletaNome} desconvocado com sucesso.`, "success");
