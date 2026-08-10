@@ -174,9 +174,14 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
       if (downloadBtn) downloadBtn.onclick = () => window.Utils.downloadImage(p.foto, p.nome);
     }
 
-    card.querySelector(".btn-saldo-athlete").onclick = () => {
-      if (window.manualFinanceSettlement) window.manualFinanceSettlement(p.id);
-    };
+    const btnSaldo = card.querySelector(".btn-saldo-athlete");
+    if (btnSaldo) {
+      btnSaldo.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.App.openModal("ajustar_saldo", { id: p.id });
+      };
+    }
     card.querySelector(".btn-edit-athlete").onclick = () => window.App.openModal("atleta", { id: p.id });
     card.querySelector(".btn-delete-athlete").onclick = () => deleteAthlete(p.id, p.nome);
 

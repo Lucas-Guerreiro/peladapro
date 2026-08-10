@@ -744,89 +744,10 @@ const Api = {
 window.Api = Api;
 
 // ===== FUNÇÃO GLOBAL DE AJUSTE MANUAL DE SALDO =====
-window.manualFinanceSettlement = async function (playerId) {
-  let players = [];
-  try {
-    players = JSON.parse(localStorage.getItem("players")) || [];
-  } catch (e) { }
-
-  if (players.length === 0 && window.Api && window.Api.getPlayers) {
-    players = window.Api.getPlayers() || [];
-  }
-
-  let p = players.find(x => String(x.id) === String(playerId));
-
-  if (!p && window.Api && window.Api.listarAtletasDoGrupo) {
-    try {
-      const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup || JSON.parse(localStorage.getItem("currentGroup") || '{}');
-      if (group && group.id) {
-        const atletas = await window.Api.listarAtletasDoGrupo(group.id);
-        if (Array.isArray(atletas)) {
-          p = atletas.find(x => String(x.id) === String(playerId));
-        }
-      }
-    } catch (e) { }
-  }
-
-  if (!p) {
-    window.App.showToast("Atleta não encontrado para ajuste de saldo.", "warning");
-    return;
-  }
-
-  const nomeAtleta = p.apelido || p.nome || 'Atleta';
-  const inputAmount = window.prompt(`Ajuste de Saldo para ${nomeAtleta}.\nDigite um valor positivo para crédito (ex: 20 ou +20), ou negativo para débito (ex: -20):`, "20");
-  if (inputAmount === null) return;
-
-  const amt = parseFloat(inputAmount.replace(",", "."));
-  if (isNaN(amt) || amt === 0) {
-    window.App.showToast("Valor digitado é inválido.", "warning");
-    return;
-  }
-
-  const sugestaoDesc = amt > 0 ? "Patrocínio / Apoio aluguel" : "Ajuste de Saldo";
-  const inputDesc = window.prompt(`Descrição/Motivo para o extrato (ex: Patrocínio, Apoio aluguel, Crédito manual):`, sugestaoDesc);
-  if (inputDesc === null) return;
-
-  let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-  if (!group || !group.id) {
-    try {
-      group = JSON.parse(localStorage.getItem("currentGroup"));
-    } catch (e) { }
-  }
-
-  if (!group || !group.id) {
-    window.App.showToast("Grupo de referência não encontrado.", "error");
-    return;
-  }
-
-  try {
-    window.App.showToast("Salvando ajuste de saldo no servidor...", "info");
-    const descFinal = inputDesc.trim() || sugestaoDesc;
-    const res = await window.Api.ajustarSaldoAtleta(p.id, group.id, amt, descFinal);
-    if (res.error) {
-      window.App.showToast(res.error, "error");
-      return;
-    }
-
-    // Sincroniza saldo atualizado no player local
-    p.saldo = res.novoSaldo;
-    localStorage.setItem("players", JSON.stringify(players));
-
-    const toastVal = window.Utils ? window.Utils.formatCurrency(amt) : `R$ ${amt.toFixed(2)}`;
-    window.App.showToast(`Lançamento de ${toastVal} (${descFinal}) efetuado para ${nomeAtleta}! Saldo atual: ${window.Utils ? window.Utils.formatCurrency(res.novoSaldo) : 'R$ ' + res.novoSaldo}`, "success");
-
-    // Recarrega visualizações ativas se disponíveis
-    if (typeof window.App.renderFinanceiroData === "function") {
-      window.App.renderFinanceiroData();
-    }
-    if (typeof window.App.renderManagerAthletesList === "function") {
-      window.App.renderManagerAthletesList();
-    }
-    if (typeof window.App.renderManagerCheckin === "function" && window.App.activePelada) {
-      window.App.renderManagerCheckin(window.App.activePelada.id);
-    }
-  } catch (err) {
-    console.error('[manualFinanceSettlement]', err);
-    window.App.showToast("Erro ao conectar ao servidor para ajustar o saldo.", "error");
+window.manualFinanceSettlement = function (playerId) {
+  if (window.App && window.App.openModal) {
+    window.App.openModal("ajustar_saldo", { id: playerId });
+  } else if (window.Router && window.Router.openModal) {
+    window.Router.openModal("ajustar_saldo", { id: playerId });
   }
 };
