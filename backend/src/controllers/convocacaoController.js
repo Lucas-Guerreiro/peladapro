@@ -242,27 +242,27 @@ exports.remover = async (req, res) => {
     // 4.5 Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
     if (statusAntes === 'confirmado') {
       const filaRes = await client.query(
-        `SELECT * FROM convocacoes
-         WHERE pelada_id = $1 AND status = 'espera'
-         ORDER BY posicao_fila ASC
+        `SELECT usuario_id FROM convocacoes
+         WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
+         ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC
          LIMIT 1 FOR UPDATE`,
         [pelada_id]
       );
 
       if (filaRes.rows.length > 0) {
-        const promovido = filaRes.rows[0];
+        const promovidoUsuarioId = filaRes.rows[0].usuario_id;
         await client.query(
           `UPDATE convocacoes
            SET status = 'confirmado', posicao_fila = NULL
-           WHERE id = $1`,
-          [promovido.id]
+           WHERE pelada_id = $1 AND usuario_id = $2`,
+          [pelada_id, promovidoUsuarioId]
         );
 
         // Notificação push ao atleta promovido
         try {
           const { sendNotificationInternal } = require('./pushController');
           sendNotificationInternal({
-            usuarioId: promovido.usuario_id,
+            usuarioId: promovidoUsuarioId,
             title: 'Você entrou na lista oficial! 🎉',
             body: 'Um atleta desistiu e você foi promovido da fila de espera para a lista oficial.',
             url: '/#/jogador/convocacao'
@@ -273,15 +273,15 @@ exports.remover = async (req, res) => {
 
     // Reordena a fila restante de forma incondicional para preencher quaisquer buracos
     const restantesRes = await client.query(
-      `SELECT id FROM convocacoes
-       WHERE pelada_id = $1 AND status = 'espera'
-       ORDER BY posicao_fila ASC`,
+      `SELECT usuario_id FROM convocacoes
+       WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
+       ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC`,
       [pelada_id]
     );
     for (let i = 0; i < restantesRes.rows.length; i++) {
       await client.query(
-        'UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2',
-        [i + 1, restantesRes.rows[i].id]
+        'UPDATE convocacoes SET posicao_fila = $1 WHERE pelada_id = $2 AND usuario_id = $3',
+        [i + 1, pelada_id, restantesRes.rows[i].usuario_id]
       );
     }
 
@@ -381,7 +381,7 @@ exports.desconvocarPorGestor = async (req, res) => {
     // Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
     if (statusRemovido === 'confirmado') {
       const filaRes = await client.query(
-        `SELECT * FROM convocacoes
+        `SELECT usuario_id FROM convocacoes
          WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
          ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC
          LIMIT 1 FOR UPDATE`,
@@ -389,38 +389,40 @@ exports.desconvocarPorGestor = async (req, res) => {
       );
 
       if (filaRes.rows.length > 0) {
-        const promovido = filaRes.rows[0];
+        const promovidoUsuarioId = filaRes.rows[0].usuario_id;
         await client.query(
           `UPDATE convocacoes
            SET status = 'confirmado', posicao_fila = NULL
-           WHERE id = $1`,
-          [promovido.id]
+           WHERE pelada_id = $1 AND usuario_id = $2`,
+          [pelada_id, promovidoUsuarioId]
         );
 
         // Notificação push ao atleta promovido
         try {
-          const { sendNotificationInternal } = require('./pushController');
-          sendNotificationInternal({
-            usuarioId: promovido.usuario_id,
-            title: 'Você entrou na lista oficial! 🎉',
-            body: 'Um atleta desistiu e você foi promovido da fila de espera para a lista oficial.',
-            url: '/#/jogador/convocacao'
-          }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
+          const pushController = require('./pushController');
+          if (pushController && pushController.sendNotificationInternal) {
+            pushController.sendNotificationInternal({
+              usuarioId: promovidoUsuarioId,
+              title: 'Você entrou na lista oficial! 🎉',
+              body: 'Um atleta desistiu e você foi promovido da fila de espera para a lista oficial.',
+              url: '/#/jogador/convocacao'
+            }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
+          }
         } catch (e) { }
       }
     }
 
     // Reordena a fila restante (posições 1, 2, 3...)
     const restantesRes = await client.query(
-      `SELECT id FROM convocacoes
+      `SELECT usuario_id FROM convocacoes
        WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
        ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC`,
       [pelada_id]
     );
     for (let i = 0; i < restantesRes.rows.length; i++) {
       await client.query(
-        `UPDATE convocacoes SET posicao_fila = $1 WHERE id = $2`,
-        [i + 1, restantesRes.rows[i].id]
+        `UPDATE convocacoes SET posicao_fila = $1 WHERE pelada_id = $2 AND usuario_id = $3`,
+        [i + 1, pelada_id, restantesRes.rows[i].usuario_id]
       );
     }
 
