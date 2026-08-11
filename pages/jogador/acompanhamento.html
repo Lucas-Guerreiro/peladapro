@@ -492,14 +492,23 @@
 
 <!-- HISTÓRICO DE PARTIDAS RECENTES -->
 <div class="acomp-card-clear" style="padding: 20px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 8px;">
-    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">
-      <i data-feather="check-circle" style="width: 16px; height: 16px; color: #10B981;"></i>
-      Histórico de Partidas Recentes
-    </h3>
-    <span style="font-size: 11px; font-weight: 700; color: #10B981; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">JOGOS ENCERRADOS</span>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="check-circle" style="width: 16px; height: 16px; color: #10B981;"></i>
+        Histórico de Partidas Recentes
+      </h3>
+      <span style="font-size: 11px; font-weight: 700; color: #10B981; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">JOGOS ENCERRADOS</span>
+    </div>
+
+    <!-- FILTRO DE TIME NO HISTÓRICO (JOGADOR) -->
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <select id="acomp-recent-matches-filter-team" style="font-size: 12px; font-weight: 600; color: #334155; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 6px 10px; cursor: pointer; outline: none; font-family: 'Inter', sans-serif;">
+        <option value="TODOS">🔍 Todos os Times</option>
+      </select>
+    </div>
   </div>
-  <div id="acomp-recent-matches" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+  <div id="acomp-recent-matches" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
     <!-- Inserido dinamicamente -->
   </div>
 </div>

@@ -789,12 +789,52 @@ var Acompanhamento = {
 
       window.App.openGoalPanels = window.App.openGoalPanels || {};
 
-      var html = '';
-      var totalPartidas = partidas.length;
       var teams = [];
       try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
-      partidas.forEach(function (p, idx) {
+      // Popular seletor de filtro por time no Acompanhamento Jogador
+      var filterSelect = document.getElementById("acomp-recent-matches-filter-team");
+      var selectedTeam = "TODOS";
+      if (filterSelect) {
+        selectedTeam = filterSelect.value || "TODOS";
+
+        var uniqueTeams = new Set();
+        (teams || []).forEach(function (t) { if (t.nome || t.name) uniqueTeams.add(t.nome || t.name); });
+        (partidas || []).forEach(function (p) {
+          if (p.time_a_nome) uniqueTeams.add(p.time_a_nome);
+          if (p.time_b_nome) uniqueTeams.add(p.time_b_nome);
+        });
+
+        var optionsHtml = '<option value="TODOS">🔍 Todos os Times (' + partidas.length + ')</option>';
+        uniqueTeams.forEach(function (tName) {
+          var count = partidas.filter(function (p) { return p.time_a_nome === tName || p.time_b_nome === tName; }).length;
+          optionsHtml += '<option value="' + tName + '">' + tName + ' (' + count + ')</option>';
+        });
+        filterSelect.innerHTML = optionsHtml;
+        filterSelect.value = uniqueTeams.has(selectedTeam) || selectedTeam === "TODOS" ? selectedTeam : "TODOS";
+
+        filterSelect.onchange = function () {
+          Acompanhamento.renderRecentMatches();
+        };
+      }
+
+      // Filtragem por time selecionado
+      var displayPartidas = partidas;
+      if (selectedTeam && selectedTeam !== "TODOS") {
+        displayPartidas = partidas.filter(function (p) {
+          return p.time_a_nome === selectedTeam || p.time_b_nome === selectedTeam;
+        });
+      }
+
+      if (displayPartidas.length === 0) {
+        container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:16px 0;">Nenhuma partida encontrada para o <strong>' + selectedTeam + '</strong> nesta pelada.</p>';
+        return;
+      }
+
+      var html = '';
+      var totalPartidas = displayPartidas.length;
+
+      displayPartidas.forEach(function (p, idx) {
         var numJogo = p.numero_jogo || p.id || (totalPartidas - idx);
         var isOpen = !!window.App.openGoalPanels[p.id];
         var tA = teams.find(function (t) { return (t.nome || t.name) === p.time_a_nome; }) || { nome: p.time_a_nome, emblema: 0 };

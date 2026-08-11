@@ -1277,7 +1277,44 @@ async function renderRecentMatches() {
     let teams = [];
     try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
-    partidas.forEach(p => {
+    // Popular seletor de filtro por time
+    const filterSelect = document.getElementById("recent-matches-filter-team");
+    let selectedTeam = "TODOS";
+    if (filterSelect) {
+      selectedTeam = filterSelect.value || "TODOS";
+
+      const uniqueTeams = new Set();
+      (teams || []).forEach(t => { if (t.nome || t.name) uniqueTeams.add(t.nome || t.name); });
+      (partidas || []).forEach(p => {
+        if (p.time_a_nome) uniqueTeams.add(p.time_a_nome);
+        if (p.time_b_nome) uniqueTeams.add(p.time_b_nome);
+      });
+
+      let optionsHtml = `<option value="TODOS">🔍 Todos os Times (${partidas.length})</option>`;
+      uniqueTeams.forEach(tName => {
+        const count = partidas.filter(p => p.time_a_nome === tName || p.time_b_nome === tName).length;
+        optionsHtml += `<option value="${tName}">${tName} (${count})</option>`;
+      });
+      filterSelect.innerHTML = optionsHtml;
+      filterSelect.value = uniqueTeams.has(selectedTeam) || selectedTeam === "TODOS" ? selectedTeam : "TODOS";
+
+      filterSelect.onchange = () => {
+        renderRecentMatches();
+      };
+    }
+
+    // Filtragem por time selecionado
+    let displayPartidas = partidas;
+    if (selectedTeam && selectedTeam !== "TODOS") {
+      displayPartidas = partidas.filter(p => p.time_a_nome === selectedTeam || p.time_b_nome === selectedTeam);
+    }
+
+    if (displayPartidas.length === 0) {
+      container.innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 16px 0;">Nenhuma partida encontrada para o <strong>${selectedTeam}</strong> nesta pelada.</p>`;
+      return;
+    }
+
+    displayPartidas.forEach(p => {
       const isOpen = !!window.App.openGoalPanels[p.id];
       const tA = (teams || []).find(t => (t.nome || t.name) === p.time_a_nome) || { nome: p.time_a_nome, emblema: 0 };
       const tB = (teams || []).find(t => (t.nome || t.name) === p.time_b_nome) || { nome: p.time_b_nome, emblema: 1 };

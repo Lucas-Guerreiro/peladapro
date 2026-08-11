@@ -397,13 +397,22 @@
 
   <!-- 3. CARD: Histórico de Partidas Recentes (Posicionado logo abaixo da Fila de Espera) -->
   <div class="gestor-card-clear">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">⚽ Histórico de Partidas Recentes</h3>
-      <span style="font-size: 11px; background: #D1FAE5; color: #065F46; font-weight: 700; padding: 3px 10px; border-radius: 20px;">JOGOS ENCERRADOS</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">⚽ Histórico de Partidas Recentes</h3>
+        <span style="font-size: 11px; background: #D1FAE5; color: #065F46; font-weight: 700; padding: 3px 10px; border-radius: 20px;">JOGOS ENCERRADOS</span>
+      </div>
+
+      <!-- FILTRO DE TIME NO HISTÓRICO (GESTOR) -->
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <select id="recent-matches-filter-team" style="font-size: 12px; font-weight: 600; color: #334155; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 6px 10px; cursor: pointer; outline: none; font-family: 'Inter', sans-serif;">
+          <option value="TODOS">🔍 Todos os Times</option>
+        </select>
+      </div>
     </div>
 
     <!-- Lista de Partidas Recentes -->
-    <div id="recent-matches-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;">
+    <div id="recent-matches-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
       <!-- Inserido dinamicamente -->
     </div>
   </div>
