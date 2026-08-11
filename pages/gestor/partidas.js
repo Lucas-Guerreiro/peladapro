@@ -361,6 +361,77 @@ function onGestorStorageChange(e) {
   }
 }
 
+function getMatchPhaseInfo(liveMatch, peladaAtiva) {
+  const tState = liveMatch ? (liveMatch.tournamentState || null) : null;
+  const isTorneio = (peladaAtiva && peladaAtiva.modo === 'torneio') || !!tState;
+
+  if (isTorneio && tState) {
+    const currentMatchId = liveMatch ? liveMatch.tournamentMatchId : null;
+
+    if (tState.fase === 'grupo') {
+      const matchesList = tState.matches || [];
+      let matchIndex = matchesList.findIndex(m => m.id === currentMatchId || m.status === 'em_andamento');
+      if (matchIndex < 0) {
+        matchIndex = matchesList.findIndex(m => m.status !== 'encerrado');
+      }
+      const gameNum = matchIndex >= 0 ? (matchIndex + 1) : 1;
+      const totalGames = matchesList.length;
+      const turnoTxt = tState.turno === 'ida_volta' ? 'Turno e Returno (Ida e Volta)' : 'Turno Único (Somente Ida)';
+
+      return {
+        title: `⚽ FASE DE GRUPOS — JOGO ${gameNum} DE ${totalGames}`,
+        sub: `Tabela Mista • ${turnoTxt}`,
+        bg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+        color: '#78350F',
+        border: '1px solid #F59E0B'
+      };
+    } else if (tState.fase === 'mata_mata') {
+      const matchesList = tState.knockoutMatches || [];
+      let matchObj = matchesList.find(m => m.id === currentMatchId || m.status === 'em_andamento') || matchesList.find(m => m.status !== 'encerrado');
+      const phaseName = matchObj && matchObj.faseNome ? matchObj.faseNome.toUpperCase() : 'SEMIFINAL (MATA-MATA)';
+
+      return {
+        title: `🔥 MATA-MATA — ${phaseName}`,
+        sub: 'Eliminatória Direta (Jogo Único)',
+        bg: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
+        color: '#075985',
+        border: '1px solid #0284C7'
+      };
+    } else if (tState.fase === 'finais') {
+      const matchesList = tState.finalsMatches || [];
+      let matchObj = matchesList.find(m => m.id === currentMatchId || m.status === 'em_andamento') || matchesList.find(m => m.status !== 'encerrado');
+      const phaseName = matchObj && matchObj.faseNome ? matchObj.faseNome.toUpperCase() : 'GRANDE FINAL';
+      const is3rd = phaseName.includes('3º') || phaseName.includes('TERCEIRO');
+
+      return {
+        title: is3rd ? `🥉 DISPUTA DE 3º LUGAR` : `🏆 GRANDE FINAL DO TORNEIO`,
+        sub: is3rd ? 'Decisão da Medalha de Bronze' : 'Decisão do Grande Campeão do Torneio',
+        bg: is3rd 
+          ? 'linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)'
+          : 'linear-gradient(135deg, #FEF3C7 0%, #D1FAE5 100%)',
+        color: is3rd ? '#831843' : '#065F46',
+        border: is3rd ? '1px solid #EC4899' : '1px solid #10B981'
+      };
+    } else if (tState.fase === 'finalizado') {
+      return {
+        title: `🎉 MINI TORNEIO FINALIZADO`,
+        sub: 'Confira o Pódio dos Campeões!',
+        bg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
+        color: '#065F46',
+        border: '1px solid #10B981'
+      };
+    }
+  }
+
+  return {
+    title: `⚽ PELADA NORMAL — REINA CAMPO`,
+    sub: `Revezamento de Equipes`,
+    bg: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)',
+    color: '#1E293B',
+    border: '1px solid #94A3B8'
+  };
+}
+
 function renderLiveMatchUI() {
   // Se a pelada ativa estiver finalizada, não renderiza o confronto ao vivo
   const activePelada = window.App.activePelada || {};
@@ -470,6 +541,21 @@ function renderLiveMatchUI() {
   if (teamBEl) teamBEl.textContent = teamB;
   if (scoreAEl) scoreAEl.textContent = scoreA;
   if (scoreBEl) scoreBEl.textContent = scoreB;
+
+  // Renderiza Banner da Fase da Partida acima do Placar
+  const phaseBanner = document.getElementById("gestor-phase-header-banner");
+  const phaseTitle = document.getElementById("gestor-phase-header-title");
+  const phaseSub = document.getElementById("gestor-phase-header-sub");
+
+  if (phaseBanner && phaseTitle) {
+    const pInfo = getMatchPhaseInfo(window.App.liveMatch, window.App.activePelada);
+    phaseTitle.textContent = pInfo.title;
+    if (phaseSub) phaseSub.textContent = pInfo.sub;
+    phaseBanner.style.background = pInfo.bg;
+    phaseBanner.style.color = pInfo.color;
+    phaseBanner.style.border = pInfo.border;
+    phaseBanner.style.display = "block";
+  }
 
   // Renderiza emblemas dos times (busca no localStorage)
   if (window.TeamEmblems) {

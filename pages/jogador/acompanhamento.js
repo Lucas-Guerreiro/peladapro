@@ -410,6 +410,80 @@ var Acompanhamento = {
     if (scoreA) scoreA.textContent = match.scoreA || 0;
     if (scoreB) scoreB.textContent = match.scoreB || 0;
 
+    // Renderiza Banner da Fase da Partida acima do Placar (Jogador)
+    var phaseBanner = document.getElementById("acomp-phase-header-banner");
+    var phaseTitle = document.getElementById("acomp-phase-header-title");
+    var phaseSub = document.getElementById("acomp-phase-header-sub");
+
+    if (phaseBanner && phaseTitle) {
+      var tState = match ? (match.tournamentState || null) : null;
+      var isTorneio = (peladaAtiva && peladaAtiva.modo === 'torneio') || !!tState;
+      var pInfo = {
+        title: '⚽ PELADA NORMAL — REINA CAMPO',
+        sub: 'Revezamento de Equipes',
+        bg: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)',
+        color: '#1E293B',
+        border: '1px solid #94A3B8'
+      };
+
+      if (isTorneio && tState) {
+        var currentMatchId = match ? match.tournamentMatchId : null;
+        if (tState.fase === 'grupo') {
+          var matchesList = tState.matches || [];
+          var matchIndex = matchesList.findIndex(function(m) { return m.id === currentMatchId || m.status === 'em_andamento'; });
+          if (matchIndex < 0) matchIndex = matchesList.findIndex(function(m) { return m.status !== 'encerrado'; });
+          var gameNum = matchIndex >= 0 ? (matchIndex + 1) : 1;
+          var totalGames = matchesList.length;
+          var turnoTxt = tState.turno === 'ida_volta' ? 'Turno e Returno (Ida e Volta)' : 'Turno Único (Somente Ida)';
+          pInfo = {
+            title: '⚽ FASE DE GRUPOS — JOGO ' + gameNum + ' DE ' + totalGames,
+            sub: 'Tabela Mista • ' + turnoTxt,
+            bg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+            color: '#78350F',
+            border: '1px solid #F59E0B'
+          };
+        } else if (tState.fase === 'mata_mata') {
+          var matchesListK = tState.knockoutMatches || [];
+          var matchObjK = matchesListK.find(function(m) { return m.id === currentMatchId || m.status === 'em_andamento'; }) || matchesListK.find(function(m) { return m.status !== 'encerrado'; });
+          var phaseNameK = matchObjK && matchObjK.faseNome ? matchObjK.faseNome.toUpperCase() : 'SEMIFINAL (MATA-MATA)';
+          pInfo = {
+            title: '🔥 MATA-MATA — ' + phaseNameK,
+            sub: 'Eliminatória Direta (Jogo Único)',
+            bg: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
+            color: '#075985',
+            border: '1px solid #0284C7'
+          };
+        } else if (tState.fase === 'finais') {
+          var matchesListF = tState.finalsMatches || [];
+          var matchObjF = matchesListF.find(function(m) { return m.id === currentMatchId || m.status === 'em_andamento'; }) || matchesListF.find(function(m) { return m.status !== 'encerrado'; });
+          var phaseNameF = matchObjF && matchObjF.faseNome ? matchObjF.faseNome.toUpperCase() : 'GRANDE FINAL';
+          var is3rd = phaseNameF.indexOf('3º') !== -1 || phaseNameF.indexOf('TERCEIRO') !== -1;
+          pInfo = {
+            title: is3rd ? '🥉 DISPUTA DE 3º LUGAR' : '🏆 GRANDE FINAL DO TORNEIO',
+            sub: is3rd ? 'Decisão da Medalha de Bronze' : 'Decisão do Grande Campeão do Torneio',
+            bg: is3rd ? 'linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)' : 'linear-gradient(135deg, #FEF3C7 0%, #D1FAE5 100%)',
+            color: is3rd ? '#831843' : '#065F46',
+            border: is3rd ? '1px solid #EC4899' : '1px solid #10B981'
+          };
+        } else if (tState.fase === 'finalizado') {
+          pInfo = {
+            title: '🎉 MINI TORNEIO FINALIZADO',
+            sub: 'Confira o Pódio dos Campeões!',
+            bg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
+            color: '#065F46',
+            border: '1px solid #10B981'
+          };
+        }
+      }
+
+      phaseTitle.textContent = pInfo.title;
+      if (phaseSub) phaseSub.textContent = pInfo.sub;
+      phaseBanner.style.background = pInfo.bg;
+      phaseBanner.style.color = pInfo.color;
+      phaseBanner.style.border = pInfo.border;
+      phaseBanner.style.display = "block";
+    }
+
     // Alertas de vitórias consecutivas
     var peladaAtiva = window.App.activePelada || {};
     var grupoAtivo = (Auth && Auth.currentGroup) || window.App.currentGroup || {};
