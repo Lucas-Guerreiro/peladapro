@@ -229,7 +229,15 @@ function handleExecuteSorteio() {
   }
 
   // Se o modo da pelada for 'torneio', gera o calendário de Tabela Mista (Round-Robin)
-  if (peladaAtiva && peladaAtiva.modo === 'torneio' && window.TournamentEngine) {
+  const selectModo = document.getElementById("select-pelada-modo");
+  const modoAtual = (selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal');
+  
+  if (peladaAtiva) {
+    peladaAtiva.modo = modoAtual;
+    try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
+  }
+
+  if (modoAtual === 'torneio' && window.TournamentEngine) {
     const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams);
     const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
     const tState = {
@@ -259,6 +267,12 @@ function handleExecuteSorteio() {
       window.App.liveMatch.tournamentMatchId = matches[0].id;
     }
   } else {
+    // Modo Pelada Normal
+    window.App.liveMatch.tournamentState = null;
+    try { localStorage.removeItem("tournamentState"); } catch(e) {}
+    if (peladaId) {
+      try { localStorage.removeItem(`tournamentState_${peladaId}`); } catch(e) {}
+    }
     // Carregar os 2 primeiros times na partida ativa
     if (drawnTeams.length >= 2) {
       window.App.liveMatch.teamA = drawnTeams[0].nome;

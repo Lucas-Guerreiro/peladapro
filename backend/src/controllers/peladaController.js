@@ -255,28 +255,28 @@ exports.atualizarConfigPartida = async (req, res) => {
     const queryUpdate = `
       UPDATE peladas
       SET modo = COALESCE($1, modo, 'normal'),
-          criterio_empate = $2,
-          vitorias_para_sair = $3,
-          jogadores_por_time = $4,
-          quantidade_times = $5,
-          regra_saida = $6,
-          valor_convocacao = $7,
-          chave_pix = $8,
-          chave_pix_nome = $9,
-          limite_atletas = $10,
-          max_jogadores = $10
+          criterio_empate = COALESCE($2, criterio_empate),
+          vitorias_para_sair = COALESCE($3, vitorias_para_sair),
+          jogadores_por_time = COALESCE($4, jogadores_por_time),
+          quantidade_times = COALESCE($5, quantidade_times),
+          regra_saida = COALESCE($6, regra_saida),
+          valor_convocacao = COALESCE($7, valor_convocacao),
+          chave_pix = COALESCE($8, chave_pix),
+          chave_pix_nome = COALESCE($9, chave_pix_nome),
+          limite_atletas = COALESCE($10, limite_atletas),
+          max_jogadores = COALESCE($10, max_jogadores)
       WHERE id = $11 RETURNING id, modo`;
     await db.query(queryUpdate, [
       modo || null,
       criterio_empate || null,
-      vitorias_para_sair !== undefined ? parseInt(vitorias_para_sair) : null,
-      jogadores_por_time !== undefined ? parseInt(jogadores_por_time) : null,
-      quantidade_times !== undefined ? parseInt(quantidade_times) : null,
+      (vitorias_para_sair !== undefined && vitorias_para_sair !== null) ? parseInt(vitorias_para_sair) : null,
+      (jogadores_por_time !== undefined && jogadores_por_time !== null) ? parseInt(jogadores_por_time) : null,
+      (quantidade_times !== undefined && quantidade_times !== null) ? parseInt(quantidade_times) : null,
       regra_saida || null,
-      valor_convocacao !== undefined ? parseFloat(valor_convocacao) : null,
+      (valor_convocacao !== undefined && valor_convocacao !== null) ? parseFloat(valor_convocacao) : null,
       chave_pix !== undefined ? chave_pix : null,
       chave_pix_nome !== undefined ? chave_pix_nome : null,
-      limite_atletas !== undefined ? parseInt(limite_atletas) : 20,
+      (limite_atletas !== undefined && limite_atletas !== null) ? parseInt(limite_atletas) : null,
       id
     ]);
 
