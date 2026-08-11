@@ -168,6 +168,22 @@ async function renderManagerCheckin(selectedPeladaId = null) {
   if (!select) return;
   select.innerHTML = "<option>Carregando partidas...</option>";
   if (!window.App.currentGroup || !window.App.currentGroup.id) {
+    const savedGroup = (window.Auth && window.Auth.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
+    if (savedGroup && savedGroup.id) {
+      window.App.currentGroup = savedGroup;
+    } else if (window.Api && window.Api.getGruposDoGestor) {
+      try {
+        const grupos = await Api.getGruposDoGestor();
+        if (Array.isArray(grupos) && grupos.length > 0) {
+          window.App.currentGroup = grupos[0];
+          if (window.Auth) window.Auth.currentGroup = grupos[0];
+          localStorage.setItem('currentGroup', JSON.stringify(grupos[0]));
+        }
+      } catch (e) { }
+    }
+  }
+
+  if (!window.App.currentGroup || !window.App.currentGroup.id) {
     select.innerHTML = "<option value=''>Selecione uma pelada</option>";
     document.getElementById("checkin-list-container").innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Selecione um grupo primeiro nas configurações.</p>`;
     return;

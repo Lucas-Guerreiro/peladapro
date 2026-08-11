@@ -103,9 +103,12 @@ var Dashboard = {
         var userId = Auth.currentUser ? Auth.currentUser.id : null;
         console.log('[Dashboard] groupId:', groupId, 'userId:', userId);
 
-        var today = new Date().toISOString().split('T')[0];
+        var today = window.Utils && window.Utils.getLocalTodayISO ? window.Utils.getLocalTodayISO() : (() => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        })();
         var upcoming = peladas.filter(function (p) {
-          const condStatus = (p.status === 'agendada');
+          const condStatus = (p.status !== 'finalizada');
 
           let pDateStr = '';
           if (p.data) {
@@ -124,9 +127,6 @@ var Dashboard = {
           }
 
           const condData = (pDateStr >= today);
-
-          console.log(`[Dashboard Filter] Pelada ID: ${p.id}, status: ${p.status} (ok? ${condStatus}), data original: ${p.data}, data ISO: ${pDateStr}, today: ${today} (ok? ${condData})`);
-
           return condStatus && condData;
         }).sort(function (a, b) {
           const dateA = a.data && a.data.includes('T') ? a.data.split('T')[0] : a.data;
@@ -222,8 +222,11 @@ var Dashboard = {
           if (todasPeladas.length > 0) {
             window.Api.savePeladas(todasPeladas);
 
-            const today = new Date().toISOString().split('T')[0];
-            const upcoming = todasPeladas.filter(p => p.status === 'agendada' && p.data >= today).slice(0, 4);
+            const today = window.Utils && window.Utils.getLocalTodayISO ? window.Utils.getLocalTodayISO() : (() => {
+              const d = new Date();
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })();
+            const upcoming = todasPeladas.filter(p => p.status !== 'finalizada' && p.data >= today).slice(0, 4);
 
             let localConvocations = window.Api.getConvocations() || [];
             for (const p of upcoming) {

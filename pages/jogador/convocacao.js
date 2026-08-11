@@ -44,11 +44,20 @@ var Convocacao = {
       selectGroup.appendChild(opt);
     });
 
-    // Se houver grupo selecionado ativo na sessão, seleciona por padrão
-    var currentGroup = Auth.currentGroup;
-    if (currentGroup) {
+    // Se houver grupo selecionado ativo na sessão ou no App, seleciona por padrão
+    var currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    if (!currentGroup && groups.length > 0) {
+      currentGroup = groups[0];
+      if (window.Auth) window.Auth.currentGroup = currentGroup;
+      window.App.currentGroup = currentGroup;
+    }
+
+    if (currentGroup && currentGroup.id) {
       selectGroup.value = currentGroup.id;
       this.handleGroupChange(currentGroup.id);
+    } else if (groups.length > 0) {
+      selectGroup.value = groups[0].id;
+      this.handleGroupChange(groups[0].id);
     }
   },
 

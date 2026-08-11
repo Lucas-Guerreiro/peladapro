@@ -282,27 +282,38 @@ const Api = {
   async getGruposDoGestor() {
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch('/api/peladas/grupos', {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const res = await fetch('/api/peladas/grupos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        this.saveGroups(data);
+        return data;
       }
-    });
-    const data = await res.json();
-    if (res.ok) {
-      this.saveGroups(data);
+      return [];
+    } catch (e) {
+      console.error('[Api] Erro em getGruposDoGestor:', e);
+      return [];
     }
-    return data;
   },
 
   async listarDatasDoGrupo(grupoId) {
+    if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return res.json();
+    try {
+      const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error('[Api] Erro em listarDatasDoGrupo:', e);
+      return [];
+    }
   },
 
   async listarTransacoesDoGrupo(grupoId) {
@@ -368,14 +379,20 @@ const Api = {
   },
 
   async listarConvocados(peladaId) {
+    if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return res.json();
+    try {
+      const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error('[Api] Erro em listarConvocados:', e);
+      return [];
+    }
   },
 
   async atualizarPerfil(dados) {
@@ -446,14 +463,20 @@ const Api = {
   },
 
   async listarPartidas(peladaId) {
+    if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`/api/partidas/pelada/${peladaId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return res.json();
+    try {
+      const res = await fetch(`/api/partidas/pelada/${peladaId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error('[Api] Erro em listarPartidas:', e);
+      return [];
+    }
   },
 
   async atualizarStatusPelada(peladaId, status) {

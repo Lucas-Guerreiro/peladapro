@@ -40,22 +40,39 @@ const Utils = {
     }).format(safeNum);
   },
 
+  getLocalTodayISO() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
   formatDate(isoDate) {
     if (!isoDate) return '—';
     try {
-      const dateStr = typeof isoDate === 'string' ? isoDate.substring(0, 10) : new Date(isoDate).toISOString().substring(0, 10);
+      const dateStr = typeof isoDate === 'string' ? (isoDate.includes('T') ? isoDate.split('T')[0] : isoDate) : new Date(isoDate).toISOString().split('T')[0];
       const parts = dateStr.split('-');
       if (parts.length === 3) {
         return `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
-      return new Date(isoDate).toLocaleDateString('pt-BR');
+      return dateStr;
     } catch (e) {
       return '—';
     }
   },
 
   formatDatetime(isoDatetime) {
-    return new Date(isoDatetime).toLocaleString('pt-BR');
+    if (!isoDatetime) return '—';
+    try {
+      if (typeof isoDatetime === 'string') {
+        const clean = isoDatetime.replace(' ', 'T');
+        return new Date(clean).toLocaleString('pt-BR');
+      }
+      return new Date(isoDatetime).toLocaleString('pt-BR');
+    } catch (e) {
+      return String(isoDatetime);
+    }
   },
 
   generateId() {
@@ -128,11 +145,9 @@ const Utils = {
     if (!dob) return null;
     try {
       var dateStr;
-      // Se já é um objeto Date
       if (dob instanceof Date) {
         dateStr = dob.getFullYear() + '-' + String(dob.getMonth() + 1).padStart(2, '0') + '-' + String(dob.getDate()).padStart(2, '0');
       } else {
-        // Garante string e pega apenas a parte AAAA-MM-DD
         dateStr = String(dob).substring(0, 10);
       }
       var parts = dateStr.split('-');
