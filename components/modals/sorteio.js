@@ -228,20 +228,23 @@ function handleExecuteSorteio() {
     });
   }
 
-  // Se o modo da pelada for 'torneio', gera o calendário de Tabela Mista (Round-Robin)
   const selectModo = document.getElementById("select-pelada-modo");
+  const selectTurno = document.getElementById("select-pelada-turno");
   const modoAtual = (selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal');
+  const turnoAtual = (selectTurno && selectTurno.value) ? selectTurno.value : ((peladaAtiva && peladaAtiva.turno_torneio) || 'ida');
   
   if (peladaAtiva) {
     peladaAtiva.modo = modoAtual;
+    peladaAtiva.turno_torneio = turnoAtual;
     try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
   }
 
   if (modoAtual === 'torneio' && window.TournamentEngine) {
-    const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams);
+    const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
     const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
     const tState = {
       modo: 'torneio',
+      turno: turnoAtual,
       fase: 'grupo',
       teams: drawnTeams,
       matches: matches,

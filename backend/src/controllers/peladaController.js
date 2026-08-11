@@ -196,8 +196,9 @@ exports.listarDatasDoGrupo = async (req, res) => {
   const tipo = req.usuarioTipo;
 
   try {
-    // Garante que a coluna modo existe na tabela peladas (idempotente)
+    // Garante que a coluna modo e turno_torneio existem na tabela peladas (idempotente)
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
 
     // Valida se o gestor é dono do grupo apenas se for gestor
     if (tipo === 'gestor') {
@@ -211,6 +212,7 @@ exports.listarDatasDoGrupo = async (req, res) => {
     const query = `
       SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.limite_atletas, p.chave_pix, p.chave_pix_nome,
              COALESCE(p.modo, 'normal') as modo,
+             COALESCE(p.turno_torneio, 'ida') as turno_torneio,
              COALESCE(p.criterio_empate, c.criterio_empate, 'ambos_permanecem') as criterio_empate,
              COALESCE(p.vitorias_para_sair, c.vitorias_para_sair, 2) as vitorias_para_sair,
              COALESCE(p.jogadores_por_time, c.jogadores_por_time, 7) as jogadores_por_time,
@@ -233,7 +235,7 @@ exports.atualizarConfigPartida = async (req, res) => {
   const { id } = req.params;
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
-  const { modo, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
+  const { modo, turno_torneio, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
 
   if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
@@ -241,6 +243,7 @@ exports.atualizarConfigPartida = async (req, res) => {
 
   try {
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
 
     // Validar se a pelada pertence a um grupo do gestor
     const queryCheck = `
@@ -255,19 +258,21 @@ exports.atualizarConfigPartida = async (req, res) => {
     const queryUpdate = `
       UPDATE peladas
       SET modo = COALESCE($1, modo, 'normal'),
-          criterio_empate = COALESCE($2, criterio_empate),
-          vitorias_para_sair = COALESCE($3, vitorias_para_sair),
-          jogadores_por_time = COALESCE($4, jogadores_por_time),
-          quantidade_times = COALESCE($5, quantidade_times),
-          regra_saida = COALESCE($6, regra_saida),
-          valor_convocacao = COALESCE($7, valor_convocacao),
-          chave_pix = COALESCE($8, chave_pix),
-          chave_pix_nome = COALESCE($9, chave_pix_nome),
-          limite_atletas = COALESCE($10, limite_atletas),
-          max_jogadores = COALESCE($10, max_jogadores)
-      WHERE id = $11 RETURNING id, modo`;
+          turno_torneio = COALESCE($2, turno_torneio, 'ida'),
+          criterio_empate = COALESCE($3, criterio_empate),
+          vitorias_para_sair = COALESCE($4, vitorias_para_sair),
+          jogadores_por_time = COALESCE($5, jogadores_por_time),
+          quantidade_times = COALESCE($6, quantidade_times),
+          regra_saida = COALESCE($7, regra_saida),
+          valor_convocacao = COALESCE($8, valor_convocacao),
+          chave_pix = COALESCE($9, chave_pix),
+          chave_pix_nome = COALESCE($10, chave_pix_nome),
+          limite_atletas = COALESCE($11, limite_atletas),
+          max_jogadores = COALESCE($11, max_jogadores)
+      WHERE id = $12 RETURNING id, modo, turno_torneio`;
     await db.query(queryUpdate, [
       modo || null,
+      turno_torneio || null,
       criterio_empate || null,
       (vitorias_para_sair !== undefined && vitorias_para_sair !== null) ? parseInt(vitorias_para_sair) : null,
       (jogadores_por_time !== undefined && jogadores_por_time !== null) ? parseInt(jogadores_por_time) : null,

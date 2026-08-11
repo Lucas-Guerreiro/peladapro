@@ -204,17 +204,30 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
     const selectModo = document.getElementById("select-pelada-modo");
+    const containerTurno = document.getElementById("container-turno-torneio");
+    const selectTurno = document.getElementById("select-pelada-turno");
+
+    function updateTurnoVisibility(modoVal) {
+      if (containerTurno) {
+        containerTurno.style.display = modoVal === 'torneio' ? 'block' : 'none';
+      }
+    }
+
     if (selectModo) {
       selectModo.value = activePelada.modo || "normal";
+      updateTurnoVisibility(selectModo.value);
+
       selectModo.onchange = async (e) => {
         const newModo = e.target.value;
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        updateTurnoVisibility(newModo);
         if (!peladaId) return;
         try {
           const res = await Api.atualizarConfigPartida(peladaId, { modo: newModo });
           if (res && res.error) {
             window.App.showToast(res.error, "error");
             selectModo.value = window.App.activePelada.modo || "normal";
+            updateTurnoVisibility(selectModo.value);
             return;
           }
           window.App.activePelada.modo = newModo;
@@ -224,6 +237,30 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         } catch (err) {
           console.error("[selectModo]", err);
           window.App.showToast("Erro ao atualizar formato da pelada.", "error");
+        }
+      };
+    }
+
+    if (selectTurno) {
+      selectTurno.value = activePelada.turno_torneio || "ida";
+      selectTurno.onchange = async (e) => {
+        const newTurno = e.target.value;
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) return;
+        try {
+          const res = await Api.atualizarConfigPartida(peladaId, { turno_torneio: newTurno });
+          if (res && res.error) {
+            window.App.showToast(res.error, "error");
+            selectTurno.value = window.App.activePelada.turno_torneio || "ida";
+            return;
+          }
+          window.App.activePelada.turno_torneio = newTurno;
+          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          const desc = newTurno === 'ida_volta' ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno)!" : "🔁 Fase de Grupos definida como Somente Ida!";
+          window.App.showToast(desc, "success");
+        } catch (err) {
+          console.error("[selectTurno]", err);
+          window.App.showToast("Erro ao atualizar turno do torneio.", "error");
         }
       };
     }

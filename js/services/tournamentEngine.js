@@ -11,7 +11,7 @@ window.TournamentEngine = {
    * @param {Array} teams Lista de objetos de times [{ id, nome, cor, emblema, ... }]
    * @returns {Array} Lista de partidas agendadas para a fase de grupos
    */
-  generateGroupSchedule(teams) {
+  generateGroupSchedule(teams, turno = 'ida') {
     if (!Array.isArray(teams) || teams.length < 2) return [];
 
     const matches = [];
@@ -36,6 +36,7 @@ window.TournamentEngine = {
 
     let matchCount = 0;
 
+    // --- TURNO DE IDA ---
     for (let round = 0; round < numRounds; round++) {
       for (let i = 0; i < half; i++) {
         const teamA = list[i];
@@ -48,7 +49,8 @@ window.TournamentEngine = {
         matches.push({
           id: `torneio_g_${matchCount}_${Date.now().toString(36)}`,
           fase: 'grupo',
-          faseNome: 'Fase de Grupos',
+          turno: 'ida',
+          faseNome: 'Fase de Grupos (Ida)',
           rodada: round + 1,
           numeroJogo: matchCount,
           teamA: teamA.nome,
@@ -70,6 +72,33 @@ window.TournamentEngine = {
       const last = rest.pop();
       rest.unshift(last);
       list = [fixed, ...rest];
+    }
+
+    // --- TURNO DE VOLTA (SE turno === 'ida_volta') ---
+    if (turno === 'ida_volta') {
+      const totalIdaMatches = matches.length;
+      for (let i = 0; i < totalIdaMatches; i++) {
+        const idaMatch = matches[i];
+        matchCount++;
+        matches.push({
+          id: `torneio_g_volta_${matchCount}_${Date.now().toString(36)}`,
+          fase: 'grupo',
+          turno: 'volta',
+          faseNome: 'Fase de Grupos (Volta)',
+          rodada: numRounds + idaMatch.rodada,
+          numeroJogo: matchCount,
+          teamA: idaMatch.teamB,
+          teamB: idaMatch.teamA,
+          teamAObj: idaMatch.teamBObj,
+          teamBObj: idaMatch.teamAObj,
+          golsA: null,
+          golsB: null,
+          status: 'agendado',
+          vencedor: null,
+          penaltisA: null,
+          penaltisB: null
+        });
+      }
     }
 
     return matches;
