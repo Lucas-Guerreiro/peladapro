@@ -256,7 +256,50 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           }
           window.App.activePelada.turno_torneio = newTurno;
           localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-          const desc = newTurno === 'ida_volta' ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno)!" : "🔁 Fase de Grupos definida como Somente Ida!";
+
+          // Se já existirem times sorteados e um torneio ativo em andamento, atualiza a tabela de jogos com o novo turno!
+          let liveMatch = window.App.liveMatch || {};
+          let tState = liveMatch.tournamentState || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null);
+          let teams = window.App.teams || [];
+          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e){}
+
+          if (teams && teams.length > 0 && window.TournamentEngine && tState) {
+            tState.turno = newTurno;
+            // Regenera a tabela mista com o novo turno
+            const newMatches = window.TournamentEngine.generateGroupSchedule(teams, newTurno);
+            
+            // Preserva o placar de partidas que já haviam sido finalizadas
+            if (Array.isArray(tState.matches)) {
+              tState.matches.forEach(oldM => {
+                if (oldM.status === 'encerrado') {
+                  const matchInNew = newMatches.find(nm => nm.teamA === oldM.teamA && nm.teamB === oldM.teamB && nm.turno === oldM.turno);
+                  if (matchInNew) {
+                    matchInNew.golsA = oldM.golsA;
+                    matchInNew.golsB = oldM.golsB;
+                    matchInNew.status = 'encerrado';
+                    matchInNew.vencedor = oldM.vencedor;
+                  }
+                }
+              });
+            }
+
+            tState.matches = newMatches;
+            tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
+            liveMatch.tournamentState = tState;
+            window.App.liveMatch = liveMatch;
+            
+            localStorage.setItem("tournamentState", JSON.stringify(tState));
+            localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
+            localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
+
+            if (window.Api && window.Api.atualizarLiveState) {
+              await window.Api.atualizarLiveState(peladaId, liveMatch, window.App.waitingQueue || [], teams);
+            }
+          }
+
+          const desc = newTurno === 'ida_volta' 
+            ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno) — 12 partidas geradas!" 
+            : "🔁 Fase de Grupos definida como Somente Ida — 6 partidas geradas!";
           window.App.showToast(desc, "success");
         } catch (err) {
           console.error("[selectTurno]", err);
