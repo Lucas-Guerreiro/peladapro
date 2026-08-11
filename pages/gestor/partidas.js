@@ -292,8 +292,16 @@ function startGestorPolling() {
         const res = await window.Api.obterLiveState(peladaId);
         if (res && res.state && !window.App.isFinishingMatch) {
           if (res.state.liveMatch) {
-            window.App.liveMatch = res.state.liveMatch;
-            localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+            const serverMatch = res.state.liveMatch;
+            const localMatch = window.App.liveMatch || {};
+            const serverTime = parseInt(serverMatch.updatedAt || 0);
+            const localTime = parseInt(localMatch.updatedAt || 0);
+
+            // Atualiza local se o servidor estiver mais recente ou se local estiver sem times
+            if (serverTime >= localTime || !localMatch.teamA) {
+              window.App.liveMatch = serverMatch;
+              localStorage.setItem("liveMatch", JSON.stringify(serverMatch));
+            }
           }
           if (res.state.teams) {
             localStorage.setItem("teams", JSON.stringify(res.state.teams));
@@ -1086,8 +1094,8 @@ async function handleFinishMatch() {
     window.App.liveMatch.goals = [];
     resetLiveTimer(true);
 
-    // Persiste a fila e o estado ao vivo no localStorage
-    saveLiveMatchState();
+    // Persiste a fila e o estado ao vivo no localStorage e no servidor
+    await saveLiveMatchState();
 
     // Re-renderiza a interface do Gestor imediatamente
     renderLiveMatchUI();
@@ -1308,7 +1316,10 @@ function setupHistoryActions() {
   });
 }
 
-function saveLiveMatchState() {
+async function saveLiveMatchState() {
+  if (window.App.liveMatch) {
+    window.App.liveMatch.updatedAt = Date.now();
+  }
   localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
   localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
   if (window.App.activePelada) {
@@ -1320,7 +1331,7 @@ function saveLiveMatchState() {
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
     let teams = [];
     try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
-    window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+    await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
   }
 }
 
