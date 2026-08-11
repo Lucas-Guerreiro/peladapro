@@ -926,15 +926,25 @@ async function handleFinishMatch() {
     const tState = window.App.liveMatch.tournamentState || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null);
 
     if ((peladaAtiva.modo === 'torneio' || tState) && window.TournamentEngine && tState) {
-      let currentMatchObj = null;
+      if (tState.fase === 'finalizado') {
+        window.App.showToast("🏆 O Mini Torneio já foi finalizado! Sortear novos times para iniciar outro torneio.", "info");
+        window.App.isFinishingMatch = false;
+        return;
+      }
 
-      // 1. Encontra a partida atual no torneio
-      if (tState.fase === 'grupo') {
-        currentMatchObj = (tState.matches || []).find(m => m.status !== 'encerrado');
-      } else if (tState.fase === 'mata_mata') {
-        currentMatchObj = (tState.knockoutMatches || []).find(m => m.status !== 'encerrado');
-      } else if (tState.fase === 'finais') {
-        currentMatchObj = (tState.finalsMatches || []).find(m => m.status !== 'encerrado');
+      let currentMatchObj = null;
+      const currentMatchId = window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null;
+
+      let searchList = [];
+      if (tState.fase === 'grupo') searchList = tState.matches || [];
+      else if (tState.fase === 'mata_mata') searchList = tState.knockoutMatches || [];
+      else if (tState.fase === 'finais') searchList = tState.finalsMatches || [];
+
+      if (currentMatchId) {
+        currentMatchObj = searchList.find(m => m.id === currentMatchId);
+      }
+      if (!currentMatchObj) {
+        currentMatchObj = searchList.find(m => m.status !== 'encerrado');
       }
 
       if (currentMatchObj) {
