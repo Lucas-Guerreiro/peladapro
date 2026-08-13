@@ -237,6 +237,11 @@ window.App.initPartidas = async function () {
 
   // Inicializar ícones Feather
   if (window.feather) feather.replace();
+
+  // Renderizar anúncio Google AdSense (se ativado pelo gestor)
+  if (window.AdSenseManager) {
+    window.AdSenseManager.renderAdContainer('adsense-partidas-banner');
+  }
 };
 
 var gestorPollingInterval = null;

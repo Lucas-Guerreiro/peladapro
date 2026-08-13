@@ -7,6 +7,7 @@ let pushSelectedAthletes = [];
 window.App.initConfig = function () {
   pushSelectedAthletes = [];
   loadConfigs();
+  initAdSenseUI();
   loadGestorGroups().then(() => {
     loadDrawnDates();
   });
@@ -738,5 +739,47 @@ async function handleActivateLicense() {
   } catch (err) {
     console.error(err);
     window.App.showToast("Erro ao conectar com o servidor.", "error");
+  }
+}
+
+// --- Lógica do Painel de Monetização AdSense (Ligar/Desligar) ------------
+function initAdSenseUI() {
+  const toggle = document.getElementById("adsense-toggle-enable");
+  const pubInput = document.getElementById("adsense-pub-id-input");
+  const slotInput = document.getElementById("adsense-slot-id-input");
+  const btnSave = document.getElementById("btn-save-adsense-config");
+
+  if (!toggle || !window.AdSenseManager) return;
+
+  // Carregar valores atuais
+  toggle.checked = window.AdSenseManager.isEnabled();
+  if (pubInput) pubInput.value = window.AdSenseManager.getPubId();
+  if (slotInput) slotInput.value = window.AdSenseManager.getSlotId();
+
+  // Alternância instantânea no toggle (ON/OFF)
+  toggle.onchange = () => {
+    if (toggle.checked) {
+      window.AdSenseManager.enable(pubInput ? pubInput.value : '', slotInput ? slotInput.value : '');
+      window.App.showToast("Exibição de anúncios do Google AdSense LIGADA! 📢", "success");
+    } else {
+      window.AdSenseManager.disable();
+      window.App.showToast("Exibição de anúncios do Google AdSense DESLIGADA. 🛑", "info");
+    }
+  };
+
+  if (btnSave) {
+    btnSave.onclick = () => {
+      const pubId = pubInput ? pubInput.value.trim() : '';
+      const slotId = slotInput ? slotInput.value.trim() : '';
+
+      if (toggle.checked) {
+        window.AdSenseManager.enable(pubId, slotId);
+        window.App.showToast("Configurações do Google AdSense salvas com sucesso! 💾", "success");
+      } else {
+        localStorage.setItem('pp_adsense_pub_id', pubId);
+        localStorage.setItem('pp_adsense_slot_id', slotId);
+        window.App.showToast("Configurações salvas (AdSense desligado).", "info");
+      }
+    };
   }
 }

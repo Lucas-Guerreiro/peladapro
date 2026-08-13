@@ -9,6 +9,10 @@ var Convocacao = {
   init: function () {
     this.populateGroupSelector();
     this.bindEvents();
+
+    if (window.AdSenseManager) {
+      window.AdSenseManager.renderAdContainer('adsense-convocacao-banner');
+    }
   },
 
   // --- Popula o select de grupos (sincronizado com backend real) -----------

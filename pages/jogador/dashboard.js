@@ -28,6 +28,11 @@ var Dashboard = {
 
     this.renderPlayerData();
     this.renderNextMatches();
+
+    // Renderizar anúncio Google AdSense (se ativado pelo gestor)
+    if (window.AdSenseManager) {
+      window.AdSenseManager.renderAdContainer('adsense-dashboard-banner');
+    }
   },
 
   // --- Dados do jogador logado -------------------------------------------
