@@ -32,15 +32,20 @@ var FinanceiroAtleta = {
       if (debtAlert) debtAlert.style.display = 'flex';
       
       // Buscar chave Pix do grupo configurada em alguma pelada
-      const group = Auth.currentGroup;
+      const group = (Auth && Auth.currentGroup) || window.App.currentGroup;
       if (group && group.id) {
         try {
-          const peladas = Api.getPeladas() || [];
-          const peladasDoGrupo = peladas.filter(p => String(p.grupo_id) === String(group.id));
-          
-          // Achar alguma pelada com chave Pix
-          const peladaComPix = peladasDoGrupo.find(p => p.chave_pix);
-          
+          let peladas = Api.getPeladas() || [];
+          let peladasDoGrupo = peladas.filter(p => String(p.grupo_id) === String(group.id));
+          let peladaComPix = peladasDoGrupo.find(p => p.chave_pix);
+
+          if (!peladaComPix && window.Api && window.Api.listarDatasDoGrupo) {
+            const peladasRemotas = await Api.listarDatasDoGrupo(group.id);
+            if (Array.isArray(peladasRemotas)) {
+              peladaComPix = peladasRemotas.find(p => p.chave_pix);
+            }
+          }
+
           if (peladaComPix && pixKeyEl && pixBox) {
             pixKeyEl.textContent = peladaComPix.chave_pix;
             pixBox.style.display = 'flex';
@@ -48,12 +53,14 @@ var FinanceiroAtleta = {
             if (btnCopyPix) {
               btnCopyPix.onclick = function() {
                 navigator.clipboard.writeText(peladaComPix.chave_pix).then(() => {
-                  window.Utils ? window.Utils.toast('Chave Pix copiada! 📋', 'success') : alert('Chave Pix copiada!');
+                  window.Utils ? window.Utils.toast('Chave Pix copiada com sucesso! 📋', 'success') : alert('Chave Pix copiada!');
                 }).catch(() => {
                   window.Utils ? window.Utils.toast('Erro ao copiar automaticamente.', 'warning') : null;
                 });
               };
             }
+          } else if (pixBox) {
+            pixBox.style.display = 'none';
           }
         } catch (e) {
           console.warn('[FinanceiroAtleta] Erro ao carregar chave Pix do grupo:', e);

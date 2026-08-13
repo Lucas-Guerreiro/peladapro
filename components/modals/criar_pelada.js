@@ -41,6 +41,8 @@ window.App.initModalCriar_pelada = function(data) {
       const exitRule = document.getElementById("create-pelada-exit-rule").value;
       const players  = parseInt(document.getElementById("create-pelada-players-val").textContent);
       const teams    = parseInt(document.getElementById("create-pelada-teams-val").textContent);
+      const chavePix = document.getElementById("create-pelada-pix-key") ? document.getElementById("create-pelada-pix-key").value.trim() : "";
+      const chavePixNome = document.getElementById("create-pelada-pix-name") ? document.getElementById("create-pelada-pix-name").value.trim() : "";
 
       if (!nome) {
         window.App.showToast("Informe o nome da pelada.", "warning");
@@ -59,7 +61,9 @@ window.App.initModalCriar_pelada = function(data) {
           regra_saida:      exitRule,
           jogadores_por_time: players,
           quantidade_times: teams,
-          valor_convocacao: 20.00
+          valor_convocacao: 20.00,
+          chave_pix:        chavePix,
+          chave_pix_nome:   chavePixNome
         });
 
         if (res.error) {
