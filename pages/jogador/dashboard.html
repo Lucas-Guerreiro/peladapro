@@ -137,21 +137,59 @@
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-  /* Preview card premium dentro do modal */
+  /* Preview card FIFA UT dentro do modal */
   .preview-card-premium {
-    background: linear-gradient(135deg, #1D9E75 0%, #0D4030 55%, #0A1F16 100%);
-    border: 1.5px solid #D4AF37;
-    border-radius: 16px; padding: 20px;
+    background: linear-gradient(160deg, #1a7a5e 0%, #0D4030 40%, #061a12 100%);
+    border: 2px solid #D4AF37;
+    border-radius: 12px; padding: 0;
     display: flex; flex-direction: column; align-items: center;
     position: relative; overflow: hidden;
-    box-shadow: 0 12px 32px rgba(29,158,117,0.45);
-    transform: rotate(-2deg); margin: 0 auto;
-    width: calc(100% - 40px); max-width: 300px;
+    box-shadow: 0 20px 50px rgba(10,31,22,0.7), 0 0 0 1px rgba(212,175,55,0.4), inset 0 1px 0 rgba(212,175,55,0.3);
+    transform: rotate(-2deg) scale(1.02);
+    margin: 0 auto;
+    width: calc(100% - 40px); max-width: 240px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
+  .preview-card-premium:hover {
+    transform: rotate(0deg) scale(1.05);
+    box-shadow: 0 28px 60px rgba(10,31,22,0.8), 0 0 0 2px rgba(212,175,55,0.7), 0 0 30px rgba(212,175,55,0.2);
+  }
+
+  /* Padrão hexagonal de fundo (FIFA UT) */
   .preview-card-premium::before {
-    content: '⚽'; position: absolute; font-size: 160px;
-    opacity: 0.05; bottom: -30px; right: -20px; transform: rotate(-15deg);
-    pointer-events: none;
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 30% 20%, rgba(212,175,55,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 70% 80%, rgba(29,158,117,0.1) 0%, transparent 50%),
+      repeating-linear-gradient(60deg, transparent, transparent 10px, rgba(255,255,255,0.015) 10px, rgba(255,255,255,0.015) 11px),
+      repeating-linear-gradient(-60deg, transparent, transparent 10px, rgba(255,255,255,0.015) 10px, rgba(255,255,255,0.015) 11px);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Efeito de brilho holográfico que varre o card */
+  .preview-card-premium::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(212,175,55,0.05) 35%,
+      rgba(255,255,255,0.18) 50%,
+      rgba(212,175,55,0.05) 65%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    animation: card-shine 3s ease-in-out infinite;
+    pointer-events: none; z-index: 1;
+    border-radius: 10px;
+  }
+  @keyframes card-shine {
+    0%   { background-position: -100% 0; opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { background-position: 200% 0; opacity: 0; }
   }
 
   /* ── Lista de Próximas Peladas ─────────────────────────────── */
@@ -248,43 +286,84 @@
       <button onclick="Dashboard.closeModalPremium()" style="background: #F1F5F9; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 16px;">✕</button>
     </div>
 
-    <!-- Preview do Card Premium -->
-    <div style="padding: 20px; display: flex; justify-content: center;">
-      <div class="preview-card-premium">
-        <!-- Tag PREMIUM -->
-        <div style="position: absolute; top: 12px; right: 12px; background: rgba(212,175,55,0.15); border: 1px solid #D4AF37; color: #F5D270; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 2px 8px; border-radius: 4px;">✦ PREMIUM</div>
+    <!-- Preview do Card FIFA UT -->
+    <div style="padding: 24px 20px 8px; display: flex; justify-content: center;">
+      <div class="preview-card-premium" id="fifa-card-preview">
 
-        <!-- Avatar + VIP -->
-        <div style="position: relative; margin-bottom: 8px;">
-          <div style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #D4AF37; overflow: hidden;">
-            <img id="modal-premium-avatar"
-              src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
-              style="width: 100%; height: 100%; object-fit: cover;">
+        <!-- Topo: rating + posição (esquerda) | logo (direita) -->
+        <div style="position: relative; z-index: 2; width: 100%; display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 14px 0;">
+          <div style="text-align: center;">
+            <div style="font-size: 36px; font-weight: 900; color: #F5D270; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.5);" id="modal-card-rating">88</div>
+            <div style="font-size: 10px; font-weight: 800; color: #D4AF37; letter-spacing: 1px; margin-top: 2px;">ATK</div>
+            <!-- Micro flags/ícones -->
+            <div style="margin-top: 6px; font-size: 16px;">🇧🇷</div>
+            <div style="margin-top: 2px; font-size: 14px;">⚽</div>
           </div>
-          <div style="position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); background: #D4AF37; color: #1A1A1A; font-size: 9px; font-weight: 800; letter-spacing: 1.5px; padding: 2px 8px; border-radius: 20px; white-space: nowrap;">VIP</div>
+          <!-- Avatar FIFA style (direita do rating) -->
+          <div style="flex: 1; display: flex; justify-content: center; margin-top: -8px;">
+            <div style="position: relative;">
+              <div style="width: 90px; height: 90px; border-radius: 50%; border: 2px solid rgba(212,175,55,0.6); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,175,55,0.2);">
+                <img id="modal-premium-avatar"
+                  src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
+                  style="width: 100%; height: 100%; object-fit: cover;">
+              </div>
+              <!-- Reflexo embaixo do avatar -->
+              <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 60px; height: 8px; background: radial-gradient(ellipse, rgba(212,175,55,0.3), transparent); border-radius: 50%;"></div>
+            </div>
+          </div>
+          <!-- Espaço direito (espelha esquerda) -->
+          <div style="width: 40px;"></div>
         </div>
 
-        <!-- Nome -->
-        <p id="modal-premium-name" style="color: #FFFFFF; font-size: 18px; font-weight: 700; margin: 12px 0 4px; text-align: center;">Atleta</p>
-        <!-- Posição -->
-        <div style="background: rgba(255,255,255,0.12); border-radius: 20px; padding: 2px 12px; margin-bottom: 12px;">
-          <span style="color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 500;">⚽ Atleta Elite</span>
+        <!-- Nome do atleta -->
+        <div style="position: relative; z-index: 2; margin-top: 12px; text-align: center; width: 100%;">
+          <p id="modal-premium-name" style="color: #FFFFFF; font-size: 15px; font-weight: 900; margin: 0; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,0.6);">ATLETA</p>
         </div>
-        <!-- Estrelas -->
-        <div style="display: flex; gap: 4px; margin-bottom: 14px;">⭐⭐⭐⭐⭐</div>
-        <!-- Stats -->
-        <div style="display: flex; width: 100%; background: rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 20px; gap: 0; justify-content: space-around; align-items: center;">
-          <div style="text-align: center;">
-            <div style="color: #F5D270; font-size: 20px; font-weight: 800;" id="modal-stat-jogos">—</div>
-            <div style="color: rgba(255,255,255,0.6); font-size: 11px;">Jogos</div>
+
+        <!-- Divisor dourado -->
+        <div style="position: relative; z-index: 2; width: calc(100% - 28px); height: 1px; background: linear-gradient(90deg, transparent, #D4AF37, transparent); margin: 10px 0;"></div>
+
+        <!-- Stats em duas colunas (estilo FIFA UT) -->
+        <div style="position: relative; z-index: 2; width: calc(100% - 28px); display: flex; gap: 0; margin-bottom: 14px;">
+          <!-- Coluna esquerda -->
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-jogos">—</span>
+              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">JOG</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-gols">—</span>
+              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">GOL</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-assist">—</span>
+              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">ASS</span>
+            </div>
           </div>
-          <div style="width: 1px; height: 28px; background: rgba(255,255,255,0.2);"></div>
-          <div style="text-align: center;">
-            <div style="color: #F5D270; font-size: 20px; font-weight: 800;" id="modal-stat-gols">—</div>
-            <div style="color: rgba(255,255,255,0.6); font-size: 11px;">Gols</div>
+          <!-- Divisor vertical -->
+          <div style="width: 1px; background: linear-gradient(180deg, transparent, rgba(212,175,55,0.4), transparent); margin: 0 10px;"></div>
+          <!-- Coluna direita -->
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-vel">—</span>
+              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">VEL</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-mvp">—</span>
+              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">MVP</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;">★</span>
+              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">ELITE</span>
+            </div>
           </div>
         </div>
-        <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin-top: 12px;">Membro Elite desde 2026</p>
+
+        <!-- Rodapé: PELADA PRO -->
+        <div style="position: relative; z-index: 2; width: 100%; text-align: center; padding: 8px 0; border-top: 1px solid rgba(212,175,55,0.2);">
+          <span style="font-size: 8px; font-weight: 900; letter-spacing: 3px; color: rgba(212,175,55,0.6);">PELADA PRO • PREMIUM</span>
+        </div>
+
       </div>
     </div>
 

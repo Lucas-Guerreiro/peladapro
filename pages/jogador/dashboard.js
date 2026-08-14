@@ -468,24 +468,41 @@ var Dashboard = {
       modalAvatar.src = user.foto || user.photo;
     }
 
-    // Preenche estatísticas se disponíveis no perfil
+    // Preenche estatísticas completas para o card FIFA UT
     var peladas = Api.getPeladas ? Api.getPeladas() : [];
     var userId = user ? user.id : null;
-    var totalJogos = 0, totalGols = 0;
+    var totalJogos = 0, totalGols = 0, totalAssists = 0, totalMvp = 0;
     peladas.forEach(function (p) {
       if (p.jogadores) {
         p.jogadores.forEach(function (j) {
           if (j.usuario_id === userId || j.id === userId) {
             totalJogos++;
-            totalGols += (j.gols || 0);
+            totalGols    += (j.gols || 0);
+            totalAssists += (j.assistencias || j.assists || 0);
+            if (j.mvp || j.craque) totalMvp++;
           }
         });
       }
     });
-    var elJogos = document.getElementById('modal-stat-jogos');
-    var elGols  = document.getElementById('modal-stat-gols');
-    if (elJogos) elJogos.textContent = totalJogos || '—';
-    if (elGols)  elGols.textContent  = totalGols || '—';
+
+    // Rating dinâmico (60–99) baseado em desempenho
+    var baseRating = 60;
+    var rating = Math.min(99, baseRating + Math.floor(totalJogos * 0.5) + Math.floor(totalGols * 1.2) + Math.floor(totalAssists * 0.8) + totalMvp * 3);
+    var elRating = document.getElementById('modal-card-rating');
+    if (elRating) elRating.textContent = rating || 75;
+
+    // Velocidade simulada (autoavaliação × 10, 60–99)
+    var vel = user && user.autoavaliacao ? Math.min(99, 60 + user.autoavaliacao * 4) : 75;
+
+    var setEl = function (id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val || '—';
+    };
+    setEl('modal-stat-jogos',  totalJogos);
+    setEl('modal-stat-gols',   totalGols);
+    setEl('modal-stat-assist', totalAssists || '0');
+    setEl('modal-stat-vel',    vel);
+    setEl('modal-stat-mvp',    totalMvp || '0');
 
     // Se já está ativo, mostra botão desabilitado
     var btnAdquirir = document.getElementById('btn-modal-adquirir');
