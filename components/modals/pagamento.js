@@ -28,7 +28,15 @@ window.App.initModalPagamento = function (pelada) {
     balanceRadio.checked = false;
     balanceLabel.style.opacity = "0.5";
     balanceLabel.style.cursor = "not-allowed";
-    window.App.showToast("Saldo insuficiente. Adicione saldo enviando o comprovante Pix na tela anterior.", "warning");
+
+    // Seleciona Pix por padrão e exibe a área do QR Code Pix
+    const pixRadio = document.getElementById("pay-method-pix");
+    if (pixRadio) {
+      pixRadio.checked = true;
+      document.getElementById("pix-qr-area").classList.remove("hidden");
+    }
+
+    window.App.showToast("Saldo insuficiente. Selecione a opção PIX para pagar diretamente.", "warning");
   }
 
   // Escutas
