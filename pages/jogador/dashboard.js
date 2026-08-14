@@ -53,16 +53,29 @@ var Dashboard = {
     var ageEl = document.getElementById('player-card-age');
     if (ageEl) ageEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
-    // Time do Coração
+    // Time do Coração e Estilo do Time
     var teamBadge = document.getElementById('player-card-team-badge');
     var teamNameEl = document.getElementById('player-card-team-name');
+    var teamTheme = this.getTeamTheme(user.time_coracao);
+
     if (teamBadge && teamNameEl) {
       if (user.time_coracao && user.time_coracao.trim()) {
         teamNameEl.textContent = user.time_coracao.trim();
         teamBadge.style.display = 'inline-flex';
+
+        if (teamTheme) {
+          teamBadge.style.background = teamTheme.badgeBg;
+          teamBadge.style.color = teamTheme.badgeText;
+          teamBadge.style.borderColor = teamTheme.border;
+        }
       } else {
         teamBadge.style.display = 'none';
       }
+    }
+
+    // Se o estilo premium já está ativo e há time escolhido, reaplica as cores do time no card
+    if (localStorage.getItem(this._PREMIUM_KEY) === 'true') {
+      this._aplicarEstiloPremium();
     }
 
     // Foto
@@ -529,6 +542,21 @@ var Dashboard = {
     setEl('modal-stat-vel',    vel);
     setEl('modal-stat-mvp',    totalMvp || '0');
 
+    // Aplica tema do time no card do modal (preview)
+    var fifaCardPreview = document.getElementById('fifa-card-preview');
+    var teamTheme = user ? this.getTeamTheme(user.time_coracao) : null;
+    if (fifaCardPreview && teamTheme) {
+      fifaCardPreview.style.background = teamTheme.gradient;
+      fifaCardPreview.style.borderColor = teamTheme.border;
+      fifaCardPreview.style.boxShadow = `0 20px 50px ${teamTheme.borderGlow}, 0 0 0 1px ${teamTheme.border}`;
+      if (elRating && teamTheme.ratingColor) {
+        elRating.style.color = teamTheme.ratingColor;
+      }
+      if (modalTeam && teamTheme.accent) {
+        modalTeam.style.color = teamTheme.accent;
+      }
+    }
+
     // Se já está ativo, mostra botão desabilitado
     var btnAdquirir = document.getElementById('btn-modal-adquirir');
     var jaAtivo = localStorage.getItem(this._PREMIUM_KEY) === 'true';
@@ -576,13 +604,214 @@ var Dashboard = {
     }, 800);
   },
 
-  // Aplica o estilo visual premium ao card do dashboard
+  // Retorna paleta visual temática baseada no time do coração do atleta
+  getTeamTheme: function (teamName) {
+    if (!teamName) return null;
+    var name = teamName.toLowerCase().trim();
+
+    // Flamengo (Vermelho Rubro-Negro & Preto)
+    if (name.includes('flamengo')) {
+      return {
+        gradient: 'linear-gradient(135deg, #C8102E 0%, #7A0A1C 45%, #000000 100%)',
+        border: '#E31C23',
+        borderGlow: 'rgba(200, 16, 46, 0.5)',
+        accent: '#FFD700',
+        badgeBg: '#C8102E',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFD700'
+      };
+    }
+
+    // Vasco da Gama (Preto & Branco com Destaque Vermelho/Branco)
+    if (name.includes('vasco')) {
+      return {
+        gradient: 'linear-gradient(135deg, #222222 0%, #0A0A0A 50%, #2A2A2A 100%)',
+        border: '#E31C23',
+        borderGlow: 'rgba(227, 28, 35, 0.4)',
+        accent: '#FFFFFF',
+        badgeBg: '#E31C23',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFFFFF'
+      };
+    }
+
+    // Fluminense (Vinho, Verde & Branco)
+    if (name.includes('fluminense')) {
+      return {
+        gradient: 'linear-gradient(135deg, #831D1C 0%, #4A0E0E 40%, #006633 100%)',
+        border: '#D4AF37',
+        borderGlow: 'rgba(131, 29, 28, 0.5)',
+        accent: '#F5D270',
+        badgeBg: '#831D1C',
+        badgeText: '#FFFFFF',
+        ratingColor: '#F5D270'
+      };
+    }
+
+    // Botafogo (Alvinegro Estrela Solitária)
+    if (name.includes('botafogo')) {
+      return {
+        gradient: 'linear-gradient(135deg, #262626 0%, #0F0F0F 50%, #000000 100%)',
+        border: '#D4AF37',
+        borderGlow: 'rgba(212, 175, 55, 0.4)',
+        accent: '#FFFFFF',
+        badgeBg: '#262626',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFFFFF'
+      };
+    }
+
+    // Corinthians (Alvinegro Paulista)
+    if (name.includes('corinthians')) {
+      return {
+        gradient: 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)',
+        border: '#FFFFFF',
+        borderGlow: 'rgba(255, 255, 255, 0.4)',
+        accent: '#F5D270',
+        badgeBg: '#111111',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFFFFF'
+      };
+    }
+
+    // Palmeiras (Alviverde)
+    if (name.includes('palmeiras')) {
+      return {
+        gradient: 'linear-gradient(135deg, #006437 0%, #04391F 50%, #011E10 100%)',
+        border: '#86EFAC',
+        borderGlow: 'rgba(0, 100, 55, 0.5)',
+        accent: '#F5D270',
+        badgeBg: '#006437',
+        badgeText: '#FFFFFF',
+        ratingColor: '#86EFAC'
+      };
+    }
+
+    // São Paulo (Tricolor Paulista)
+    if (name.includes('são paulo') || name.includes('sao paulo')) {
+      return {
+        gradient: 'linear-gradient(135deg, #C8102E 0%, #2B0007 45%, #0A0A0A 100%)',
+        border: '#FFFFFF',
+        borderGlow: 'rgba(200, 16, 46, 0.4)',
+        accent: '#F5D270',
+        badgeBg: '#C8102E',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFFFFF'
+      };
+    }
+
+    // Santos (Alvinegro Praiano)
+    if (name.includes('santos')) {
+      return {
+        gradient: 'linear-gradient(135deg, #2C2C2C 0%, #141414 50%, #000000 100%)',
+        border: '#D4AF37',
+        borderGlow: 'rgba(212, 175, 55, 0.4)',
+        accent: '#F5D270',
+        badgeBg: '#1F1F1F',
+        badgeText: '#FFFFFF',
+        ratingColor: '#F5D270'
+      };
+    }
+
+    // Red Bull Bragantino
+    if (name.includes('bragantino')) {
+      return {
+        gradient: 'linear-gradient(135deg, #D31411 0%, #6E0907 45%, #0B1A30 100%)',
+        border: '#D31411',
+        borderGlow: 'rgba(211, 20, 17, 0.5)',
+        accent: '#FFFFFF',
+        badgeBg: '#D31411',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFFFFF'
+      };
+    }
+
+    // Ponte Preta
+    if (name.includes('ponte preta')) {
+      return {
+        gradient: 'linear-gradient(135deg, #2A2A2A 0%, #121212 50%, #000000 100%)',
+        border: '#FFFFFF',
+        borderGlow: 'rgba(255, 255, 255, 0.3)',
+        accent: '#FFFFFF',
+        badgeBg: '#1A1A1A',
+        badgeText: '#FFFFFF',
+        ratingColor: '#FFFFFF'
+      };
+    }
+
+    // Guarani
+    if (name.includes('guarani')) {
+      return {
+        gradient: 'linear-gradient(135deg, #005931 0%, #02341D 50%, #001A0E 100%)',
+        border: '#86EFAC',
+        borderGlow: 'rgba(0, 89, 49, 0.5)',
+        accent: '#FFFFFF',
+        badgeBg: '#005931',
+        badgeText: '#FFFFFF',
+        ratingColor: '#86EFAC'
+      };
+    }
+
+    // Atlético Mineiro (Galo Alvinegro)
+    if (name.includes('atlético mineiro') || name.includes('atletico mineiro') || name.includes('galo')) {
+      return {
+        gradient: 'linear-gradient(135deg, #222222 0%, #0F0F0F 50%, #000000 100%)',
+        border: '#D4AF37',
+        borderGlow: 'rgba(212, 175, 55, 0.5)',
+        accent: '#F5D270',
+        badgeBg: '#141414',
+        badgeText: '#FFFFFF',
+        ratingColor: '#F5D270'
+      };
+    }
+
+    // Cruzeiro (Azul Celeste / Royal)
+    if (name.includes('cruzeiro')) {
+      return {
+        gradient: 'linear-gradient(135deg, #003399 0%, #001F66 50%, #050E2E 100%)',
+        border: '#93C5FD',
+        borderGlow: 'rgba(0, 51, 153, 0.5)',
+        accent: '#FFFFFF',
+        badgeBg: '#003399',
+        badgeText: '#FFFFFF',
+        ratingColor: '#93C5FD'
+      };
+    }
+
+    // América Mineiro (Coelho Verde & Preto)
+    if (name.includes('américa mineiro') || name.includes('america mineiro')) {
+      return {
+        gradient: 'linear-gradient(135deg, #008040 0%, #004D26 45%, #051A0E 100%)',
+        border: '#86EFAC',
+        borderGlow: 'rgba(0, 128, 64, 0.5)',
+        accent: '#F5D270',
+        badgeBg: '#008040',
+        badgeText: '#FFFFFF',
+        ratingColor: '#86EFAC'
+      };
+    }
+
+    return null;
+  },
+
+  // Aplica o estilo visual premium ou do time ao card do dashboard
   _aplicarEstiloPremium: function () {
     var card = document.getElementById('player-fifa-card');
     var btnUpgrade = document.getElementById('btn-upgrade-premium');
     var badgeVip = document.getElementById('badge-vip-card');
+    var user = Auth.currentUser;
 
-    if (card) card.classList.add('premium-ativo');
+    if (card) {
+      card.classList.add('premium-ativo');
+      if (user && user.time_coracao) {
+        var theme = this.getTeamTheme(user.time_coracao);
+        if (theme) {
+          card.style.background = theme.gradient + ' !important';
+          card.style.borderColor = theme.border + ' !important';
+          card.style.boxShadow = `0 16px 40px ${theme.borderGlow}, 0 0 0 1px ${theme.border} !important`;
+        }
+      }
+    }
     if (btnUpgrade) {
       btnUpgrade.classList.add('ativo');
       btnUpgrade.textContent = '✓ Card Premium Ativo';
