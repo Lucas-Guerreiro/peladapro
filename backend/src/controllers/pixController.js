@@ -33,6 +33,26 @@ function formatarDataDDMM(dataInput) {
   }
 }
 
+function validarCPF(cpfStr) {
+  const str = (cpfStr || '').replace(/\D/g, '');
+  if (str.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(str)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(str.charAt(i)) * (10 - i);
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(str.charAt(9))) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(str.charAt(i)) * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(str.charAt(10))) return false;
+
+  return true;
+}
+
 // 1. Enviar e Validar Comprovante Pix (Atleta)
 exports.enviarComprovante = async (req, res) => {
   const { pelada_id, e2e_id, valor, beneficiario_nome, comprovante_url } = req.body;
@@ -441,9 +461,9 @@ exports.criarPagamentoMercadoPago = async (req, res) => {
     }
 
     // 5. Integração Real com API do Mercado Pago
-    // CPF é opcional — usa fallback genérico aceito pelo Mercado Pago se não cadastrado
+    // CPF é opcional — se cadastrado e for um CPF matematicamente válido, usa-o. Caso contrário, usa fallback genérico (19119119100)
     const cleanCpf = (cpf || '').replace(/\D/g, '');
-    const payerCpf = (cleanCpf.length >= 11) ? cleanCpf : '19119119100';
+    const payerCpf = validarCPF(cleanCpf) ? cleanCpf : '19119119100';
 
     const payload = {
       transaction_amount: valorCusto,
