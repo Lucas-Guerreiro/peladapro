@@ -620,6 +620,22 @@ var Dashboard = {
       cardEl.style.setProperty('border-color', theme.border, 'important');
       cardEl.style.setProperty('border-width', '1.5px', 'important');
       cardEl.style.setProperty('box-shadow', `0 16px 40px ${theme.borderGlow}, 0 0 0 1px ${theme.border}`, 'important');
+
+      // Harmoniza o botão Convocação (btn-accent) com as cores de destaque do clube
+      var btnAccent = cardEl.querySelector('.btn-accent');
+      if (btnAccent) {
+        btnAccent.style.setProperty('background', theme.badgeBg || '#FFFFFF', 'important');
+        btnAccent.style.setProperty('color', theme.badgeText || '#FFFFFF', 'important');
+        btnAccent.style.setProperty('border-color', theme.border, 'important');
+      }
+
+      // Harmoniza o botão Editar (btn-outline-secondary) com estilo vidro fosco
+      var btnEdit = cardEl.querySelector('.btn-outline-secondary');
+      if (btnEdit) {
+        btnEdit.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important');
+        btnEdit.style.setProperty('color', '#FFFFFF', 'important');
+        btnEdit.style.setProperty('border-color', 'rgba(255, 255, 255, 0.4)', 'important');
+      }
     } else {
       cardEl.classList.remove('has-team-theme');
       if (!cardEl.classList.contains('premium-ativo')) {
@@ -627,6 +643,20 @@ var Dashboard = {
         cardEl.style.removeProperty('border-color');
         cardEl.style.removeProperty('border-width');
         cardEl.style.removeProperty('box-shadow');
+
+        var btnAccentReset = cardEl.querySelector('.btn-accent');
+        if (btnAccentReset) {
+          btnAccentReset.style.removeProperty('background');
+          btnAccentReset.style.removeProperty('color');
+          btnAccentReset.style.removeProperty('border-color');
+        }
+
+        var btnEditReset = cardEl.querySelector('.btn-outline-secondary');
+        if (btnEditReset) {
+          btnEditReset.style.removeProperty('background');
+          btnEditReset.style.removeProperty('color');
+          btnEditReset.style.removeProperty('border-color');
+        }
       }
     }
   },
