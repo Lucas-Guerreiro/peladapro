@@ -53,6 +53,18 @@ var Dashboard = {
     var ageEl = document.getElementById('player-card-age');
     if (ageEl) ageEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
+    // Time do Coração
+    var teamBadge = document.getElementById('player-card-team-badge');
+    var teamNameEl = document.getElementById('player-card-team-name');
+    if (teamBadge && teamNameEl) {
+      if (user.time_coracao && user.time_coracao.trim()) {
+        teamNameEl.textContent = user.time_coracao.trim();
+        teamBadge.style.display = 'inline-flex';
+      } else {
+        teamBadge.style.display = 'none';
+      }
+    }
+
     // Foto
     var avatarEl = document.getElementById('player-avatar');
     if (avatarEl) {
@@ -464,12 +476,21 @@ var Dashboard = {
     var overlay = document.getElementById('modal-premium-overlay');
     if (!overlay) return;
 
-    // Preenche nome e avatar no preview do card
+    // Preenche nome, foto e time no preview do card
     var modalName = document.getElementById('modal-premium-name');
     var modalAvatar = document.getElementById('modal-premium-avatar');
+    var modalTeam = document.getElementById('modal-premium-team');
     if (modalName && user) modalName.textContent = user.apelido || user.nome || 'Atleta';
     if (modalAvatar && user && (user.foto || user.photo)) {
       modalAvatar.src = user.foto || user.photo;
+    }
+    if (modalTeam && user) {
+      if (user.time_coracao && user.time_coracao.trim()) {
+        modalTeam.textContent = '⚽ ' + user.time_coracao.trim();
+        modalTeam.style.display = 'block';
+      } else {
+        modalTeam.style.display = 'none';
+      }
     }
 
     // Preenche estatísticas completas para o card FIFA UT
