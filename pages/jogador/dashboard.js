@@ -73,7 +73,13 @@ var Dashboard = {
       }
     }
 
-    // Se o estilo premium já está ativo e há time escolhido, reaplica as cores do time no card
+    // Aplica o tema do time ao card do jogador se um time foi escolhido
+    var card = document.getElementById('player-fifa-card');
+    if (card && user) {
+      this.applyTeamCardTheme(card, user.time_coracao);
+    }
+
+    // Se o estilo premium já está ativo, reaplica a ativação premium
     if (localStorage.getItem(this._PREMIUM_KEY) === 'true') {
       this._aplicarEstiloPremium();
     }
@@ -544,16 +550,16 @@ var Dashboard = {
 
     // Aplica tema do time no card do modal (preview)
     var fifaCardPreview = document.getElementById('fifa-card-preview');
-    var teamTheme = user ? this.getTeamTheme(user.time_coracao) : null;
-    if (fifaCardPreview && teamTheme) {
-      fifaCardPreview.style.background = teamTheme.gradient;
-      fifaCardPreview.style.borderColor = teamTheme.border;
-      fifaCardPreview.style.boxShadow = `0 20px 50px ${teamTheme.borderGlow}, 0 0 0 1px ${teamTheme.border}`;
-      if (elRating && teamTheme.ratingColor) {
-        elRating.style.color = teamTheme.ratingColor;
-      }
-      if (modalTeam && teamTheme.accent) {
-        modalTeam.style.color = teamTheme.accent;
+    if (fifaCardPreview && user) {
+      this.applyTeamCardTheme(fifaCardPreview, user.time_coracao);
+      var teamTheme = this.getTeamTheme(user.time_coracao);
+      if (teamTheme) {
+        if (elRating && teamTheme.ratingColor) {
+          elRating.style.color = teamTheme.ratingColor;
+        }
+        if (modalTeam && teamTheme.accent) {
+          modalTeam.style.color = teamTheme.accent;
+        }
       }
     }
 
@@ -602,6 +608,27 @@ var Dashboard = {
         window.Toast.show('🏆 Card Premium ativado com sucesso!', 'success');
       }
     }, 800);
+  },
+
+  // Aplica o tema visual do time a qualquer elemento de card (com flag !important)
+  applyTeamCardTheme: function (cardEl, teamName) {
+    if (!cardEl) return;
+    var theme = this.getTeamTheme(teamName);
+    if (theme) {
+      cardEl.classList.add('has-team-theme');
+      cardEl.style.setProperty('background', theme.gradient, 'important');
+      cardEl.style.setProperty('border-color', theme.border, 'important');
+      cardEl.style.setProperty('border-width', '1.5px', 'important');
+      cardEl.style.setProperty('box-shadow', `0 16px 40px ${theme.borderGlow}, 0 0 0 1px ${theme.border}`, 'important');
+    } else {
+      cardEl.classList.remove('has-team-theme');
+      if (!cardEl.classList.contains('premium-ativo')) {
+        cardEl.style.removeProperty('background');
+        cardEl.style.removeProperty('border-color');
+        cardEl.style.removeProperty('border-width');
+        cardEl.style.removeProperty('box-shadow');
+      }
+    }
   },
 
   // Retorna paleta visual temática baseada no time do coração do atleta
@@ -804,12 +831,7 @@ var Dashboard = {
     if (card) {
       card.classList.add('premium-ativo');
       if (user && user.time_coracao) {
-        var theme = this.getTeamTheme(user.time_coracao);
-        if (theme) {
-          card.style.background = theme.gradient + ' !important';
-          card.style.borderColor = theme.border + ' !important';
-          card.style.boxShadow = `0 16px 40px ${theme.borderGlow}, 0 0 0 1px ${theme.border} !important`;
-        }
+        this.applyTeamCardTheme(card, user.time_coracao);
       }
     }
     if (btnUpgrade) {
