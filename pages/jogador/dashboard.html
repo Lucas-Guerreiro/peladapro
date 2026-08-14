@@ -66,16 +66,18 @@
 
   /* ── Botões ─────────────────────────────────────────────────── */
   .card-fifa .btn-outline-secondary {
-    border: 1px solid #E2E8F0 !important; color: #475569 !important;
-    background: #FFFFFF !important; font-weight: 600 !important; border-radius: 8px !important;
+    border: 1px solid rgba(29,158,117,0.35) !important;
+    color: #1D9E75 !important;
+    background: rgba(29,158,117,0.06) !important;
+    font-weight: 600 !important; border-radius: 8px !important;
   }
-  .card-fifa .btn-outline-secondary:hover { background: #F1F5F9 !important; border-color: #CBD5E1 !important; }
+  .card-fifa .btn-outline-secondary:hover { background: rgba(29,158,117,0.12) !important; border-color: #1D9E75 !important; }
   .card-fifa .btn-accent {
-    background: #0284C7 !important; color: #FFFFFF !important;
+    background: #1D9E75 !important; color: #FFFFFF !important;
     font-weight: 700 !important; border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(2,132,199,0.1) !important;
+    box-shadow: 0 4px 12px rgba(29,158,117,0.25) !important;
   }
-  .card-fifa .btn-accent:hover { background: #0369a1 !important; }
+  .card-fifa .btn-accent:hover { background: #17876A !important; box-shadow: 0 6px 16px rgba(29,158,117,0.35) !important; }
 
   /* ── Botão Premium ─────────────────────────────────────────── */
   #btn-upgrade-premium {
@@ -315,8 +317,8 @@
     <!-- Preço + CTA -->
     <div style="margin: 0 20px 12px; background: #FFFFFF; border-radius: 14px; padding: 16px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
       <p style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px;">Valor do Card Premium</p>
-      <p style="font-size: 36px; font-weight: 800; color: #0F172A; margin: 0 0 2px; line-height: 1;">R$ 19,90</p>
-      <p style="font-size: 12px; color: #94A3B8; margin: 0 0 16px;">ou 5× R$ 3,98</p>
+      <p style="font-size: 36px; font-weight: 800; color: #0F172A; margin: 0 0 2px; line-height: 1;">R$ 4,99<span style="font-size: 16px; font-weight: 600; color: #64748B;">/ano</span></p>
+      <p style="font-size: 12px; color: #94A3B8; margin: 0 0 16px;">Acesso vitalício ao card premium</p>
       <button id="btn-modal-adquirir" onclick="Dashboard.ativarCardPremium()"
         style="width: 100%; background: linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37); background-size: 200%; color: #1A1A1A; font-weight: 800; font-size: 16px; border: none; border-radius: 10px; padding: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
         👑 Ativar Card Premium
