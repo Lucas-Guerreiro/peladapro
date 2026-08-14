@@ -441,22 +441,21 @@ exports.criarPagamentoMercadoPago = async (req, res) => {
     }
 
     // 5. Integração Real com API do Mercado Pago
+    // CPF é opcional — usa fallback genérico aceito pelo Mercado Pago se não cadastrado
     const cleanCpf = (cpf || '').replace(/\D/g, '');
-    if (!cleanCpf || cleanCpf.length < 11) {
-      throw new Error('É necessário cadastrar um CPF válido no seu perfil antes de gerar um pagamento Pix.');
-    }
+    const payerCpf = (cleanCpf.length >= 11) ? cleanCpf : '19119119100';
 
     const payload = {
       transaction_amount: valorCusto,
       description: `Convocação PeladaPro - ${formatarDataDDMM(dataPelada)}`,
       payment_method_id: 'pix',
       payer: {
-        email: email || 'atleta@peladapro.com',
+        email: email || `atleta${usuario_id}@peladapro.com`,
         first_name: nome.split(' ')[0] || 'Atleta',
         last_name: nome.split(' ').slice(1).join(' ') || 'PeladaPro',
         identification: {
           type: 'CPF',
-          number: cleanCpf
+          number: payerCpf
         }
       }
     };
