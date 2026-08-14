@@ -14,24 +14,34 @@ var Desempenho = {
     var selectEl = document.getElementById('desempenho-pelada-filter');
     if (!selectEl) return;
 
-    var group = Auth.currentGroup;
+    var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
     var groupId = group ? group.id : null;
 
     if (!groupId) {
-      selectEl.innerHTML = '<option value="all">📊 Geral (Todas as Peladas)</option>';
-      this.renderAll('all');
-      return;
+      try {
+        var grupos = Api.listarGrupos ? await Api.listarGrupos() : (Api.getGruposDoGestor ? await Api.getGruposDoGestor() : []);
+        if (Array.isArray(grupos) && grupos.length > 0) {
+          group = grupos[0];
+          groupId = group.id;
+          if (window.Auth && !window.Auth.currentGroup) window.Auth.currentGroup = group;
+          if (window.App) window.App.currentGroup = group;
+          localStorage.setItem('currentGroup', JSON.stringify(group));
+        }
+      } catch (e) {
+        console.warn('[Desempenho] Erro ao carregar grupos:', e);
+      }
     }
 
     try {
-      var peladas = await Api.listarDatasDoGrupo(groupId);
+      var peladas = groupId ? await Api.listarDatasDoGrupo(groupId) : [];
       selectEl.innerHTML = '<option value="all">📊 Geral (Todas as Peladas)</option>';
 
       if (Array.isArray(peladas) && peladas.length > 0) {
         peladas.forEach(function(p) {
           var opt = document.createElement('option');
           opt.value = p.id;
-          var dataFmt = window.Utils ? window.Utils.formatDate(p.data) : p.data;
+          var rawDate = p.data ? String(p.data).split('T')[0] : '';
+          var dataFmt = window.Utils ? window.Utils.formatDate(rawDate || p.data) : (p.data || '');
           opt.textContent = '📅 ' + dataFmt + (p.horario ? ' · ' + p.horario : '');
           selectEl.appendChild(opt);
         });
@@ -121,7 +131,13 @@ var Desempenho = {
         partidas = await Api.listarPartidas(peladaId);
         await carregarEscalacao(peladaId);
       } else {
-        var group = Auth.currentGroup;
+        var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
+        if (!group || !group.id) {
+          try {
+            var grupos = Api.listarGrupos ? await Api.listarGrupos() : (Api.getGruposDoGestor ? await Api.getGruposDoGestor() : []);
+            if (Array.isArray(grupos) && grupos.length > 0) group = grupos[0];
+          } catch(e) {}
+        }
         if (group && group.id) {
           var peladasGroup = await Api.listarDatasDoGrupo(group.id);
           if (Array.isArray(peladasGroup)) {

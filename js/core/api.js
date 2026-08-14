@@ -299,6 +299,10 @@ const Api = {
     }
   },
 
+  async listarGrupos() {
+    return this.getGruposDoGestor();
+  },
+
   async listarDatasDoGrupo(grupoId) {
     if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
     const token = localStorage.getItem('token');
