@@ -18,8 +18,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
     ativo BOOLEAN DEFAULT true,
     gols INT DEFAULT 0,
     partidas INT DEFAULT 0,
-    avaliacao_media NUMERIC(3,2) DEFAULT 0.00
+    avaliacao_media NUMERIC(3,2) DEFAULT 0.00,
+    time_coracao VARCHAR(100)
 );
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS time_coracao VARCHAR(100);
 
 CREATE TABLE IF NOT EXISTS grupos (
     id SERIAL PRIMARY KEY,

@@ -13,6 +13,7 @@ window.App.initModalAtleta = function (data = {}) {
   const cpf = document.getElementById("athlete-cpf");
   const whatsapp = document.getElementById("athlete-whatsapp");
   const isGk = document.getElementById("athlete-is-gk");
+  const teamEl = document.getElementById("athlete-team");
   const starSelector = document.getElementById("athlete-stars-selector");
   const photoInput = document.getElementById("athlete-photo-input");
   const photoPreview = document.getElementById("athlete-photo-preview");
@@ -98,6 +99,7 @@ window.App.initModalAtleta = function (data = {}) {
       if (cpf) cpf.value = p.cpf || "";
       if (whatsapp) whatsapp.value = p.whatsapp || "";
       if (isGk) isGk.checked = !!p.goleiro;
+      if (teamEl) teamEl.value = p.time_coracao || "";
 
       const rating = p.autoavaliacao || 0;
       if (starSelector) starSelector.dataset.value = rating;
@@ -137,6 +139,7 @@ window.App.initModalAtleta = function (data = {}) {
     if (cpf) cpf.value = "";
     if (whatsapp) whatsapp.value = "";
     if (isGk) isGk.checked = false;
+    if (teamEl) teamEl.value = "";
     if (starSelector) starSelector.dataset.value = 0;
     if (stars) stars.forEach(s => s.style.color = "#ccc");
     if (photoPreview) photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
@@ -198,6 +201,8 @@ async function handleSaveAthlete() {
   const whatsapp = whatsappInput ? whatsappInput.value : "";
   const isGkEl = document.getElementById("athlete-is-gk");
   const isGk = isGkEl ? isGkEl.checked : false;
+  const teamEl = document.getElementById("athlete-team");
+  const teamVal = teamEl ? teamEl.value : "";
   const starSelector = document.getElementById("athlete-stars-selector");
   const rating = (starSelector && starSelector.dataset.value) ? parseInt(starSelector.dataset.value) : 0;
 
@@ -236,7 +241,8 @@ async function handleSaveAthlete() {
         whatsapp: whatsapp,
         goleiro: isGk,
         autoavaliacao: rating,
-        foto: photoVal || undefined
+        foto: photoVal || undefined,
+        time_coracao: teamVal
       });
 
       if (res.error) {
@@ -263,6 +269,7 @@ async function handleSaveAthlete() {
         whatsapp: whatsapp,
         goleiro: isGk,
         autoavaliacao: rating,
+        time_coracao: teamVal,
         foto: photoVal || window.Auth.currentUser.foto
       };
       localStorage.setItem('currentUser', JSON.stringify(window.Auth.currentUser));
@@ -310,7 +317,8 @@ async function handleSaveAthlete() {
           whatsapp: whatsapp,
           goleiro: isGk,
           autoavaliacao: rating,
-          foto: photoVal || undefined
+          foto: photoVal || undefined,
+          time_coracao: teamVal
         })
       });
 
@@ -359,7 +367,8 @@ async function handleSaveAthlete() {
           whatsapp: whatsapp,
           goleiro: isGk,
           autoavaliacao: rating,
-          foto: photoVal || undefined
+          foto: photoVal || undefined,
+          time_coracao: teamVal
         })
       });
 

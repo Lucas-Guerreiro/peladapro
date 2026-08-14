@@ -4,7 +4,7 @@ exports.me = async (req, res) => {
   const usuario_id = req.usuarioId;
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, ativo FROM usuarios WHERE id = $1',
+      'SELECT id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, ativo, time_coracao FROM usuarios WHERE id = $1',
       [usuario_id]
     );
 
@@ -20,7 +20,7 @@ exports.me = async (req, res) => {
 
 exports.atualizarPerfil = async (req, res) => {
   const usuario_id = req.usuarioId;
-  const { nome, apelido, email, senha, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao } = req.body;
+  const { nome, apelido, email, senha, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao, time_coracao } = req.body;
 
   try {
     const bcrypt = require('bcrypt');
@@ -74,9 +74,10 @@ exports.atualizarPerfil = async (req, res) => {
           goleiro = COALESCE($7, goleiro),
           cpf = COALESCE($8, cpf),
           data_nascimento = COALESCE($9, data_nascimento),
-          autoavaliacao = COALESCE($10, autoavaliacao)
-      WHERE id = $11
-      RETURNING id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media`;
+          autoavaliacao = COALESCE($10, autoavaliacao),
+          time_coracao = COALESCE($11, time_coracao)
+      WHERE id = $12
+      RETURNING id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, time_coracao`;
     
     const { rows } = await db.query(query, [
       nome ? nome.trim() : null, 
@@ -89,6 +90,7 @@ exports.atualizarPerfil = async (req, res) => {
       cpf ? cpf.trim() : null,
       data_nascimento || null,
       autoavaliacao !== undefined && parseInt(autoavaliacao) >= 1 && parseInt(autoavaliacao) <= 5 ? parseInt(autoavaliacao) : null,
+      time_coracao !== undefined ? (time_coracao ? time_coracao.trim() : null) : null,
       usuario_id
     ]);
 
@@ -102,7 +104,7 @@ exports.atualizarPerfil = async (req, res) => {
 exports.listarTodos = async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado FROM usuarios ORDER BY nome ASC'
+      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao FROM usuarios ORDER BY nome ASC'
     );
     res.json(rows);
   } catch (err) {
@@ -114,7 +116,7 @@ exports.obterDetalhes = async (req, res) => {
   const { id } = req.params;
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado FROM usuarios WHERE id = $1',
+      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao FROM usuarios WHERE id = $1',
       [id]
     );
 
@@ -243,7 +245,7 @@ exports.criarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem cadastrar atletas.' });
   }
 
-  const { nome, apelido, email, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto } = req.body;
+  const { nome, apelido, email, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao } = req.body;
 
   if (!nome || !email) {
     return res.status(400).json({ error: 'Nome e e-mail são campos obrigatórios.' });
@@ -297,9 +299,9 @@ exports.criarPorGestor = async (req, res) => {
     const hash = await bcrypt.hash('123456', 10);
 
     const query = `
-      INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, foto, verificado, ativo, gols, partidas, avaliacao_media)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, 0.00, $9, $10, true, true, 0, 0, $11)
-      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado`;
+      INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, foto, verificado, ativo, gols, partidas, avaliacao_media, time_coracao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, 0.00, $9, $10, true, true, 0, 0, $11, $12)
+      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao`;
 
     const { rows } = await db.query(query, [
       nome.trim(),
@@ -312,7 +314,8 @@ exports.criarPorGestor = async (req, res) => {
       !!goleiro,
       apelido ? apelido.trim() : nome.split(' ')[0],
       foto || null,
-      autoavaliacao !== undefined ? parseFloat(autoavaliacao) : 3.0
+      autoavaliacao !== undefined ? parseFloat(autoavaliacao) : 3.0,
+      time_coracao ? time_coracao.trim() : null
     ]);
 
     res.status(201).json({ message: 'Atleta cadastrado com sucesso!', usuario: rows[0] });
@@ -330,7 +333,7 @@ exports.atualizarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem atualizar outros atletas.' });
   }
 
-  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto } = req.body;
+  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao } = req.body;
 
   if (!nome) {
     return res.status(400).json({ error: 'O nome é obrigatório.' });
@@ -386,9 +389,10 @@ exports.atualizarPorGestor = async (req, res) => {
           foto = $8,
           avaliacao_media = COALESCE($9, avaliacao_media),
           email = COALESCE($10, email),
-          senha_hash = COALESCE($11, senha_hash)
-      WHERE id = $12
-      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado`;
+          senha_hash = COALESCE($11, senha_hash),
+          time_coracao = COALESCE($12, time_coracao)
+      WHERE id = $13
+      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao`;
 
     const { rows } = await db.query(query, [
       nome.trim(),
@@ -402,6 +406,7 @@ exports.atualizarPorGestor = async (req, res) => {
       autoavaliacao !== undefined && parseFloat(autoavaliacao) >= 1 && parseFloat(autoavaliacao) <= 5 ? parseFloat(autoavaliacao) : null,
       email ? email.trim().toLowerCase() : null,
       newHash,
+      time_coracao ? time_coracao.trim() : null,
       id
     ]);
 

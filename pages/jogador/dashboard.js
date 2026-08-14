@@ -302,6 +302,7 @@ var Dashboard = {
         const cpfInput = document.getElementById('comp-cpf');
         const nascimentoInput = document.getElementById('comp-nascimento');
         const whatsappInput = document.getElementById('comp-whatsapp');
+        const teamSelect = document.getElementById('comp-team');
         const goleiroCheck = document.getElementById('comp-goleiro');
         const saveBtn = document.getElementById('btn-save-cadastro');
         const stars = document.querySelectorAll('#comp-stars-selector .comp-rating-star');
@@ -319,6 +320,7 @@ var Dashboard = {
           } catch (e) { }
         }
         if (whatsappInput && u.whatsapp) whatsappInput.value = Utils.maskPhone(u.whatsapp);
+        if (teamSelect && u.time_coracao) teamSelect.value = u.time_coracao;
         if (goleiroCheck) goleiroCheck.checked = !!u.goleiro;
 
         // Pré-carregar avaliação de estrelas se existente
@@ -364,6 +366,7 @@ var Dashboard = {
     const cpf = document.getElementById('comp-cpf')?.value.trim();
     const nascimento = document.getElementById('comp-nascimento')?.value;
     const whatsapp = document.getElementById('comp-whatsapp')?.value.trim();
+    const time_coracao = document.getElementById('comp-team')?.value.trim();
     const goleiro = document.getElementById('comp-goleiro')?.checked;
     const autoavaliacao = this._currentRating;
 
@@ -392,7 +395,8 @@ var Dashboard = {
         data_nascimento: nascimento,
         whatsapp,
         goleiro,
-        autoavaliacao
+        autoavaliacao,
+        time_coracao
       });
 
       if (res.error) {
