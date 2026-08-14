@@ -29,6 +29,9 @@ var Dashboard = {
     this.renderPlayerData();
     this.renderNextMatches();
 
+    // Restaurar visual premium se já foi ativado anteriormente
+    this.initPremiumState();
+
     // Renderizar anúncio Google AdSense (se ativado pelo gestor)
     if (window.AdSenseManager) {
       window.AdSenseManager.renderAdContainer('adsense-dashboard-banner');
@@ -437,6 +440,113 @@ var Dashboard = {
       console.error(err);
       Utils.toast('Erro ao atualizar perfil.', 'error');
     }
+  },
+
+  // ─── CARD PREMIUM ───────────────────────────────────────────────────────────
+
+  // Chave de localStorage para persistir o estado premium
+  _PREMIUM_KEY: 'peladapro_card_premium_ativo',
+
+  // Verifica e aplica o estado premium ao inicializar o card
+  initPremiumState: function () {
+    if (localStorage.getItem(this._PREMIUM_KEY) === 'true') {
+      this._aplicarEstiloPremium();
+    }
+  },
+
+  // Abre o modal bottom-sheet premium com dados do atleta
+  openModalPremium: function () {
+    var user = Auth.currentUser;
+    var overlay = document.getElementById('modal-premium-overlay');
+    if (!overlay) return;
+
+    // Preenche nome e avatar no preview do card
+    var modalName = document.getElementById('modal-premium-name');
+    var modalAvatar = document.getElementById('modal-premium-avatar');
+    if (modalName && user) modalName.textContent = user.apelido || user.nome || 'Atleta';
+    if (modalAvatar && user && (user.foto || user.photo)) {
+      modalAvatar.src = user.foto || user.photo;
+    }
+
+    // Preenche estatísticas se disponíveis no perfil
+    var peladas = Api.getPeladas ? Api.getPeladas() : [];
+    var userId = user ? user.id : null;
+    var totalJogos = 0, totalGols = 0;
+    peladas.forEach(function (p) {
+      if (p.jogadores) {
+        p.jogadores.forEach(function (j) {
+          if (j.usuario_id === userId || j.id === userId) {
+            totalJogos++;
+            totalGols += (j.gols || 0);
+          }
+        });
+      }
+    });
+    var elJogos = document.getElementById('modal-stat-jogos');
+    var elGols  = document.getElementById('modal-stat-gols');
+    if (elJogos) elJogos.textContent = totalJogos || '—';
+    if (elGols)  elGols.textContent  = totalGols || '—';
+
+    // Se já está ativo, mostra botão desabilitado
+    var btnAdquirir = document.getElementById('btn-modal-adquirir');
+    var jaAtivo = localStorage.getItem(this._PREMIUM_KEY) === 'true';
+    if (btnAdquirir && jaAtivo) {
+      btnAdquirir.textContent = '✓ Card Premium Ativo';
+      btnAdquirir.disabled = true;
+      btnAdquirir.style.opacity = '0.7';
+      btnAdquirir.style.cursor = 'default';
+    }
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  },
+
+  // Fecha o modal (ao clicar no overlay ou no botão X)
+  closeModalPremium: function (event) {
+    if (event && event.target !== document.getElementById('modal-premium-overlay')) return;
+    document.getElementById('modal-premium-overlay')?.classList.remove('open');
+    document.body.style.overflow = '';
+  },
+
+  // Ativa o card premium: persiste, fecha modal e transforma o card
+  ativarCardPremium: function () {
+    localStorage.setItem(this._PREMIUM_KEY, 'true');
+
+    // Feedback visual no botão do modal
+    var btn = document.getElementById('btn-modal-adquirir');
+    if (btn) {
+      btn.textContent = '✓ Card Premium Ativo!';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+    }
+
+    // Fecha modal após 800ms e aplica o estilo premium
+    var self = this;
+    setTimeout(function () {
+      document.getElementById('modal-premium-overlay')?.classList.remove('open');
+      document.body.style.overflow = '';
+      self._aplicarEstiloPremium();
+
+      // Mostra toast de sucesso se disponível
+      if (window.Toast && window.Toast.show) {
+        window.Toast.show('🏆 Card Premium ativado com sucesso!', 'success');
+      }
+    }, 800);
+  },
+
+  // Aplica o estilo visual premium ao card do dashboard
+  _aplicarEstiloPremium: function () {
+    var card = document.getElementById('player-fifa-card');
+    var btnUpgrade = document.getElementById('btn-upgrade-premium');
+    var badgeVip = document.getElementById('badge-vip-card');
+
+    if (card) card.classList.add('premium-ativo');
+    if (btnUpgrade) {
+      btnUpgrade.classList.add('ativo');
+      btnUpgrade.textContent = '✓ Card Premium Ativo';
+      btnUpgrade.onclick = null; // Desabilita clique
+    }
+    if (badgeVip) badgeVip.classList.remove('hidden');
   }
 };
 
