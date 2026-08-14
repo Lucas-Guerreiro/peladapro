@@ -514,8 +514,9 @@ exports.obterStatusPagamento = async (req, res) => {
   const { peladaId } = req.params;
   const usuario_id = req.usuarioId;
 
+  let client;
   try {
-    // 1. Obter o pagamento pendente ou aprovado mais recente
+    // 1. Obter o pagamento mais recente do banco local
     const paymentQuery = `
       SELECT id, valor, status, qr_code, qr_code_base64, created_at
       FROM pagamentos_mercado_pago
@@ -524,28 +525,94 @@ exports.obterStatusPagamento = async (req, res) => {
     const paymentRes = await db.query(paymentQuery, [usuario_id, peladaId]);
 
     if (paymentRes.rows.length === 0) {
-      return res.json({ status: 'none' });
+      return res.json({ statusPagamento: 'none' });
     }
 
     const pagamento = paymentRes.rows[0];
 
-    // 2. Obter o status da convocação
-    const convQuery = `SELECT status FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2`;
+    // 2. Se o pagamento local ainda está pendente, consultar diretamente a API do Mercado Pago
+    //    (fallback para quando o Webhook não está configurado ou falhou)
+    if (pagamento.status === 'pending') {
+      const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+      // Só faz a consulta ativa se o token real estiver presente (não é mock)
+      if (accessToken && !String(pagamento.id).startsWith('mp_mock_')) {
+        try {
+          const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${pagamento.id}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+
+          if (mpRes.ok) {
+            const mpData = await mpRes.json();
+            const mpStatus = mpData.status;
+
+            // Se aprovado no Mercado Pago mas ainda pendente localmente → efetivar a convocação agora
+            if (mpStatus === 'approved') {
+              client = await db.pool.connect();
+              await client.query('BEGIN');
+
+              await client.query(
+                `UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1`,
+                [pagamento.id]
+              );
+
+              await efetivarConvocacaoPixAprovado(client, usuario_id, peladaId, parseFloat(pagamento.valor), pagamento.id);
+
+              await client.query('COMMIT');
+              client.release();
+              client = null;
+
+              console.log(`[StatusPolling] Auto-aprovação via polling! Usuário ${usuario_id}, Pelada ${peladaId}`);
+
+              const convRes2 = await db.query(`SELECT status, posicao_fila FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2`, [peladaId, usuario_id]);
+              return res.json({
+                id: pagamento.id,
+                valor: parseFloat(pagamento.valor),
+                statusPagamento: 'approved',
+                statusConvocacao: convRes2.rows[0]?.status || 'confirmado',
+                posicaoFila: convRes2.rows[0]?.posicao_fila || null
+              });
+            } else if (mpStatus === 'rejected' || mpStatus === 'cancelled') {
+              // Pagamento rejeitado — atualizar localmente
+              await db.query(
+                `UPDATE pagamentos_mercado_pago SET status = $1 WHERE id = $2`,
+                [mpStatus, pagamento.id]
+              );
+              await db.query(
+                `DELETE FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2 AND status = 'pendente'`,
+                [peladaId, usuario_id]
+              );
+              return res.json({ statusPagamento: mpStatus, statusConvocacao: null });
+            }
+          }
+        } catch (mpErr) {
+          console.warn('[StatusPolling] Erro ao consultar MP:', mpErr.message);
+        }
+      }
+    }
+
+    // 3. Retornar dados do banco local (estado atual)
+    const convQuery = `SELECT status, posicao_fila FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2`;
     const convRes = await db.query(convQuery, [peladaId, usuario_id]);
     const statusConvocacao = convRes.rows.length > 0 ? convRes.rows[0].status : null;
+    const posicaoFila = convRes.rows.length > 0 ? convRes.rows[0].posicao_fila : null;
 
     res.json({
       id: pagamento.id,
       valor: parseFloat(pagamento.valor),
       statusPagamento: pagamento.status,
       statusConvocacao,
+      posicaoFila,
       qr_code: pagamento.qr_code,
       qr_code_base64: pagamento.qr_code_base64,
       created_at: pagamento.created_at
     });
   } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('[obterStatusPagamento]', err);
     res.status(500).json({ error: 'Erro ao consultar status do pagamento.', detail: err.message });
+  } finally {
+    if (client) client.release();
   }
 };
 
