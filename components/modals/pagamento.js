@@ -22,33 +22,49 @@ window.App.initModalPagamento = function (pelada) {
   const willBeNegative = saldoUser - cost < -negativeLimit;
   const balanceRadio = document.getElementById("pay-method-balance");
   const balanceLabel = document.getElementById("payment-option-balance-label");
+  const alertEl = document.getElementById("payment-insufficient-alert");
+  const confirmBtn = document.getElementById("btn-confirm-payment-action");
 
   if (willBeNegative) {
-    balanceRadio.disabled = true;
-    balanceRadio.checked = false;
-    balanceLabel.style.opacity = "0.5";
-    balanceLabel.style.cursor = "not-allowed";
-
-    // Seleciona Pix por padrão e exibe a área do QR Code Pix
-    const pixRadio = document.getElementById("pay-method-pix");
-    if (pixRadio) {
-      pixRadio.checked = true;
-      document.getElementById("pix-qr-area").classList.remove("hidden");
+    if (balanceRadio) {
+      balanceRadio.disabled = true;
+      balanceRadio.checked = false;
     }
-
-    window.App.showToast("Saldo insuficiente. Selecione a opção PIX para pagar diretamente.", "warning");
+    if (balanceLabel) {
+      balanceLabel.style.opacity = "0.5";
+      balanceLabel.style.cursor = "not-allowed";
+      balanceLabel.style.border = "2px solid var(--border-color)";
+      balanceLabel.style.background = "var(--background)";
+    }
+    if (alertEl) alertEl.style.display = "flex";
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = "0.5";
+      confirmBtn.style.cursor = "not-allowed";
+    }
+    window.App.showToast("Saldo insuficiente. Faça a recarga via Pix na tela anterior.", "warning");
+  } else {
+    if (balanceRadio) {
+      balanceRadio.disabled = false;
+      balanceRadio.checked = true;
+    }
+    if (balanceLabel) {
+      balanceLabel.style.opacity = "1";
+      balanceLabel.style.cursor = "pointer";
+      balanceLabel.style.border = "2px solid var(--primary)";
+      balanceLabel.style.background = "rgba(2, 132, 199, 0.04)";
+    }
+    if (alertEl) alertEl.style.display = "none";
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = "1";
+      confirmBtn.style.cursor = "pointer";
+    }
   }
 
   // Escutas
   document.getElementById("btn-close-payment-modal").onclick = window.App.closeModal;
   document.getElementById("btn-confirm-payment-action").onclick = handleConfirmPayment;
-
-  document.getElementById("pay-method-pix").onchange = (e) => {
-    if (e.target.checked) document.getElementById("pix-qr-area").classList.remove("hidden");
-  };
-  document.getElementById("pay-method-balance").onchange = (e) => {
-    if (e.target.checked) document.getElementById("pix-qr-area").classList.add("hidden");
-  };
 };
 
 async function handleConfirmPayment() {

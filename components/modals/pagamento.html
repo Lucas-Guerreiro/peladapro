@@ -1,47 +1,38 @@
 <!-- Modal: Pagamento / Adicionar Presença -->
 <div class="modal-backdrop" id="modal-payment-backdrop">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 id="payment-modal-title">Confirmar Convocação</h3>
-      <button class="modal-close" id="btn-close-payment-modal">&times;</button>
+  <div class="modal-content" style="max-width: 400px; padding: 24px; border-radius: 16px; background: #ffffff; box-shadow: var(--shadow-lg);">
+    
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+      <h3 id="payment-modal-title" style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-heading);">Confirmar Convocação</h3>
+      <button class="modal-close" id="btn-close-payment-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-caption);">&times;</button>
     </div>
-    <p class="text-inter" style="font-size: 14px; color: var(--text-caption); margin-bottom: 20px;">
-      Esta convocação tem o valor de <strong id="payment-match-cost" style="color: var(--primary);">R$ 20,00</strong>. Escolha como deseja pagar:
+    
+    <p class="text-inter" style="font-size: 14px; color: var(--text-body); margin-bottom: 20px; line-height: 1.5;">
+      Esta convocação tem o valor de <strong id="payment-match-cost" style="color: var(--primary);">R$ 20,00</strong>.
     </p>
 
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
-      <!-- Opção Saldo -->
-      <label id="payment-option-balance-label" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: var(--transition);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <input type="radio" name="payment-method" id="pay-method-balance" value="saldo" checked>
-          <div>
-            <strong class="text-inter" style="font-size: 15px;">Usar Saldo Interno</strong>
-            <span id="payment-my-balance" style="display: block; font-size: 12px; color: var(--text-caption);">Disponível: R$ 0,00</span>
-          </div>
+    <!-- Opção Saldo -->
+    <div id="payment-option-balance-label" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--primary); background: rgba(2, 132, 199, 0.04); border-radius: 12px; margin-bottom: 20px; transition: all 0.2s;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <input type="radio" name="payment-method" id="pay-method-balance" value="saldo" checked style="margin: 0; cursor: pointer;">
+        <div>
+          <strong class="text-inter" style="font-size: 15px; color: var(--primary);">Usar Saldo Interno</strong>
+          <span id="payment-my-balance" style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Disponível: R$ 0,00</span>
         </div>
-      </label>
-      
-      <!-- Opção PIX -->
-      <label id="payment-option-pix-label" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: var(--transition);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <input type="radio" name="payment-method" id="pay-method-pix" value="pix">
-          <div>
-            <strong class="text-inter" style="font-size: 15px;">Pagar via PIX</strong>
-            <span style="display: block; font-size: 12px; color: var(--text-caption);">Transferência direta</span>
-          </div>
-        </div>
-        <i data-feather="qr-code" style="color: var(--text-caption);"></i>
-      </label>
+      </div>
     </div>
 
-    <!-- QR Code Simulado -->
-    <div id="pix-qr-area" class="hidden" style="text-align: center; margin-bottom: 20px; background-color: var(--background); padding: 16px; border-radius: 10px;">
-      <p style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">QR CODE PIX SIMULADO</p>
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PeladaProPixSimulado" alt="QR Code" style="width: 150px; height: 150px; margin: 0 auto 8px auto; display: block; border-radius: 6px;">
-      <p class="text-inter" style="font-size: 11px; color: var(--text-caption);">Código copia e cola: <code>peladapr-pix-mock-uuid-key</code></p>
+    <!-- Alerta de Saldo Insuficiente -->
+    <div id="payment-insufficient-alert" style="display: none; flex-direction: column; gap: 8px; background: #FFF5F5; border: 1px solid #FEB2B2; border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+      <span style="font-weight: 700; font-size: 13px; color: #C53030; display: flex; align-items: center; gap: 6px;">
+        ⚠️ Saldo Insuficiente
+      </span>
+      <p style="font-size: 12px; color: #9B2C2C; margin: 0; line-height: 1.4;">
+        Faça a transferência Pix copiando a chave e anexe o comprovante na tela anterior para liberar seu saldo.
+      </p>
     </div>
 
-    <button id="btn-confirm-payment-action" class="btn btn-md btn-primary" style="width: 100%;">
+    <button id="btn-confirm-payment-action" class="btn btn-md btn-primary" style="width: 100%; font-weight: 700; height: 42px; border-radius: 10px;">
       Concluir Convocação
     </button>
   </div>
