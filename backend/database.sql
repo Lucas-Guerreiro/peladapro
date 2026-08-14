@@ -85,3 +85,14 @@ CREATE TABLE IF NOT EXISTS times_jogadores (
     usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
     PRIMARY KEY (time_id, usuario_id)
 );
+
+CREATE TABLE IF NOT EXISTS pagamentos_mercado_pago (
+    id VARCHAR(100) PRIMARY KEY,
+    usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+    pelada_id INT REFERENCES peladas(id) ON DELETE CASCADE,
+    valor NUMERIC(10,2) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    qr_code TEXT NOT NULL,
+    qr_code_base64 TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

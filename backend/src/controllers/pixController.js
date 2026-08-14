@@ -1,5 +1,19 @@
 const db = require('../config/database');
 
+// Criar tabela de pagamentos do Mercado Pago se não existir (idempotente)
+db.query(`
+  CREATE TABLE IF NOT EXISTS pagamentos_mercado_pago (
+    id VARCHAR(100) PRIMARY KEY,
+    usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+    pelada_id INT REFERENCES peladas(id) ON DELETE CASCADE,
+    valor NUMERIC(10,2) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    qr_code TEXT NOT NULL,
+    qr_code_base64 TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )
+`).catch(err => console.error('[PixController] Erro ao inicializar tabela pagamentos_mercado_pago:', err));
+
 function formatarDataDDMM(dataInput) {
   if (!dataInput) return '';
   try {
@@ -246,6 +260,442 @@ exports.estornarTransacao = async (req, res) => {
   } catch (err) {
     if (client) await client.query('ROLLBACK');
     res.status(400).json({ error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+// ============================================================
+// MERCADO PAGO INTEGRATION
+// ============================================================
+
+// Função auxiliar para efetivar a convocação do jogador após aprovação do Pix
+async function efetivarConvocacaoPixAprovado(client, usuarioId, peladaId, valorPago, paymentId) {
+  // 1. Obter informações da pelada e limite de atletas
+  const queryConfig = `
+    SELECT p.grupo_id, p.data, p.limite_atletas,
+           COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo
+    FROM peladas p
+    LEFT JOIN configs c ON p.grupo_id = c.grupo_id
+    WHERE p.id = $1`;
+  const configRes = await client.query(queryConfig, [peladaId]);
+  if (configRes.rows.length === 0) {
+    throw new Error('Configuração da pelada não encontrada');
+  }
+
+  const { grupo_id, custo, limite_atletas, data: dataPelada } = configRes.rows[0];
+  const limiteMaxAtletas = limite_atletas || 20;
+
+  // 2. Contar atletas confirmados
+  const countRes = await client.query(
+    `SELECT COUNT(*)::int AS total FROM convocacoes 
+     WHERE pelada_id = $1 AND status = 'confirmado'`,
+    [peladaId]
+  );
+  const confirmados = countRes.rows[0].total;
+
+  const vaiParaFila = (confirmados >= limiteMaxAtletas);
+
+  // 3. Atualizar status da convocação
+  let statusConv = 'confirmado';
+  let posicaoFila = null;
+
+  if (vaiParaFila) {
+    statusConv = 'espera';
+    const filaRes = await client.query(
+      `SELECT COALESCE(MAX(posicao_fila), 0)::int AS ultima
+       FROM convocacoes WHERE pelada_id = $1 AND status = 'espera'`,
+      [peladaId]
+    );
+    posicaoFila = filaRes.rows[0].ultima + 1;
+  }
+
+  const queryConv = `
+    INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao, posicao_fila)
+    VALUES ($1, $2, $3, 'pix', NOW(), $4)
+    ON CONFLICT (pelada_id, usuario_id) 
+    DO UPDATE SET status = $3, forma_pagamento = 'pix', data_convocacao = NOW(), posicao_fila = $4`;
+  await client.query(queryConv, [peladaId, usuarioId, statusConv, posicaoFila]);
+
+  // 4. Buscar informações do usuário para registrar a transação
+  const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuarioId]);
+  const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
+  const dataFmt = formatarDataDDMM(dataPelada);
+
+  // Registrar transação de débito (pela participação na pelada)
+  const descDebito = `Presença de ${atletaNome} no dia ${dataFmt}`;
+  await client.query(`
+    INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+    VALUES ($1, $2, $3, 'debito', $4)`,
+    [usuarioId, grupo_id, valorPago, descDebito]
+  );
+
+  // Registrar transação de crédito (pela entrada do dinheiro via Pix)
+  const descCredito = `Pagamento Pix Convocação - ID ${paymentId}`;
+  await client.query(`
+    INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+    VALUES ($1, $2, $3, 'credito', $4)`,
+    [usuarioId, grupo_id, valorPago, descCredito]
+  );
+
+  // 5. Disparar notificação push
+  try {
+    const { sendNotificationInternal } = require('./pushController');
+    if (vaiParaFila) {
+      sendNotificationInternal({
+        usuarioId: usuarioId,
+        title: 'Fila de Espera! ⏳',
+        body: `Seu Pix de R$ ${valorPago.toFixed(2)} foi aprovado, mas a lista oficial lotou. Você está na fila de espera (Posição #${posicaoFila}).`,
+        url: '/#/jogador/convocacao'
+      }).catch(e => console.warn('[Push] Erro:', e.message));
+    } else {
+      sendNotificationInternal({
+        usuarioId: usuarioId,
+        title: 'Presença Confirmada via Pix! ⚽',
+        body: `Seu pagamento de R$ ${valorPago.toFixed(2)} foi processado. Presença confirmada no dia ${dataFmt}!`,
+        url: '/#/jogador/convocacao'
+      }).catch(e => console.warn('[Push] Erro:', e.message));
+    }
+  } catch (e) {}
+
+  return { statusConv, posicaoFila };
+}
+
+exports.criarPagamentoMercadoPago = async (req, res) => {
+  const { pelada_id } = req.body;
+  const usuario_id = req.usuarioId;
+
+  if (!pelada_id) {
+    return res.status(400).json({ error: 'ID da pelada é obrigatório.' });
+  }
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Obter custo da convocação e informações do grupo/pelada
+    const queryConfig = `
+      SELECT p.id, p.grupo_id, p.data,
+             COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo
+      FROM peladas p
+      LEFT JOIN configs c ON p.grupo_id = c.grupo_id
+      WHERE p.id = $1`;
+    const configRes = await client.query(queryConfig, [pelada_id]);
+    if (configRes.rows.length === 0) {
+      throw new Error('Pelada não encontrada.');
+    }
+    const { custo, data: dataPelada } = configRes.rows[0];
+    const valorCusto = parseFloat(custo || 20.00);
+
+    // 2. Obter dados do usuário
+    const userRes = await client.query('SELECT nome, cpf, email FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userRes.rows.length === 0) {
+      throw new Error('Usuário não encontrado.');
+    }
+    const { nome, cpf, email } = userRes.rows[0];
+
+    // 3. Verificar se já existe um pagamento pendente gerado nos últimos 30 minutos
+    const checkPaymentRes = await client.query(`
+      SELECT id, valor, status, qr_code, qr_code_base64
+      FROM pagamentos_mercado_pago
+      WHERE usuario_id = $1 AND pelada_id = $2 AND status = 'pending' AND created_at >= NOW() - INTERVAL '30 minutes'
+      ORDER BY created_at DESC LIMIT 1
+    `, [usuario_id, pelada_id]);
+
+    if (checkPaymentRes.rows.length > 0) {
+      await client.query('COMMIT');
+      return res.json(checkPaymentRes.rows[0]);
+    }
+
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+    // 4. Se não houver token do Mercado Pago, usar MOCK para ambiente de desenvolvimento local
+    if (!accessToken) {
+      console.warn('[MercadoPago] MERCADO_PAGO_ACCESS_TOKEN não configurada. Gerando pagamento mock.');
+      const mockPaymentId = `mp_mock_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const mockQrCode = `00020101021226870014br.gov.bcb.pix2565peladapro-pix-mock-uuid-key5204000053039865405${valorCusto.toFixed(2)}5802BR5913PeladaPro Mock6009SAO PAULO62070503***6304FC7F`;
+      const mockQrCodeBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAQBAAAEAQAQMAAAD71YlPAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAWElEQVRYhe3MsQkAMBAEsdf/0K4j9zCBQODuBvCSpI6qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsqPvwH8f668W2n0gAAAAABJRU5ErkJggg==';
+
+      await client.query(`
+        INSERT INTO pagamentos_mercado_pago (id, usuario_id, pelada_id, valor, status, qr_code, qr_code_base64)
+        VALUES ($1, $2, $3, $4, 'pending', $5, $6)
+      `, [mockPaymentId, usuario_id, pelada_id, valorCusto, mockQrCode, mockQrCodeBase64]);
+
+      // Insere convocação pendente para que o jogador apareça como aguardando pagamento
+      await client.query(`
+        INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao)
+        VALUES ($1, $2, 'pendente', 'pix', NOW())
+        ON CONFLICT (pelada_id, usuario_id) DO UPDATE SET status = 'pendente', forma_pagamento = 'pix', data_convocacao = NOW()
+      `, [pelada_id, usuario_id]);
+
+      await client.query('COMMIT');
+      return res.json({
+        id: mockPaymentId,
+        valor: valorCusto,
+        status: 'pending',
+        qr_code: mockQrCode,
+        qr_code_base64: mockQrCodeBase64,
+        isMock: true
+      });
+    }
+
+    // 5. Integração Real com API do Mercado Pago
+    const cleanCpf = (cpf || '').replace(/\D/g, '');
+    if (!cleanCpf || cleanCpf.length < 11) {
+      throw new Error('É necessário cadastrar um CPF válido no seu perfil antes de gerar um pagamento Pix.');
+    }
+
+    const payload = {
+      transaction_amount: valorCusto,
+      description: `Convocação PeladaPro - ${formatarDataDDMM(dataPelada)}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: email || 'atleta@peladapro.com',
+        first_name: nome.split(' ')[0] || 'Atleta',
+        last_name: nome.split(' ').slice(1).join(' ') || 'PeladaPro',
+        identification: {
+          type: 'CPF',
+          number: cleanCpf
+        }
+      }
+    };
+
+    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': `pix_pelada_${usuario_id}_${pelada_id}_${Date.now()}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const mpData = await response.json();
+
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(mpData.message || mpData.description || 'Erro ao gerar Pix na API do Mercado Pago.');
+    }
+
+    const paymentId = String(mpData.id);
+    const qrCode = mpData.point_of_interaction.transaction_data.qr_code;
+    const qrCodeBase64 = mpData.point_of_interaction.transaction_data.qr_code_base64;
+
+    await client.query(`
+      INSERT INTO pagamentos_mercado_pago (id, usuario_id, pelada_id, valor, status, qr_code, qr_code_base64)
+      VALUES ($1, $2, $3, $4, 'pending', $5, $6)
+    `, [paymentId, usuario_id, pelada_id, valorCusto, qrCode, qrCodeBase64]);
+
+    await client.query(`
+      INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao)
+      VALUES ($1, $2, 'pendente', 'pix', NOW())
+      ON CONFLICT (pelada_id, usuario_id) DO UPDATE SET status = 'pendente', forma_pagamento = 'pix', data_convocacao = NOW()
+    `, [pelada_id, usuario_id]);
+
+    await client.query('COMMIT');
+    res.json({
+      id: paymentId,
+      valor: valorCusto,
+      status: 'pending',
+      qr_code: qrCode,
+      qr_code_base64: qrCodeBase64
+    });
+
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[criarPagamentoMercadoPago]', err);
+    res.status(400).json({ error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+exports.obterStatusPagamento = async (req, res) => {
+  const { peladaId } = req.params;
+  const usuario_id = req.usuarioId;
+
+  try {
+    // 1. Obter o pagamento pendente ou aprovado mais recente
+    const paymentQuery = `
+      SELECT id, valor, status, qr_code, qr_code_base64, created_at
+      FROM pagamentos_mercado_pago
+      WHERE usuario_id = $1 AND pelada_id = $2
+      ORDER BY created_at DESC LIMIT 1`;
+    const paymentRes = await db.query(paymentQuery, [usuario_id, peladaId]);
+
+    if (paymentRes.rows.length === 0) {
+      return res.json({ status: 'none' });
+    }
+
+    const pagamento = paymentRes.rows[0];
+
+    // 2. Obter o status da convocação
+    const convQuery = `SELECT status FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2`;
+    const convRes = await db.query(convQuery, [peladaId, usuario_id]);
+    const statusConvocacao = convRes.rows.length > 0 ? convRes.rows[0].status : null;
+
+    res.json({
+      id: pagamento.id,
+      valor: parseFloat(pagamento.valor),
+      statusPagamento: pagamento.status,
+      statusConvocacao,
+      qr_code: pagamento.qr_code,
+      qr_code_base64: pagamento.qr_code_base64,
+      created_at: pagamento.created_at
+    });
+  } catch (err) {
+    console.error('[obterStatusPagamento]', err);
+    res.status(500).json({ error: 'Erro ao consultar status do pagamento.', detail: err.message });
+  }
+};
+
+exports.receberWebhookMercadoPago = async (req, res) => {
+  // O Mercado Pago pode enviar eventos com formas de notificação diferentes
+  const paymentId = req.body.data && req.body.data.id ? String(req.body.data.id) : null;
+  const action = req.body.action;
+
+  // Responder 200 OK de imediato para o Mercado Pago não reenviar a notificação
+  res.status(200).send('OK');
+
+  if (!paymentId || (action && action !== 'payment.updated' && action !== 'payment.created')) {
+    return;
+  }
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    
+    // Verificar se esse pagamento existe no nosso banco local e se está pendente
+    const localPayRes = await client.query(
+      `SELECT usuario_id, pelada_id, valor, status FROM pagamentos_mercado_pago WHERE id = $1`,
+      [paymentId]
+    );
+
+    if (localPayRes.rows.length === 0) {
+      return; // Pagamento não cadastrado na nossa plataforma
+    }
+
+    const { usuario_id, pelada_id, valor, status: statusLocal } = localPayRes.rows[0];
+
+    if (statusLocal !== 'pending') {
+      return; // Já foi processado anteriormente
+    }
+
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    if (!accessToken) {
+      return; // Mock local, webhook não será chamado de verdade, mas a rota existe
+    }
+
+    // Consultar o status real do pagamento no Mercado Pago
+    const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar pagamento ${paymentId} no Mercado Pago`);
+    }
+
+    const mpData = await response.json();
+    const mpStatus = mpData.status; // 'approved', 'pending', 'rejected', 'cancelled'
+
+    if (mpStatus === 'approved') {
+      await client.query('BEGIN');
+
+      // Atualizar status do pagamento
+      await client.query(
+        `UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1`,
+        [paymentId]
+      );
+
+      // Confirmar convocação
+      await efetivarConvocacaoPixAprovado(client, usuario_id, pelada_id, parseFloat(valor), paymentId);
+
+      await client.query('COMMIT');
+      console.log(`[WebhookMP] Pagamento aprovado com sucesso! Usuário ${usuario_id}, Pelada ${pelada_id}`);
+    } else if (mpStatus === 'rejected' || mpStatus === 'cancelled') {
+      await client.query('BEGIN');
+
+      // Atualizar pagamento para rejeitado
+      await client.query(
+        `UPDATE pagamentos_mercado_pago SET status = $1 WHERE id = $2`,
+        [mpStatus, paymentId]
+      );
+
+      // Remover a convocação pendente que falhou
+      await client.query(
+        `DELETE FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2 AND status = 'pendente'`,
+        [pelada_id, usuario_id]
+      );
+
+      await client.query('COMMIT');
+      console.log(`[WebhookMP] Pagamento recusado/cancelado. ID ${paymentId}, Status ${mpStatus}`);
+    }
+
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[receberWebhookMercadoPago]', err);
+  } finally {
+    if (client) client.release();
+  }
+};
+
+exports.simularAprovacao = async (req, res) => {
+  const { payment_id } = req.body;
+
+  if (!payment_id) {
+    return res.status(400).json({ error: 'payment_id é obrigatório.' });
+  }
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    
+    // Verificar se existe
+    const payRes = await client.query(
+      `SELECT usuario_id, pelada_id, valor, status FROM pagamentos_mercado_pago WHERE id = $1`,
+      [payment_id]
+    );
+
+    if (payRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Pagamento não encontrado.' });
+    }
+
+    const { usuario_id, pelada_id, valor, status } = payRes.rows[0];
+
+    if (status !== 'pending') {
+      return res.status(400).json({ error: 'Este pagamento já foi processado ou aprovado.' });
+    }
+
+    await client.query('BEGIN');
+
+    // Atualizar status do pagamento
+    await client.query(
+      `UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1`,
+      [payment_id]
+    );
+
+    // Efetiva a convocação do jogador
+    const { statusConv, posicaoFila } = await efetivarConvocacaoPixAprovado(
+      client,
+      usuario_id,
+      pelada_id,
+      parseFloat(valor),
+      payment_id
+    );
+
+    await client.query('COMMIT');
+    res.json({
+      message: 'Simulação de aprovação do Pix executada com sucesso!',
+      statusConvocacao: statusConv,
+      posicaoFila
+    });
+
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[simularAprovacao]', err);
+    res.status(500).json({ error: 'Erro ao processar simulação.', detail: err.message });
   } finally {
     if (client) client.release();
   }

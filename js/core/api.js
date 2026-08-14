@@ -761,6 +761,54 @@ const Api = {
     } catch(e) {
       return { error: 'Erro ao conectar ao servidor para estornar transação.' };
     }
+  },
+
+  async criarPagamentoPix(peladaId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('/api/pix/criar-pagamento', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ pelada_id: parseInt(peladaId) })
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro ao se conectar com o servidor para criar pagamento Pix.' };
+    }
+  },
+
+  async obterStatusPagamentoPix(peladaId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch(`/api/pix/status-pagamento/${peladaId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro ao conectar ao servidor para obter status do pagamento.' };
+    }
+  },
+
+  async simularAprovacaoPix(paymentId) {
+    try {
+      const res = await fetch('/api/pix/simular-aprovacao', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ payment_id: paymentId })
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro ao conectar ao servidor para simular aprovação.' };
+    }
   }
 };
 
