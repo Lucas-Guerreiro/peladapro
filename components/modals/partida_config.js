@@ -19,7 +19,7 @@ window.App.initModalPartida_config = function(data) {
   document.getElementById("partida-config-value").value = data.valor_convocacao ? parseFloat(data.valor_convocacao).toFixed(2) : "20.00";
   document.getElementById("partida-config-limite").value = data.limite_atletas || data.max_jogadores || 20;
   document.getElementById("partida-config-pix-key").value = data.chave_pix || "";
-  document.getElementById("partida-config-pix-name").value = data.chave_pix_name || "";
+  document.getElementById("partida-config-pix-name").value = data.chave_pix_nome || "";
 
   // Ligar eventos de fechamento
   document.getElementById("btn-close-partida-config").onclick = () => window.App.closeModal();
@@ -66,7 +66,7 @@ window.App.initModalPartida_config = function(data) {
         quantidade_times: teams,
         valor_convocacao: value,
         chave_pix: pixKey,
-        chave_pix_name: pixName,
+        chave_pix_nome: pixName,
         limite_atletas: limiteAtletas
       });
 
