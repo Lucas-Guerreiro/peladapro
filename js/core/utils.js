@@ -376,7 +376,6 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
     const group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
     const groupId = group ? group.id : null;
     let partidas = [];
-    const escalacoesPorPelada = {};
 
     if (groupId && window.Api && window.Api.listarDatasDoGrupo) {
       const peladas = await window.Api.listarDatasDoGrupo(groupId);
@@ -386,33 +385,6 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
             const listP = await window.Api.listarPartidas(p.id);
             if (Array.isArray(listP) && listP.length > 0) {
               partidas.push(...listP);
-              
-              // Carrega escalação dos times sorteados da pelada
-              escalacoesPorPelada[p.id] = {};
-              try {
-                let teams = [];
-                const rawTeams = localStorage.getItem(`teams_${p.id}`);
-                if (rawTeams) teams = JSON.parse(rawTeams);
-                if (!teams || teams.length === 0) teams = window.Api.getTeams() || [];
-                if ((!teams || teams.length === 0) && window.Api.obterLiveState) {
-                  const liveRes = await window.Api.obterLiveState(p.id);
-                  if (liveRes && liveRes.state && Array.isArray(liveRes.state.teams)) {
-                    teams = liveRes.state.teams;
-                  }
-                }
-                (teams || []).forEach(t => {
-                  const tName = (t.nome || t.name || '').trim().toLowerCase();
-                  if (tName) {
-                    if (!escalacoesPorPelada[p.id][tName]) escalacoesPorPelada[p.id][tName] = new Set();
-                    const pList = t.jogadores || t.players || [];
-                    pList.forEach(pl => {
-                      if (pl.nome) escalacoesPorPelada[p.id][tName].add(pl.nome.trim().toLowerCase());
-                      if (pl.apelido) escalacoesPorPelada[p.id][tName].add(pl.apelido.trim().toLowerCase());
-                      if (pl.id) escalacoesPorPelada[p.id][tName].add(String(pl.id));
-                    });
-                  }
-                });
-              } catch(e) {}
             }
           }
         }
@@ -451,7 +423,6 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
 
       const playersA = new Set();
       const playersB = new Set();
-      const escalacaoPelada = escalacoesPorPelada[pId] || {};
 
       let goalsList = [];
       if (m.autores_gols) {
@@ -471,60 +442,34 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
         }
 
         if (g.autorNome) {
-          if (pTeam === tA.toLowerCase()) playersA.add(g.autorNome.trim().toLowerCase());
-          else if (pTeam === tB.toLowerCase()) playersB.add(g.autorNome.trim().toLowerCase());
+          const aName = g.autorNome.trim().toLowerCase();
+          if (pTeam === tA.toLowerCase()) playersA.add(aName);
+          else if (pTeam === tB.toLowerCase()) playersB.add(aName);
+          if (g.autorId) playersA.add(String(g.autorId));
         }
         if (g.assistNome) {
-          if (pTeam === tA.toLowerCase()) playersA.add(g.assistNome.trim().toLowerCase());
-          else if (pTeam === tB.toLowerCase()) playersB.add(g.assistNome.trim().toLowerCase());
+          const assName = g.assistNome.trim().toLowerCase();
+          if (pTeam === tA.toLowerCase()) playersA.add(assName);
+          else if (pTeam === tB.toLowerCase()) playersB.add(assName);
+          if (g.assistId) playersA.add(String(g.assistId));
         }
       });
 
       let jogouNoTime = null;
-      if (tA && escalacaoPelada[tA.toLowerCase()]) {
-        const setA = escalacaoPelada[tA.toLowerCase()];
-        if (setA.has(uIdStr) || setA.has(uNomeLower)) jogouNoTime = 'a';
-      }
-      if (!jogouNoTime && tB && escalacaoPelada[tB.toLowerCase()]) {
-        const setB = escalacaoPelada[tB.toLowerCase()];
-        if (setB.has(uIdStr) || setB.has(uNomeLower)) jogouNoTime = 'b';
-      }
+      if (playersA.has(uNomeLower) || playersA.has(uIdStr)) jogouNoTime = 'a';
+      else if (playersB.has(uNomeLower) || playersB.has(uIdStr)) jogouNoTime = 'b';
 
-      let estaEscaladoNestaPelada = false;
-      Object.values(escalacaoPelada).forEach(set => {
-        if (set.has(uIdStr) || set.has(uNomeLower)) estaEscaladoNestaPelada = true;
-      });
-
-      if (!jogouNoTime && !estaEscaladoNestaPelada) {
-        if (playersA.has(uNomeLower) || playersA.has(uIdStr)) jogouNoTime = 'a';
-        else if (playersB.has(uNomeLower) || playersB.has(uIdStr)) jogouNoTime = 'b';
-      }
-
-      if (jogouNoTime === 'a') {
-        pts += ptsA;
-      } else if (jogouNoTime === 'b') {
-        pts += ptsB;
-      }
+      if (jogouNoTime === 'a') pts += ptsA;
+      else if (jogouNoTime === 'b') pts += ptsB;
     });
 
-    // Calcula jogos totais do atleta
+    // Calcula jogos totais do atleta somando os jogos do seu time em cada pelada disputada
     Object.keys(teamMatchesByPelada).forEach(pId => {
       const peladaTeams = teamMatchesByPelada[pId] || {};
-      const escalacao = escalacoesPorPelada[pId] || {};
-      let teamName = null;
+      const teamFromGoal = playerTeamFromEvents[`${uIdStr}_${pId}`] || playerTeamFromEvents[`${uNomeLower}_${pId}`];
 
-      Object.keys(escalacao).forEach(tName => {
-        const set = escalacao[tName];
-        if (set.has(uIdStr) || set.has(uNomeLower)) teamName = tName;
-      });
-
-      if (!teamName) {
-        const teamFromGoal = playerTeamFromEvents[`${uIdStr}_${pId}`] || playerTeamFromEvents[`${uNomeLower}_${pId}`];
-        if (teamFromGoal) teamName = teamFromGoal;
-      }
-
-      if (teamName && peladaTeams[teamName]) {
-        jogos += peladaTeams[teamName];
+      if (teamFromGoal && peladaTeams[teamFromGoal]) {
+        jogos += peladaTeams[teamFromGoal];
       } else if (gols > 0) {
         const allCounts = Object.values(peladaTeams);
         if (allCounts.length > 0) jogos += Math.max(...allCounts);

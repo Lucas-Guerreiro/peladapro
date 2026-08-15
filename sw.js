@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v118'; // ← Incrementado (v117 → v118)
+const CACHE_NAME = 'peladapro-v119'; // ← Incrementado (v118 → v119)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
