@@ -11,7 +11,31 @@
       slotId: 'pp_adsense_slot_id'
     },
 
+    isVipGroup() {
+      try {
+        let grp = (window.App && window.App.currentGroup) ? window.App.currentGroup : null;
+        if (!grp && window.Auth) grp = window.Auth.currentGroup;
+        if (!grp) {
+          const raw = localStorage.getItem('currentGroup');
+          if (raw) grp = JSON.parse(raw);
+        }
+        if (grp && grp.licenca_status === 'ativa') {
+          if (grp.licenca_expira_em) {
+            const exp = new Date(grp.licenca_expira_em);
+            if (exp > new Date()) return true;
+          } else {
+            return true;
+          }
+        }
+      } catch (e) { }
+      return false;
+    },
+
     isEnabled() {
+      // Se o grupo estiver no Modo VIP (Licença Ativa), NENHUM anúncio ou palavra 'Publicidade' deve ser exibido!
+      if (this.isVipGroup()) {
+        return false;
+      }
       const stored = localStorage.getItem(this.KEYS.enabled);
       return stored === 'true';
     },
