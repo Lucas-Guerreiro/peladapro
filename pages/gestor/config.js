@@ -78,6 +78,12 @@ window.App.initConfig = function () {
   const btnAddPushAthlete = document.getElementById("btn-push-add-athlete");
   if (btnAddPushAthlete) btnAddPushAthlete.onclick = handleAddPushAthlete;
 
+  setTimeout(() => {
+    if (window.App && window.App.applyModoNoturnoGlobal) {
+      window.App.applyModoNoturnoGlobal();
+    }
+  }, 50);
+
   if (window.feather) feather.replace();
 };
 

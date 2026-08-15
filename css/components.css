@@ -1150,6 +1150,55 @@ body.modo-noturno-ativo #recent-matches-filter-team {
   color: #FFFFFF !important;
 }
 
+/* --- COMPONENTES DE CONFIGURAÇÕES DO GESTOR --- */
+.config-list-box-clear {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.config-adsense-row-clear {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.config-tip-box-clear {
+  background: rgba(79, 70, 229, 0.06);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+body.modo-noturno-ativo .config-list-box-clear,
+body.modo-noturno-ativo #locations-list-container,
+body.modo-noturno-ativo #scheduled-dates-list {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(245, 210, 112, 0.4) !important;
+  color: #FFFFFF !important;
+}
+
+body.modo-noturno-ativo .config-adsense-row-clear {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(245, 210, 112, 0.4) !important;
+}
+
+body.modo-noturno-ativo .config-tip-box-clear {
+  background: rgba(79, 70, 229, 0.18) !important;
+  border: 1.5px solid #F5D270 !important;
+}
+
+body.modo-noturno-ativo #license-status-box {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(245, 210, 112, 0.4) !important;
+  color: #FFFFFF !important;
+}
+
 /* Remover qualquer caixa de fundo do container da grade de estatísticas em Desempenho */
 #my-personal-stats {
   background: transparent !important;
