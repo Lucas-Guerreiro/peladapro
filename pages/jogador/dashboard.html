@@ -70,16 +70,56 @@
   .card-fifa.premium-ativo .label-pelada-pro {
     display: none !important;
   }
+  .card-fifa.premium-ativo .fifa-stats-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 4px 0 !important;
+  }
   .card-fifa.premium-ativo .fifa-stat-box {
+    flex: 1 !important;
+    min-width: 0 !important;
     background: rgba(0, 0, 0, 0.45) !important;
-    border: 1px solid rgba(245, 210, 112, 0.3) !important;
-    backdrop-filter: blur(8px) !important;
+    border: 1.5px solid rgba(245, 210, 112, 0.4) !important;
+    border-radius: 14px !important;
+    padding: 12px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 6px 16px rgba(0, 0, 0, 0.5) !important;
+  }
+  .card-fifa.premium-ativo .fifa-stat-icon-wrapper {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(245, 210, 112, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 18px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
   }
   .card-fifa.premium-ativo .fifa-stat-label {
-    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 10px !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
   }
   .card-fifa.premium-ativo .fifa-stat-val {
+    font-size: 22px !important;
+    font-weight: 900 !important;
     color: #FFFFFF !important;
+    font-family: 'Inter', sans-serif !important;
+    line-height: 1 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important;
   }
   .card-fifa.premium-ativo .fifa-card-footer-caption {
     color: rgba(255, 255, 255, 0.6) !important;
@@ -375,18 +415,18 @@
       </div>
     </div>
 
-    <!-- Grid de Estatísticas (Jogos & Gols) -->
+    <!-- Grid de Estatísticas (Jogos & Gols Lado a Lado - Design Premium) -->
     <div class="fifa-stats-grid">
       <div class="fifa-stat-box">
-        <span class="fifa-stat-icon">⚽</span>
-        <div style="display: flex; flex-direction: column;">
+        <div class="fifa-stat-icon-wrapper">⚽</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
           <span class="fifa-stat-label">Jogos</span>
           <span class="fifa-stat-val" id="player-card-games-val">0</span>
         </div>
       </div>
       <div class="fifa-stat-box">
-        <span class="fifa-stat-icon">🥅</span>
-        <div style="display: flex; flex-direction: column;">
+        <div class="fifa-stat-icon-wrapper">🥅</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
           <span class="fifa-stat-label">Gols</span>
           <span class="fifa-stat-val" id="player-card-goals-val">0</span>
         </div>
