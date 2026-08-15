@@ -45,12 +45,12 @@
   </div>
 
   <!-- LISTA DE ESPERA (FILA DE ESPERA) -->
-  <div id="waitlist-card-container" class="card" style="padding: 0; overflow: hidden; display: none; border: 1.5px solid #F59E0B;">
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #FFFBEB; border-bottom: 1px solid #FDE68A;">
+  <div id="waitlist-card-container" class="card waitlist-card" style="padding: 0; overflow: hidden; display: none;">
+    <div class="waitlist-header" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <h4 class="text-inter" style="margin: 0; font-weight: 800; color: #B45309; font-size: 15px;">⏳ Lista de Espera (Fila)</h4>
-        <span id="waitlist-counter" class="text-inter"
-          style="font-size: 12px; font-weight: 800; background: #F59E0B; color: #FFFFFF; padding: 2px 8px; border-radius: 10px;">
+        <h4 class="text-inter waitlist-title" style="margin: 0; font-weight: 800; font-size: 15px;">⏳ Lista de Espera (Fila)</h4>
+        <span id="waitlist-counter" class="text-inter waitlist-counter-badge"
+          style="font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 10px;">
           0 na fila
         </span>
       </div>
