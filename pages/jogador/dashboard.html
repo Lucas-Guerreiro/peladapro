@@ -14,24 +14,76 @@
     transition: all 0.5s ease;
   }
 
-  /* ── Card FIFA PREMIUM (ativado) ──────────────────────────── */
+  /* ── Card FIFA PREMIUM (design fiel à referência) ─────────────────── */
   .card-fifa.premium-ativo {
-    background: linear-gradient(135deg, #1D9E75 0%, #0D4030 55%, #0A1F16 100%) !important;
-    border: 1.5px solid #D4AF37 !important;
-    box-shadow: 0 16px 40px rgba(29,158,117,0.4), 0 0 0 1px rgba(212,175,55,0.3) !important;
+    background: linear-gradient(135deg, #093829 0%, #041F17 50%, #010D09 100%) !important;
+    border: 2px solid #F5D270 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 210, 112, 0.35), inset 0 0 0 1px rgba(245, 210, 112, 0.4) !important;
+    color: #FFFFFF !important;
+    border-radius: 20px !important;
+    padding: 20px !important;
+  }
+  .card-fifa.premium-ativo .fifa-avatar-container {
+    width: 90px !important;
+    height: 90px !important;
+    border-radius: 50% !important;
+    border: 3.5px solid #F5D270 !important;
+    box-shadow: 0 0 20px rgba(245, 210, 112, 0.5) !important;
+    margin: 4px auto !important;
+  }
+  .card-fifa.premium-ativo #player-card-name {
+    color: #FFFFFF !important;
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  }
+  .card-fifa.premium-ativo .player-position-pill {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1.5px solid #F5D270 !important;
+    color: #F5D270 !important;
+    padding: 4px 18px !important;
+    border-radius: 100px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+  }
+  .card-fifa.premium-ativo .badge-premium-vip {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1.5px solid #F5D270 !important;
+    color: #F5D270 !important;
+    padding: 4px 14px !important;
+    border-radius: 20px !important;
+    font-weight: 800 !important;
+    font-size: 11px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  }
+  .card-fifa.premium-ativo .premium-tag-card {
+    display: inline-block !important;
+    font-style: italic !important;
+    font-weight: 900 !important;
+    color: #F5D270 !important;
+    letter-spacing: 1.5px !important;
+    font-size: 14px !important;
+    background: transparent !important;
+    border: none !important;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8) !important;
+  }
+  .card-fifa.premium-ativo .label-pelada-pro {
+    display: none !important;
+  }
+  .card-fifa.premium-ativo .fifa-stat-box {
+    background: rgba(0, 0, 0, 0.45) !important;
+    border: 1px solid rgba(245, 210, 112, 0.3) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+  .card-fifa.premium-ativo .fifa-stat-label {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+  .card-fifa.premium-ativo .fifa-stat-val {
     color: #FFFFFF !important;
   }
-  .card-fifa.premium-ativo .sports-font { color: #D4AF37 !important; }
-  .card-fifa.premium-ativo #player-card-name { color: #FFFFFF !important; }
-  .card-fifa.premium-ativo .card-fifa-balance {
-    background: rgba(255,255,255,0.08) !important;
-    border-color: rgba(212,175,55,0.3) !important;
+  .card-fifa.premium-ativo .fifa-card-footer-caption {
+    color: rgba(255, 255, 255, 0.6) !important;
   }
-  .card-fifa.premium-ativo .card-fifa-balance .label { color: #D4AF37 !important; }
-  .card-fifa.premium-ativo .card-fifa-balance .value { color: #86EFAC !important; }
-  .card-fifa.premium-ativo .fifa-avatar-container { border-color: #D4AF37 !important; box-shadow: 0 0 0 3px rgba(212,175,55,0.25); }
-  .card-fifa.premium-ativo .badge-gk { background: rgba(212,175,55,0.2) !important; color: #D4AF37 !important; border-color: #D4AF37 !important; }
-  .card-fifa.premium-ativo #player-card-age-text { background: rgba(255,255,255,0.15) !important; color: #FFFFFF !important; }
 
   /* ── Card com Cores do Time ────────────────────────────────── */
   .card-fifa.has-team-theme {
@@ -293,40 +345,62 @@
   <div class="card-fifa" id="player-fifa-card">
     <div class="card-fifa-header">
       <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="badge-vip-card" class="badge-premium-vip hidden">👑 VIP</span>
         <span class="sports-font label-pelada-pro">PELADA PRO</span>
-        <span class="premium-tag-card">✦ PREMIUM</span>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
         <span id="player-gk-badge" class="badge-gk hidden">🧤 GK</span>
-        <span id="badge-vip-card" class="badge-premium-vip hidden">⭐ VIP</span>
+        <span class="premium-tag-card">PREMIUM✦</span>
       </div>
     </div>
 
-    <div class="card-fifa-profile">
-      <div class="fifa-avatar-container">
-        <img id="player-avatar"
-          src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
-          alt="Avatar" class="fifa-avatar">
+    <!-- Avatar Central -->
+    <div class="fifa-avatar-container">
+      <img id="player-avatar"
+        src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
+        alt="Avatar" class="fifa-avatar">
+    </div>
+
+    <!-- Nome e Posição Centralizados -->
+    <div style="text-align: center; width: 100%;">
+      <h3 id="player-card-name" style="font-size: 22px; font-weight: 800; color: #1E293B; margin: 0 0 6px; text-align: center;">—</h3>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span id="player-card-position" class="player-position-pill">Atacante</span>
+        <span id="player-card-age-text" style="font-size: 11px; font-weight: 700; color: #FFFFFF; background: #1E293B; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;">
+          🎂 <span id="player-card-age">—</span> ANOS
+        </span>
+        <span id="player-card-team-badge" style="display: none; font-size: 11px; font-weight: 700; color: #B9730D; background: #FEF3C7; border: 1px solid #FDE68A; padding: 3px 9px; border-radius: 6px; align-items: center; gap: 4px;">
+          ⚽ <span id="player-card-team-name">—</span>
+        </span>
       </div>
-      <div>
-        <h3 id="player-card-name" style="font-size: 24px; line-height: 1; color: #1E293B; margin-bottom: 6px;">—</h3>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span id="player-card-age-text" style="font-size: 11px; font-weight: 700; color: #FFFFFF; background: #1E293B; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;">
-            🎂 <span id="player-card-age">—</span> ANOS
-          </span>
-          <span id="player-card-team-badge" style="display: none; font-size: 11px; font-weight: 700; color: #B9730D; background: #FEF3C7; border: 1px solid #FDE68A; padding: 3px 9px; border-radius: 6px; align-items: center; gap: 4px;">
-            ⚽ <span id="player-card-team-name">—</span>
-          </span>
+    </div>
+
+    <!-- Grid de Estatísticas (Jogos & Gols) -->
+    <div class="fifa-stats-grid">
+      <div class="fifa-stat-box">
+        <span class="fifa-stat-icon">⚽</span>
+        <div style="display: flex; flex-direction: column;">
+          <span class="fifa-stat-label">Jogos</span>
+          <span class="fifa-stat-val" id="player-card-games-val">0</span>
+        </div>
+      </div>
+      <div class="fifa-stat-box">
+        <span class="fifa-stat-icon">🥅</span>
+        <div style="display: flex; flex-direction: column;">
+          <span class="fifa-stat-label">Gols</span>
+          <span class="fifa-stat-val" id="player-card-goals-val">0</span>
         </div>
       </div>
     </div>
 
-    <div id="player-card-balance" class="card-fifa-balance">
+    <!-- Saldo -->
+    <div id="player-card-balance" class="card-fifa-balance" style="width: 100%;">
       <div><span class="label">Meu Saldo</span></div>
       <span id="player-balance-value" class="value">R$ 0,00</span>
     </div>
 
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <!-- Botões de Ação -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
       <button class="btn btn-outline-secondary" style="flex: 1; padding: 10px; min-width: 80px;"
         onclick="Router.openModal('atleta', { playerId: Auth.currentUser?.id, mode: 'edit' })">
         ✏️ Editar
@@ -335,6 +409,11 @@
         onclick="Router.navigate('#/jogador/convocacao')">
         📋 Convocação
       </button>
+    </div>
+
+    <!-- Rodapé: Membro Elite desde 2026 -->
+    <div class="fifa-card-footer-caption">
+      Membro Elite desde <span id="player-member-since-year">2026</span>
     </div>
 
     <!-- Botão de upgrade premium -->

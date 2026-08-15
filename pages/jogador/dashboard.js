@@ -113,6 +113,24 @@ var Dashboard = {
       gkBadge.classList.toggle('hidden', !user.goleiro);
     }
 
+    // Posição, Jogos, Gols e Membro desde
+    var posEl = document.getElementById('player-card-position');
+    if (posEl) posEl.textContent = user.posicao || user.position || 'Atacante';
+
+    var gamesEl = document.getElementById('player-card-games-val');
+    if (gamesEl) gamesEl.textContent = (user.jogos !== undefined) ? user.jogos : ((user.partidas !== undefined) ? user.partidas : 0);
+
+    var goalsEl = document.getElementById('player-card-goals-val');
+    if (goalsEl) goalsEl.textContent = (user.gols !== undefined) ? user.gols : ((user.goals !== undefined) ? user.goals : 0);
+
+    var sinceEl = document.getElementById('player-member-since-year');
+    if (sinceEl) {
+      if (user.created_at) {
+        var yr = new Date(user.created_at).getFullYear();
+        if (!isNaN(yr)) sinceEl.textContent = yr;
+      }
+    }
+
     // Nome do grupo
     var groupNameEl = document.getElementById('dashboard-group-name');
     if (groupNameEl && Auth.currentGroup) {
