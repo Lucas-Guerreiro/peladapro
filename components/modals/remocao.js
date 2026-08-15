@@ -1,40 +1,62 @@
 // ==========================================================================
-// MODAL: REMOÇÃO (remocao.js)
+// MODAL: DESCONVOCAR (remocao.js)
 // ==========================================================================
 
 let localPelada = null;
 
+function calculateHoursLeft(pelada) {
+  if (!pelada || !pelada.data) return 999;
+
+  let dataStr = '';
+  if (pelada.data instanceof Date) {
+    dataStr = pelada.data.toISOString().split('T')[0];
+  } else {
+    dataStr = String(pelada.data).split('T')[0];
+  }
+
+  let timeStr = pelada.horario ? String(pelada.horario).trim() : '19:00';
+  if (timeStr.length === 5) timeStr += ':00';
+
+  const peladaDateTime = new Date(`${dataStr}T${timeStr}`);
+  const now = new Date();
+
+  if (isNaN(peladaDateTime.getTime())) return 999;
+
+  const timeDiffMs = peladaDateTime.getTime() - now.getTime();
+  return timeDiffMs / (1000 * 60 * 60);
+}
+
 window.App.initModalRemocao = function (pelada) {
   localPelada = pelada;
 
-  const peladaDateTime = new Date(`${pelada.data}T${pelada.horario}:00`);
-  const now = new Date();
-  const timeDiffMs = peladaDateTime.getTime() - now.getTime();
-  const hoursLeft = timeDiffMs / (1000 * 60 * 60);
-
+  const hoursLeft = calculateHoursLeft(pelada);
+  const cost = parseFloat(pelada.valor_convocacao) || 20.00;
+  const costFmt = `R$ ${cost.toFixed(2).replace('.', ',')}`;
   const infoDiv = document.getElementById("removal-reimbursement-info");
 
   if (hoursLeft >= 2) {
-    infoDiv.style.backgroundColor = "rgba(0, 200, 83, 0.1)";
-    infoDiv.style.color = "var(--success)";
+    infoDiv.style.backgroundColor = "rgba(0, 200, 83, 0.12)";
+    infoDiv.style.border = "1px solid rgba(0, 200, 83, 0.3)";
+    infoDiv.style.color = "#047857";
     infoDiv.innerHTML = `
-      <div style="display: flex; gap: 8px; align-items: start;">
-        <i data-feather="check-circle" style="width: 20px; height: 20px; flex-shrink:0;"></i>
+      <div style="display: flex; gap: 10px; align-items: start;">
+        <span style="font-size: 20px;">✅</span>
         <div>
-          <strong>Reembolso Permitido!</strong>
-          <span style="display:block; font-size:12px; margin-top:2px;">Faltam mais de 2 horas para o início da partida (${hoursLeft.toFixed(1)}h restantes). O valor da convocação será estornado ao seu saldo.</span>
+          <strong style="font-size: 14px; color: #047857;">Estorno de Saldo Permitido!</strong>
+          <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #065F46;">Você está se desconvocando com antecedência. O valor pago (<b>${costFmt}</b>) será <b>estornado integralmente</b> para o seu saldo no aplicativo!</span>
         </div>
       </div>
     `;
   } else {
-    infoDiv.style.backgroundColor = "rgba(255, 23, 68, 0.1)";
-    infoDiv.style.color = "var(--danger)";
+    infoDiv.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
+    infoDiv.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+    infoDiv.style.color = "#B91C1C";
     infoDiv.innerHTML = `
-      <div style="display: flex; gap: 8px; align-items: start;">
-        <i data-feather="alert-triangle" style="width: 20px; height: 20px; flex-shrink:0;"></i>
+      <div style="display: flex; gap: 10px; align-items: start;">
+        <span style="font-size: 20px;">⚠️</span>
         <div>
-          <strong>Sem Reembolso Financeiro!</strong>
-          <span style="display:block; font-size:12px; margin-top:2px;">Faltam menos de 2 horas para o jogo. Pela política de sustentabilidade financeira, a taxa será direcionada ao caixa de multas da pelada.</span>
+          <strong style="font-size: 14px; color: #B91C1C;">Faltam menos de 2 horas para a pelada!</strong>
+          <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #991B1B;">Pela política de antecedência, faltam menos de 2 horas para o início do jogo. Se você se desconvocar agora, o valor pago <b>não poderá ser estornado</b>.</span>
         </div>
       </div>
     `;
@@ -45,7 +67,7 @@ window.App.initModalRemocao = function (pelada) {
   document.getElementById("btn-cancel-removal").onclick = window.App.closeModal;
   document.getElementById("btn-confirm-removal-action").onclick = handleConfirmRemoval;
 
-  feather.replace();
+  if (window.feather) feather.replace();
 };
 
 async function handleConfirmRemoval() {
@@ -55,16 +77,12 @@ async function handleConfirmRemoval() {
     return;
   }
 
-  const peladaDateTime = new Date(`${localPelada.data}T${localPelada.horario}:00`);
-  const now = new Date();
-  const timeDiffMs = peladaDateTime.getTime() - now.getTime();
-  const hoursLeft = timeDiffMs / (1000 * 60 * 60);
-
+  const hoursLeft = calculateHoursLeft(localPelada);
   const opcaoRemocao = hoursLeft >= 2 ? 'estorno' : 'caixa';
-  const cost = localPelada.valor_convocacao || 20.00;
+  const cost = parseFloat(localPelada.valor_convocacao) || 20.00;
 
   try {
-    window.App.showToast("Cancelando presença no servidor...", "info");
+    window.App.showToast("Processando desconvocação...", "info");
 
     const res = await fetch('/api/convocacoes/remover', {
       method: 'POST',
@@ -81,43 +99,36 @@ async function handleConfirmRemoval() {
     const responseData = await res.json();
 
     if (!res.ok) {
-      window.App.showToast(responseData.error || "Erro ao cancelar presença.", "error");
+      window.App.showToast(responseData.error || "Erro ao desconvocar.", "error");
       return;
     }
 
     // Sucesso!
     if (opcaoRemocao === 'estorno') {
-      window.App.showToast("Convocação cancelada. Taxa estornada ao saldo!", "success");
-      // Atualizar o saldo na sessão do jogador logado!
-      window.App.currentUser.saldo += cost;
-
-      // Sincronizar na lista de players do localStorage
-      const players = JSON.parse(localStorage.getItem("players")) || [];
-      const p = players.find(x => String(x.id) === String(window.App.currentUser.id));
-      if (p) {
-        p.saldo = window.App.currentUser.saldo;
-        localStorage.setItem("players", JSON.stringify(players));
+      window.App.showToast("Desconvocado com sucesso! Valor estornado ao seu saldo. 💰", "success");
+      if (window.App.currentUser) {
+        window.App.currentUser.saldo = (parseFloat(window.App.currentUser.saldo) || 0) + cost;
+      }
+      if (window.Auth && window.Auth.currentUser) {
+        window.Auth.currentUser.saldo = (parseFloat(window.Auth.currentUser.saldo) || 0) + cost;
+        localStorage.setItem("user", JSON.stringify(window.Auth.currentUser));
       }
     } else {
-      window.App.showToast("Convocação cancelada. Taxa retida ao caixa.", "warning");
+      window.App.showToast("Desconvocado. Prazo de 2h expirado (sem estorno).", "warning");
     }
 
-    // Atualizar dashboard do jogador
+    // Atualizar interface
+    if (window.Convocacao) {
+      await window.Convocacao.renderConfirmedList(localPelada.id);
+      await window.Convocacao.updateMyStatus();
+    }
     if (window.Dashboard && typeof window.Dashboard.renderPlayerData === 'function') {
       window.Dashboard.renderPlayerData();
     }
 
-    // Fechar modal
     window.App.closeModal();
-
-    // Recarregar convocados e status da tela de Convocação
-    if (window.Convocacao) {
-      await window.Convocacao.renderConfirmedList(localPelada.id);
-      window.Convocacao.updateMyStatus();
-    }
-
   } catch (err) {
-    console.error(err);
-    window.App.showToast("Erro ao conectar ao servidor para cancelar presença.", "error");
+    console.error("[remocao] Erro:", err);
+    window.App.showToast("Erro de conexão ao desconvocar.", "error");
   }
 }

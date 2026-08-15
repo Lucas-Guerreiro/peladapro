@@ -1,25 +1,25 @@
-<!-- Modal: Cancelar Presença -->
+<!-- Modal: Desconvocar Presença -->
 <div class="modal-backdrop" id="modal-removal-backdrop">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Cancelar Convocação</h3>
-      <button class="modal-close" id="btn-close-removal-modal">&times;</button>
+  <div class="modal-content" style="max-width: 440px; padding: 24px; border-radius: 16px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-heading);">Desconvocar Pelada</h3>
+      <button class="modal-close" id="btn-close-removal-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-caption);">&times;</button>
     </div>
-    <p class="text-inter" style="font-size: 14px; color: var(--text-heading); margin-bottom: 16px;">
-      Você está solicitando o cancelamento da sua presença para este jogo.
+    <p class="text-inter" style="font-size: 14px; color: var(--text-heading); margin-bottom: 16px; line-height: 1.5;">
+      Você está solicitando a sua desconvocação para este jogo.
     </p>
 
     <!-- Info Reembolso -->
-    <div id="removal-reimbursement-info" style="padding: 14px; border-radius: 10px; margin-bottom: 20px;">
+    <div id="removal-reimbursement-info" style="padding: 14px; border-radius: 12px; margin-bottom: 20px;">
       <!-- Dinâmico -->
     </div>
 
     <div style="display: flex; gap: 12px;">
-      <button id="btn-cancel-removal" class="btn btn-md btn-outline" style="flex: 1;">
+      <button id="btn-cancel-removal" class="btn btn-md btn-outline" style="flex: 1; font-weight: 700; border-radius: 10px;">
         Voltar
       </button>
-      <button id="btn-confirm-removal-action" class="btn btn-md btn-danger" style="flex: 1;">
-        Confirmar Saída
+      <button id="btn-confirm-removal-action" class="btn btn-md btn-danger" style="flex: 1.2; font-weight: 800; border-radius: 10px;">
+        Confirmar Desconvocação
       </button>
     </div>
   </div>
