@@ -22,6 +22,7 @@ window.App.initModalAtleta = function (data = {}) {
   const closeBtn = document.getElementById("btn-close-athlete-modal");
 
   let photoBase64 = "";
+  let isNewPhotoUploaded = false;
 
   // O seletor de estrelas só deve ser exibido quando acessado pelo perfil de GESTOR
   const ratingContainer = document.getElementById("athlete-rating-container");
@@ -62,6 +63,7 @@ window.App.initModalAtleta = function (data = {}) {
         window.App.showToast("Processando e otimizando imagem...", "info");
         compressImage(file, 500, 0.8, (compressedBase64) => {
           photoBase64 = compressedBase64;
+          isNewPhotoUploaded = true;
           photoPreview.style.backgroundImage = `url('${photoBase64}')`;
           window.App.showToast("Foto otimizada com sucesso!", "success");
         });
@@ -73,12 +75,16 @@ window.App.initModalAtleta = function (data = {}) {
     const targetId = data.playerId || data.id;
     if (title) title.textContent = "Editar Atleta";
     
-    const players = JSON.parse(localStorage.getItem("players")) || [];
-    let p = players.find(x => String(x.id) === String(targetId));
-    
-    // Se não encontrar na lista local, tenta usar o usuário autenticado atual
-    if (!p && window.Auth && window.Auth.currentUser && String(window.Auth.currentUser.id) === String(targetId)) {
+    // Se for edição do próprio atleta logado, prioriza sempre Auth.currentUser atualizado
+    let p = null;
+    if (window.Auth && window.Auth.currentUser && String(window.Auth.currentUser.id) === String(targetId)) {
       p = window.Auth.currentUser;
+    } else {
+      const players = JSON.parse(localStorage.getItem("players")) || [];
+      p = players.find(x => String(x.id) === String(targetId));
+      if (!p && window.Auth && window.Auth.currentUser && String(window.Auth.currentUser.id) === String(targetId)) {
+        p = window.Auth.currentUser;
+      }
     }
 
     if (p) {
@@ -147,15 +153,16 @@ window.App.initModalAtleta = function (data = {}) {
 
   initModalMasks(cpf, whatsapp);
 
-  if (closeBtn) {
-    closeBtn.onclick = () => window.App.closeModal();
-  }
-
+  // --- Função para Salvar Atleta ------------------------------------------
   if (saveBtn) {
     saveBtn.onclick = async (e) => {
-      if (e) e.preventDefault();
-      await handleSaveAthlete();
+      e.preventDefault();
+      await handleSaveAthlete(isNewPhotoUploaded, photoBase64);
     };
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = () => window.App.closeModal();
   }
 };
 
@@ -181,22 +188,14 @@ function initModalMasks(cpf, whatsapp) {
   }
 }
 
-async function handleSaveAthlete() {
-  const photoPreview = document.getElementById("athlete-photo-preview");
-  const formIdEl = document.getElementById("athlete-edit-id");
-  const id = formIdEl ? formIdEl.value : "";
-  const nameInput = document.getElementById("athlete-name");
-  const name = nameInput ? nameInput.value.trim() : "";
-  const apelidoInput = document.getElementById("athlete-apelido");
-  const apelido = apelidoInput ? apelidoInput.value.trim() : "";
-  const emailInput = document.getElementById("athlete-email");
-  const email = emailInput ? emailInput.value.trim() : "";
-  const passwordInput = document.getElementById("athlete-password");
-  const password = passwordInput ? passwordInput.value.trim() : "";
-  const dobInput = document.getElementById("athlete-dob");
-  const dob = dobInput ? dobInput.value : "";
-  const cpfEl = document.getElementById("athlete-cpf");
-  const cpf = cpfEl ? cpfEl.value : "";
+async function handleSaveAthlete(isNewPhotoUploaded, photoBase64) {
+  const id = document.getElementById("athlete-edit-id")?.value;
+  const name = document.getElementById("athlete-name")?.value;
+  const apelido = document.getElementById("athlete-apelido")?.value;
+  const email = document.getElementById("athlete-email")?.value;
+  const password = document.getElementById("athlete-password")?.value;
+  const dob = document.getElementById("athlete-dob")?.value;
+  const cpf = document.getElementById("athlete-cpf")?.value;
   const whatsappInput = document.getElementById("athlete-whatsapp");
   const whatsapp = whatsappInput ? whatsappInput.value : "";
   const isGkEl = document.getElementById("athlete-is-gk");
@@ -206,13 +205,10 @@ async function handleSaveAthlete() {
   const starSelector = document.getElementById("athlete-stars-selector");
   const rating = (starSelector && starSelector.dataset.value) ? parseInt(starSelector.dataset.value) : 0;
 
-  // Extrair base64 do background-image se houver
-  let photoVal = "";
-  if (photoPreview && photoPreview.style.backgroundImage) {
-    const match = photoPreview.style.backgroundImage.match(/url\(['"]?(.*?)['"]?\)/);
-    if (match && match[1] && !match[1].startsWith("http")) {
-      photoVal = match[1];
-    }
+  // Só envia foto se o usuário explicitamente fez upload de um NOVO arquivo de imagem
+  let photoVal = undefined;
+  if (isNewPhotoUploaded && photoBase64) {
+    photoVal = photoBase64;
   }
 
   if (!name || !email) {
@@ -241,7 +237,7 @@ async function handleSaveAthlete() {
         whatsapp: whatsapp,
         goleiro: isGk,
         autoavaliacao: rating,
-        foto: photoVal || undefined,
+        foto: photoVal,
         time_coracao: teamVal
       });
 
@@ -258,21 +254,14 @@ async function handleSaveAthlete() {
         await window.Auth._syncDataFromBackend(token);
       }
 
-      // Atualiza a sessão ativa local
-      window.Auth.currentUser = {
-        ...window.Auth.currentUser,
-        nome: name,
-        apelido: apelido,
-        email: email,
-        cpf: cpf,
-        data_nascimento: dob,
-        whatsapp: whatsapp,
-        goleiro: isGk,
-        autoavaliacao: rating,
-        time_coracao: teamVal,
-        foto: photoVal || window.Auth.currentUser.foto
-      };
-      localStorage.setItem('currentUser', JSON.stringify(window.Auth.currentUser));
+      // Atualiza a sessão ativa local com a resposta autoritativa do servidor
+      if (res.usuario) {
+        window.Auth.currentUser = {
+          ...window.Auth.currentUser,
+          ...res.usuario
+        };
+        localStorage.setItem('currentUser', JSON.stringify(window.Auth.currentUser));
+      }
 
       const headerName = document.getElementById("header-user-name");
       if (headerName) headerName.textContent = name;

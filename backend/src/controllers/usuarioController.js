@@ -386,7 +386,7 @@ exports.atualizarPorGestor = async (req, res) => {
           whatsapp = $5,
           goleiro = $6,
           autoavaliacao = COALESCE($7, autoavaliacao),
-          foto = $8,
+          foto = COALESCE($8, foto),
           avaliacao_media = COALESCE($9, avaliacao_media),
           email = COALESCE($10, email),
           senha_hash = COALESCE($11, senha_hash),
