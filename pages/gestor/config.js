@@ -772,6 +772,58 @@ function initAdSenseUI() {
     }
   }
 
+  // Botão exclusivo de alternar Modo VIP para testes (Lucas Fernandes Guerreiro)
+  const btnToggleVip = document.getElementById("btn-toggle-vip-test");
+  if (btnToggleVip && isLucasGuerreiro) {
+    btnToggleVip.style.display = "block";
+
+    const updateVipBtnState = () => {
+      const isVip = window.App.currentGroup && window.App.currentGroup.licenca_status === 'ativa';
+      btnToggleVip.textContent = isVip 
+        ? "👑 Sair do Modo VIP (Alternar para Gratuito para Testar AdSense)" 
+        : "⭐ Entrar no Modo VIP (Ativar Licença Premium)";
+      btnToggleVip.style.background = isVip ? "rgba(245, 210, 112, 0.15)" : "rgba(16, 185, 129, 0.15)";
+      btnToggleVip.style.borderColor = isVip ? "#F5D270" : "#10B981";
+      btnToggleVip.style.color = isVip ? "#F5D270" : "#34D399";
+    };
+
+    updateVipBtnState();
+
+    btnToggleVip.onclick = () => {
+      if (!window.App.currentGroup) {
+        window.App.currentGroup = { id: 1, licenca_status: 'free' };
+      }
+
+      const isVip = window.App.currentGroup.licenca_status === 'ativa';
+      if (isVip) {
+        window.App.currentGroup.licenca_status = 'free';
+        window.App.currentGroup.licenca_expira_em = null;
+        window.App.showToast("Você SAIU do Modo VIP! O grupo agora está no modo GRATUITO com anúncios ativos para testes. 🛑⭐", "info");
+      } else {
+        window.App.currentGroup.licenca_status = 'ativa';
+        const umAno = new Date();
+        umAno.setFullYear(umAno.getFullYear() + 1);
+        window.App.currentGroup.licenca_expira_em = umAno.toISOString();
+        window.App.showToast("Você ENTROU no Modo VIP! Licença VIP ativada. 👑⭐", "success");
+      }
+
+      localStorage.setItem('currentGroup', JSON.stringify(window.App.currentGroup));
+      if (window.Auth) window.Auth.currentGroup = window.App.currentGroup;
+
+      if (window.App.gestorGroups) {
+        const idx = window.App.gestorGroups.findIndex(g => g.id === window.App.currentGroup.id);
+        if (idx >= 0) window.App.gestorGroups[idx] = { ...window.App.currentGroup };
+      }
+
+      updateLicenseUI();
+      updateVipBtnState();
+
+      if (window.AdSenseManager) {
+        window.AdSenseManager.refreshAllContainers();
+      }
+    };
+  }
+
   const toggle = document.getElementById("adsense-toggle-enable");
   const pubInput = document.getElementById("adsense-pub-id-input");
   const slotInput = document.getElementById("adsense-slot-id-input");
