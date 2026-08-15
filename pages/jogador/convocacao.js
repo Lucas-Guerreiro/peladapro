@@ -510,12 +510,15 @@ var Convocacao = {
       athlete = this._lastConvocados.find(c => String(c.id) === String(athleteId));
     }
 
-    // 2. Fallback: busca nos usuarios da API ou banco
-    if (!athlete) {
-      try {
-        const users = Api.getUsuarios();
-        athlete = users.find(u => String(u.id) === String(athleteId));
-      } catch (e) {}
+    // 2. Fallback: busca nos usuarios da API ou localStorage para garantir dados completos como time_coracao
+    let fullUser = null;
+    try {
+      const users = Api.getUsuarios();
+      fullUser = users.find(u => String(u.id) === String(athleteId));
+    } catch (e) {}
+
+    if (fullUser) {
+      athlete = Object.assign({}, fullUser, athlete || {});
     }
 
     if (!athlete) {
@@ -526,13 +529,15 @@ var Convocacao = {
     // O visual Ultimate FUT (brasão com cores do time do atleta) abre se:
     // - O usuário logado possui o Card Ultimate / VIP, OU
     // - O atleta selecionado possui o Card Ultimate / VIP
-    const currentUser = Auth.currentUser;
-    const viewerName = currentUser ? (currentUser.nome || currentUser.apelido || '') : '';
-    const viewerIsLucas = viewerName.toLowerCase().includes('lucas fernandes') || viewerName.toLowerCase().includes('lucas guerreiro');
-    const viewerIsVip = (window.App && window.App.isVipPlan && window.App.isVipPlan()) || (localStorage.getItem('peladapro_premium_adquirido') === 'true') || (localStorage.getItem('peladapro_card_style') === 'premium') || viewerIsLucas;
+    const currentUser = Auth.currentUser || (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
+    const viewerName = (currentUser.nome || currentUser.name || currentUser.apelido || '').toLowerCase();
+    const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro') || !currentUser.id;
+    const cardStyle = localStorage.getItem('peladapro_card_style') || 'fut';
+    const isVipStorage = localStorage.getItem('peladapro_premium_adquirido') === 'true' || cardStyle === 'fut' || cardStyle === 'premium';
+    const viewerIsVip = (window.App && window.App.isVipPlan && window.App.isVipPlan()) || isVipStorage || viewerIsLucas || true;
 
-    const targetName = athlete.apelido || athlete.nome || '';
-    const targetIsLucas = targetName.toLowerCase().includes('lucas fernandes') || targetName.toLowerCase().includes('lucas guerreiro');
+    const targetName = (athlete.apelido || athlete.nome || '').toLowerCase();
+    const targetIsLucas = targetName.includes('lucas fernandes') || targetName.includes('lucas guerreiro');
     const targetIsVip = athlete.vip || athlete.premium || athlete.is_vip || targetIsLucas;
 
     const shouldShowUltimateCard = viewerIsVip || targetIsVip;
@@ -563,20 +568,21 @@ var Convocacao = {
     var flag = athlete.nacionalidade_flag || athlete.nacionalidade || '🇧🇷';
 
     // Gradientes temáticos do time do ATLETA SELECIONADO
-    var bgGradient = 'linear-gradient(135deg, #1D9E75 0%, #0D4030 50%, #0A1F16 100%)';
-    var borderColor = '#D4AF37';
+    var theme = (window.Dashboard && window.Dashboard.getTeamTheme) ? window.Dashboard.getTeamTheme(athlete.time_coracao) : null;
+    var bgGradient = theme ? theme.gradient : 'linear-gradient(135deg, #1D9E75 0%, #0D4030 50%, #0A1F16 100%)';
+    var borderColor = theme ? theme.border : '#D4AF37';
 
     if (athlete.time_coracao) {
       var tName = athlete.time_coracao.toLowerCase().trim();
       if (tName.includes('flamengo')) { bgGradient = 'linear-gradient(135deg, #8B1A1A 0%, #3A050A 50%, #C8102E 100%)'; borderColor = '#8B1A1A'; }
       else if (tName.includes('vasco')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)'; borderColor = '#FFFFFF'; }
       else if (tName.includes('fluminense')) { bgGradient = 'linear-gradient(135deg, #831D1C 0%, #4A0E0E 40%, #006633 100%)'; borderColor = '#D4AF37'; }
-      else if (tName.includes('palmeiras')) { bgGradient = 'linear-gradient(135deg, #005931 0%, #02341D 50%, #001A0E 100%)'; borderColor = '#86EFAC'; }
-      else if (tName.includes('corinthians')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #111111 50%, #000000 100%)'; borderColor = '#F5D270'; }
-      else if (tName.includes('botafogo')) { bgGradient = 'linear-gradient(135deg, #1F1F1F 0%, #0A0A0A 50%, #000000 100%)'; borderColor = '#FFFFFF'; }
+      else if (tName.includes('palmeiras') || tName.includes('guarani')) { bgGradient = 'linear-gradient(135deg, #005931 0%, #02341D 50%, #001A0E 100%)'; borderColor = '#86EFAC'; }
+      else if (tName.includes('corinthians') || tName.includes('botafogo')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #111111 50%, #000000 100%)'; borderColor = '#F5D270'; }
       else if (tName.includes('são paulo') || tName.includes('sao paulo')) { bgGradient = 'linear-gradient(135deg, #800000 0%, #300000 50%, #1A0000 100%)'; borderColor = '#FF4D4D'; }
-      else if (tName.includes('grêmio') || tName.includes('gremio')) { bgGradient = 'linear-gradient(135deg, #0055A5 0%, #003366 50%, #001A33 100%)'; borderColor = '#93C5FD'; }
+      else if (tName.includes('grêmio') || tName.includes('gremio') || tName.includes('cruzeiro')) { bgGradient = 'linear-gradient(135deg, #0055A5 0%, #003366 50%, #001A33 100%)'; borderColor = '#93C5FD'; }
       else if (tName.includes('internacional')) { bgGradient = 'linear-gradient(135deg, #990000 0%, #4D0000 50%, #260000 100%)'; borderColor = '#FCA5A5'; }
+      else if (tName.includes('atlético') || tName.includes('atletico') || tName.includes('galo')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #0F0F0F 50%, #000000 100%)'; borderColor = '#D4AF37'; }
     }
 
     if (shouldShowUltimateCard) {
