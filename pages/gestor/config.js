@@ -8,6 +8,7 @@ window.App.initConfig = function () {
   pushSelectedAthletes = [];
   loadConfigs();
   initAdSenseUI();
+  checkLucasMasterControls();
   loadGestorGroups().then(() => {
     loadDrawnDates();
   });
@@ -888,5 +889,54 @@ function initAdSenseUI() {
         window.App.showToast("Configurações salvas (AdSense desligado).", "info");
       }
     };
+  }
+}
+
+function checkLucasMasterControls() {
+  const currentUser = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
+  const name = (currentUser.nome || currentUser.name || currentUser.apelido || '').toLowerCase();
+  const email = (currentUser.email || '').toLowerCase();
+
+  const isLucasMaster = name.includes('lucas fernandes') || name.includes('lucas guerreiro') || email.includes('lucasguerreiro') || email.includes('lucas.fernandes') || String(currentUser.id) === '1' || String(currentUser.id) === '3';
+
+  const panel = document.getElementById("panel-lucas-master-controls");
+  const btn = document.getElementById("btn-toggle-premium-card-master");
+
+  if (!panel || !btn) return;
+
+  if (isLucasMaster) {
+    panel.style.display = "block";
+    updateLucasMasterBtnState();
+
+    btn.onclick = function() {
+      const isDisabled = localStorage.getItem("peladapro_premium_desativado") === "true";
+      if (isDisabled) {
+        localStorage.setItem("peladapro_premium_desativado", "false");
+        window.App.showToast("✨ Card Premium dos Atletas ATIVADO com sucesso!", "success");
+      } else {
+        localStorage.setItem("peladapro_premium_desativado", "true");
+        window.App.showToast("🚫 Card Premium dos Atletas DESATIVADO com sucesso!", "warning");
+      }
+      updateLucasMasterBtnState();
+    };
+  } else {
+    panel.style.display = "none";
+  }
+}
+
+function updateLucasMasterBtnState() {
+  const btn = document.getElementById("btn-toggle-premium-card-master");
+  if (!btn) return;
+  const isDisabled = localStorage.getItem("peladapro_premium_desativado") === "true";
+  if (isDisabled) {
+    btn.textContent = "✨ Ativar Card Premium dos Atletas";
+    btn.style.background = "#059669";
+    btn.style.color = "#FFFFFF";
+    btn.style.border = "none";
+  } else {
+    btn.textContent = "🚫 Desativar Card Premium dos Atletas";
+    btn.style.background = "#DC2626";
+    btn.style.color = "#FFFFFF";
+    btn.style.border = "none";
   }
 }

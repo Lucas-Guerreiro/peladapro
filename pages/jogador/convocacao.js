@@ -706,21 +706,26 @@ var Convocacao = {
     }
 
     // 3. Regra de Acesso aos Cards:
-    // O visual Ultimate FUT (brasão com cores do time do atleta) abre se:
-    // - O usuário logado possui o Card Ultimate / VIP, OU
-    // - O atleta selecionado possui o Card Ultimate / VIP
+    const isPremiumDisabledGlobally = localStorage.getItem('peladapro_premium_desativado') === 'true';
+
     const currentUser = Auth.currentUser || (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
     const viewerName = (currentUser.nome || currentUser.name || currentUser.apelido || '').toLowerCase();
-    const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro');
+    const viewerEmail = (currentUser.email || '').toLowerCase();
+    const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro') || viewerEmail.includes('lucasguerreiro') || viewerEmail.includes('lucas.fernandes') || String(currentUser.id) === '1' || String(currentUser.id) === '3';
+
     const cardStyle = localStorage.getItem('peladapro_card_style') || 'free';
     const isVipStorage = localStorage.getItem('peladapro_premium_adquirido') === 'true' || cardStyle === 'fut' || cardStyle === 'premium';
     const viewerIsVip = (window.App && window.App.isVipPlan && window.App.isVipPlan ? window.App.isVipPlan() : false) || (isVipStorage && viewerIsLucas);
 
     const targetName = (athlete.apelido || athlete.nome || '').toLowerCase();
     const targetIsLucas = targetName.includes('lucas fernandes') || targetName.includes('lucas guerreiro');
-    const targetIsVip = athlete.vip || athlete.premium || athlete.is_vip || targetIsLucas;
+    let targetIsVip = (athlete.vip || athlete.premium || athlete.is_vip || targetIsLucas);
 
-    const shouldShowUltimateCard = viewerIsVip || targetIsVip;
+    if (isPremiumDisabledGlobally) {
+      targetIsVip = false;
+    }
+
+    const shouldShowUltimateCard = (!isPremiumDisabledGlobally && (viewerIsVip || targetIsVip)) || (viewerIsLucas && !isPremiumDisabledGlobally);
 
     // Cria overlay no DOM se não existir
     var modalOverlay = document.getElementById('modal-athlete-card-overlay');
@@ -929,6 +934,39 @@ var Convocacao = {
           if (goalsEl && res.gols > 0) goalsEl.textContent = res.gols;
         }
       }).catch(() => {});
+    }
+
+    // Se o espectador for o Gestor Lucas Fernandes Guerreiro, injeta o botão de desativar/ativar no modal
+    if (viewerIsLucas) {
+      const isCardDisabled = localStorage.getItem('peladapro_premium_desativado') === 'true';
+      const masterBtnHtml = `
+        <div style="margin-top: 14px; text-align: center; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 12px;">
+          <button id="btn-lucas-toggle-card-overlay" style="background: ${isCardDisabled ? '#059669' : '#DC2626'}; color: #FFFFFF; font-weight: 800; font-size: 12px; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${isCardDisabled ? '✨ Ativar Card Premium dos Atletas' : '🚫 Desativar Card Premium dos Atletas'}
+          </button>
+        </div>
+      `;
+
+      const cardBox = modalOverlay.querySelector('div > div');
+      if (cardBox && !document.getElementById('btn-lucas-toggle-card-overlay')) {
+        cardBox.insertAdjacentHTML('beforeend', masterBtnHtml);
+        const overlayBtn = document.getElementById('btn-lucas-toggle-card-overlay');
+        if (overlayBtn) {
+          overlayBtn.onclick = function(e) {
+            e.stopPropagation();
+            const currDisabled = localStorage.getItem('peladapro_premium_desativado') === 'true';
+            if (currDisabled) {
+              localStorage.setItem('peladapro_premium_desativado', 'false');
+              if (window.App && window.App.showToast) window.App.showToast('✨ Card Premium dos Atletas ATIVADO com sucesso!', 'success');
+            } else {
+              localStorage.setItem('peladapro_premium_desativado', 'true');
+              if (window.App && window.App.showToast) window.App.showToast('🚫 Card Premium dos Atletas DESATIVADO com sucesso!', 'warning');
+            }
+            Convocacao.closePlayerCardModal();
+            setTimeout(() => Convocacao.openPlayerCardModal(athleteId), 150);
+          };
+        }
+      }
     }
 
     setTimeout(function() {
