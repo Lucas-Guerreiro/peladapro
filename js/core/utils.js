@@ -219,7 +219,32 @@ window.Utils = Utils;
 
 window.App = window.App || {};
 
+window.App.isVipPlan = function () {
+  try {
+    const override = localStorage.getItem('pp_vip_test_override');
+    if (override) {
+      return override === 'ativa';
+    }
+    var grp = (window.App && window.App.currentGroup) ? window.App.currentGroup : null;
+    if (!grp && window.Auth) grp = window.Auth.currentGroup;
+    if (!grp) {
+      var raw = localStorage.getItem('currentGroup');
+      if (raw) grp = JSON.parse(raw);
+    }
+    if (grp && grp.licenca_status === 'ativa') {
+      if (grp.licenca_expira_em) {
+        var exp = new Date(grp.licenca_expira_em);
+        if (exp > new Date()) return true;
+      } else {
+        return true;
+      }
+    }
+  } catch (e) { }
+  return false;
+};
+
 window.App.getTeamThemeGlobal = function (teamName) {
+  if (window.App.isVipPlan && !window.App.isVipPlan()) return null;
   if (window.Dashboard && window.Dashboard.getTeamTheme) {
     return window.Dashboard.getTeamTheme(teamName);
   }
@@ -235,6 +260,13 @@ window.App.getTeamThemeGlobal = function (teamName) {
 };
 
 window.App.toggleModoNoturnoGlobal = function () {
+  if (window.App.isVipPlan && !window.App.isVipPlan()) {
+    if (window.App && window.App.showToast) {
+      window.App.showToast('⭐ O Modo Noturno e Tema do Time é um recurso exclusivo do Plano VIP!', 'warning');
+    }
+    window.App.applyModoNoturnoGlobal(false);
+    return;
+  }
   const isCurrentlyNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
   const nextNight = !isCurrentlyNight;
   localStorage.setItem('peladapro_modo_noturno', nextNight ? 'true' : 'false');
@@ -248,7 +280,9 @@ window.App.toggleModoNoturnoGlobal = function () {
 };
 
 window.App.applyModoNoturnoGlobal = function (isNight) {
-  if (isNight === undefined) {
+  if (window.App.isVipPlan && !window.App.isVipPlan()) {
+    isNight = false;
+  } else if (isNight === undefined) {
     isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
   }
 
