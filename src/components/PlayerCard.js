@@ -143,24 +143,11 @@ export default function PlayerCard({
               </View>
             </View>
 
-            {/* Canto Direito: Bandeira Nacional + Bandeira do Time do Atleta */}
+            {/* Canto Direito: Bandeira da Nacionalidade do Atleta */}
             <View style={styles.rightFlagsStack}>
-              {/* Nacionalidade */}
               <View style={styles.flagBadge}>
                 <Text style={styles.flagEmoji}>{nacEmoji}</Text>
                 <Text style={styles.flagText}>{nacCode}</Text>
-              </View>
-
-              {/* Time do Coração do Atleta */}
-              <View style={styles.flagBadge}>
-                {timeFlagUrl ? (
-                  <Image source={{ uri: timeFlagUrl }} style={styles.timeFlagImg} />
-                ) : (
-                  <Ionicons name="shield-checkmark" size={12} color={GOLD_LIGHT} />
-                )}
-                <Text style={styles.flagText} numberOfLines={1}>
-                  {timeNome ? timeNome.substring(0, 3).toUpperCase() : 'PEL'}
-                </Text>
               </View>
             </View>
           </View>

@@ -86,32 +86,9 @@ var Dashboard = {
     var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
     this.applyCardStyle(style);
 
-    // Preenche bandeira da nacionalidade e bandeira do time do atleta
+    // Preenche bandeira da nacionalidade do atleta
     var nacFlagEl = document.getElementById('fut-player-nac-flag');
     if (nacFlagEl) nacFlagEl.textContent = user.nacionalidade_flag || user.nacionalidade || '🇧🇷';
-
-    var clubCrestEl = document.getElementById('fut-player-club-crest');
-    if (clubCrestEl) {
-      if (user.time_coracao && user.time_coracao.trim()) {
-        const teamName = user.time_coracao.trim().toLowerCase();
-        let teamBadge = '⚽';
-        if (teamName.includes('flamengo')) teamBadge = '🔴🖤';
-        else if (teamName.includes('vasco')) teamBadge = '⚪🖤';
-        else if (teamName.includes('palmeiras')) teamBadge = '🟢⚪';
-        else if (teamName.includes('são paulo') || teamName.includes('sao paulo')) teamBadge = '🔴⚪🖤';
-        else if (teamName.includes('corinthians')) teamBadge = '⚪🖤';
-        else if (teamName.includes('fluminense')) teamBadge = '🟢🔴';
-        else if (teamName.includes('botafogo')) teamBadge = '⭐🖤';
-        else if (teamName.includes('santos')) teamBadge = '⚪🖤';
-        else if (teamName.includes('grêmio') || teamName.includes('gremio')) teamBadge = '🔵⚪🖤';
-        else if (teamName.includes('internacional')) teamBadge = '🔴⚪';
-        else if (teamName.includes('cruzeiro') || teamName.includes('atlético-mg') || teamName.includes('atletico-mg')) teamBadge = '⚽';
-        clubCrestEl.textContent = teamBadge;
-        clubCrestEl.title = user.time_coracao;
-      } else {
-        clubCrestEl.textContent = '⚽';
-      }
-    }
 
     var futAgeEl = document.getElementById('fut-stat-age');
     if (futAgeEl) futAgeEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
