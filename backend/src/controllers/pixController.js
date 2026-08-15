@@ -368,6 +368,14 @@ async function efetivarConvocacaoPixAprovado(client, usuarioId, peladaId, valorP
         body: `Seu Pix de R$ ${valorPago.toFixed(2)} foi aprovado, mas a lista oficial lotou. Você está na fila de espera (Posição #${posicaoFila}).`,
         url: '/#/jogador/convocacao'
       }).catch(e => console.warn('[Push] Erro:', e.message));
+
+      sendNotificationInternal({
+        onlyGestores: true,
+        grupoId: grupo_id,
+        title: '⏳ Atleta na Fila de Espera!',
+        body: `${atletaNome} entrou na fila de espera (Posição #${posicaoFila}) para a pelada de ${dataFmt}.`,
+        url: '/#/gestor/partidas'
+      }).catch(e => console.warn('[Push] Erro ao notificar gestor:', e.message));
     } else {
       sendNotificationInternal({
         usuarioId: usuarioId,

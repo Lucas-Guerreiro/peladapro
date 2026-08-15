@@ -138,7 +138,7 @@ exports.confirmar = async (req, res) => {
 
     await client.query('COMMIT');
 
-    // 5. Dispara notificação push de confirmação para o próprio usuário
+    // 5. Dispara notificação push de confirmação para o próprio usuário e para o gestor
     try {
       const { sendNotificationInternal } = require('./pushController');
       if (vaiParaFila) {
@@ -148,6 +148,14 @@ exports.confirmar = async (req, res) => {
           body: `A lista oficial está cheia. Você está na fila de espera (Posição #${posicaoFila}) para a pelada de ${dataFmt}.`,
           url: '/#/jogador/convocacao'
         }).catch(e => console.warn('[Push] Erro ao disparar push de fila de espera:', e.message));
+
+        sendNotificationInternal({
+          onlyGestores: true,
+          grupoId: grupo_id,
+          title: '⏳ Atleta na Fila de Espera!',
+          body: `${atletaNome} entrou na fila de espera (Posição #${posicaoFila}) para a pelada de ${dataFmt}.`,
+          url: '/#/gestor/partidas'
+        }).catch(e => console.warn('[Push] Erro ao notificar gestor sobre fila de espera:', e.message));
       } else {
         sendNotificationInternal({
           usuarioId: usuario_id,

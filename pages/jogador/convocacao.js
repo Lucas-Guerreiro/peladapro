@@ -544,6 +544,51 @@ var Convocacao = {
           }
         }
 
+        // Checagem de capacidade: verificar se a lista oficial de confirmados já lotou
+        try {
+          const convocados = await Api.listarConvocados(Convocacao._selectedPeladaId);
+          const confirmados = (convocados || []).filter(c => c.status === 'confirmado');
+          const maxVagas = pelada ? (pelada.limite_atletas || pelada.max_jogadores || 20) : 20;
+
+          if (confirmados.length >= maxVagas) {
+            const confirmouFila = await new Promise((resolve) => {
+              const modalRoot = document.getElementById('modal-container-root') || document.body;
+              const dialog = document.createElement('div');
+              dialog.id = 'waitlist-confirm-dialog';
+              dialog.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999999; padding: 20px;';
+              dialog.innerHTML = `
+                <div style="background: #1E293B; border: 1.5px solid #F59E0B; border-radius: 20px; padding: 24px; max-width: 420px; width: 100%; text-align: center; color: #FFFFFF; box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px rgba(245,158,11,0.2);">
+                  <div style="font-size: 44px; margin-bottom: 12px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">⏳</div>
+                  <h3 style="color: #F59E0B; margin: 0 0 10px; font-size: 20px; font-weight: 800;">Lista Oficial Cheia (${confirmados.length}/${maxVagas})</h3>
+                  <p style="font-size: 14px; color: #E2E8F0; line-height: 1.5; margin: 0 0 22px;">
+                    A lista de convidados para esta data já atingiu a quantidade máxima de vagas.
+                    <br><br>
+                    Se você continuar, seu nome será colocado na <b>FILA DE ESPERA</b> e o gestor receberá uma notificação!
+                  </p>
+                  <div style="display: flex; gap: 12px;">
+                    <button id="btn-cancel-waitlist" style="flex: 1; padding: 12px; background: #334155; color: #FFFFFF; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;">Cancelar</button>
+                    <button id="btn-confirm-waitlist" style="flex: 1.5; padding: 12px; background: linear-gradient(135deg, #F59E0B, #D97706); color: #FFFFFF; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 14px; box-shadow: 0 4px 14px rgba(245,158,11,0.4);">Entrar na Fila</button>
+                  </div>
+                </div>
+              `;
+              modalRoot.appendChild(dialog);
+
+              dialog.querySelector('#btn-cancel-waitlist').onclick = () => {
+                dialog.remove();
+                resolve(false);
+              };
+              dialog.querySelector('#btn-confirm-waitlist').onclick = () => {
+                dialog.remove();
+                resolve(true);
+              };
+            });
+
+            if (!confirmouFila) return;
+          }
+        } catch (checkErr) {
+          console.warn('[Convocacao] Erro na checagem de vagas:', checkErr);
+        }
+
         Router.openModal('pagamento', pelada || {});
       };
     }
