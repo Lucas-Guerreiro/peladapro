@@ -253,7 +253,13 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
   }
 
   const user = window.Auth ? window.Auth.currentUser : null;
-  const teamName = user ? user.time_coracao : null;
+  let teamName = user ? user.time_coracao : null;
+  if (!teamName) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('currentUser'));
+      if (stored && stored.time_coracao) teamName = stored.time_coracao;
+    } catch (e) { }
+  }
   const teamTheme = window.App.getTeamThemeGlobal(teamName);
 
   const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon, #btn-toggle-modo-noturno');

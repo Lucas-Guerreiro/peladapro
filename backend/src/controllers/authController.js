@@ -174,7 +174,8 @@ exports.verificarCodigo = async (req, res) => {
         gols: usuario.gols,
         partidas: usuario.partidas,
         avaliacao_media: parseFloat(usuario.avaliacao_media),
-        verificado: true
+        verificado: true,
+        time_coracao: usuario.time_coracao
       }
     });
 
@@ -248,7 +249,8 @@ exports.login = async (req, res) => {
         gols: usuario.gols,
         partidas: usuario.partidas,
         avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
-        verificado: true
+        verificado: true,
+        time_coracao: usuario.time_coracao
       }
     });
   } catch (err) {
@@ -338,7 +340,8 @@ exports.googleSupabase = async (req, res) => {
         gols: usuario.gols || 0,
         partidas: usuario.partidas || 0,
         avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
-        verificado: true
+        verificado: true,
+        time_coracao: usuario.time_coracao
       }
     });
 
@@ -396,7 +399,8 @@ exports.verify = async (req, res) => {
         gols: usuario.gols,
         partidas: usuario.partidas,
         avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
-        verificado: true
+        verificado: true,
+        time_coracao: usuario.time_coracao
       }
     });
   } catch (err) {

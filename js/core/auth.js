@@ -390,6 +390,12 @@ const Auth = {
       } else {
         Router.navigate('#/jogador/dashboard');
       }
+
+      setTimeout(() => {
+        if (window.App && window.App.applyModoNoturnoGlobal) {
+          window.App.applyModoNoturnoGlobal();
+        }
+      }, 50);
     }
   },
 
