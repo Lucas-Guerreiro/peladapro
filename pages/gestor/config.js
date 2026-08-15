@@ -279,6 +279,18 @@ async function loadGestorGroups() {
       loadConfigs();
     }
 
+    // Se houver override local de teste VIP, aplica sobre o grupo retornado do backend
+    const override = localStorage.getItem('pp_vip_test_override');
+    if (override && window.App.currentGroup) {
+      window.App.currentGroup.licenca_status = override;
+      if (override === 'ativa' && !window.App.currentGroup.licenca_expira_em) {
+        const umAno = new Date();
+        umAno.setFullYear(umAno.getFullYear() + 1);
+        window.App.currentGroup.licenca_expira_em = umAno.toISOString();
+      }
+      localStorage.setItem('currentGroup', JSON.stringify(window.App.currentGroup));
+    }
+
     if (select) {
       grupos.forEach(g => {
         const opt = document.createElement("option");
@@ -650,6 +662,19 @@ function updateLicenseUI() {
     return;
   }
 
+  // Se houver override local de teste VIP, aplica sobre o grupo
+  const override = localStorage.getItem('pp_vip_test_override');
+  if (override) {
+    config.licenca_status = override;
+    if (override === 'ativa' && !config.licenca_expira_em) {
+      const umAno = new Date();
+      umAno.setFullYear(umAno.getFullYear() + 1);
+      config.licenca_expira_em = umAno.toISOString();
+    } else if (override === 'free') {
+      config.licenca_expira_em = null;
+    }
+  }
+
   // Verifica se a licença está ativa
   if (config.licenca_status === 'ativa' && config.licenca_expira_em) {
     const expDate = new Date(config.licenca_expira_em);
@@ -798,12 +823,14 @@ function initAdSenseUI() {
       if (isVip) {
         window.App.currentGroup.licenca_status = 'free';
         window.App.currentGroup.licenca_expira_em = null;
+        localStorage.setItem('pp_vip_test_override', 'free');
         window.App.showToast("Você SAIU do Modo VIP! O grupo agora está no modo GRATUITO com anúncios ativos para testes. 🛑⭐", "info");
       } else {
         window.App.currentGroup.licenca_status = 'ativa';
         const umAno = new Date();
         umAno.setFullYear(umAno.getFullYear() + 1);
         window.App.currentGroup.licenca_expira_em = umAno.toISOString();
+        localStorage.setItem('pp_vip_test_override', 'ativa');
         window.App.showToast("Você ENTROU no Modo VIP! Licença VIP ativada. 👑⭐", "success");
       }
 

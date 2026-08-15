@@ -13,6 +13,10 @@
 
     isVipGroup() {
       try {
+        const override = localStorage.getItem('pp_vip_test_override');
+        if (override) {
+          return override === 'ativa';
+        }
         let grp = (window.App && window.App.currentGroup) ? window.App.currentGroup : null;
         if (!grp && window.Auth) grp = window.Auth.currentGroup;
         if (!grp) {
