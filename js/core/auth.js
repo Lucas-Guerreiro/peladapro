@@ -378,6 +378,16 @@ const Auth = {
   },
 
   selectRole(role) {
+    if (!this.currentUser) return;
+    const canGestor = (this.currentUser.tipo === 'gestor' || this.currentUser.tipo === 'ambos' || this.currentUser.tipo === 'admin');
+    if (role === 'gestor' && !canGestor) {
+      Utils.toast('Sua conta não possui permissão de Gestor.', 'error');
+      this._selectedRole = 'jogador';
+      localStorage.setItem('ultimo_perfil', 'jogador');
+      Router.navigate('#/jogador/dashboard');
+      return;
+    }
+
     this._selectedRole = role;
     if (this.currentUser) {
       this.currentUser.gestor = (role === 'gestor');
@@ -407,12 +417,14 @@ const Auth = {
     const isJogadorOnly = (player.tipo === 'jogador');
     let activeRole = 'jogador';
 
-    if (forcedRole) {
-      activeRole = forcedRole;
+    if (isJogadorOnly) {
+      activeRole = 'jogador';
+      localStorage.setItem('ultimo_perfil', 'jogador');
     } else if (isGestorOnly) {
       activeRole = 'gestor';
-    } else if (isJogadorOnly) {
-      activeRole = 'jogador';
+      localStorage.setItem('ultimo_perfil', 'gestor');
+    } else if (forcedRole) {
+      activeRole = forcedRole;
     } else {
       const ultimoPerfil = localStorage.getItem('ultimo_perfil') || player.ultimo_perfil || null;
       if (ultimoPerfil && (ultimoPerfil === 'gestor' || ultimoPerfil === 'jogador')) {

@@ -89,9 +89,21 @@ const Router = {
     this.activeRoute = targetHash;
 
     // Guarda de permissão
-    if (route.permission === 'jogador' || route.permission === 'gestor') {
+    if (route.permission === 'jogador' || route.permission === 'gestor' || route.page.startsWith('gestor/')) {
       if (!Auth.isLoggedIn()) {
         return this.navigate('#/login');
+      }
+
+      // Bloquear acesso à área de gestor se o usuário for apenas um jogador
+      if (route.page.startsWith('gestor/') || route.permission === 'gestor') {
+        const userType = Auth.currentUser ? Auth.currentUser.tipo : null;
+        const canAccessGestor = (userType === 'gestor' || userType === 'ambos' || userType === 'admin');
+        if (!canAccessGestor) {
+          Utils.toast('Acesso restrito: Sua conta é de Atleta.', 'warning');
+          Auth._selectedRole = 'jogador';
+          localStorage.setItem('ultimo_perfil', 'jogador');
+          return this.navigate('#/jogador/dashboard');
+        }
       }
     }
 
