@@ -666,12 +666,12 @@ var Dashboard = {
     if (!teamName) return null;
     var name = teamName.toLowerCase().trim();
 
-    // Flamengo (Rubro-Negro: Fundo Preto -> Vermelho, Botões Pretos)
+    // Flamengo (Rubro-Negro: Fundo Preto -> Vermelho, Botões e Borda Pretos)
     if (name.includes('flamengo')) {
       return {
         gradient: 'linear-gradient(135deg, #000000 0%, #3A050A 50%, #C8102E 100%)',
-        border: '#C8102E',
-        borderGlow: 'rgba(200, 16, 46, 0.5)',
+        border: '#000000',
+        borderGlow: 'rgba(200, 16, 46, 0.4)',
         accent: '#FFD700',
         badgeBg: '#000000',
         badgeText: '#FFFFFF',
