@@ -265,23 +265,26 @@ var Ranking = {
         }
       });
 
-      // 2. Contabiliza a quantidade exata de partidas disputadas por cada TIME na pelada (idêntico ao Acompanhamento)
-      var teamMatchesCount = {};
+      // 2. Contabiliza a quantidade exata de partidas disputadas por cada TIME em CADA PELADA
+      var teamMatchesByPelada = {};
+      var playerTeamByPelada = {};
       var matchGols = {};
       var matchAssists = {};
-      var playerTeamFromGoals = {};
 
       partidas.forEach(function(m) {
+        var pId = m.pelada_id;
+        if (!teamMatchesByPelada[pId]) teamMatchesByPelada[pId] = {};
+
         var tA = (m.time_a_nome || '').trim();
         var tB = (m.time_b_nome || '').trim();
 
         if (tA) {
           var keyA = tA.toLowerCase();
-          teamMatchesCount[keyA] = (teamMatchesCount[keyA] || 0) + 1;
+          teamMatchesByPelada[pId][keyA] = (teamMatchesByPelada[pId][keyA] || 0) + 1;
         }
         if (tB) {
           var keyB = tB.toLowerCase();
-          teamMatchesCount[keyB] = (teamMatchesCount[keyB] || 0) + 1;
+          teamMatchesByPelada[pId][keyB] = (teamMatchesByPelada[pId][keyB] || 0) + 1;
         }
 
         let goalsList = [];
@@ -291,54 +294,62 @@ var Ranking = {
 
         (goalsList || []).forEach(function(g) {
           var teamNameOfPlayer = g.teamName || (g.teamKey === 'a' ? tA : (g.teamKey === 'b' ? tB : null));
-
-          // Usa autorId como chave quando disponível — evita duplicar atletas com nomes diferentes
           var golKey = g.autorId ? String(g.autorId) : (g.autorNome ? g.autorNome.trim() : null);
+
           if (golKey) {
             var aNome = g.autorNome ? g.autorNome.trim() : golKey;
-            if (!matchGols[golKey]) matchGols[golKey] = { nome: aNome, count: 0 };
-            // Mantém o apelido mais curto/canônico (evita "Lucas Fernandes Guerreiro" vs "Lucas")
+            if (!matchGols[golKey]) matchGols[golKey] = { id: golKey, nome: aNome, count: 0 };
             if (aNome.length < matchGols[golKey].nome.length) matchGols[golKey].nome = aNome;
             matchGols[golKey].count++;
-            if (teamNameOfPlayer) playerTeamFromGoals[golKey] = teamNameOfPlayer.trim().toLowerCase();
+
+            if (teamNameOfPlayer) {
+              playerTeamByPelada[golKey + '_' + pId] = teamNameOfPlayer.trim().toLowerCase();
+            }
           }
 
           var assKey = g.assistId ? String(g.assistId) : (g.assistNome ? g.assistNome.trim() : null);
           if (assKey) {
             var assNome = g.assistNome ? g.assistNome.trim() : assKey;
-            if (!matchAssists[assKey]) matchAssists[assKey] = { nome: assNome, count: 0 };
+            if (!matchAssists[assKey]) matchAssists[assKey] = { id: assKey, nome: assNome, count: 0 };
             if (assNome.length < matchAssists[assKey].nome.length) matchAssists[assKey].nome = assNome;
             matchAssists[assKey].count++;
-            if (teamNameOfPlayer) playerTeamFromGoals[assKey] = teamNameOfPlayer.trim().toLowerCase();
+
+            if (teamNameOfPlayer) {
+              playerTeamByPelada[assKey + '_' + pId] = teamNameOfPlayer.trim().toLowerCase();
+            }
           }
         });
       });
 
-      // Helper para encontrar os jogos do time de um atleta
+      // Helper para calcular o total acumulado de jogos do atleta somando cada pelada disputada
       function getGamesForPlayer(key) {
-        // 1. Tenta pelo time gravado nos gols da partida
-        var teamFromGoal = playerTeamFromGoals[key];
-        if (teamFromGoal && teamMatchesCount[teamFromGoal]) {
-          return teamMatchesCount[teamFromGoal];
-        }
+        var totalGames = 0;
 
-        // 2. Tenta pelo time sorteado (nome do atleta)
-        var lowerKey = key.toLowerCase();
-        var maxGames = 0;
-        Object.keys(teamPlayersMap).forEach(function(tName) {
-          if (teamPlayersMap[tName].has(lowerKey)) {
-            maxGames = Math.max(maxGames, teamMatchesCount[tName] || 0);
+        Object.keys(teamMatchesByPelada).forEach(function(pId) {
+          var peladaTeams = teamMatchesByPelada[pId] || {};
+          var teamFromGoal = playerTeamByPelada[key + '_' + pId];
+
+          if (teamFromGoal && peladaTeams[teamFromGoal]) {
+            totalGames += peladaTeams[teamFromGoal];
+          } else {
+            var lowerKey = key.toLowerCase();
+            var matchedGames = 0;
+            Object.keys(teamPlayersMap).forEach(function(tName) {
+              if (teamPlayersMap[tName] && teamPlayersMap[tName].has(lowerKey)) {
+                matchedGames = Math.max(matchedGames, peladaTeams[tName] || 0);
+              }
+            });
+
+            if (matchedGames > 0) {
+              totalGames += matchedGames;
+            } else if (playerTeamByPelada[key + '_' + pId]) {
+              var allCounts = Object.values(peladaTeams);
+              if (allCounts.length > 0) totalGames += Math.max.apply(null, allCounts);
+            }
           }
         });
 
-        if (maxGames > 0) return maxGames;
-
-        // 3. Fallback para maior número de jogos registrado
-        var allTeamGames = Object.values(teamMatchesCount);
-        if (allTeamGames.length > 0) {
-          return Math.max.apply(null, allTeamGames);
-        }
-        return 1;
+        return totalGames > 0 ? totalGames : 1;
       }
 
       Object.keys(matchGols).forEach(function(key) {
