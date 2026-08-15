@@ -927,6 +927,7 @@ var Dashboard = {
   },
 
   // Aplica o estilo de card escolhido ('free', 'premium', 'fut')
+  // Aplica o estilo de card ('free' ou 'fut')
   applyCardStyle: function (style) {
     var card = document.getElementById('player-fifa-card');
     var badgeVip = document.getElementById('badge-vip-card');
@@ -940,21 +941,16 @@ var Dashboard = {
       }
     }
 
-    // O estilo FUT Ultimate é exclusivo de teste para Lucas Fernandes Guerreiro
-    if (style === 'fut' && !isLucasGuerreiro) {
-      style = localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free';
-    }
-
+    if (style === 'premium') style = 'fut';
     if (!style) style = 'free';
+
     localStorage.setItem('peladapro_card_style', style);
     localStorage.setItem(this._PREMIUM_KEY, style !== 'free' ? 'true' : 'false');
 
     if (card) {
       card.classList.remove('premium-ativo', 'fut-ultimate-ativo');
 
-      if (style === 'premium') {
-        card.classList.add('premium-ativo');
-      } else if (style === 'fut' && isLucasGuerreiro) {
+      if (style === 'fut' || style === 'premium') {
         card.classList.add('fut-ultimate-ativo');
       }
 
@@ -971,30 +967,23 @@ var Dashboard = {
   },
 
   _aplicarEstiloPremium: function () {
-    this.applyCardStyle('premium');
+    this.applyCardStyle('fut');
   },
 
   _removerEstiloPremium: function () {
     this.applyCardStyle('free');
   },
 
-  // Alterna ciclicamente entre os estilos (Básico ➔ Premium Verde ➔ FIFA Ultimate) para testes do gestor Lucas Fernandes Guerreiro
+  // Alterna entre os estilos (Básico ➔ FIFA Ultimate) para testes do gestor Lucas Fernandes Guerreiro
   toggleCardPremiumTeste: function () {
-    var currentStyle = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
-    var nextStyle = 'free';
+    var currentStyle = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'fut' : 'free');
+    var nextStyle = currentStyle === 'free' ? 'fut' : 'free';
 
-    if (currentStyle === 'free') {
-      nextStyle = 'premium';
-      if (window.App && window.App.showToast) {
-        window.App.showToast("Você ativou o Modo Card PREMIUM ELEGANTE! 👑⭐", "success");
-      }
-    } else if (currentStyle === 'premium') {
-      nextStyle = 'fut';
+    if (nextStyle === 'fut') {
       if (window.App && window.App.showToast) {
         window.App.showToast("Você ativou o Modo Card FIFA ULTIMATE TEAM! 🔥⚽", "success");
       }
     } else {
-      nextStyle = 'free';
       if (window.App && window.App.showToast) {
         window.App.showToast("Você retornou ao Modo Card BÁSICO. 🛑⭐", "info");
       }
@@ -1017,23 +1006,17 @@ var Dashboard = {
       }
     }
 
-    var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
+    var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'fut' : 'free');
 
     if (isLucasGuerreiro) {
       btnUpgrade.style.display = 'block';
       if (style === 'free') {
         btnUpgrade.classList.remove('ativo');
-        btnUpgrade.textContent = '⭐ Estilo: BÁSICO (Clique p/ alternar ➔ Premium Verde)';
+        btnUpgrade.textContent = '⭐ Estilo: BÁSICO (Clique p/ alternar ➔ FIFA Ultimate)';
         btnUpgrade.style.background = 'linear-gradient(135deg, #10B981, #059669)';
         btnUpgrade.style.borderColor = '#10B981';
         btnUpgrade.style.color = '#FFFFFF';
-      } else if (style === 'premium') {
-        btnUpgrade.classList.add('ativo');
-        btnUpgrade.textContent = '👑 Estilo: PREMIUM ELEGANTE (Clique p/ alternar ➔ FIFA Ultimate)';
-        btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270)';
-        btnUpgrade.style.borderColor = '#F5D270';
-        btnUpgrade.style.color = '#1A1A1A';
-      } else if (style === 'fut') {
+      } else {
         btnUpgrade.classList.add('ativo');
         btnUpgrade.textContent = '🔥 Estilo: FIFA ULTIMATE TEAM (Clique p/ alternar ➔ Básico)';
         btnUpgrade.style.background = 'linear-gradient(135deg, #8B1A1A, #C8102E)';
