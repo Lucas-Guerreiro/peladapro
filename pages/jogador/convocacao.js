@@ -205,6 +205,7 @@ var Convocacao = {
       listEl.innerHTML = '<div style="padding: 32px; text-align: center;" class="text-inter">Carregando convocados...</div>';
 
       const convocados = await Api.listarConvocados(peladaId);
+      this._lastConvocados = convocados;
 
       // Obter max_jogadores da pelada atual local
       var pelada = Api.getPelada(peladaId);
@@ -230,20 +231,21 @@ var Convocacao = {
         var avatarHTML = '';
         var hasPhoto = c.foto || c.photo;
         if (hasPhoto) {
-          avatarHTML = '<img src="' + hasPhoto + '" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 3px solid var(--secondary); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
+          avatarHTML = '<img src="' + hasPhoto + '" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2.5px solid var(--secondary); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
         } else {
-          avatarHTML = '<div style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 24px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
+          avatarHTML = '<div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 22px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
             nome.charAt(0).toUpperCase() +
             '</div>';
         }
 
-        html += '<div style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border-color);">' +
+        html += '<div onclick="Convocacao.openPlayerCardModal(' + c.id + ')" title="Clique para ver o Card do Atleta" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\'rgba(29,158,117,0.06)\'" onmouseout="this.style.background=\'transparent\'">' +
           avatarHTML +
           '<div style="flex: 1;">' +
-          '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading); margin: 0;">' +
+          '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading); margin: 0; display: flex; align-items: center; gap: 6px;">' +
           nome + (isMe ? ' <span style="font-size: 11px; color: var(--secondary); background: rgba(0,230,118,0.1); padding: 2px 6px; border-radius: 10px;">Você</span>' : '') +
           (c.goleiro ? ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' : '') +
           '</p>' +
+          '<p style="font-size: 11px; color: #1D9E75; margin: 2px 0 0 0; font-weight: 600; display: flex; align-items: center; gap: 3px;">🎴 Ver Card de Atleta</p>' +
           '</div>' +
           '<span class="badge-status confirmado">✅</span>' +
           '</div>';
@@ -496,6 +498,128 @@ var Convocacao = {
         var pelada = Api.getPelada(Convocacao._selectedPeladaId);
         Router.openModal('remocao', pelada);
       };
+    }
+  },
+
+  // --- Abre Pop-Up com o Card Ultimate FUT do Atleta selecionado --------------
+  openPlayerCardModal: async function (athleteId) {
+    let athlete = null;
+
+    // 1. Busca na lista de convocados da pelada atual
+    if (this._lastConvocados && Array.isArray(this._lastConvocados)) {
+      athlete = this._lastConvocados.find(c => String(c.id) === String(athleteId));
+    }
+
+    // 2. Fallback: busca nos usuarios da API ou banco
+    if (!athlete) {
+      try {
+        const users = Api.getUsuarios();
+        athlete = users.find(u => String(u.id) === String(athleteId));
+      } catch (e) {}
+    }
+
+    if (!athlete) {
+      athlete = { id: athleteId, nome: 'Atleta', apelido: 'Atleta', gols: 0, partidas: 0 };
+    }
+
+    // Cria overlay no DOM se não existir
+    var modalOverlay = document.getElementById('modal-athlete-card-overlay');
+    if (!modalOverlay) {
+      modalOverlay = document.createElement('div');
+      modalOverlay.id = 'modal-athlete-card-overlay';
+      modalOverlay.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;';
+      document.body.appendChild(modalOverlay);
+    }
+
+    var name = athlete.apelido || athlete.nome || 'Atleta';
+    var foto = athlete.foto || athlete.photo || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80';
+    var age = athlete.idade || athlete.age;
+    if (!age && athlete.data_nascimento) {
+      var birth = new Date(athlete.data_nascimento);
+      var ageDifMs = Date.now() - birth.getTime();
+      var ageDate = new Date(ageDifMs);
+      age = Math.abs(ageDate.getUTCFullYear() - 1970);
+    }
+    age = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
+
+    var games = athlete.jogos !== undefined ? athlete.jogos : (athlete.partidas !== undefined ? athlete.partidas : 0);
+    var goals = athlete.gols !== undefined ? athlete.gols : (athlete.goals !== undefined ? athlete.goals : 0);
+    var memberYear = (athlete.criado_em || athlete.created_at) ? new Date(athlete.criado_em || athlete.created_at).getFullYear() : new Date().getFullYear();
+    var flag = athlete.nacionalidade_flag || athlete.nacionalidade || '🇧🇷';
+
+    // Gradientes temáticos do time
+    var bgGradient = 'linear-gradient(135deg, #1D9E75 0%, #0D4030 50%, #0A1F16 100%)';
+    var borderColor = '#D4AF37';
+
+    if (athlete.time_coracao) {
+      var tName = athlete.time_coracao.toLowerCase().trim();
+      if (tName.includes('flamengo')) { bgGradient = 'linear-gradient(135deg, #8B1A1A 0%, #3A050A 50%, #C8102E 100%)'; borderColor = '#8B1A1A'; }
+      else if (tName.includes('vasco')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)'; borderColor = '#FFFFFF'; }
+      else if (tName.includes('fluminense')) { bgGradient = 'linear-gradient(135deg, #831D1C 0%, #4A0E0E 40%, #006633 100%)'; borderColor = '#D4AF37'; }
+      else if (tName.includes('palmeiras')) { bgGradient = 'linear-gradient(135deg, #005931 0%, #02341D 50%, #001A0E 100%)'; borderColor = '#86EFAC'; }
+      else if (tName.includes('corinthians')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #111111 50%, #000000 100%)'; borderColor = '#F5D270'; }
+    }
+
+    modalOverlay.innerHTML = `
+      <div style="position: relative; width: 90%; max-width: 330px; border-radius: 24px; padding: 24px 20px; background: ${bgGradient}; border: 2.5px solid ${borderColor}; box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 35px rgba(212, 175, 55, 0.4); text-align: center; color: #FFFFFF; font-family: 'Inter', sans-serif;">
+        <!-- Botão Fechar X -->
+        <button onclick="Convocacao.closePlayerCardModal()" style="position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.4); color: #FFF; font-size: 16px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: 800;">
+          ✕
+        </button>
+
+        <!-- Stack de Nacionalidade & Membro no Canto Superior Esquerdo -->
+        <div style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, 0.65); border: 1.5px solid #F5D270; padding: 4px 8px; border-radius: 10px; backdrop-filter: blur(6px);">
+          <span style="font-size: 14px;">${flag}</span>
+          <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px; margin-top: 1px;">Desde ${memberYear}</span>
+        </div>
+
+        <!-- Avatar Central com anel reluzente -->
+        <div style="width: 100px; height: 100px; border-radius: 50%; border: 3.5px solid #F5D270; box-shadow: 0 0 25px rgba(245, 210, 112, 0.75), 0 8px 24px rgba(0,0,0,0.8); margin: 18px auto 12px; overflow: hidden; background: #0F172A;">
+          <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+
+        <!-- Apelido / Nome do Atleta em Dourado -->
+        <h3 style="color: #F5D270; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 12px rgba(245, 210, 112, 0.5); margin: 0 0 14px 0; border-bottom: 1.5px solid rgba(245, 210, 112, 0.4); padding-bottom: 6px;">
+          ${name}
+        </h3>
+
+        <!-- FUT Stats Grid: IDADE | JOGOS | GOLS -->
+        <div style="display: flex; align-items: center; justify-content: space-around; background: rgba(0, 0, 0, 0.65); border: 1.5px solid rgba(245, 210, 112, 0.5); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; backdrop-filter: blur(8px);">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${age}</span>
+            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">IDADE</span>
+          </div>
+          <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${games}</span>
+            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">JOGOS</span>
+          </div>
+          <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${goals}</span>
+            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">GOLS</span>
+          </div>
+        </div>
+
+        <!-- Botão Fechar -->
+        <button onclick="Convocacao.closePlayerCardModal()" style="width: 100%; background: linear-gradient(135deg, #F5D270, #D4AF37); color: #1A1A1A; font-weight: 800; font-size: 13px; border: none; border-radius: 10px; padding: 10px 0; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 14px rgba(245, 210, 112, 0.35);">
+          Fechar Card
+        </button>
+      </div>
+    `;
+
+    setTimeout(function() {
+      modalOverlay.style.opacity = '1';
+      modalOverlay.style.pointerEvents = 'auto';
+    }, 10);
+  },
+
+  // --- Fecha o Pop-Up do Card ------------------------------------------------
+  closePlayerCardModal: function () {
+    var modalOverlay = document.getElementById('modal-athlete-card-overlay');
+    if (modalOverlay) {
+      modalOverlay.style.opacity = '0';
+      modalOverlay.style.pointerEvents = 'none';
     }
   }
 };
