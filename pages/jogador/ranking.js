@@ -372,7 +372,7 @@ var Ranking = {
         return b.assistencias - a.assistencias;
       });
 
-    if (scorers.length === 0) {
+    if (scorers.length === 0 && !peladaId) {
       var players = Api.getPlayers() || [];
       scorers = players
         .filter(function(p) { return (p.gols || 0) > 0; })
@@ -381,7 +381,7 @@ var Ranking = {
     }
 
     if (scorers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-caption);">Sem artilheiros registrados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-caption);">Nenhum gol registrado nesta data ainda.</td></tr>';
       return;
     }
 
