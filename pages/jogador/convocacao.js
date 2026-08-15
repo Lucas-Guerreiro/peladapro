@@ -638,26 +638,27 @@ var Convocacao = {
             ${name}
           </h3>
 
-          <!-- FUT Stats Grid: PTS | IDADE | JOGOS | GOLS -->
-          <div style="display: flex; align-items: center; justify-content: space-around; background: rgba(0, 0, 0, 0.65); border: 1.5px solid rgba(245, 210, 112, 0.5); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; backdrop-filter: blur(8px);">
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span id="modal-stat-pts" style="font-size: 18px; font-weight: 900; color: #FFFFFF;">0</span>
-              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">PTS</span>
-            </div>
-            <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${age}</span>
+          <!-- FUT Stats Grid: 2 COLUNAS (Linha 1: Idade / Pontos | Linha 2: Gols / Jogos) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; background: rgba(0, 0, 0, 0.65); border: 1.5px solid rgba(245, 210, 112, 0.5); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; backdrop-filter: blur(8px);">
+            <!-- Linha 1 / Coluna 1: IDADE -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 6px 4px; border-radius: 8px;">
+              <span style="font-size: 16px; font-weight: 900; color: #FFFFFF;">${age}</span>
               <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">IDADE</span>
             </div>
-            <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span id="modal-stat-games" style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${games}</span>
-              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">JOGOS</span>
+            <!-- Linha 1 / Coluna 2: PONTOS -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 6px 4px; border-radius: 8px;">
+              <span id="modal-stat-pts" style="font-size: 16px; font-weight: 900; color: #FFFFFF;">0</span>
+              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">PTS</span>
             </div>
-            <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span id="modal-stat-goals" style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${goals}</span>
+            <!-- Linha 2 / Coluna 1: GOLS -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 6px 4px; border-radius: 8px;">
+              <span id="modal-stat-goals" style="font-size: 16px; font-weight: 900; color: #FFFFFF;">${goals}</span>
               <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">GOLS</span>
+            </div>
+            <!-- Linha 2 / Coluna 2: JOGOS -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 6px 4px; border-radius: 8px;">
+              <span id="modal-stat-games" style="font-size: 16px; font-weight: 900; color: #FFFFFF;">${games}</span>
+              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">JOGOS</span>
             </div>
           </div>
 
@@ -691,26 +692,27 @@ var Convocacao = {
             ${name}
           </h3>
 
-          <!-- Stats Grid Básico -->
-          <div style="display: flex; align-items: center; justify-content: space-around; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 8px 10px; margin-bottom: 14px;">
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span id="modal-stat-pts" style="font-size: 16px; font-weight: 800; color: #0F172A;">0</span>
-              <span style="font-size: 9px; font-weight: 700; color: #64748B;">PTS</span>
-            </div>
-            <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${age}</span>
+          <!-- Stats Grid Básico (2 COLUNAS: Idade/Pontos | Gols/Jogos) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px; margin-bottom: 14px;">
+            <!-- Linha 1 / Coluna 1: IDADE -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #FFFFFF; padding: 6px 4px; border-radius: 8px; border: 1px solid #E2E8F0;">
+              <span style="font-size: 15px; font-weight: 800; color: #0F172A;">${age}</span>
               <span style="font-size: 9px; font-weight: 700; color: #64748B;">IDADE</span>
             </div>
-            <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span id="modal-stat-games" style="font-size: 16px; font-weight: 800; color: #0F172A;">${games}</span>
-              <span style="font-size: 9px; font-weight: 700; color: #64748B;">JOGOS</span>
+            <!-- Linha 1 / Coluna 2: PONTOS -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #FFFFFF; padding: 6px 4px; border-radius: 8px; border: 1px solid #E2E8F0;">
+              <span id="modal-stat-pts" style="font-size: 15px; font-weight: 800; color: #0F172A;">0</span>
+              <span style="font-size: 9px; font-weight: 700; color: #64748B;">PTS</span>
             </div>
-            <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span id="modal-stat-goals" style="font-size: 16px; font-weight: 800; color: #0F172A;">${goals}</span>
+            <!-- Linha 2 / Coluna 1: GOLS -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #FFFFFF; padding: 6px 4px; border-radius: 8px; border: 1px solid #E2E8F0;">
+              <span id="modal-stat-goals" style="font-size: 15px; font-weight: 800; color: #0F172A;">${goals}</span>
               <span style="font-size: 9px; font-weight: 700; color: #64748B;">GOLS</span>
+            </div>
+            <!-- Linha 2 / Coluna 2: JOGOS -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #FFFFFF; padding: 6px 4px; border-radius: 8px; border: 1px solid #E2E8F0;">
+              <span id="modal-stat-games" style="font-size: 15px; font-weight: 800; color: #0F172A;">${games}</span>
+              <span style="font-size: 9px; font-weight: 700; color: #64748B;">JOGOS</span>
             </div>
           </div>
 
