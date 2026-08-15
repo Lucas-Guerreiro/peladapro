@@ -1199,6 +1199,43 @@ body.modo-noturno-ativo #license-status-box {
   color: #FFFFFF !important;
 }
 
+/* Card de Monetização e AdSense no Tema do Time */
+body.modo-noturno-ativo #card-monetizacao {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1.5px solid #F5D270 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.modo-noturno-ativo .config-card-heading {
+  color: #F5D270 !important;
+}
+
+body.modo-noturno-ativo .config-opcional-badge {
+  background: rgba(245, 210, 112, 0.2) !important;
+  border: 1px solid #F5D270 !important;
+  color: #F5D270 !important;
+}
+
+body.modo-noturno-ativo .config-row-title,
+body.modo-noturno-ativo .config-field-label {
+  color: #FFFFFF !important;
+}
+
+body.modo-noturno-ativo .config-row-sub,
+body.modo-noturno-ativo .config-card-desc {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.modo-noturno-ativo #btn-save-adsense-config {
+  background: var(--badge-modo-noturno, #0F172A) !important;
+  border: 1.5px solid #F5D270 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
 /* Remover qualquer caixa de fundo do container da grade de estatísticas em Desempenho */
 #my-personal-stats {
   background: transparent !important;
