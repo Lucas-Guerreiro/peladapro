@@ -1573,9 +1573,9 @@ function playAlarmSound() {
 
 async function carregarLiveStateDaPelada(peladaId) {
   if (!peladaId) return;
-  // Se a pelada ativa NÃO estiver em andamento (não for 'ativa'), limpa confronto/fila
+  // Se a pelada ativa NÃO estiver em andamento (ex: 'agendada' para o futuro ou 'finalizada'), limpa confronto/fila
   const peladaAtiva = window.App.activePelada || {};
-  if (peladaAtiva.status === "finalizada") {
+  if (peladaAtiva.status !== "ativa" && peladaAtiva.status !== "em_andamento") {
     limparEstadoPartida();
     return;
   }

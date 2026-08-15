@@ -607,28 +607,11 @@ window.App.renderDrawnTeams = async function () {
     if (window.feather) feather.replace();
     return;
   }
-  // ===== CORREÇÃO: usa a chave com ID da pelada =====
+
+  // Busca os times específicos desta pelada
   const teamsKey = getTeamsKey();
   let teams = [];
   try { teams = JSON.parse(localStorage.getItem(teamsKey)) || []; } catch (e) { }
-  if (!teams || teams.length === 0) {
-    let peladaId = activePelada ? activePelada.id : null;
-    if (!peladaId) {
-      const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
-        try {
-          const peladas = await window.Api.listarDatasDoGrupo(group.id);
-          if (Array.isArray(peladas) && peladas.length > 0) {
-            const activeP = peladas.find(p => p.status !== 'finalizada') || peladas[0];
-            if (activeP) {
-              peladaId = activeP.id;
-              window.App.activePelada = activeP;
-            }
-          }
-        } catch (e) { }
-      }
-    }
-  }
   if (!teams || teams.length === 0) {
     container.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
