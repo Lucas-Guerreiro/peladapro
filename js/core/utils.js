@@ -376,6 +376,61 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
     const group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
     const groupId = group ? group.id : null;
     let partidas = [];
+    const escalacoesPorPelada = {};
+
+    const carregarEscalacao = async function(pId) {
+      if (escalacoesPorPelada[pId]) return;
+      escalacoesPorPelada[pId] = {};
+      try {
+        let teams = [];
+        const rawTeams = localStorage.getItem(`teams_${pId}`);
+        if (rawTeams) teams = JSON.parse(rawTeams);
+        if (!teams || teams.length === 0) teams = (window.Api && window.Api.getTeams) ? window.Api.getTeams() : [];
+
+        if (Array.isArray(teams) && teams.length > 0) {
+          teams.forEach(t => {
+            const tName = (t.nome || t.name || '').trim().toLowerCase();
+            if (tName) {
+              escalacoesPorPelada[pId][tName] = new Set();
+              const pList = t.jogadores || t.players || [];
+              (pList || []).forEach(p => {
+                const pApelido = (p.apelido || '').trim().toLowerCase();
+                const pNome = (p.nome || '').trim().toLowerCase();
+                if (pApelido) escalacoesPorPelada[pId][tName].add(pApelido);
+                if (pNome) escalacoesPorPelada[pId][tName].add(pNome);
+                if (p.id) escalacoesPorPelada[pId][tName].add(String(p.id));
+              });
+            }
+          });
+        }
+
+        const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+        const resLive = await fetch(`/api/peladas/${pId}/live`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (resLive.ok) {
+          const data = await resLive.json();
+          const liveState = data.state || data || {};
+          const times = liveState.teams || [];
+          (times || []).forEach(t => {
+            const tName = (t.nome || t.name || '').trim().toLowerCase();
+            if (tName) {
+              if (!escalacoesPorPelada[pId][tName]) escalacoesPorPelada[pId][tName] = new Set();
+              const pList = t.jogadores || t.players || [];
+              (pList || []).forEach(p => {
+                const pApelido = (p.apelido || '').trim().toLowerCase();
+                const pNome = (p.nome || '').trim().toLowerCase();
+                if (pApelido) escalacoesPorPelada[pId][tName].add(pApelido);
+                if (pNome) escalacoesPorPelada[pId][tName].add(pNome);
+                if (p.id) escalacoesPorPelada[pId][tName].add(String(p.id));
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn(`[calcPlayerDesempenho] Erro ao carregar escalacao da pelada ${pId}:`, e);
+      }
+    };
 
     if (groupId && window.Api && window.Api.listarDatasDoGrupo) {
       const peladas = await window.Api.listarDatasDoGrupo(groupId);
@@ -385,6 +440,7 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
             const listP = await window.Api.listarPartidas(p.id);
             if (Array.isArray(listP) && listP.length > 0) {
               partidas.push(...listP);
+              await carregarEscalacao(p.id);
             }
           }
         }
@@ -423,6 +479,7 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
 
       const playersA = new Set();
       const playersB = new Set();
+      const escalacaoPelada = escalacoesPorPelada[pId] || {};
 
       let goalsList = [];
       if (m.autores_gols) {
@@ -456,8 +513,24 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
       });
 
       let jogouNoTime = null;
-      if (playersA.has(uNomeLower) || playersA.has(uIdStr)) jogouNoTime = 'a';
-      else if (playersB.has(uNomeLower) || playersB.has(uIdStr)) jogouNoTime = 'b';
+      if (tA && escalacaoPelada[tA.toLowerCase()]) {
+        const setA = escalacaoPelada[tA.toLowerCase()];
+        if (setA.has(uIdStr) || setA.has(uNomeLower)) jogouNoTime = 'a';
+      }
+      if (!jogouNoTime && tB && escalacaoPelada[tB.toLowerCase()]) {
+        const setB = escalacaoPelada[tB.toLowerCase()];
+        if (setB.has(uIdStr) || setB.has(uNomeLower)) jogouNoTime = 'b';
+      }
+
+      let estaEscaladoNestaPelada = false;
+      Object.values(escalacaoPelada).forEach(set => {
+        if (set.has(uIdStr) || set.has(uNomeLower)) estaEscaladoNestaPelada = true;
+      });
+
+      if (!jogouNoTime && !estaEscaladoNestaPelada) {
+        if (playersA.has(uNomeLower) || playersA.has(uIdStr)) jogouNoTime = 'a';
+        else if (playersB.has(uNomeLower) || playersB.has(uIdStr)) jogouNoTime = 'b';
+      }
 
       if (jogouNoTime === 'a') pts += ptsA;
       else if (jogouNoTime === 'b') pts += ptsB;
@@ -466,10 +539,21 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
     // Calcula jogos totais do atleta somando os jogos do seu time em cada pelada disputada
     Object.keys(teamMatchesByPelada).forEach(pId => {
       const peladaTeams = teamMatchesByPelada[pId] || {};
-      const teamFromGoal = playerTeamFromEvents[`${uIdStr}_${pId}`] || playerTeamFromEvents[`${uNomeLower}_${pId}`];
+      const escalacao = escalacoesPorPelada[pId] || {};
+      let teamName = null;
 
-      if (teamFromGoal && peladaTeams[teamFromGoal]) {
-        jogos += peladaTeams[teamFromGoal];
+      Object.keys(escalacao).forEach(tName => {
+        const set = escalacao[tName];
+        if (set.has(uIdStr) || set.has(uNomeLower)) teamName = tName;
+      });
+
+      if (!teamName) {
+        const teamFromGoal = playerTeamFromEvents[`${uIdStr}_${pId}`] || playerTeamFromEvents[`${uNomeLower}_${pId}`];
+        if (teamFromGoal) teamName = teamFromGoal;
+      }
+
+      if (teamName && peladaTeams[teamName]) {
+        jogos += peladaTeams[teamName];
       } else if (gols > 0) {
         const allCounts = Object.values(peladaTeams);
         if (allCounts.length > 0) jogos += Math.max(...allCounts);
