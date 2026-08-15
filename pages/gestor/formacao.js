@@ -444,6 +444,49 @@ async function updateCheckinPlayersList(peladaId) {
     localStorage.setItem("players", JSON.stringify(playersLocais));
     window.App.confirmadosList = confirmados;
     atualizarContadorPresencas();
+
+    // Renderizar Fila de Espera para o Gestor
+    const waitlistContainer = document.getElementById("manager-waitlist-container");
+    const waitlistCountEl = document.getElementById("manager-waitlist-count");
+    const waitlistListEl = document.getElementById("manager-waitlist-list");
+
+    const emEspera = (convocados || []).filter(c => c.status === "espera" || c.status === "fila_espera").sort((a, b) => (a.posicao_fila || 99) - (b.posicao_fila || 99));
+
+    if (waitlistContainer && waitlistListEl) {
+      if (emEspera.length > 0) {
+        waitlistContainer.style.display = "block";
+        if (waitlistCountEl) waitlistCountEl.textContent = emEspera.length;
+
+        let waitHtml = "";
+        emEspera.forEach((c, idx) => {
+          const posFila = c.posicao_fila || (idx + 1);
+          const nameStr = c.apelido || c.nome || 'Atleta';
+          const initial = nameStr.charAt(0).toUpperCase();
+          const avatarHtml = c.foto
+            ? `<img src="${c.foto}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #F59E0B; flex-shrink: 0;" alt="${nameStr}">`
+            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: #D97706; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0;">${initial}</div>`;
+
+          waitHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #FFFFFF; border-radius: 8px; margin-bottom: 6px; border: 1px solid #FDE68A;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                <span style="font-weight: 800; font-size: 12px; color: #D97706; min-width: 24px;">#${posFila}</span>
+                ${avatarHtml}
+                <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                  <span style="font-size: 13px; font-weight: 700; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nameStr} ${c.goleiro ? '🧤' : ''}</span>
+                  <span style="font-size: 10px; color: #D97706; font-weight: 600;">⏳ Fila de Espera</span>
+                </div>
+              </div>
+              <button title="Remover da Fila de Espera" onclick="removerDaFilaGestor('${peladaId}', '${c.id}', '${nameStr.replace(/'/g, "\\'")}')" style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; color: #EF4444; font-size: 12px; padding: 4px 8px; font-weight: 700; white-space: nowrap;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='#FEF2F2'">
+                ✕ Remover
+              </button>
+            </div>
+          `;
+        });
+        waitlistListEl.innerHTML = waitHtml;
+      } else {
+        waitlistContainer.style.display = "none";
+      }
+    }
     // Wiring dos botões de lote
     const btnAll = document.getElementById("btn-presence-all");
     const btnNone = document.getElementById("btn-presence-none");
@@ -1182,4 +1225,71 @@ async function exportConvocadosExcel() {
   }
 }
 
+async function desconvocarAtleta(usuarioId, atletaNome) {
+  const selectPelada = document.getElementById("select-manager-pelada");
+  const peladaId = (selectPelada && selectPelada.value) || (window.App.activePelada ? window.App.activePelada.id : null);
+  if (!peladaId) {
+    window.App.showToast("Selecione uma pelada primeiro.", "warning");
+    return;
+  }
+
+  if (!confirm(`Tem certeza que deseja desconvocar ${atletaNome} desta pelada?`)) return;
+
+  try {
+    window.App.showToast(`Desconvocando ${atletaNome}...`, "info");
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/convocacoes/desconvocar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ pelada_id: peladaId, usuario_id: usuarioId })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      window.App.showToast(data.error || "Erro ao desconvocar atleta.", "error");
+      return;
+    }
+
+    window.App.showToast(`${atletaNome} desconvocado com sucesso!`, "success");
+    await updateCheckinPlayersList(peladaId);
+  } catch (err) {
+    console.error("[desconvocarAtleta]", err);
+    window.App.showToast("Erro ao conectar com o servidor.", "error");
+  }
+}
+
+async function removerDaFilaGestor(peladaId, usuarioId, atletaNome) {
+  if (!confirm(`Tem certeza que deseja remover ${atletaNome} da Fila de Espera?`)) return;
+
+  try {
+    window.App.showToast(`Removendo ${atletaNome} da fila de espera...`, "info");
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/convocacoes/desconvocar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ pelada_id: peladaId, usuario_id: usuarioId })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      window.App.showToast(data.error || "Erro ao remover atleta da fila.", "error");
+      return;
+    }
+
+    window.App.showToast(`${atletaNome} removido da fila de espera com sucesso! ⏳`, "success");
+    await updateCheckinPlayersList(peladaId);
+  } catch (err) {
+    console.error("[removerDaFilaGestor]", err);
+    window.App.showToast("Erro ao conectar com o servidor.", "error");
+  }
+}
+
+window.desconvocarAtleta = desconvocarAtleta;
+window.removerDaFilaGestor = removerDaFilaGestor;
 window.exportConvocadosExcel = exportConvocadosExcel;

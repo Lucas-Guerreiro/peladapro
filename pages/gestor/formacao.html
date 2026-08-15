@@ -56,8 +56,20 @@
     </div>
 
     <!-- Lista de Jogadores Cadastrados no Grupo para Check-in -->
-    <div id="checkin-list-container" style="max-height: 380px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+    <div id="checkin-list-container" style="max-height: 340px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
       <!-- Check-ins dinâmicos -->
+    </div>
+
+    <!-- Lista de Espera da Pelada para o Gestor -->
+    <div id="manager-waitlist-container" style="display: none; margin-bottom: 16px; border: 1.5px solid #F59E0B; border-radius: 12px; overflow: hidden; background: #FFFBEB;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #FEF3C7; border-bottom: 1px solid #FDE68A;">
+        <span style="font-size: 13px; font-weight: 800; color: #92400E; display: flex; align-items: center; gap: 6px;">
+          ⏳ Fila de Espera (<span id="manager-waitlist-count">0</span>)
+        </span>
+      </div>
+      <div id="manager-waitlist-list" style="max-height: 180px; overflow-y: auto; padding: 8px;">
+        <!-- Atletas da fila de espera para o gestor -->
+      </div>
     </div>
 
     <button id="btn-draw-teams" class="btn btn-md btn-accent" style="width: 100%;">
