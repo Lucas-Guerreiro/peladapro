@@ -67,9 +67,14 @@
     border: none !important;
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8) !important;
   }
-  .card-fifa.premium-ativo .label-pelada-pro {
+  /* ── Por padrão (Modo Gratuito), Oculta Jogos/Gols e Legenda Membro Elite ── */
+  .fifa-stats-grid {
     display: none !important;
   }
+  .fifa-card-footer-caption {
+    display: none !important;
+  }
+
   .card-fifa.premium-ativo .fifa-stats-grid {
     display: flex !important;
     flex-direction: row !important;
@@ -79,6 +84,14 @@
     width: 100% !important;
     box-sizing: border-box !important;
     margin: 4px 0 !important;
+  }
+  .card-fifa.premium-ativo .fifa-card-footer-caption {
+    display: block !important;
+    text-align: center !important;
+    font-size: 11px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
   }
   .card-fifa.premium-ativo .fifa-stat-box {
     flex: 1 !important;
