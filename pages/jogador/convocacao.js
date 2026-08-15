@@ -403,6 +403,45 @@ var Convocacao = {
       };
     }
 
+    const btnExportList = document.getElementById('btn-export-conv-list');
+    if (btnExportList) {
+      btnExportList.onclick = function () {
+        const peladaId = Convocacao._selectedPeladaId;
+        if (!peladaId) {
+          Utils.toast('Selecione uma pelada e data para exportar a lista.', 'warning');
+          return;
+        }
+
+        const pelada = Api.getPelada(peladaId);
+        const dataStr = pelada && pelada.data ? (window.Utils ? window.Utils.formatDate(pelada.data.split('T')[0]) : pelada.data) : 'Data';
+        const horario = pelada && pelada.horario ? ' às ' + pelada.horario : '';
+
+        const confirmed = (Convocacao._lastConvocados || []).filter(c => c.status === 'confirmado');
+        if (confirmed.length === 0) {
+          Utils.toast('Nenhum atleta confirmado nesta data para exportar.', 'warning');
+          return;
+        }
+
+        let txt = `⚽ *LISTA DE CONFIRMADOS — ${dataStr}${horario}*\n\n`;
+        confirmed.forEach((c, idx) => {
+          const pos = c.goleiro ? '🧤' : '🏃';
+          const nome = c.apelido || c.nome || 'Atleta';
+          txt += `${idx + 1}. ${pos} ${nome}\n`;
+        });
+        txt += `\nTotal: ${confirmed.length} confirmados ✅`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(() => {
+            Utils.toast('Lista de confirmados da data copiada para a área de transferência! 📋', 'success');
+          }).catch(() => {
+            Utils.toast('Erro ao copiar lista.', 'warning');
+          });
+        } else {
+          Utils.toast('Navegador não possui suporte a cópia automática.', 'warning');
+        }
+      };
+    }
+
     if (btnUploadPix) {
       btnUploadPix.onclick = async function () {
         const fileInput = document.getElementById('pix-receipt-file-input');

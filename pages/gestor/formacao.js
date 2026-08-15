@@ -1119,34 +1119,45 @@ window.handleCustomEmblemUpload = function (event) {
 };
 
 async function exportConvocadosExcel() {
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  const selectPelada = document.getElementById("select-manager-pelada");
+  const peladaId = (selectPelada && selectPelada.value) || (window.App.activePelada ? window.App.activePelada.id : null);
+
   if (!peladaId) {
     window.App.showToast("Selecione uma pelada para exportar a lista.", "warning");
     return;
   }
 
   try {
-    window.App.showToast("Gerando arquivo Excel...", "info");
+    window.App.showToast("Gerando planilha de confirmados da data...", "info");
     const convocados = await Api.listarConvocados(peladaId);
     if (!convocados || convocados.length === 0) {
-      window.App.showToast("Nenhum atleta convocado para esta pelada.", "warning");
+      window.App.showToast("Nenhum atleta convocado para esta data.", "warning");
+      return;
+    }
+
+    // Filtrar ESTRITAMENTE os atletas confirmados para a data da convocação selecionada
+    const confirmados = convocados.filter(c => c.status === "confirmado");
+
+    if (confirmados.length === 0) {
+      window.App.showToast("Nenhum atleta confirmado nesta data.", "warning");
       return;
     }
 
     const peladaData = window.App.activePelada ? (window.App.activePelada.data || "") : "";
-    const dataFmt = peladaData ? peladaData.split("T")[0].split("-").reverse().join("/") : "Data";
+    const rawDate = peladaData ? String(peladaData).split("T")[0] : "";
+    const dataFmt = window.Utils ? window.Utils.formatDate(rawDate || peladaData) : (rawDate || "Data");
 
     // Cabeçalho e dados em formato CSV UTF-8 com BOM para abertura perfeita no Microsoft Excel
     let csv = "\uFEFF";
     csv += "Nº;Nome Completo;Apelido;Posição;Autoavaliação (Estrelas);Status Convocação;Presença (Check-in);Forma de Pagamento;Data da Convocação\n";
 
-    convocados.forEach((c, index) => {
+    confirmados.forEach((c, index) => {
       const num = index + 1;
       const nome = `"${(c.nome || '').replace(/"/g, '""')}"`;
       const apelido = `"${(c.apelido || c.nome || '').replace(/"/g, '""')}"`;
       const pos = c.goleiro ? "Goleiro 🧤" : "Linha";
       const estrelas = `${c.autoavaliacao || 3} ★`;
-      const statusStr = c.status === "confirmado" ? "Confirmado" : (c.status === "fila_espera" ? "Fila de Espera" : (c.status || "Pendente"));
+      const statusStr = "Confirmado";
       const presencaStr = c.presenca ? "Presente (Check-in ✅)" : "Ausente";
       const pagto = c.forma_pagamento ? c.forma_pagamento.toUpperCase() : "Não informado";
       const dataConv = c.data_convocacao ? new Date(c.data_convocacao).toLocaleString("pt-BR") : "";
@@ -1158,13 +1169,13 @@ async function exportConvocadosExcel() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    const filename = `Convocados_Pelada_${dataFmt.replace(/\//g, "-")}.csv`;
+    const filename = `Confirmados_Pelada_${dataFmt.replace(/\//g, "-")}.csv`;
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    window.App.showToast("Lista de convocados exportada com sucesso! 📊", "success");
+    window.App.showToast("Lista de confirmados da data exportada com sucesso! 📊", "success");
   } catch (err) {
     console.error("[exportConvocadosExcel]", err);
     window.App.showToast("Erro ao exportar lista para Excel.", "error");
