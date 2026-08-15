@@ -932,74 +932,94 @@ body.modo-noturno-ativo .gestor-web-body,
 body.modo-noturno-ativo .login-container,
 body.modo-noturno-ativo .app-container {
   background: var(--bg-modo-noturno, linear-gradient(135deg, #0F172A 0%, #020617 100%)) !important;
-  color: #F8FAFC !important;
+  color: #FFFFFF !important;
   transition: background 0.5s ease, color 0.5s ease;
 }
 
+/* TODOS os cards, containers, tabelas, modais e caixas ficam escuros e translúcidos (NENHUM CARD BRANCO) */
+body.modo-noturno-ativo .card,
+body.modo-noturno-ativo .card-fifa:not(.has-team-theme),
+body.modo-noturno-ativo .card-athlete,
+body.modo-noturno-ativo .acomp-card,
+body.modo-noturno-ativo .stat-card,
+body.modo-noturno-ativo .queue-container,
+body.modo-noturno-ativo .team-draft-card,
+body.modo-noturno-ativo .match-card,
+body.modo-noturno-ativo .modal-sheet,
+body.modo-noturno-ativo .modal-content,
 body.modo-noturno-ativo .acomp-header-unified-card,
 body.modo-noturno-ativo .acomp-header-mobile-unified,
 body.modo-noturno-ativo .gestor-header-unified-card,
 body.modo-noturno-ativo .gestor-header-mobile-unified,
-body.modo-noturno-ativo .card,
-body.modo-noturno-ativo .modal-content,
+body.modo-noturno-ativo #next-matches-list > div,
+body.modo-noturno-ativo section > div,
 body.modo-noturno-ativo .acomp-mobile-dropdown,
 body.modo-noturno-ativo .gestor-mobile-dropdown,
-body.modo-noturno-ativo .card-fifa:not(.has-team-theme) {
-  background: rgba(15, 23, 42, 0.85) !important;
-  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.2)) !important;
+body.modo-noturno-ativo .table-responsive,
+body.modo-noturno-ativo .table-custom,
+body.modo-noturno-ativo .card-fifa-balance:not(.has-team-theme) {
+  background: rgba(15, 23, 42, 0.88) !important;
+  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.25)) !important;
   backdrop-filter: blur(12px) !important;
   color: #FFFFFF !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* FONTES E TEXTOS: SOMENTE EM BRANCO (#FFFFFF) OU DOURADO (#F5D270 / #D4AF37) */
+body.modo-noturno-ativo,
+body.modo-noturno-ativo p,
+body.modo-noturno-ativo span,
+body.modo-noturno-ativo div,
+body.modo-noturno-ativo td,
+body.modo-noturno-ativo label,
+body.modo-noturno-ativo input,
+body.modo-noturno-ativo select,
+body.modo-noturno-ativo textarea,
+body.modo-noturno-ativo button,
+body.modo-noturno-ativo .text-dark,
+body.modo-noturno-ativo .card-title,
+body.modo-noturno-ativo #player-card-name,
+body.modo-noturno-ativo .athlete-details h4 {
+  color: #FFFFFF !important;
+}
+
+/* DESTAQUES E TÍTULOS PRINCIPAIS EM DOURADO */
 body.modo-noturno-ativo h1,
 body.modo-noturno-ativo h2,
 body.modo-noturno-ativo h3,
 body.modo-noturno-ativo h4,
-body.modo-noturno-ativo .acomp-logo-clear,
-body.modo-noturno-ativo .gestor-logo-clear,
-body.modo-noturno-ativo .text-dark,
-body.modo-noturno-ativo label,
-body.modo-noturno-ativo .card-title,
-body.modo-noturno-ativo .stat-value {
-  color: #FFFFFF !important;
-}
-
+body.modo-noturno-ativo th,
+body.modo-noturno-ativo .sports-font,
+body.modo-noturno-ativo .acomp-logo-clear span,
+body.modo-noturno-ativo .gestor-logo-clear span,
 body.modo-noturno-ativo .acomp-user-name-clear,
-body.modo-noturno-ativo .gestor-user-name-clear {
-  color: var(--accent-modo-noturno, #F5D270) !important;
-}
-
-body.modo-noturno-ativo .acomp-nav-item-clear,
-body.modo-noturno-ativo .gestor-nav-item-clear,
-body.modo-noturno-ativo .tab-btn {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
+body.modo-noturno-ativo .gestor-user-name-clear,
 body.modo-noturno-ativo .acomp-nav-item-clear.active,
 body.modo-noturno-ativo .gestor-nav-item-clear.active,
-body.modo-noturno-ativo .tab-btn.active {
-  background: var(--border-modo-noturno, rgba(255, 255, 255, 0.25)) !important;
-  color: var(--accent-modo-noturno, #F5D270) !important;
-  border-color: var(--accent-modo-noturno, #F5D270) !important;
+body.modo-noturno-ativo .tab-btn.active,
+body.modo-noturno-ativo .label,
+body.modo-noturno-ativo .value,
+body.modo-noturno-ativo .stat-value,
+body.modo-noturno-ativo .accent-gold,
+body.modo-noturno-ativo #dashboard-group-name {
+  color: #F5D270 !important;
 }
 
 body.modo-noturno-ativo table,
 body.modo-noturno-ativo th,
 body.modo-noturno-ativo td {
-  color: #F8FAFC !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 body.modo-noturno-ativo th {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--accent-modo-noturno, #F5D270) !important;
+  color: #F5D270 !important;
 }
 
 body.modo-noturno-ativo input,
 body.modo-noturno-ativo select,
 body.modo-noturno-ativo textarea {
-  background: rgba(0, 0, 0, 0.35) !important;
+  background: rgba(0, 0, 0, 0.45) !important;
   color: #FFFFFF !important;
   border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.3)) !important;
 }
