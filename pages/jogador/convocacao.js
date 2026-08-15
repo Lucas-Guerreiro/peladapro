@@ -613,7 +613,7 @@ var Convocacao = {
                   <p style="font-size: 14px; color: #E2E8F0; line-height: 1.5; margin: 0 0 22px;">
                     A lista de convidados para esta data já atingiu a quantidade máxima de vagas.
                     <br><br>
-                    Se você continuar, seu nome será colocado na <b>FILA DE ESPERA</b> e o gestor receberá uma notificação!
+                    Nenhum valor é cobrado agora! Se algum atleta desistir, você será notificado para realizar o pagamento e confirmar sua participação.
                   </p>
                   <div style="display: flex; gap: 12px;">
                     <button id="btn-cancel-waitlist" style="flex: 1; padding: 12px; background: #334155; color: #FFFFFF; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;">Cancelar</button>
@@ -634,6 +634,19 @@ var Convocacao = {
             });
 
             if (!confirmouFila) return;
+
+            // ATLETA CONFIRMOU ENTRADA NA FILA — ENVIAR DIRETO SEM COBRAR PIX / SALDO AGORA
+            Utils.toast('Adicionando à fila de espera...', 'info');
+            const resFila = await Api.entrarFilaEspera(Convocacao._selectedPeladaId);
+            if (resFila.error) {
+              Utils.toast(resFila.error, 'error');
+              return;
+            }
+
+            Utils.toast(`✅ Você entrou na fila de espera (Posição #${resFila.posicao || 1})! Se uma vaga for liberada, você será notificado! ⏳`, 'success');
+            await Convocacao.renderConfirmedList(Convocacao._selectedPeladaId);
+            await Convocacao.updateMyStatus();
+            return; // NÃO ABRE O MODAL DE PAGAMENTO!
           }
         } catch (checkErr) {
           console.warn('[Convocacao] Erro na checagem de vagas:', checkErr);

@@ -179,6 +179,84 @@ exports.confirmar = async (req, res) => {
   }
 };
 
+// Entrar diretamente na Fila de Espera sem realizar cobrança prévia
+exports.entrarFila = async (req, res) => {
+  const { pelada_id } = req.body;
+  const usuario_id = req.usuarioId;
+
+  if (!pelada_id) {
+    return res.status(400).json({ error: 'ID da pelada é obrigatório' });
+  }
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Obter informações da pelada
+    const queryConfig = `
+      SELECT p.grupo_id, p.data
+      FROM peladas p
+      WHERE p.id = $1`;
+    const configRes = await client.query(queryConfig, [pelada_id]);
+
+    if (configRes.rows.length === 0) {
+      throw new Error('Pelada não encontrada');
+    }
+
+    const { grupo_id, data: dataPelada } = configRes.rows[0];
+
+    // 2. Buscar dados do usuário
+    const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
+    const dataFmt = formatarDataDDMM(dataPelada);
+
+    // 3. Obter a próxima posição da fila de espera
+    const filaRes = await client.query(
+      `SELECT COALESCE(MAX(posicao_fila), 0)::int AS ultima
+       FROM convocacoes WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')`,
+      [pelada_id]
+    );
+    const posicaoFila = filaRes.rows[0].ultima + 1;
+
+    // 4. Inserir ou atualizar convocação com status 'espera' sem cobrar saldo/pix
+    const queryConv = `
+      INSERT INTO convocacoes (pelada_id, usuario_id, status, forma_pagamento, data_convocacao, posicao_fila)
+      VALUES ($1, $2, 'espera', 'pendente', NOW(), $3)
+      ON CONFLICT (pelada_id, usuario_id) 
+      DO UPDATE SET status = 'espera', forma_pagamento = 'pendente', data_convocacao = NOW(), posicao_fila = $3`;
+    await client.query(queryConv, [pelada_id, usuario_id, posicaoFila]);
+
+    await client.query('COMMIT');
+
+    // 5. Disparar notificações push para o atleta e para os gestores
+    try {
+      const { sendNotificationInternal } = require('./pushController');
+      sendNotificationInternal({
+        usuarioId: usuario_id,
+        title: 'Fila de Espera! ⏳',
+        body: `Você entrou na fila de espera (Posição #${posicaoFila}) para a pelada de ${dataFmt}. Se uma vaga for liberada, você será notificado para efetuar o pagamento.`,
+        url: '/#/jogador/convocacao'
+      }).catch(e => console.warn('[Push] Erro atleta:', e.message));
+
+      sendNotificationInternal({
+        onlyGestores: true,
+        grupoId: grupo_id,
+        title: '⏳ Atleta na Fila de Espera!',
+        body: `${atletaNome} entrou na fila de espera (Posição #${posicaoFila}) para a pelada de ${dataFmt}.`,
+        url: '/#/gestor/partidas'
+      }).catch(e => console.warn('[Push] Erro gestores:', e.message));
+    } catch(e) {}
+
+    res.json({ message: 'Você foi adicionado à fila de espera!', posicao: posicaoFila });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    res.status(400).json({ error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
 exports.remover = async (req, res) => {
   const { pelada_id, opcao_remocao } = req.body; // 'estorno', 'caixa', 'cortado'
   const usuario_id = req.usuarioId;
@@ -271,8 +349,8 @@ exports.remover = async (req, res) => {
           const { sendNotificationInternal } = require('./pushController');
           sendNotificationInternal({
             usuarioId: promovidoUsuarioId,
-            title: 'Você entrou na lista oficial! 🎉',
-            body: 'Um atleta desistiu e você foi promovido da fila de espera para a lista oficial.',
+            title: '🎉 Vaga Liberada na Pelada!',
+            body: 'Um atleta desistiu e uma vaga foi liberada para você! Acesse o aplicativo e efetue o pagamento para garantir sua vaga.',
             url: '/#/jogador/convocacao'
           }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
         } catch (e) { }

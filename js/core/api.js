@@ -399,6 +399,25 @@ const Api = {
     }
   },
 
+  async entrarFilaEspera(peladaId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('/api/convocacoes/entrar-fila', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ pelada_id: peladaId })
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[Api] Erro ao entrar na fila de espera:', e);
+      return { error: 'Erro de conexão com o servidor.' };
+    }
+  },
+
   async atualizarPerfil(dados) {
     const token = localStorage.getItem('token');
     if (!token) {
