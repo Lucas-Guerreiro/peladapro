@@ -153,43 +153,41 @@ var Desempenho = {
       }
 
       if (Array.isArray(partidas) && partidas.length > 0) {
+        // Mapear partidas por time e por pelada (idêntico ao Ranking)
+        const teamMatchesByPelada = {};
+        const playerTeamFromEvents = {};
+
         partidas.forEach(function(m) {
+          const pId = m.pelada_id;
+          if (!teamMatchesByPelada[pId]) teamMatchesByPelada[pId] = {};
+
           var tA = (m.time_a_nome || '').trim();
           var tB = (m.time_b_nome || '').trim();
           var gA = parseInt(m.gols_time_a) || 0;
           var gB = parseInt(m.gols_time_b) || 0;
+
+          if (tA) teamMatchesByPelada[pId][tA.toLowerCase()] = (teamMatchesByPelada[pId][tA.toLowerCase()] || 0) + 1;
+          if (tB) teamMatchesByPelada[pId][tB.toLowerCase()] = (teamMatchesByPelada[pId][tB.toLowerCase()] || 0) + 1;
 
           var ptsA = 0; var isWinA = false; var isCleanA = false;
           var ptsB = 0; var isWinB = false; var isCleanB = false;
 
           if (gA > gB) {
             isWinA = true;
-            if (gB === 0) {
-              ptsA = (gA >= 2) ? 3.0 : 2.5;
-              isCleanA = true;
-            } else {
-              ptsA = 2.0;
-            }
+            if (gB === 0) { ptsA = (gA >= 2) ? 3.0 : 2.5; isCleanA = true; }
+            else { ptsA = 2.0; }
           } else if (gB > gA) {
             isWinB = true;
-            if (gA === 0) {
-              ptsB = (gB >= 2) ? 3.0 : 2.5;
-              isCleanB = true;
-            } else {
-              ptsB = 2.0;
-            }
+            if (gA === 0) { ptsB = (gB >= 2) ? 3.0 : 2.5; isCleanB = true; }
+            else { ptsB = 2.0; }
           } else {
-            if (gA === 0) {
-              ptsA = 0.5; ptsB = 0.5;
-            } else {
-              ptsA = 1.0; ptsB = 1.0;
-            }
+            if (gA === 0) { ptsA = 0.5; ptsB = 0.5; }
+            else { ptsA = 1.0; ptsB = 1.0; }
           }
 
           var playersA = new Set();
           var playersB = new Set();
-
-          const escalacaoPelada = escalacoesPorPelada[m.pelada_id] || {};
+          const escalacaoPelada = escalacoesPorPelada[pId] || {};
 
           let goalsList = [];
           if (m.autores_gols) {
@@ -197,6 +195,8 @@ var Desempenho = {
           }
           (goalsList || []).forEach(function(g) {
             var playerTeam = g.teamName ? g.teamName.trim().toLowerCase() : (g.teamKey === 'a' ? tA.toLowerCase() : (g.teamKey === 'b' ? tB.toLowerCase() : ''));
+            if (g.autorId) playerTeamFromEvents[`${g.autorId}_${pId}`] = playerTeam;
+
             if (g.autorNome) {
               var aName = g.autorNome.trim().toLowerCase();
               if (playerTeam === tA.toLowerCase()) playersA.add(aName);
@@ -208,6 +208,7 @@ var Desempenho = {
                 }
               });
             }
+            if (g.assistId) playerTeamFromEvents[`${g.assistId}_${pId}`] = playerTeam;
             if (g.assistNome) {
               var assName = g.assistNome.trim().toLowerCase();
               if (playerTeam === tA.toLowerCase()) playersA.add(assName);
@@ -215,61 +216,81 @@ var Desempenho = {
             }
           });
 
-          // Iterar de forma única sobre cada jogador cadastrado para pontuar e contar partidas disputadas (sem gerar duplicidades)
+          // Iterar de forma única sobre cada jogador cadastrado para pontuar
           Object.keys(statsMap).forEach(function(nomeKey) {
             const playerObj = statsMap[nomeKey];
             const pIdStr = String(playerObj.id);
             const pNome = playerObj.nome.toLowerCase();
             
-            let jogouNoTime = null; // 'a' ou 'b'
-            
+            let jogouNoTime = null;
             if (tA && escalacaoPelada[tA.toLowerCase()]) {
               const setA = escalacaoPelada[tA.toLowerCase()];
-              if (setA.has(pIdStr) || setA.has(pNome)) {
-                jogouNoTime = 'a';
-              }
+              if (setA.has(pIdStr) || setA.has(pNome)) jogouNoTime = 'a';
             }
             if (!jogouNoTime && tB && escalacaoPelada[tB.toLowerCase()]) {
               const setB = escalacaoPelada[tB.toLowerCase()];
-              if (setB.has(pIdStr) || setB.has(pNome)) {
-                jogouNoTime = 'b';
-              }
+              if (setB.has(pIdStr) || setB.has(pNome)) jogouNoTime = 'b';
             }
 
-            // Verifica se o atleta está escalado oficialmente em algum time nesta pelada
             let estaEscaladoNestaPelada = false;
             Object.values(escalacaoPelada).forEach(set => {
-              if (set.has(pIdStr) || set.has(pNome)) {
-                estaEscaladoNestaPelada = true;
-              }
+              if (set.has(pIdStr) || set.has(pNome)) estaEscaladoNestaPelada = true;
             });
 
-            // Fallback gols/assistências: só se ele não estiver jogando oficialmente no seu time, E se ele não estiver escalado em nenhum time da pelada
             if (!jogouNoTime && !estaEscaladoNestaPelada) {
-              if (playersA.has(pNome) || playersA.has(pIdStr)) {
-                jogouNoTime = 'a';
-              } else if (playersB.has(pNome) || playersB.has(pIdStr)) {
-                jogouNoTime = 'b';
-              }
+              if (playersA.has(pNome) || playersA.has(pIdStr)) jogouNoTime = 'a';
+              else if (playersB.has(pNome) || playersB.has(pIdStr)) jogouNoTime = 'b';
             }
 
             if (jogouNoTime === 'a') {
               playerObj.pontos += ptsA;
-              playerObj.jogos += 1;
               if (isWinA) playerObj.vitorias += 1;
               if (isCleanA) playerObj.balizaZero += 1;
               if (!isWinA && ptsA > 0) playerObj.empates += 1;
               if (ptsA === 0) playerObj.derrotas += 1;
             } else if (jogouNoTime === 'b') {
               playerObj.pontos += ptsB;
-              playerObj.jogos += 1;
               if (isWinB) playerObj.vitorias += 1;
               if (isCleanB) playerObj.balizaZero += 1;
               if (!isWinB && ptsB > 0) playerObj.empates += 1;
               if (ptsB === 0) playerObj.derrotas += 1;
             }
           });
+        });
 
+        // Contabiliza total de jogos exato por atleta com base na contagem de jogos do time (Sincronizado com o Ranking)
+        Object.keys(statsMap).forEach(function(nomeKey) {
+          const playerObj = statsMap[nomeKey];
+          const pIdStr = String(playerObj.id);
+          const pNome = playerObj.nome.toLowerCase();
+          let totalJogosAtleta = 0;
+
+          Object.keys(teamMatchesByPelada).forEach(function(pId) {
+            const peladaTeams = teamMatchesByPelada[pId] || {};
+            const escalacao = escalacoesPorPelada[pId] || {};
+            let teamName = null;
+
+            Object.keys(escalacao).forEach(function(tName) {
+              const set = escalacao[tName];
+              if (set.has(pIdStr) || set.has(pNome)) teamName = tName;
+            });
+
+            if (!teamName) {
+              const teamFromGoal = playerTeamFromEvents[`${pIdStr}_${pId}`];
+              if (teamFromGoal) teamName = teamFromGoal;
+            }
+
+            if (teamName && peladaTeams[teamName]) {
+              totalJogosAtleta += peladaTeams[teamName];
+            } else if (playerObj.gols > 0) {
+              const allCounts = Object.values(peladaTeams);
+              if (allCounts.length > 0) totalJogosAtleta += Math.max.apply(null, allCounts);
+            }
+          });
+
+          if (totalJogosAtleta > 0) {
+            playerObj.jogos = totalJogosAtleta;
+          }
         });
       }
     } catch (e) {
