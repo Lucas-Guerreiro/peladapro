@@ -641,10 +641,14 @@
   }
   #modal-premium-overlay.open { display: flex; }
   #modal-premium-sheet {
-    background: #F8FAFC; border-radius: 24px 24px 0 0;
+    background: linear-gradient(180deg, #0F172A 0%, #020617 100%) !important;
+    border-top: 2px solid #D4AF37 !important;
+    color: #FFFFFF !important;
+    border-radius: 24px 24px 0 0;
     width: 100%; max-width: 480px; max-height: 92vh;
     overflow-y: auto; padding: 0 0 32px 0;
     animation: slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(212,175,55,0.2) !important;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
@@ -849,13 +853,13 @@
 
     <!-- Handle de arrastar -->
     <div style="display: flex; justify-content: center; padding: 14px 0 0;">
-      <div style="width: 36px; height: 4px; background: #CBD5E1; border-radius: 4px;"></div>
+      <div style="width: 36px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 4px;"></div>
     </div>
 
     <!-- Header do Modal -->
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 8px;">
-      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #0F172A;">🏆 Card Premium</h3>
-      <button onclick="Dashboard.closeModalPremium()" style="background: #F1F5F9; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 16px;">✕</button>
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #FFFFFF;">🏆 Card Premium</h3>
+      <button onclick="Dashboard.closeModalPremium()" style="background: rgba(255,255,255,0.12); color: #FFFFFF; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 16px;">✕</button>
     </div>
 
     <!-- Preview do Card FIFA UT -->
@@ -902,15 +906,15 @@
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-jogos">—</span>
-              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">JOG</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">JOG</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-gols">—</span>
-              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">GOL</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">GOL</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-assist">—</span>
-              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">ASS</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">ASS</span>
             </div>
           </div>
           <!-- Divisor vertical -->
@@ -919,15 +923,15 @@
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-vel">—</span>
-              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">VEL</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">VEL</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;" id="modal-stat-mvp">—</span>
-              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">MVP</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">MVP</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #F5D270; font-size: 14px; font-weight: 900; min-width: 24px;">★</span>
-              <span style="color: rgba(255,255,255,0.55); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">ELITE</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">ELITE</span>
             </div>
           </div>
         </div>
@@ -941,35 +945,35 @@
     </div>
 
     <!-- Benefícios -->
-    <div style="margin: 0 20px 16px; background: #FFFFFF; border-radius: 14px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+    <div style="margin: 0 20px 16px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
         <span style="font-size: 18px;">👑</span>
-        <span style="font-size: 15px; font-weight: 700; color: #0F172A;">Benefícios Exclusivos</span>
+        <span style="font-size: 15px; font-weight: 700; color: #F5D270;">Benefícios Exclusivos</span>
       </div>
       <div style="display: flex; flex-direction: column; gap: 0;">
-        <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #F1F5F9;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: #FBF5DD; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">🏆</div>
-          <span style="font-size: 14px; color: #334155;">Craque da Partida (MVP) destacado</span>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">🏆</div>
+          <span style="font-size: 14px; color: #F8FAFC;">Craque da Partida (MVP) destacado</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #F1F5F9;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: #FBF5DD; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">🥇</div>
-          <span style="font-size: 14px; color: #334155;">Medalha de ouro no ranking</span>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">🥇</div>
+          <span style="font-size: 14px; color: #F8FAFC;">Medalha de ouro no ranking</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #F1F5F9;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: #FBF5DD; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">⭐</div>
-          <span style="font-size: 14px; color: #334155;">Destaque no perfil do grupo</span>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">⭐</div>
+          <span style="font-size: 14px; color: #F8FAFC;">Destaque no perfil do grupo</span>
         </div>
         <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: #FBF5DD; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">📊</div>
-          <span style="font-size: 14px; color: #334155;">Estatísticas avançadas exclusivas</span>
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">📊</div>
+          <span style="font-size: 14px; color: #F8FAFC;">Estatísticas avançadas exclusivas</span>
         </div>
       </div>
     </div>
 
     <!-- Preço + CTA -->
-    <div style="margin: 0 20px 12px; background: #FFFFFF; border-radius: 14px; padding: 16px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
-      <p style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px;">Valor do Card Premium</p>
-      <p style="font-size: 36px; font-weight: 800; color: #0F172A; margin: 0 0 2px; line-height: 1;">R$ 4,99<span style="font-size: 16px; font-weight: 600; color: #64748B;">/ano</span></p>
+    <div style="margin: 0 20px 12px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px; padding: 16px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <p style="font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px;">Valor do Card Premium</p>
+      <p style="font-size: 36px; font-weight: 800; color: #F5D270; margin: 0 0 2px; line-height: 1;">R$ 4,99<span style="font-size: 16px; font-weight: 600; color: #CBD5E1;">/ano</span></p>
       <p style="font-size: 12px; color: #94A3B8; margin: 0 0 16px;">Acesso vitalício ao card premium</p>
       <button id="btn-modal-adquirir" onclick="Dashboard.ativarCardPremium()"
         style="width: 100%; background: linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37); background-size: 200%; color: #1A1A1A; font-weight: 800; font-size: 16px; border: none; border-radius: 10px; padding: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
