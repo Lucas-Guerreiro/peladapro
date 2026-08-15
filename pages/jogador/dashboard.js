@@ -82,9 +82,11 @@ var Dashboard = {
       this.applyTeamCardTheme(card, user.time_coracao);
     }
 
-    // Se o estilo premium já está ativo, reaplica a ativação premium
+    // Aplica ou remove o estilo premium conforme o estado salvo
     if (localStorage.getItem(this._PREMIUM_KEY) === 'true') {
       this._aplicarEstiloPremium();
+    } else {
+      this._removerEstiloPremium();
     }
 
     // Foto
@@ -939,10 +941,9 @@ var Dashboard = {
     }
   },
 
-  // Aplica o estilo visual premium ou do time ao card do dashboard
+  // Aplica o estilo visual premium ao card do dashboard
   _aplicarEstiloPremium: function () {
     var card = document.getElementById('player-fifa-card');
-    var btnUpgrade = document.getElementById('btn-upgrade-premium');
     var badgeVip = document.getElementById('badge-vip-card');
     var user = Auth.currentUser;
 
@@ -952,12 +953,101 @@ var Dashboard = {
         this.applyTeamCardTheme(card, user.time_coracao);
       }
     }
-    if (btnUpgrade) {
-      btnUpgrade.classList.add('ativo');
-      btnUpgrade.textContent = '✓ Card Premium Ativo';
-      btnUpgrade.onclick = null; // Desabilita clique
-    }
     if (badgeVip) badgeVip.classList.remove('hidden');
+
+    this.updatePremiumButtonState();
+  },
+
+  // Remove o estilo visual premium (retorna ao card básico)
+  _removerEstiloPremium: function () {
+    var card = document.getElementById('player-fifa-card');
+    var badgeVip = document.getElementById('badge-vip-card');
+    var user = Auth.currentUser;
+
+    if (card) {
+      card.classList.remove('premium-ativo');
+      if (user && user.time_coracao) {
+        this.applyTeamCardTheme(card, user.time_coracao);
+      } else {
+        this.applyTeamCardTheme(card, null);
+      }
+    }
+    if (badgeVip) badgeVip.classList.add('hidden');
+
+    this.updatePremiumButtonState();
+  },
+
+  // Alterna o modo Card Premium para testes do gestor Lucas Fernandes Guerreiro
+  toggleCardPremiumTeste: function () {
+    var isCurrentlyPremium = localStorage.getItem(this._PREMIUM_KEY) === 'true';
+    if (isCurrentlyPremium) {
+      localStorage.setItem(this._PREMIUM_KEY, 'false');
+      this._removerEstiloPremium();
+      if (window.App && window.App.showToast) {
+        window.App.showToast("Você SAIU do Card Premium! Card retornado ao modo BÁSICO para testes. 🛑⭐", "info");
+      }
+    } else {
+      localStorage.setItem(this._PREMIUM_KEY, 'true');
+      this._aplicarEstiloPremium();
+      if (window.App && window.App.showToast) {
+        window.App.showToast("Você ENTROU no Card Premium! Card ativado. 👑⭐", "success");
+      }
+    }
+  },
+
+  // Sincroniza o estado do botão de upgrade ou teste de Card Premium
+  updatePremiumButtonState: function () {
+    var btnUpgrade = document.getElementById('btn-upgrade-premium');
+    if (!btnUpgrade) return;
+
+    var user = Auth.currentUser;
+    var isLucasGuerreiro = false;
+    if (user) {
+      var name = (user.nome || user.name || user.apelido || '').toLowerCase();
+      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro')) {
+        isLucasGuerreiro = true;
+      }
+    }
+
+    var isPremium = localStorage.getItem(this._PREMIUM_KEY) === 'true';
+
+    if (isLucasGuerreiro) {
+      btnUpgrade.style.display = 'block';
+      if (isPremium) {
+        btnUpgrade.classList.add('ativo');
+        btnUpgrade.textContent = '👑 Sair do Modo Card Premium (Alternar para Básico para Testar)';
+        btnUpgrade.style.background = 'rgba(239, 68, 68, 0.15)';
+        btnUpgrade.style.borderColor = '#EF4444';
+        btnUpgrade.style.color = '#FCA5A5';
+      } else {
+        btnUpgrade.classList.remove('ativo');
+        btnUpgrade.textContent = '⭐ Entrar no Modo Card Premium (Ativar Card VIP)';
+        btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37)';
+        btnUpgrade.style.borderColor = '#D4AF37';
+        btnUpgrade.style.color = '#1A1A1A';
+      }
+      btnUpgrade.onclick = function () {
+        Dashboard.toggleCardPremiumTeste();
+      };
+    } else {
+      if (isPremium) {
+        btnUpgrade.classList.add('ativo');
+        btnUpgrade.textContent = '✓ Card Premium Ativo';
+        btnUpgrade.style.background = 'rgba(212, 175, 55, 0.15)';
+        btnUpgrade.style.borderColor = '#D4AF37';
+        btnUpgrade.style.color = '#D4AF37';
+        btnUpgrade.onclick = null;
+      } else {
+        btnUpgrade.classList.remove('ativo');
+        btnUpgrade.textContent = '⭐ Ativar Card Premium';
+        btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37)';
+        btnUpgrade.style.borderColor = '#D4AF37';
+        btnUpgrade.style.color = '#1A1A1A';
+        btnUpgrade.onclick = function () {
+          Dashboard.openModalPremium();
+        };
+      }
+    }
   }
 };
 
