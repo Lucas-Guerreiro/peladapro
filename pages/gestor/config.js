@@ -1011,7 +1011,7 @@ function updateLucasAthleteStatusUI() {
 
   if (disabledListEl) {
     if (disabledList.length === 0) {
-      disabledListEl.innerHTML = '<span style="font-size: 12px; color: #78350F; font-style: italic;">Nenhum atleta desativado individualmente.</span>';
+      disabledListEl.innerHTML = '<span style="font-size: 12px; color: var(--text-caption); font-style: italic;">Nenhum atleta desativado individualmente.</span>';
     } else {
       const users = (window.Api && window.Api.getUsuarios ? window.Api.getUsuarios() : null) || JSON.parse(localStorage.getItem('players') || '[]');
       let html = "";

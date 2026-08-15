@@ -272,28 +272,28 @@
     </div>
 
     <!-- Painel Exclusivo de Controle do Administrador Master (Lucas Fernandes Guerreiro) -->
-    <div id="panel-lucas-master-controls" class="card" style="display: none; border: 2px solid #F59E0B; background: #FFFBEB; margin-top: 16px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #FDE68A; padding-bottom: 12px; margin-bottom: 16px;">
+    <div id="panel-lucas-master-controls" class="card" style="display: none; margin-top: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <span style="font-size: 24px;">👑</span>
           <div>
-            <h3 style="margin: 0; font-size: 16px; color: #92400E; font-weight: 800;">Controle Master (Lucas Fernandes Guerreiro)</h3>
-            <span style="font-size: 12px; color: #B45309;">Gerenciar Acesso ao Card Premium por Atleta</span>
+            <h3 style="margin: 0; font-size: 16px; color: var(--text-heading); font-weight: 800;">Controle Master (Lucas Fernandes Guerreiro)</h3>
+            <span style="font-size: 12px; color: var(--text-caption);">Gerenciar Acesso ao Card Premium por Atleta</span>
           </div>
         </div>
       </div>
 
       <!-- Seleção do Atleta -->
-      <div style="background: #FFFFFF; padding: 16px; border-radius: 12px; border: 1px solid #FDE68A; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
         <div class="form-group" style="margin-bottom: 0;">
-          <label for="select-lucas-athlete-master" class="form-label" style="font-weight: 700; color: #0F172A;">Selecione o Atleta:</label>
+          <label for="select-lucas-athlete-master" class="form-label config-field-label" style="font-weight: 700;">Selecione o Atleta:</label>
           <select id="select-lucas-athlete-master" class="form-control" style="font-weight: 600;">
             <!-- Populado via JS -->
           </select>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px;">
-          <div id="lucas-athlete-status-badge" style="font-size: 13px; font-weight: 700; color: #475569;">
+          <div id="lucas-athlete-status-badge" style="font-size: 13px; font-weight: 700; color: var(--text-heading);">
             Status: Selecione um atleta
           </div>
           <button id="btn-toggle-premium-athlete-master" class="btn btn-sm" style="font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
@@ -303,8 +303,8 @@
       </div>
 
       <!-- Lista de Atletas Desabilitados -->
-      <div id="lucas-disabled-athletes-container" style="margin-top: 14px; padding: 12px; background: rgba(254, 243, 199, 0.5); border-radius: 10px; border: 1px dashed #FDE68A;">
-        <span style="font-size: 12px; font-weight: 800; color: #92400E; display: block; margin-bottom: 8px;">
+      <div id="lucas-disabled-athletes-container" style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.02); border-radius: 10px; border: 1px dashed var(--border-color);">
+        <span style="font-size: 12px; font-weight: 800; color: var(--text-heading); display: block; margin-bottom: 8px;">
           🚫 Atletas com Card Premium Desativado:
         </span>
         <div id="lucas-disabled-athletes-list" style="display: flex; flex-wrap: wrap; gap: 6px;">
