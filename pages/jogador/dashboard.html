@@ -438,50 +438,27 @@
     background: rgba(245, 210, 112, 0.4);
   }
 
-  /* ── ESTILO SHIELD FORMATO ESCUDO FIFA ULTIMATE (FUT SHIELD) ──────── */
-  .fut-shield-wrapper {
-    position: relative;
-    width: 100%;
-    margin: 0 auto;
-    transition: all 0.4s ease;
-  }
-
-  .fut-shield-wrapper.fut-ativo {
-    filter: drop-shadow(0 18px 45px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 25px rgba(245, 210, 112, 0.5));
-  }
-
-  /* Formato exato do Escudo FUT (Crown arch top dip, straight sides, V-point bottom) */
+  /* Aplicação da classe FUT Ultimate */
   .card-fifa.fut-ultimate-ativo {
-    clip-path: polygon(50% 2.2%, 56% 0.2%, 94% 11%, 100% 16%, 100% 82%, 80% 93%, 50% 100%, 20% 93%, 0% 82%, 0% 16%, 6% 11%, 44% 0.2%) !important;
-    background: radial-gradient(circle at 50% 25%, #0B4F3F 0%, #042920 55%, #01120D 100%) !important;
-    border-radius: 0 !important;
-    border: none !important;
-    padding: 36px 22px 48px !important;
+    background: radial-gradient(circle at 50% 25%, #8B1A1A 0%, #3A050A 55%, #0D0103 100%) !important;
+    border: 3.5px solid #F5D270 !important;
+    box-shadow: 0 0 40px rgba(245, 210, 112, 0.5), 0 20px 45px rgba(0, 0, 0, 0.85), inset 0 0 25px rgba(245, 210, 112, 0.3) !important;
+    border-radius: 20px 20px 38px 38px !important;
+    padding: 20px !important;
     position: relative !important;
     overflow: hidden !important;
     color: #FFFFFF !important;
   }
 
-  /* Moldura reluzente metálica dourada no contorno do Escudo FUT */
   .card-fifa.fut-ultimate-ativo::before {
     content: '';
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 50% 18%, rgba(245, 210, 112, 0.35) 0%, transparent 65%),
+      radial-gradient(circle at 50% 20%, rgba(245, 210, 112, 0.35) 0%, transparent 65%),
       repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(245, 210, 112, 0.05) 12px, rgba(245, 210, 112, 0.05) 13px);
     pointer-events: none;
     z-index: 1;
-  }
-
-  .card-fifa.fut-ultimate-ativo::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    clip-path: polygon(50% 2.2%, 56% 0.2%, 94% 11%, 100% 16%, 100% 82%, 80% 93%, 50% 100%, 20% 93%, 0% 82%, 0% 16%, 6% 11%, 44% 0.2%);
-    box-shadow: inset 0 0 0 5px #F5D270, inset 0 0 0 8px #856417, inset 0 0 0 9px #FDE68A;
-    pointer-events: none;
-    z-index: 10;
   }
 
   .card-fifa.fut-ultimate-ativo .fut-top-left-stack {
@@ -680,111 +657,109 @@
 <main style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
 
   <!-- CARD FIFA DO JOGADOR -->
-  <div class="fut-shield-wrapper">
-    <div class="card-fifa" id="player-fifa-card">
-      <!-- FUT Stack (Exclusivo da versão FIFA Ultimate Team) -->
-      <div class="fut-top-left-stack">
-        <span class="fut-ovr-rating" id="fut-player-rating">99</span>
-        <span class="fut-position-tag" id="fut-player-position">OM</span>
-        <span class="fut-flag-icon">🇧🇷</span>
-        <span class="fut-club-badge" id="fut-player-club-crest">⚽</span>
-      </div>
+  <div class="card-fifa" id="player-fifa-card">
+    <!-- FUT Stack (Exclusivo da versão FIFA Ultimate Team) -->
+    <div class="fut-top-left-stack">
+      <span class="fut-ovr-rating" id="fut-player-rating">99</span>
+      <span class="fut-position-tag" id="fut-player-position">OM</span>
+      <span class="fut-flag-icon">🇧🇷</span>
+      <span class="fut-club-badge" id="fut-player-club-crest">⚽</span>
+    </div>
 
-      <div class="card-fifa-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span id="badge-vip-card" class="badge-premium-vip hidden">👑 VIP</span>
-          <span class="sports-font label-pelada-pro">PELADA PRO</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span id="player-gk-badge" class="badge-gk hidden">🧤 GK</span>
-          <span class="premium-tag-card">PREMIUM✦</span>
-        </div>
+    <div class="card-fifa-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="badge-vip-card" class="badge-premium-vip hidden">👑 VIP</span>
+        <span class="sports-font label-pelada-pro">PELADA PRO</span>
       </div>
-
-      <!-- Avatar Central -->
-      <div class="fifa-avatar-container">
-        <img id="player-avatar"
-          src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
-          alt="Avatar" class="fifa-avatar">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="player-gk-badge" class="badge-gk hidden">🧤 GK</span>
+        <span class="premium-tag-card">PREMIUM✦</span>
       </div>
+    </div>
 
-      <!-- Nome e Badges Harmonizados (Centralizados) -->
-      <div style="text-align: center; width: 100%;">
-        <h3 id="player-card-name" class="player-card-name-txt">—</h3>
-        <div class="player-badges-row">
-          <span id="player-card-age-text" class="player-pill-badge age-pill">
-            🎂 <span id="player-card-age">—</span> ANOS
-          </span>
-          <span id="player-card-team-badge" class="player-pill-badge team-pill" style="display: none;">
-            ⚽ <span id="player-card-team-name">—</span>
-          </span>
-        </div>
+    <!-- Avatar Central -->
+    <div class="fifa-avatar-container">
+      <img id="player-avatar"
+        src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"
+        alt="Avatar" class="fifa-avatar">
+    </div>
+
+    <!-- Nome e Badges Harmonizados (Centralizados) -->
+    <div style="text-align: center; width: 100%;">
+      <h3 id="player-card-name" class="player-card-name-txt">—</h3>
+      <div class="player-badges-row">
+        <span id="player-card-age-text" class="player-pill-badge age-pill">
+          🎂 <span id="player-card-age">—</span> ANOS
+        </span>
+        <span id="player-card-team-badge" class="player-pill-badge team-pill" style="display: none;">
+          ⚽ <span id="player-card-team-name">—</span>
+        </span>
       </div>
+    </div>
 
-      <!-- FUT Attributes Grid (IDADE, JOGOS, GOLS - Estilo FIFA Ultimate) -->
-      <div class="fut-stats-grid">
-        <div class="fut-stat-item">
-          <span class="fut-stat-num" id="fut-stat-age">—</span>
-          <span class="fut-stat-lbl">IDADE</span>
-        </div>
-        <div class="fut-stat-divider"></div>
-        <div class="fut-stat-item">
-          <span class="fut-stat-num" id="fut-stat-games">0</span>
-          <span class="fut-stat-lbl">JOGOS</span>
-        </div>
-        <div class="fut-stat-divider"></div>
-        <div class="fut-stat-item">
-          <span class="fut-stat-num" id="fut-stat-goals">0</span>
-          <span class="fut-stat-lbl">GOLS</span>
-        </div>
+    <!-- FUT Attributes Grid (IDADE, JOGOS, GOLS - Estilo FIFA Ultimate) -->
+    <div class="fut-stats-grid">
+      <div class="fut-stat-item">
+        <span class="fut-stat-num" id="fut-stat-age">—</span>
+        <span class="fut-stat-lbl">IDADE</span>
       </div>
+      <div class="fut-stat-divider"></div>
+      <div class="fut-stat-item">
+        <span class="fut-stat-num" id="fut-stat-games">0</span>
+        <span class="fut-stat-lbl">JOGOS</span>
+      </div>
+      <div class="fut-stat-divider"></div>
+      <div class="fut-stat-item">
+        <span class="fut-stat-num" id="fut-stat-goals">0</span>
+        <span class="fut-stat-lbl">GOLS</span>
+      </div>
+    </div>
 
-      <!-- Grid de Estatísticas (Jogos & Gols Lado a Lado - Design Premium) -->
-      <div class="fifa-stats-grid">
-        <div class="fifa-stat-box">
-          <div class="fifa-stat-icon-wrapper">⚽</div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
-            <span class="fifa-stat-label">Jogos</span>
-            <span class="fifa-stat-val" id="player-card-games-val">0</span>
-          </div>
-        </div>
-        <div class="fifa-stat-box">
-          <div class="fifa-stat-icon-wrapper">🥅</div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
-            <span class="fifa-stat-label">Gols</span>
-            <span class="fifa-stat-val" id="player-card-goals-val">0</span>
-          </div>
+    <!-- Grid de Estatísticas (Jogos & Gols Lado a Lado - Design Premium) -->
+    <div class="fifa-stats-grid">
+      <div class="fifa-stat-box">
+        <div class="fifa-stat-icon-wrapper">⚽</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
+          <span class="fifa-stat-label">Jogos</span>
+          <span class="fifa-stat-val" id="player-card-games-val">0</span>
         </div>
       </div>
-
-      <!-- Saldo -->
-      <div id="player-card-balance" class="card-fifa-balance" style="width: 100%;">
-        <div><span class="label">Meu Saldo</span></div>
-        <span id="player-balance-value" class="value">R$ 0,00</span>
+      <div class="fifa-stat-box">
+        <div class="fifa-stat-icon-wrapper">🥅</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
+          <span class="fifa-stat-label">Gols</span>
+          <span class="fifa-stat-val" id="player-card-goals-val">0</span>
+        </div>
       </div>
+    </div>
 
-      <!-- Botões de Ação -->
-      <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
-        <button class="btn btn-outline-secondary" style="flex: 1; padding: 10px; min-width: 80px;"
-          onclick="Router.openModal('atleta', { playerId: Auth.currentUser?.id, mode: 'edit' })">
-          ✏️ Editar
-        </button>
-        <button class="btn btn-accent" style="flex: 1.5; padding: 10px;"
-          onclick="Router.navigate('#/jogador/convocacao')">
-          📋 Convocação
-        </button>
-      </div>
+    <!-- Saldo -->
+    <div id="player-card-balance" class="card-fifa-balance" style="width: 100%;">
+      <div><span class="label">Meu Saldo</span></div>
+      <span id="player-balance-value" class="value">R$ 0,00</span>
+    </div>
 
-      <!-- Rodapé: Membro Elite desde 2026 -->
-      <div class="fifa-card-footer-caption">
-        Membro Elite desde <span id="player-member-since-year">2026</span>
-      </div>
-
-      <!-- Botão de upgrade premium -->
-      <button id="btn-upgrade-premium" onclick="Dashboard.openModalPremium()">
-        ⭐ Ativar Card Premium
+    <!-- Botões de Ação -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+      <button class="btn btn-outline-secondary" style="flex: 1; padding: 10px; min-width: 80px;"
+        onclick="Router.openModal('atleta', { playerId: Auth.currentUser?.id, mode: 'edit' })">
+        ✏️ Editar
+      </button>
+      <button class="btn btn-accent" style="flex: 1.5; padding: 10px;"
+        onclick="Router.navigate('#/jogador/convocacao')">
+        📋 Convocação
       </button>
     </div>
+
+    <!-- Rodapé: Membro Elite desde 2026 -->
+    <div class="fifa-card-footer-caption">
+      Membro Elite desde <span id="player-member-since-year">2026</span>
+    </div>
+
+    <!-- Botão de upgrade premium -->
+    <button id="btn-upgrade-premium" onclick="Dashboard.openModalPremium()">
+      ⭐ Ativar Card Premium
+    </button>
   </div>
 
   <!-- PRÓXIMAS PELADAS -->

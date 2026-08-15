@@ -923,17 +923,13 @@ var Dashboard = {
     localStorage.setItem('peladapro_card_style', style);
     localStorage.setItem(this._PREMIUM_KEY, style !== 'free' ? 'true' : 'false');
 
-    var wrapper = document.querySelector('.fut-shield-wrapper');
-
     if (card) {
       card.classList.remove('premium-ativo', 'fut-ultimate-ativo');
-      if (wrapper) wrapper.classList.remove('fut-ativo');
 
       if (style === 'premium') {
         card.classList.add('premium-ativo');
       } else if (style === 'fut' && isLucasGuerreiro) {
         card.classList.add('fut-ultimate-ativo');
-        if (wrapper) wrapper.classList.add('fut-ativo');
       }
 
       if (user && user.time_coracao && style !== 'free') {
