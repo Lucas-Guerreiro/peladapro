@@ -285,7 +285,7 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
     roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', '#000000', 'important');
+      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #000000 100%)', 'important');
       toggle.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#FFFFFF') : 'rgba(255,255,255,0.3)', 'important');
     });
 
@@ -312,7 +312,7 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
     roleToggles.forEach(toggle => {
-      toggle.style.removeProperty('background');
+      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #000000 100%)', 'important');
       toggle.style.removeProperty('border-color');
     });
 
