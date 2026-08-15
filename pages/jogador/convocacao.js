@@ -741,7 +741,7 @@ var Convocacao = {
           const ptsEl = document.getElementById('modal-stat-pts');
           const gamesEl = document.getElementById('modal-stat-games');
           const goalsEl = document.getElementById('modal-stat-goals');
-          if (ptsEl) ptsEl.textContent = (res.pontos % 1 === 0) ? res.pontos : res.pontos.toFixed(1);
+          if (ptsEl) ptsEl.textContent = Number(res.pontos).toFixed(1);
           if (gamesEl && res.jogos > 0) gamesEl.textContent = res.jogos;
           if (goalsEl && res.gols > 0) goalsEl.textContent = res.gols;
         }

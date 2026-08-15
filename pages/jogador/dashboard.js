@@ -104,7 +104,7 @@ var Dashboard = {
     var ptsVal = (user.pontos !== undefined && user.pontos !== null) ? Number(user.pontos) : 0;
 
     var futPtsEl = document.getElementById('fut-stat-pts');
-    if (futPtsEl) futPtsEl.textContent = (ptsVal % 1 === 0) ? ptsVal : ptsVal.toFixed(1);
+    if (futPtsEl) futPtsEl.textContent = ptsVal.toFixed(1);
 
     var futGamesEl = document.getElementById('fut-stat-games');
     if (futGamesEl) futGamesEl.textContent = gamesVal;
@@ -113,7 +113,7 @@ var Dashboard = {
     if (futGoalsEl) futGoalsEl.textContent = goalsVal;
 
     var ptsCardEl = document.getElementById('player-card-pts-val');
-    if (ptsCardEl) ptsCardEl.textContent = (ptsVal % 1 === 0) ? ptsVal : ptsVal.toFixed(1);
+    if (ptsCardEl) ptsCardEl.textContent = ptsVal.toFixed(1);
 
     // Foto
     var avatarEl = document.getElementById('player-avatar');
@@ -152,8 +152,8 @@ var Dashboard = {
     if (window.App && window.App.calcPlayerDesempenho && user && user.id) {
       window.App.calcPlayerDesempenho(user.id, user.nome || user.apelido).then(res => {
         if (res) {
-          if (futPtsEl) futPtsEl.textContent = (res.pontos % 1 === 0) ? res.pontos : res.pontos.toFixed(1);
-          if (ptsCardEl) ptsCardEl.textContent = (res.pontos % 1 === 0) ? res.pontos : res.pontos.toFixed(1);
+          if (futPtsEl) futPtsEl.textContent = Number(res.pontos).toFixed(1);
+          if (ptsCardEl) ptsCardEl.textContent = Number(res.pontos).toFixed(1);
           if (futGamesEl && res.jogos > 0) futGamesEl.textContent = res.jogos;
           if (gamesEl && res.jogos > 0) gamesEl.textContent = res.jogos;
           if (futGoalsEl && res.gols > 0) futGoalsEl.textContent = res.gols;
