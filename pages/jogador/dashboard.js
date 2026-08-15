@@ -32,6 +32,9 @@ var Dashboard = {
     // Restaurar visual premium se já foi ativado anteriormente
     this.initPremiumState();
 
+    // Aplicar Modo Noturno no Tema do Time se estiver ativo
+    this.applyModoNoturno();
+
     // Renderizar anúncio Google AdSense (se ativado pelo gestor)
     if (window.AdSenseManager) {
       window.AdSenseManager.renderAdContainer('adsense-dashboard-banner');
@@ -849,6 +852,75 @@ var Dashboard = {
     }
 
     return null;
+  },
+
+  // --- Modo Noturno no Tema do Time -------------------------------------
+  toggleModoNoturno: function () {
+    var currentlyNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
+    var newNight = !currentlyNight;
+    localStorage.setItem('peladapro_modo_noturno', newNight ? 'true' : 'false');
+    this.applyModoNoturno(newNight);
+
+    if (window.Toast && window.Toast.show) {
+      window.Toast.show(newNight ? '🌙 Modo Noturno no Tema do Time ativado!' : '☀️ Modo Claro ativado!', 'info');
+    }
+  },
+
+  applyModoNoturno: function (isNight) {
+    var btn = document.getElementById('btn-toggle-modo-noturno');
+    var lbl = document.getElementById('lbl-modo-noturno');
+    var card = document.getElementById('player-fifa-card');
+    var user = Auth.currentUser;
+
+    if (isNight === undefined) {
+      isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
+    }
+
+    var teamTheme = user ? this.getTeamTheme(user.time_coracao) : null;
+
+    if (isNight) {
+      document.body.classList.add('modo-noturno-ativo');
+      if (lbl) lbl.textContent = 'Modo Noturno (Ativo)';
+      if (btn) {
+        btn.style.background = teamTheme ? (teamTheme.badgeBg || '#0F172A') : '#0F172A';
+        btn.style.borderColor = teamTheme ? (teamTheme.border || '#1D9E75') : '#1D9E75';
+        btn.style.color = '#FFFFFF';
+        btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        btn.innerHTML = '🌙 <span id="lbl-modo-noturno">Modo Noturno</span>';
+      }
+
+      // Aplica o tema do time ao card
+      if (card) {
+        this.applyTeamCardTheme(card, user ? user.time_coracao : null);
+      }
+
+      // Define variáveis CSS globais de fundo noturno no tema do time
+      if (teamTheme) {
+        document.documentElement.style.setProperty('--bg-modo-noturno', teamTheme.gradient);
+        document.documentElement.style.setProperty('--border-modo-noturno', teamTheme.border);
+      } else {
+        document.documentElement.style.setProperty('--bg-modo-noturno', 'linear-gradient(135deg, #0F172A 0%, #020617 100%)');
+        document.documentElement.style.setProperty('--border-modo-noturno', '#1D9E75');
+      }
+    } else {
+      document.body.classList.remove('modo-noturno-ativo');
+      document.documentElement.style.removeProperty('--bg-modo-noturno');
+      document.documentElement.style.removeProperty('--border-modo-noturno');
+
+      if (lbl) lbl.textContent = 'Modo Noturno';
+      if (btn) {
+        btn.style.background = 'rgba(0,0,0,0.06)';
+        btn.style.borderColor = 'rgba(0,0,0,0.15)';
+        btn.style.color = '#475569';
+        btn.style.boxShadow = 'none';
+        btn.innerHTML = '🌙 <span id="lbl-modo-noturno">Modo Noturno</span>';
+      }
+
+      // Se o card não tem time nem é premium, remove tema do time
+      if (card && user && !user.time_coracao && localStorage.getItem(this._PREMIUM_KEY) !== 'true') {
+        this.applyTeamCardTheme(card, null);
+      }
+    }
   },
 
   // Aplica o estilo visual premium ou do time ao card do dashboard

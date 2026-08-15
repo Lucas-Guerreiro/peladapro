@@ -78,6 +78,46 @@
     border: 1px solid rgba(245,210,112,0.4) !important;
   }
 
+  /* ── Estilos Globais do Modo Noturno no Tema do Time ───────── */
+  body.modo-noturno-ativo {
+    background: var(--bg-modo-noturno, linear-gradient(135deg, #0F172A 0%, #020617 100%)) !important;
+    color: #F8FAFC !important;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  body.modo-noturno-ativo h3, 
+  body.modo-noturno-ativo h2,
+  body.modo-noturno-ativo .text-dark {
+    color: #FFFFFF !important;
+  }
+  body.modo-noturno-ativo #next-matches-list > div {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #FFFFFF !important;
+  }
+  body.modo-noturno-ativo #dashboard-group-name {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #F5D270 !important;
+  }
+  #btn-toggle-modo-noturno {
+    background: rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.15);
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+  }
+  #btn-toggle-modo-noturno:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
   .card-fifa-header { display: flex; justify-content: space-between; align-items: center; }
   .card-fifa-header .sports-font {
     font-family: 'Inter', sans-serif !important; font-size: 20px;
@@ -252,9 +292,14 @@
   <!-- CARD FIFA DO JOGADOR -->
   <div class="card-fifa" id="player-fifa-card">
     <div class="card-fifa-header">
-      <span class="sports-font label-pelada-pro">PELADA PRO</span>
-      <span class="premium-tag-card">✦ PREMIUM</span>
       <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="sports-font label-pelada-pro">PELADA PRO</span>
+        <span class="premium-tag-card">✦ PREMIUM</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="btn-toggle-modo-noturno" onclick="Dashboard.toggleModoNoturno()" title="Alternar Modo Noturno no Tema do Time">
+          🌙 <span id="lbl-modo-noturno">Modo Noturno</span>
+        </button>
         <span id="player-gk-badge" class="badge-gk hidden">🧤 GK</span>
         <span id="badge-vip-card" class="badge-premium-vip hidden">⭐ VIP</span>
       </div>
