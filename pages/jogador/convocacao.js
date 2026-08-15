@@ -543,10 +543,10 @@ var Convocacao = {
     // - O atleta selecionado possui o Card Ultimate / VIP
     const currentUser = Auth.currentUser || (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
     const viewerName = (currentUser.nome || currentUser.name || currentUser.apelido || '').toLowerCase();
-    const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro') || !currentUser.id;
-    const cardStyle = localStorage.getItem('peladapro_card_style') || 'fut';
+    const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro');
+    const cardStyle = localStorage.getItem('peladapro_card_style') || 'free';
     const isVipStorage = localStorage.getItem('peladapro_premium_adquirido') === 'true' || cardStyle === 'fut' || cardStyle === 'premium';
-    const viewerIsVip = (window.App && window.App.isVipPlan && window.App.isVipPlan()) || isVipStorage || viewerIsLucas || true;
+    const viewerIsVip = (window.App && window.App.isVipPlan && window.App.isVipPlan ? window.App.isVipPlan() : false) || (isVipStorage && viewerIsLucas);
 
     const targetName = (athlete.apelido || athlete.nome || '').toLowerCase();
     const targetIsLucas = targetName.includes('lucas fernandes') || targetName.includes('lucas guerreiro');

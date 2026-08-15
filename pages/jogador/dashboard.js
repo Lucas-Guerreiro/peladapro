@@ -968,8 +968,32 @@ var Dashboard = {
     }
   },
 
+  initPremiumState: function () {
+    var user = Auth.currentUser;
+    var isLucasGuerreiro = false;
+    if (user) {
+      var name = (user.nome || user.name || user.apelido || '').toLowerCase();
+      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro')) {
+        isLucasGuerreiro = true;
+      }
+    }
+
+    var isVipUser = user && (user.card_style === 'fut' || user.plano === 'vip' || user.plano === 'ultimate' || user.card_ultimate === true);
+    var savedStyle = localStorage.getItem('peladapro_card_style');
+
+    var initialStyle = 'free';
+    if (isLucasGuerreiro || isVipUser) {
+      initialStyle = savedStyle || 'fut';
+    } else {
+      localStorage.setItem('peladapro_card_style', 'free');
+      localStorage.setItem('peladapro_premium_adquirido', 'false');
+      initialStyle = 'free';
+    }
+
+    this.applyCardStyle(initialStyle);
+  },
+
   // Aplica o estilo de card escolhido ('free', 'premium', 'fut')
-  // Aplica o estilo de card ('free' ou 'fut')
   applyCardStyle: function (style) {
     var card = document.getElementById('player-fifa-card');
     var badgeVip = document.getElementById('badge-vip-card');
