@@ -113,10 +113,7 @@ var Dashboard = {
       gkBadge.classList.toggle('hidden', !user.goleiro);
     }
 
-    // Posição, Jogos, Gols e Membro desde
-    var posEl = document.getElementById('player-card-position');
-    if (posEl) posEl.textContent = user.posicao || user.position || 'Atacante';
-
+    // Jogos, Gols e Membro desde
     var gamesEl = document.getElementById('player-card-games-val');
     if (gamesEl) gamesEl.textContent = (user.jogos !== undefined) ? user.jogos : ((user.partidas !== undefined) ? user.partidas : 0);
 
