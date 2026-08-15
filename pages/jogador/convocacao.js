@@ -505,23 +505,35 @@ var Convocacao = {
   openPlayerCardModal: async function (athleteId) {
     let athlete = null;
 
-    // 1. Busca na lista de convocados da pelada atual
-    if (this._lastConvocados && Array.isArray(this._lastConvocados)) {
-      athlete = this._lastConvocados.find(c => String(c.id) === String(athleteId));
+    // 1. Tenta buscar da API do backend em tempo real (/api/usuarios/:id)
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/usuarios/${athleteId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        athlete = await res.json();
+      }
+    } catch (e) {
+      console.warn('[Convocacao] Erro ao buscar perfil completo na API:', e);
     }
 
-    // 2. Fallback: busca nos usuarios da API ou localStorage para garantir dados completos como time_coracao
-    let fullUser = null;
+    // 2. Fallbacks: busca na lista de convocados atual ou lista de usuários local
+    let convocadosItem = null;
+    if (this._lastConvocados && Array.isArray(this._lastConvocados)) {
+      convocadosItem = this._lastConvocados.find(c => String(c.id) === String(athleteId));
+    }
+
+    let fullUserLocal = null;
     try {
       const users = Api.getUsuarios();
-      fullUser = users.find(u => String(u.id) === String(athleteId));
+      fullUserLocal = users.find(u => String(u.id) === String(athleteId));
     } catch (e) {}
 
-    if (fullUser) {
-      athlete = Object.assign({}, fullUser, athlete || {});
-    }
+    // Combina garantindo que dados reais completos tenham precedência
+    athlete = Object.assign({}, convocadosItem || {}, fullUserLocal || {}, athlete || {});
 
-    if (!athlete) {
+    if (!athlete || (!athlete.nome && !athlete.apelido)) {
       athlete = { id: athleteId, nome: 'Atleta', apelido: 'Atleta', gols: 0, partidas: 0 };
     }
 
@@ -553,17 +565,25 @@ var Convocacao = {
 
     var name = athlete.apelido || athlete.nome || 'Atleta';
     var foto = athlete.foto || athlete.photo || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80';
+
+    // Cálculo e formatação segura de Idade
     var age = athlete.idade || athlete.age;
-    if (!age && athlete.data_nascimento) {
-      var birth = new Date(athlete.data_nascimento);
-      var ageDifMs = Date.now() - birth.getTime();
-      var ageDate = new Date(ageDifMs);
-      age = Math.abs(ageDate.getUTCFullYear() - 1970);
+    if ((age === undefined || age === null || isNaN(age)) && athlete.data_nascimento) {
+      var ageCalc = (window.Utils && window.Utils.calcAge) ? window.Utils.calcAge(athlete.data_nascimento) : null;
+      if (ageCalc === null || isNaN(ageCalc)) {
+        var birth = new Date(athlete.data_nascimento);
+        var ageDifMs = Date.now() - birth.getTime();
+        var ageDate = new Date(ageDifMs);
+        ageCalc = Math.abs(ageDate.getUTCFullYear() - 1970);
+      }
+      if (ageCalc !== null && !isNaN(ageCalc)) age = ageCalc;
     }
     age = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
-    var games = athlete.jogos !== undefined ? athlete.jogos : (athlete.partidas !== undefined ? athlete.partidas : 0);
-    var goals = athlete.gols !== undefined ? athlete.gols : (athlete.goals !== undefined ? athlete.goals : 0);
+    // Tratamento seguro de Jogos (partidas) e Gols
+    var games = (athlete.jogos !== undefined && athlete.jogos !== null) ? athlete.jogos : ((athlete.partidas !== undefined && athlete.partidas !== null) ? athlete.partidas : ((athlete.games !== undefined && athlete.games !== null) ? athlete.games : 0));
+    var goals = (athlete.gols !== undefined && athlete.gols !== null) ? athlete.gols : ((athlete.goals !== undefined && athlete.goals !== null) ? athlete.goals : 0);
+
     var memberYear = (athlete.criado_em || athlete.created_at) ? new Date(athlete.criado_em || athlete.created_at).getFullYear() : new Date().getFullYear();
     var flag = athlete.nacionalidade_flag || athlete.nacionalidade || '🇧🇷';
 
