@@ -125,6 +125,47 @@
     color: rgba(255, 255, 255, 0.6) !important;
   }
 
+  /* ── Estilos de Responsividade para Computador / Desktop (min-width: 768px) ── */
+  @media (min-width: 768px) {
+    .card-fifa {
+      max-width: 580px !important;
+      margin: 0 auto !important;
+      padding: 28px !important;
+      border-radius: 24px !important;
+    }
+    .card-fifa.premium-ativo .fifa-avatar-container {
+      width: 104px !important;
+      height: 104px !important;
+    }
+    .fifa-stats-grid {
+      max-width: 500px !important;
+      margin: 10px auto !important;
+      gap: 16px !important;
+    }
+    .fifa-stat-box {
+      padding: 14px 18px !important;
+      border-radius: 16px !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .card-fifa.premium-ativo .fifa-stat-box:hover {
+      transform: translateY(-3px) !important;
+      border-color: rgba(245, 210, 112, 0.8) !important;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+    }
+    .card-fifa.premium-ativo .fifa-stat-icon-wrapper {
+      width: 44px !important;
+      height: 44px !important;
+      font-size: 22px !important;
+    }
+    .card-fifa.premium-ativo .fifa-stat-label {
+      font-size: 11px !important;
+      letter-spacing: 1px !important;
+    }
+    .card-fifa.premium-ativo .fifa-stat-val {
+      font-size: 26px !important;
+    }
+  }
+
   /* ── Card com Cores do Time ────────────────────────────────── */
   .card-fifa.has-team-theme {
     color: #FFFFFF !important;
