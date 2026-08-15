@@ -679,14 +679,14 @@ var Dashboard = {
       };
     }
 
-    // Vasco da Gama (Preto & Branco com Destaque Vermelho/Branco)
+    // Vasco da Gama (Alvinegro Cruz de Malta)
     if (name.includes('vasco')) {
       return {
-        gradient: 'linear-gradient(135deg, #222222 0%, #0A0A0A 50%, #2A2A2A 100%)',
-        border: '#E31C23',
-        borderGlow: 'rgba(227, 28, 35, 0.4)',
-        accent: '#FFFFFF',
-        badgeBg: '#E31C23',
+        gradient: 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)',
+        border: '#FFFFFF',
+        borderGlow: 'rgba(255, 255, 255, 0.4)',
+        accent: '#F5D270',
+        badgeBg: '#111111',
         badgeText: '#FFFFFF',
         ratingColor: '#FFFFFF'
       };
