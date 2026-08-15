@@ -969,7 +969,9 @@ var Dashboard = {
   },
 
   initPremiumState: function () {
-    var user = Auth.currentUser;
+    this.initCardStyle();
+  },
+
   initCardStyle: function () {
     var user = Auth.currentUser;
     var isLucasGuerreiro = false;
