@@ -223,17 +223,9 @@ window.App.isVipPlan = function () {
   try {
     const user = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
     if (user) {
-      const name = (user.nome || user.name || user.apelido || '').toLowerCase();
-      const email = (user.email || '').toLowerCase();
-      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro') || email.includes('lucasguerreiro')) {
-        return true;
-      }
       if (user.vip === true || user.premium === true || user.is_vip === true || user.plano === 'vip' || user.plano === 'premium') {
         return true;
       }
-    }
-    if (localStorage.getItem('peladapro_vip_adquirido') === 'true') {
-      return true;
     }
     const override = localStorage.getItem('pp_vip_test_override');
     if (override) {
