@@ -599,9 +599,6 @@ window.App.computeStatsMap = async function(peladaId) {
 
           if (teamName && peladaTeams[teamName]) {
             totalJogosAtleta += peladaTeams[teamName];
-          } else if (playerObj.gols > 0) {
-            const allCounts = Object.values(peladaTeams);
-            if (allCounts.length > 0) totalJogosAtleta += Math.max.apply(null, allCounts);
           }
         });
 
