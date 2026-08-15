@@ -86,24 +86,21 @@ var Dashboard = {
     var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
     this.applyCardStyle(style);
 
-    // Preenche valores FUT Ultimate
+    // Preenche valores FUT Ultimate (Idade, Jogos e Gols)
     var ovrEl = document.getElementById('fut-player-rating');
     if (ovrEl) ovrEl.textContent = user.overall || 99;
 
     var posFutEl = document.getElementById('fut-player-position');
     if (posFutEl) posFutEl.textContent = user.goleiro ? 'GK' : (user.posicao ? user.posicao.substring(0, 3).toUpperCase() : 'OM');
 
-    var velEl = document.getElementById('fut-stat-vel');
-    if (velEl) velEl.textContent = user.velocidade || 99;
+    var futAgeEl = document.getElementById('fut-stat-age');
+    if (futAgeEl) futAgeEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
-    var chuEl = document.getElementById('fut-stat-chu');
-    if (chuEl) chuEl.textContent = (user.gols !== undefined && user.gols > 0) ? Math.min(99, 85 + user.gols * 2) : 99;
+    var futGamesEl = document.getElementById('fut-stat-games');
+    if (futGamesEl) futGamesEl.textContent = (user.jogos !== undefined) ? user.jogos : ((user.partidas !== undefined) ? user.partidas : 0);
 
-    var driEl = document.getElementById('fut-stat-dri');
-    if (driEl) driEl.textContent = user.drible || 99;
-
-    var defEl = document.getElementById('fut-stat-def');
-    if (defEl) defEl.textContent = user.goleiro ? 99 : 88;
+    var futGoalsEl = document.getElementById('fut-stat-goals');
+    if (futGoalsEl) futGoalsEl.textContent = (user.gols !== undefined) ? user.gols : ((user.goals !== undefined) ? user.goals : 0);
 
     // Foto
     var avatarEl = document.getElementById('player-avatar');
