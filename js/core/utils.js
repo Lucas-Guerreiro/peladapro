@@ -256,7 +256,7 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
   const teamName = user ? user.time_coracao : null;
   const teamTheme = window.App.getTeamThemeGlobal(teamName);
 
-  const buttons = document.querySelectorAll('.btn-global-modo-noturno, #btn-toggle-modo-noturno');
+  const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon, #btn-toggle-modo-noturno');
   const labels = document.querySelectorAll('.lbl-modo-noturno-txt, #lbl-modo-noturno');
 
   if (isNight) {
