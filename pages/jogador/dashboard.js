@@ -677,21 +677,34 @@ var Dashboard = {
       // Harmoniza o botão Convocação (btn-accent) com as cores de destaque do clube
       var btnAccent = cardEl.querySelector('.btn-accent');
       if (btnAccent) {
-        btnAccent.style.setProperty('background', theme.badgeBg || '#FFFFFF', 'important');
-        btnAccent.style.setProperty('color', theme.badgeText || '#FFFFFF', 'important');
-        btnAccent.style.setProperty('border-color', theme.border, 'important');
+        btnAccent.style.setProperty('background', 'linear-gradient(135deg, #F5D270, #D4AF37)', 'important');
+        btnAccent.style.setProperty('color', '#1A1A1A', 'important');
+        btnAccent.style.setProperty('border-color', '#F5D270', 'important');
       }
 
       // Harmoniza o botão Editar (btn-outline-secondary) com estilo vidro fosco
       var btnEdit = cardEl.querySelector('.btn-outline-secondary');
       if (btnEdit) {
-        btnEdit.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important');
+        btnEdit.style.setProperty('background', 'rgba(255, 255, 255, 0.16)', 'important');
         btnEdit.style.setProperty('color', '#FFFFFF', 'important');
-        btnEdit.style.setProperty('border-color', 'rgba(255, 255, 255, 0.4)', 'important');
+        btnEdit.style.setProperty('border-color', 'rgba(255, 255, 255, 0.45)', 'important');
+      }
+
+      // Harmoniza o card Meu Saldo (.card-fifa-balance)
+      var balanceBox = cardEl.querySelector('.card-fifa-balance');
+      if (balanceBox) {
+        balanceBox.style.setProperty('background', 'rgba(0, 0, 0, 0.55)', 'important');
+        balanceBox.style.setProperty('border-color', theme.border || 'rgba(245, 210, 112, 0.4)', 'important');
+
+        var balanceLabel = balanceBox.querySelector('.label');
+        if (balanceLabel) balanceLabel.style.setProperty('color', theme.accent || '#F5D270', 'important');
+
+        var balanceVal = balanceBox.querySelector('.value');
+        if (balanceVal) balanceVal.style.setProperty('color', '#FFFFFF', 'important');
       }
     } else {
       cardEl.classList.remove('has-team-theme');
-      if (!cardEl.classList.contains('premium-ativo')) {
+      if (!cardEl.classList.contains('premium-ativo') && !cardEl.classList.contains('fut-ultimate-ativo')) {
         cardEl.style.removeProperty('background');
         cardEl.style.removeProperty('border-color');
         cardEl.style.removeProperty('border-width');
@@ -709,6 +722,16 @@ var Dashboard = {
           btnEditReset.style.removeProperty('background');
           btnEditReset.style.removeProperty('color');
           btnEditReset.style.removeProperty('border-color');
+        }
+
+        var balanceReset = cardEl.querySelector('.card-fifa-balance');
+        if (balanceReset) {
+          balanceReset.style.removeProperty('background');
+          balanceReset.style.removeProperty('border-color');
+          var lblR = balanceReset.querySelector('.label');
+          if (lblR) lblR.style.removeProperty('color');
+          var valR = balanceReset.querySelector('.value');
+          if (valR) valR.style.removeProperty('color');
         }
       }
     }

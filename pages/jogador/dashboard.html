@@ -506,31 +506,81 @@
 
   /* ── Saldo ─────────────────────────────────────────────────── */
   .card-fifa-balance {
-    background: #E6FDF4 !important; border: 1px solid #C6F6D5 !important;
+    background: #E6FDF4; border: 1px solid #C6F6D5;
     border-radius: 12px !important; padding: 14px 18px !important;
     display: flex; justify-content: space-between; align-items: center;
     transition: all 0.4s;
   }
   .card-fifa-balance.negative { background: #FEF2F2 !important; border-color: #FCA5A5 !important; }
-  .card-fifa-balance .label { font-size: 12px; font-weight: 700; color: #047857 !important; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.4s; }
+  .card-fifa-balance .label { font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.4s; }
   .card-fifa-balance.negative .label { color: #B91C1C !important; }
-  .card-fifa-balance .value { font-size: 22px !important; font-weight: 800 !important; color: #059669 !important; font-family: monospace, sans-serif; transition: color 0.4s; }
+  .card-fifa-balance .value { font-size: 22px !important; font-weight: 800 !important; color: #059669; font-family: monospace, sans-serif; transition: color 0.4s; }
   .card-fifa-balance.negative .value { color: #DC2626 !important; }
 
   /* ── Botões ─────────────────────────────────────────────────── */
   .card-fifa .btn-outline-secondary {
-    border: 1px solid rgba(29,158,117,0.35) !important;
-    color: #1D9E75 !important;
-    background: rgba(29,158,117,0.06) !important;
+    border: 1px solid rgba(29,158,117,0.35);
+    color: #1D9E75;
+    background: rgba(29,158,117,0.06);
     font-weight: 600 !important; border-radius: 8px !important;
   }
-  .card-fifa .btn-outline-secondary:hover { background: rgba(29,158,117,0.12) !important; border-color: #1D9E75 !important; }
+  .card-fifa .btn-outline-secondary:hover { background: rgba(29,158,117,0.12); border-color: #1D9E75; }
   .card-fifa .btn-accent {
-    background: #1D9E75 !important; color: #FFFFFF !important;
+    background: #1D9E75; color: #FFFFFF;
     font-weight: 700 !important; border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(29,158,117,0.25) !important;
+    box-shadow: 0 4px 12px rgba(29,158,117,0.25);
   }
-  .card-fifa .btn-accent:hover { background: #17876A !important; box-shadow: 0 6px 16px rgba(29,158,117,0.35) !important; }
+  .card-fifa .btn-accent:hover { background: #17876A; box-shadow: 0 6px 16px rgba(29,158,117,0.35); }
+
+  /* ── Estilos Harmonizados do Saldo e Botões para Tema do Time / Premium / FUT ── */
+  .card-fifa.has-team-theme .card-fifa-balance,
+  .card-fifa.premium-ativo .card-fifa-balance,
+  .card-fifa.fut-ultimate-ativo .card-fifa-balance {
+    background: rgba(0, 0, 0, 0.55) !important;
+    border: 1.5px solid rgba(245, 210, 112, 0.4) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+  .card-fifa.has-team-theme .card-fifa-balance .label,
+  .card-fifa.premium-ativo .card-fifa-balance .label,
+  .card-fifa.fut-ultimate-ativo .card-fifa-balance .label {
+    color: #F5D270 !important;
+  }
+  .card-fifa.has-team-theme .card-fifa-balance .value,
+  .card-fifa.premium-ativo .card-fifa-balance .value,
+  .card-fifa.fut-ultimate-ativo .card-fifa-balance .value {
+    color: #FFFFFF !important;
+  }
+
+  .card-fifa.has-team-theme .btn-outline-secondary,
+  .card-fifa.premium-ativo .btn-outline-secondary,
+  .card-fifa.fut-ultimate-ativo .btn-outline-secondary {
+    background: rgba(255, 255, 255, 0.16) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(4px) !important;
+  }
+  .card-fifa.has-team-theme .btn-outline-secondary:hover,
+  .card-fifa.premium-ativo .btn-outline-secondary:hover,
+  .card-fifa.fut-ultimate-ativo .btn-outline-secondary:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: #FFFFFF !important;
+  }
+
+  .card-fifa.has-team-theme .btn-accent,
+  .card-fifa.premium-ativo .btn-accent,
+  .card-fifa.fut-ultimate-ativo .btn-accent {
+    background: linear-gradient(135deg, #F5D270, #D4AF37) !important;
+    color: #1A1A1A !important;
+    border: 1px solid #F5D270 !important;
+    box-shadow: 0 4px 14px rgba(245, 210, 112, 0.35) !important;
+    font-weight: 900 !important;
+  }
+  .card-fifa.has-team-theme .btn-accent:hover,
+  .card-fifa.premium-ativo .btn-accent:hover,
+  .card-fifa.fut-ultimate-ativo .btn-accent:hover {
+    background: linear-gradient(135deg, #FFFFFF, #F5D270) !important;
+    box-shadow: 0 6px 18px rgba(245, 210, 112, 0.5) !important;
+  }
 
   /* ── Botão Premium ─────────────────────────────────────────── */
   #btn-upgrade-premium {
