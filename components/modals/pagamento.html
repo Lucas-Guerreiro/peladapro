@@ -15,26 +15,26 @@
 
       <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
         <!-- Opção Saldo -->
-        <label id="payment-option-balance-label" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #ffffff;">
+        <label id="payment-option-balance-label" class="payment-option-box payment-method-selected" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: 12px; cursor: pointer;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <input type="radio" name="payment-method" id="pay-method-balance" value="saldo" checked style="margin: 0; cursor: pointer;">
             <div>
-              <strong class="text-inter" style="font-size: 14px; font-weight: 700; color: var(--text-body);">Usar Saldo Interno</strong>
-              <span id="payment-my-balance" style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Disponível: R$ 0,00</span>
+              <strong class="text-inter" style="font-size: 14px; font-weight: 700;">Usar Saldo Interno</strong>
+              <span id="payment-my-balance" style="display: block; font-size: 12px; margin-top: 2px;">Disponível: R$ 0,00</span>
             </div>
           </div>
         </label>
 
         <!-- Opção Pix Real (Mercado Pago) -->
-        <label id="payment-option-pix-label" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #ffffff;">
+        <label id="payment-option-pix-label" class="payment-option-box" style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: 12px; cursor: pointer;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <input type="radio" name="payment-method" id="pay-method-pix" value="pix" style="margin: 0; cursor: pointer;">
             <div>
-              <strong class="text-inter" style="font-size: 14px; font-weight: 700; color: var(--text-body);">Pagar com PIX</strong>
-              <span style="display: block; font-size: 12px; color: var(--text-caption); margin-top: 2px;">Código Copia e Cola / QR Code</span>
+              <strong class="text-inter" style="font-size: 14px; font-weight: 700;">Pagar com PIX</strong>
+              <span style="display: block; font-size: 12px; margin-top: 2px;">Código Copia e Cola / QR Code</span>
             </div>
           </div>
-          <i data-feather="qr-code" style="color: var(--text-caption); width: 20px; height: 20px;"></i>
+          <i data-feather="qr-code" style="width: 20px; height: 20px; opacity: 0.7;"></i>
         </label>
       </div>
 
