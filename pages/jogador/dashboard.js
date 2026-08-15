@@ -209,10 +209,10 @@ var Dashboard = {
 
           var dateFormatted = Utils.formatDate(p.data);
           html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;' +
-            (isLast ? '' : 'border-bottom: 1px solid var(--border-color);') + '">' +
+            (isLast ? '' : 'border-bottom: 1px solid rgba(255,255,255,0.15);') + '">' +
             '<div>' +
-            '<p class="text-inter" style="font-size: 14px; font-weight: 600; color: var(--text-heading);">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
-            '<p class="text-inter" style="font-size: 12px; color: var(--text-caption);">' + (p.local || (group && group.nome) || '') + '</p>' +
+            '<p class="text-inter" style="font-size: 14px; font-weight: 600; margin: 0;">' + dateFormatted + ' · ' + (p.horario || '') + '</p>' +
+            '<p class="text-inter" style="font-size: 12px; opacity: 0.85; margin: 2px 0 0 0;">' + (p.local || (group && group.nome) || '') + '</p>' +
             '</div>' +
             '<span class="text-inter" style="font-size: 13px; font-weight: 700; color: ' + statusColor + ';">' + statusLabel + '</span>' +
             '</div>';

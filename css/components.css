@@ -936,7 +936,7 @@ body.modo-noturno-ativo .app-container {
   transition: background 0.5s ease, color 0.5s ease;
 }
 
-/* TODOS os cards, containers, tabelas, modais e caixas ficam escuros e translúcidos (NENHUM CARD BRANCO) */
+/* TODOS os cards, containers, placares, listas e caixas ficam 100% PRETOS (#000000) */
 body.modo-noturno-ativo .card,
 body.modo-noturno-ativo .card-fifa:not(.has-team-theme),
 body.modo-noturno-ativo .card-athlete,
@@ -951,18 +951,36 @@ body.modo-noturno-ativo .acomp-header-unified-card,
 body.modo-noturno-ativo .acomp-header-mobile-unified,
 body.modo-noturno-ativo .gestor-header-unified-card,
 body.modo-noturno-ativo .gestor-header-mobile-unified,
+body.modo-noturno-ativo #next-matches-list,
 body.modo-noturno-ativo #next-matches-list > div,
 body.modo-noturno-ativo section > div,
 body.modo-noturno-ativo .acomp-mobile-dropdown,
 body.modo-noturno-ativo .gestor-mobile-dropdown,
 body.modo-noturno-ativo .table-responsive,
 body.modo-noturno-ativo .table-custom,
-body.modo-noturno-ativo .card-fifa-balance:not(.has-team-theme) {
-  background: rgba(15, 23, 42, 0.88) !important;
-  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.25)) !important;
-  backdrop-filter: blur(12px) !important;
+body.modo-noturno-ativo .card-fifa-balance:not(.has-team-theme),
+body.modo-noturno-ativo .acomp-card-clear,
+body.modo-noturno-ativo .acomp-score-card-clear,
+body.modo-noturno-ativo .acomp-team-box-clear,
+body.modo-noturno-ativo .acomp-queue-item-clear,
+body.modo-noturno-ativo .acomp-queue-wrapper-clear,
+body.modo-noturno-ativo .acomp-history-item-clear,
+body.modo-noturno-ativo .acomp-next-match-card-clear,
+body.modo-noturno-ativo .acomp-timer-wrapper-clear,
+body.modo-noturno-ativo #acomp-live-goals-feed,
+body.modo-noturno-ativo #acomp-tournament-card,
+body.modo-noturno-ativo #acomp-tournament-podium-container {
+  background: #000000 !important;
+  border: 1px solid var(--border-modo-noturno, rgba(255, 255, 255, 0.2)) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Específico para botões secundários / olhos de visualização dentro de cards em modo noturno */
+body.modo-noturno-ativo button:not(.btn-accent):not(.btn-primary):not(.btn-global-modo-noturno) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 /* FONTES E TEXTOS: SOMENTE EM BRANCO (#FFFFFF) OU DOURADO (#F5D270 / #D4AF37) */
@@ -975,11 +993,14 @@ body.modo-noturno-ativo label,
 body.modo-noturno-ativo input,
 body.modo-noturno-ativo select,
 body.modo-noturno-ativo textarea,
-body.modo-noturno-ativo button,
 body.modo-noturno-ativo .text-dark,
 body.modo-noturno-ativo .card-title,
 body.modo-noturno-ativo #player-card-name,
-body.modo-noturno-ativo .athlete-details h4 {
+body.modo-noturno-ativo .athlete-details h4,
+body.modo-noturno-ativo .acomp-player-name-clear,
+body.modo-noturno-ativo .acomp-queue-team-name-clear,
+body.modo-noturno-ativo .acomp-rule-desc-clear,
+body.modo-noturno-ativo .text-inter {
   color: #FFFFFF !important;
 }
 
@@ -1001,25 +1022,27 @@ body.modo-noturno-ativo .label,
 body.modo-noturno-ativo .value,
 body.modo-noturno-ativo .stat-value,
 body.modo-noturno-ativo .accent-gold,
-body.modo-noturno-ativo #dashboard-group-name {
+body.modo-noturno-ativo #dashboard-group-name,
+body.modo-noturno-ativo .acomp-timer-time-clear,
+body.modo-noturno-ativo .acomp-score-num-clear {
   color: #F5D270 !important;
 }
 
 body.modo-noturno-ativo table,
 body.modo-noturno-ativo th,
 body.modo-noturno-ativo td {
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 body.modo-noturno-ativo th {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
   color: #F5D270 !important;
 }
 
 body.modo-noturno-ativo input,
 body.modo-noturno-ativo select,
 body.modo-noturno-ativo textarea {
-  background: rgba(0, 0, 0, 0.45) !important;
+  background: #000000 !important;
   color: #FFFFFF !important;
   border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.3)) !important;
 }
