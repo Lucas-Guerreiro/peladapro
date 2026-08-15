@@ -501,7 +501,7 @@ var Convocacao = {
     }
   },
 
-  // --- Abre Pop-Up com o Card Ultimate FUT do Atleta selecionado --------------
+  // --- Abre Pop-Up com o Card (Ultimate FUT ou Básico conforme as regras de acesso) --------------
   openPlayerCardModal: async function (athleteId) {
     let athlete = null;
 
@@ -521,6 +521,21 @@ var Convocacao = {
     if (!athlete) {
       athlete = { id: athleteId, nome: 'Atleta', apelido: 'Atleta', gols: 0, partidas: 0 };
     }
+
+    // 3. Regra de Acesso aos Cards:
+    // O visual Ultimate FUT (brasão com cores do time do atleta) abre se:
+    // - O usuário logado possui o Card Ultimate / VIP, OU
+    // - O atleta selecionado possui o Card Ultimate / VIP
+    const currentUser = Auth.currentUser;
+    const viewerName = currentUser ? (currentUser.nome || currentUser.apelido || '') : '';
+    const viewerIsLucas = viewerName.toLowerCase().includes('lucas fernandes') || viewerName.toLowerCase().includes('lucas guerreiro');
+    const viewerIsVip = (window.App && window.App.isVipPlan && window.App.isVipPlan()) || (localStorage.getItem('peladapro_premium_adquirido') === 'true') || (localStorage.getItem('peladapro_card_style') === 'premium') || viewerIsLucas;
+
+    const targetName = athlete.apelido || athlete.nome || '';
+    const targetIsLucas = targetName.toLowerCase().includes('lucas fernandes') || targetName.toLowerCase().includes('lucas guerreiro');
+    const targetIsVip = athlete.vip || athlete.premium || athlete.is_vip || targetIsLucas;
+
+    const shouldShowUltimateCard = viewerIsVip || targetIsVip;
 
     // Cria overlay no DOM se não existir
     var modalOverlay = document.getElementById('modal-athlete-card-overlay');
@@ -547,7 +562,7 @@ var Convocacao = {
     var memberYear = (athlete.criado_em || athlete.created_at) ? new Date(athlete.criado_em || athlete.created_at).getFullYear() : new Date().getFullYear();
     var flag = athlete.nacionalidade_flag || athlete.nacionalidade || '🇧🇷';
 
-    // Gradientes temáticos do time
+    // Gradientes temáticos do time do ATLETA SELECIONADO
     var bgGradient = 'linear-gradient(135deg, #1D9E75 0%, #0D4030 50%, #0A1F16 100%)';
     var borderColor = '#D4AF37';
 
@@ -558,55 +573,120 @@ var Convocacao = {
       else if (tName.includes('fluminense')) { bgGradient = 'linear-gradient(135deg, #831D1C 0%, #4A0E0E 40%, #006633 100%)'; borderColor = '#D4AF37'; }
       else if (tName.includes('palmeiras')) { bgGradient = 'linear-gradient(135deg, #005931 0%, #02341D 50%, #001A0E 100%)'; borderColor = '#86EFAC'; }
       else if (tName.includes('corinthians')) { bgGradient = 'linear-gradient(135deg, #222222 0%, #111111 50%, #000000 100%)'; borderColor = '#F5D270'; }
+      else if (tName.includes('botafogo')) { bgGradient = 'linear-gradient(135deg, #1F1F1F 0%, #0A0A0A 50%, #000000 100%)'; borderColor = '#FFFFFF'; }
+      else if (tName.includes('são paulo') || tName.includes('sao paulo')) { bgGradient = 'linear-gradient(135deg, #800000 0%, #300000 50%, #1A0000 100%)'; borderColor = '#FF4D4D'; }
+      else if (tName.includes('grêmio') || tName.includes('gremio')) { bgGradient = 'linear-gradient(135deg, #0055A5 0%, #003366 50%, #001A33 100%)'; borderColor = '#93C5FD'; }
+      else if (tName.includes('internacional')) { bgGradient = 'linear-gradient(135deg, #990000 0%, #4D0000 50%, #260000 100%)'; borderColor = '#FCA5A5'; }
     }
 
-    modalOverlay.innerHTML = `
-      <div style="position: relative; width: 90%; max-width: 330px; border-radius: 24px; padding: 24px 20px; background: ${bgGradient}; border: 2.5px solid ${borderColor}; box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 35px rgba(212, 175, 55, 0.4); text-align: center; color: #FFFFFF; font-family: 'Inter', sans-serif;">
-        <!-- Botão Fechar X -->
-        <button onclick="Convocacao.closePlayerCardModal()" style="position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.4); color: #FFF; font-size: 16px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: 800;">
-          ✕
-        </button>
+    if (shouldShowUltimateCard) {
+      // 🏆 LAYOUT CARD ULTIMATE / FUT COM CORES DO TIME DO ATLETA SELECIONADO
+      modalOverlay.innerHTML = `
+        <div style="position: relative; width: 90%; max-width: 330px; border-radius: 24px; padding: 24px 20px; background: ${bgGradient}; border: 2.5px solid ${borderColor}; box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 35px rgba(212, 175, 55, 0.4); text-align: center; color: #FFFFFF; font-family: 'Inter', sans-serif;">
+          <!-- Botão Fechar X -->
+          <button onclick="Convocacao.closePlayerCardModal()" style="position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.4); color: #FFF; font-size: 16px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: 800;">
+            ✕
+          </button>
 
-        <!-- Stack de Nacionalidade & Membro no Canto Superior Esquerdo -->
-        <div style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, 0.65); border: 1.5px solid #F5D270; padding: 4px 8px; border-radius: 10px; backdrop-filter: blur(6px);">
-          <span style="font-size: 14px;">${flag}</span>
-          <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px; margin-top: 1px;">Desde ${memberYear}</span>
-        </div>
-
-        <!-- Avatar Central com anel reluzente -->
-        <div style="width: 100px; height: 100px; border-radius: 50%; border: 3.5px solid #F5D270; box-shadow: 0 0 25px rgba(245, 210, 112, 0.75), 0 8px 24px rgba(0,0,0,0.8); margin: 18px auto 12px; overflow: hidden; background: #0F172A;">
-          <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;">
-        </div>
-
-        <!-- Apelido / Nome do Atleta em Dourado -->
-        <h3 style="color: #F5D270; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 12px rgba(245, 210, 112, 0.5); margin: 0 0 14px 0; border-bottom: 1.5px solid rgba(245, 210, 112, 0.4); padding-bottom: 6px;">
-          ${name}
-        </h3>
-
-        <!-- FUT Stats Grid: IDADE | JOGOS | GOLS -->
-        <div style="display: flex; align-items: center; justify-content: space-around; background: rgba(0, 0, 0, 0.65); border: 1.5px solid rgba(245, 210, 112, 0.5); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; backdrop-filter: blur(8px);">
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${age}</span>
-            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">IDADE</span>
+          <!-- Stack de Nacionalidade & Membro no Canto Superior Esquerdo -->
+          <div style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, 0.65); border: 1.5px solid #F5D270; padding: 4px 8px; border-radius: 10px; backdrop-filter: blur(6px);">
+            <span style="font-size: 14px;">${flag}</span>
+            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px; margin-top: 1px;">Desde ${memberYear}</span>
           </div>
-          <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${games}</span>
-            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">JOGOS</span>
-          </div>
-          <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
-          <div style="display: flex; flex-direction: column; align-items: center;">
-            <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${goals}</span>
-            <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">GOLS</span>
-          </div>
-        </div>
 
-        <!-- Botão Fechar -->
-        <button onclick="Convocacao.closePlayerCardModal()" style="width: 100%; background: linear-gradient(135deg, #F5D270, #D4AF37); color: #1A1A1A; font-weight: 800; font-size: 13px; border: none; border-radius: 10px; padding: 10px 0; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 14px rgba(245, 210, 112, 0.35);">
-          Fechar Card
-        </button>
-      </div>
-    `;
+          <!-- Avatar Central com anel reluzente -->
+          <div style="width: 100px; height: 100px; border-radius: 50%; border: 3.5px solid #F5D270; box-shadow: 0 0 25px rgba(245, 210, 112, 0.75), 0 8px 24px rgba(0,0,0,0.8); margin: 18px auto 12px; overflow: hidden; background: #0F172A;">
+            <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+
+          <!-- Apelido / Nome do Atleta em Dourado -->
+          <h3 style="color: #F5D270; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 12px rgba(245, 210, 112, 0.5); margin: 0 0 14px 0; border-bottom: 1.5px solid rgba(245, 210, 112, 0.4); padding-bottom: 6px;">
+            ${name}
+          </h3>
+
+          <!-- FUT Stats Grid: IDADE | JOGOS | GOLS -->
+          <div style="display: flex; align-items: center; justify-content: space-around; background: rgba(0, 0, 0, 0.65); border: 1.5px solid rgba(245, 210, 112, 0.5); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; backdrop-filter: blur(8px);">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${age}</span>
+              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">IDADE</span>
+            </div>
+            <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${games}</span>
+              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">JOGOS</span>
+            </div>
+            <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${goals}</span>
+              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">GOLS</span>
+            </div>
+          </div>
+
+          <!-- Botão Fechar -->
+          <button onclick="Convocacao.closePlayerCardModal()" style="width: 100%; background: linear-gradient(135deg, #F5D270, #D4AF37); color: #1A1A1A; font-weight: 800; font-size: 13px; border: none; border-radius: 10px; padding: 10px 0; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 14px rgba(245, 210, 112, 0.35);">
+            Fechar Card
+          </button>
+        </div>
+      `;
+    } else {
+      // ⚽ LAYOUT CARD BÁSICO / GRATUITO (Ambos os atletas possuem plano básico)
+      modalOverlay.innerHTML = `
+        <div style="position: relative; width: 90%; max-width: 320px; border-radius: 20px; padding: 22px 18px; background: #FFFFFF; border: 1.5px solid #CBD5E1; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; color: #0F172A; font-family: 'Inter', sans-serif;">
+          <!-- Botão Fechar X -->
+          <button onclick="Convocacao.closePlayerCardModal()" style="position: absolute; top: 12px; right: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #64748B; font-size: 16px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: 800;">
+            ✕
+          </button>
+
+          <!-- Tag de Card Básico -->
+          <div style="display: inline-block; background: #E2E8F0; color: #475569; font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 8px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Card Básico • ${flag} Desde ${memberYear}
+          </div>
+
+          <!-- Avatar Simples -->
+          <div style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #1D9E75; margin: 0 auto 10px; overflow: hidden; background: #F1F5F9;">
+            <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+
+          <!-- Apelido / Nome do Atleta em Escuro -->
+          <h3 style="color: #0F172A; font-size: 18px; font-weight: 800; text-transform: uppercase; margin: 0 0 12px 0;">
+            ${name}
+          </h3>
+
+          <!-- Stats Grid Básico -->
+          <div style="display: flex; align-items: center; justify-content: space-around; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 8px 10px; margin-bottom: 14px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${age}</span>
+              <span style="font-size: 9px; font-weight: 700; color: #64748B;">IDADE</span>
+            </div>
+            <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${games}</span>
+              <span style="font-size: 9px; font-weight: 700; color: #64748B;">JOGOS</span>
+            </div>
+            <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${goals}</span>
+              <span style="font-size: 9px; font-weight: 700; color: #64748B;">GOLS</span>
+            </div>
+          </div>
+
+          <!-- Banner Promocional para incentivar Upgrade para Ultimate FUT -->
+          <div style="background: linear-gradient(135deg, #FFFBEB, #FEF3C7); border: 1px dashed #F59E0B; border-radius: 12px; padding: 10px; margin-bottom: 14px; text-align: center;">
+            <p style="font-size: 11px; font-weight: 800; color: #B45309; margin: 0 0 4px 0;">
+              ✦ Adquira o Card Ultimate!
+            </p>
+            <p style="font-size: 10px; color: #78350F; margin: 0; line-height: 1.3;">
+              Visualização de cards no formato brasão FUT com as cores do seu time é um benefício exclusivo dos Membros Elite.
+            </p>
+          </div>
+
+          <!-- Botão Upgrade -->
+          <button onclick="window.location.href='#/premium'; Convocacao.closePlayerCardModal();" style="width: 100%; background: linear-gradient(135deg, #1D9E75, #0D4030); color: #FFFFFF; font-weight: 800; font-size: 12px; border: none; border-radius: 10px; padding: 10px 0; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">
+            Conhecer Card Ultimate ✦
+          </button>
+        </div>
+      `;
+    }
 
     setTimeout(function() {
       modalOverlay.style.opacity = '1';
