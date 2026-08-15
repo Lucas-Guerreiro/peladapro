@@ -99,9 +99,23 @@ var Dashboard = {
     var futAgeEl = document.getElementById('fut-stat-age');
     if (futAgeEl) futAgeEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
-    var gamesVal = (user.partidas !== undefined && user.partidas !== null) ? Number(user.partidas) : ((user.jogos !== undefined && user.jogos !== null) ? Number(user.jogos) : 0);
-    var goalsVal = (user.gols !== undefined && user.gols !== null) ? Number(user.gols) : ((user.goals !== undefined && user.goals !== null) ? Number(user.goals) : 0);
-    var ptsVal = (user.pontos !== undefined && user.pontos !== null) ? Number(user.pontos) : 0;
+    // 1. Tenta carregar cache instantâneo de desempenho para evitar flicker/salto de dados
+    var cachedPerf = null;
+    try {
+      cachedPerf = JSON.parse(sessionStorage.getItem('cached_desempenho_' + user.id));
+    } catch(e) {}
+
+    var gamesVal = (cachedPerf && cachedPerf.jogos !== undefined)
+      ? Number(cachedPerf.jogos)
+      : ((user.partidas !== undefined && user.partidas !== null) ? Number(user.partidas) : ((user.jogos !== undefined && user.jogos !== null) ? Number(user.jogos) : 0));
+
+    var goalsVal = (cachedPerf && cachedPerf.gols !== undefined)
+      ? Number(cachedPerf.gols)
+      : ((user.gols !== undefined && user.gols !== null) ? Number(user.gols) : ((user.goals !== undefined && user.goals !== null) ? Number(user.goals) : 0));
+
+    var ptsVal = (cachedPerf && cachedPerf.pontos !== undefined)
+      ? Number(cachedPerf.pontos)
+      : ((user.pontos !== undefined && user.pontos !== null) ? Number(user.pontos) : 0);
 
     var futPtsEl = document.getElementById('fut-stat-pts');
     if (futPtsEl) futPtsEl.textContent = ptsVal.toFixed(1);
@@ -152,6 +166,10 @@ var Dashboard = {
     if (window.App && window.App.calcPlayerDesempenho && user && user.id) {
       window.App.calcPlayerDesempenho(user.id, user.nome || user.apelido).then(res => {
         if (res) {
+          try {
+            sessionStorage.setItem('cached_desempenho_' + user.id, JSON.stringify(res));
+          } catch(e) {}
+
           if (futPtsEl) futPtsEl.textContent = Number(res.pontos).toFixed(1);
           if (ptsCardEl) ptsCardEl.textContent = Number(res.pontos).toFixed(1);
           if (futGamesEl && res.jogos > 0) futGamesEl.textContent = res.jogos;

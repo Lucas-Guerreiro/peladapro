@@ -580,17 +580,29 @@ var Convocacao = {
     }
     age = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
-    // Extrai valores reais numéricos com fallback seguro entre as fontes de dados
-    var games = 0;
-    if (athlete && athlete.partidas !== undefined && athlete.partidas !== null && !isNaN(athlete.partidas)) games = Number(athlete.partidas);
-    else if (athlete && athlete.jogos !== undefined && athlete.jogos !== null && !isNaN(athlete.jogos)) games = Number(athlete.jogos);
-    else if (fullUserLocal && fullUserLocal.partidas !== undefined && fullUserLocal.partidas !== null) games = Number(fullUserLocal.partidas);
-    else if (convocadosItem && convocadosItem.partidas !== undefined && convocadosItem.partidas !== null) games = Number(convocadosItem.partidas);
+    // Tenta carregar cache instantâneo de desempenho para evitar flicker/salto de dados no modal
+    var cachedModalPerf = null;
+    try {
+      cachedModalPerf = JSON.parse(sessionStorage.getItem('cached_desempenho_' + athleteId));
+    } catch(e) {}
 
-    var goals = 0;
-    if (athlete && athlete.gols !== undefined && athlete.gols !== null && !isNaN(athlete.gols)) goals = Number(athlete.gols);
-    else if (fullUserLocal && fullUserLocal.gols !== undefined && fullUserLocal.gols !== null) goals = Number(fullUserLocal.gols);
-    else if (convocadosItem && convocadosItem.gols !== undefined && convocadosItem.gols !== null) goals = Number(convocadosItem.gols);
+    // Extrai valores reais numéricos com fallback seguro entre as fontes de dados
+    var games = (cachedModalPerf && cachedModalPerf.jogos !== undefined) ? Number(cachedModalPerf.jogos) : 0;
+    if (!games) {
+      if (athlete && athlete.partidas !== undefined && athlete.partidas !== null && !isNaN(athlete.partidas)) games = Number(athlete.partidas);
+      else if (athlete && athlete.jogos !== undefined && athlete.jogos !== null && !isNaN(athlete.jogos)) games = Number(athlete.jogos);
+      else if (fullUserLocal && fullUserLocal.partidas !== undefined && fullUserLocal.partidas !== null) games = Number(fullUserLocal.partidas);
+      else if (convocadosItem && convocadosItem.partidas !== undefined && convocadosItem.partidas !== null) games = Number(convocadosItem.partidas);
+    }
+
+    var goals = (cachedModalPerf && cachedModalPerf.gols !== undefined) ? Number(cachedModalPerf.gols) : 0;
+    if (!goals) {
+      if (athlete && athlete.gols !== undefined && athlete.gols !== null && !isNaN(athlete.gols)) goals = Number(athlete.gols);
+      else if (fullUserLocal && fullUserLocal.gols !== undefined && fullUserLocal.gols !== null) goals = Number(fullUserLocal.gols);
+      else if (convocadosItem && convocadosItem.gols !== undefined && convocadosItem.gols !== null) goals = Number(convocadosItem.gols);
+    }
+
+    var initialPts = (cachedModalPerf && cachedModalPerf.pontos !== undefined) ? Number(cachedModalPerf.pontos).toFixed(1) : '0.0';
 
     var memberYear = (athlete.criado_em || athlete.created_at) ? new Date(athlete.criado_em || athlete.created_at).getFullYear() : new Date().getFullYear();
     var flag = athlete.nacionalidade_flag || athlete.nacionalidade || '🇧🇷';
@@ -647,7 +659,7 @@ var Convocacao = {
             </div>
             <!-- Linha 1 / Coluna 2: PONTOS -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 6px 4px; border-radius: 8px;">
-              <span id="modal-stat-pts" style="font-size: 16px; font-weight: 900; color: #FFFFFF;">0</span>
+              <span id="modal-stat-pts" style="font-size: 16px; font-weight: 900; color: #FFFFFF;">${initialPts}</span>
               <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">PTS</span>
             </div>
             <!-- Linha 2 / Coluna 1: GOLS -->
@@ -738,6 +750,9 @@ var Convocacao = {
     if (window.App && window.App.calcPlayerDesempenho) {
       window.App.calcPlayerDesempenho(athleteId, name).then(res => {
         if (res) {
+          try {
+            sessionStorage.setItem('cached_desempenho_' + athleteId, JSON.stringify(res));
+          } catch(e) {}
           const ptsEl = document.getElementById('modal-stat-pts');
           const gamesEl = document.getElementById('modal-stat-games');
           const goalsEl = document.getElementById('modal-stat-goals');
