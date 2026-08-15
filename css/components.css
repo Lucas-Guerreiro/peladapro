@@ -1015,8 +1015,42 @@ body.modo-noturno-ativo .checkin-athlete-card {
   background: rgba(255, 255, 255, 0.08) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(245, 210, 112, 0.5) !important;
   color: #FFFFFF !important;
+}
+
+/* ── BORDAS DOURADAS EM TODOS OS CARDS DAS TELAS DO GESTOR ─────────────────── */
+.gestor-web-body .card,
+.gestor-web-body .card-athlete,
+.gestor-web-body .team-draft-card,
+.gestor-web-body .player-draft-item,
+.gestor-web-body .checkin-athlete-card,
+.gestor-web-body .stat-card,
+.gestor-web-body .match-card,
+.gestor-web-body .card-fifa,
+.gestor-web-body .card-fifa-balance,
+.gestor-web-body .gestor-header-unified-card,
+.gestor-web-body .gestor-header-mobile-unified,
+.gestor-web-body .gestor-mobile-dropdown,
+.gestor-web-body .table-responsive,
+.gestor-web-body .modal-content,
+body.modo-noturno-ativo .gestor-web-body .card,
+body.modo-noturno-ativo .gestor-web-body .card-athlete,
+body.modo-noturno-ativo .gestor-web-body .team-draft-card,
+body.modo-noturno-ativo .gestor-web-body .player-draft-item,
+body.modo-noturno-ativo .gestor-web-body .checkin-athlete-card,
+body.modo-noturno-ativo .gestor-web-body .stat-card,
+body.modo-noturno-ativo .gestor-web-body .match-card,
+body.modo-noturno-ativo .gestor-web-body .card-fifa,
+body.modo-noturno-ativo .gestor-web-body .gestor-header-unified-card,
+body.modo-noturno-ativo .gestor-web-body .gestor-header-mobile-unified,
+body.modo-noturno-ativo .gestor-web-body .gestor-mobile-dropdown {
+  border: 1.5px solid #F5D270 !important;
+  box-shadow: 0 4px 16px rgba(245, 210, 112, 0.15) !important;
+}
+
+.gestor-web-body .team-draft-header {
+  border-bottom-color: rgba(245, 210, 112, 0.4) !important;
 }
 
 /* Remover qualquer caixa de fundo do container da grade de estatísticas em Desempenho */
