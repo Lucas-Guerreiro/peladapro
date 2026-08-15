@@ -216,6 +216,13 @@ window.App.initPartidas = async function () {
     }
   }
 
+  setTimeout(() => {
+    if (window.App && window.App.applyModoNoturnoGlobal) {
+      window.App.applyModoNoturnoGlobal();
+    }
+  }, 50);
+};
+
   window.App.updateAcompanhamentoUI = async function () {
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
     if (peladaId && window.Api && window.Api.atualizarLiveState) {

@@ -969,7 +969,7 @@ body.modo-noturno-ativo .app-container {
   transition: background 0.5s ease, color 0.5s ease;
 }
 
-/* TODOS os cards, containers, placares, listas e caixas ficam 100% PRETOS (#000000) */
+/* TODOS os cards, containers, placares, listas e caixas ficam no tema do time */
 body.modo-noturno-ativo .card,
 body.modo-noturno-ativo .card-fifa:not(.has-team-theme),
 body.modo-noturno-ativo .card-athlete,
@@ -978,6 +978,12 @@ body.modo-noturno-ativo .stat-card,
 body.modo-noturno-ativo .queue-container,
 body.modo-noturno-ativo .team-draft-card,
 body.modo-noturno-ativo .match-card,
+body.modo-noturno-ativo .gestor-score-card,
+body.modo-noturno-ativo .gestor-card-clear,
+body.modo-noturno-ativo .gestor-timer-wrapper,
+body.modo-noturno-ativo .gestor-queue-wrapper-clear,
+body.modo-noturno-ativo #gestor-queue-card,
+body.modo-noturno-ativo #acomp-history-card,
 body.modo-noturno-ativo .modal-sheet,
 body.modo-noturno-ativo .modal-content,
 body.modo-noturno-ativo .acomp-header-unified-card,
@@ -1005,7 +1011,7 @@ body.modo-noturno-ativo #acomp-tournament-podium-container {
   background: rgba(0, 0, 0, 0.65) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid var(--border-modo-noturno, rgba(255, 255, 255, 0.2)) !important;
+  border: 1.5px solid #F5D270 !important;
   color: #FFFFFF !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
 }
@@ -1027,6 +1033,10 @@ body.modo-noturno-ativo .checkin-athlete-card {
 .gestor-web-body .checkin-athlete-card,
 .gestor-web-body .stat-card,
 .gestor-web-body .match-card,
+.gestor-web-body .gestor-score-card,
+.gestor-web-body .gestor-card-clear,
+.gestor-web-body .gestor-timer-wrapper,
+.gestor-web-body .gestor-queue-wrapper-clear,
 .gestor-web-body .card-fifa,
 .gestor-web-body .card-fifa-balance,
 .gestor-web-body .gestor-header-unified-card,
@@ -1041,12 +1051,23 @@ body.modo-noturno-ativo .gestor-web-body .player-draft-item,
 body.modo-noturno-ativo .gestor-web-body .checkin-athlete-card,
 body.modo-noturno-ativo .gestor-web-body .stat-card,
 body.modo-noturno-ativo .gestor-web-body .match-card,
+body.modo-noturno-ativo .gestor-web-body .gestor-score-card,
+body.modo-noturno-ativo .gestor-web-body .gestor-card-clear,
+body.modo-noturno-ativo .gestor-web-body .gestor-timer-wrapper,
+body.modo-noturno-ativo .gestor-web-body .gestor-queue-wrapper-clear,
 body.modo-noturno-ativo .gestor-web-body .card-fifa,
 body.modo-noturno-ativo .gestor-web-body .gestor-header-unified-card,
 body.modo-noturno-ativo .gestor-web-body .gestor-header-mobile-unified,
 body.modo-noturno-ativo .gestor-web-body .gestor-mobile-dropdown {
   border: 1.5px solid #F5D270 !important;
   box-shadow: 0 4px 16px rgba(245, 210, 112, 0.15) !important;
+}
+
+body.modo-noturno-ativo .gestor-timer-time,
+body.modo-noturno-ativo .gestor-score-num,
+body.modo-noturno-ativo .gestor-team-title,
+body.modo-noturno-ativo .gestor-score-divider {
+  color: #FFFFFF !important;
 }
 
 .gestor-web-body .team-draft-header {
