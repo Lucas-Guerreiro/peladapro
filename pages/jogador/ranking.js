@@ -405,20 +405,20 @@ var Ranking = {
       var initial = (p.nome || '?').charAt(0).toUpperCase();
 
       var avatarHTML = fotoUrl
-        ? '<img src="' + fotoUrl + '" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #10B981; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="' + p.nome + '">'
-        : '<div style="width: 64px; height: 64px; border-radius: 50%; background: #10B981; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; border: 3px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' + initial + '</div>';
+        ? '<img src="' + fotoUrl + '" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #10B981; flex-shrink: 0;" alt="' + p.nome + '">'
+        : '<div style="width: 36px; height: 36px; border-radius: 50%; background: #10B981; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; border: 2px solid #E2E8F0; flex-shrink: 0;">' + initial + '</div>';
 
-      html += '<tr>' +
-        '<td style="text-align: center;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
-        '<td style="font-weight: 700;">' +
-          '<div style="display: flex; align-items: center; gap: 10px;">' +
+      html += '<tr style="border-bottom: 1px solid var(--border-color, #F1F5F9);">' +
+        '<td style="text-align: center; padding: 8px 6px; font-weight: 700;">' + (badgeMap[idx] || (idx + 1)) + '</td>' +
+        '<td style="font-weight: 700; padding: 8px 6px;">' +
+          '<div style="display: flex; align-items: center; gap: 8px;">' +
             avatarHTML +
-            '<span style="font-size: 14px; color: #0F172A;">' + p.nome + '</span>' +
+            '<span style="font-size: 13px; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">' + p.nome + '</span>' +
           '</div>' +
         '</td>' +
-        '<td style="text-align: center; font-weight: 700; color: #10B981; font-size: 14px;">' + p.gols + ' ⚽</td>' +
-        '<td style="text-align: center; color: #64748B; font-weight: 600;">' + (p.assistencias || 0) + ' 👟</td>' +
-        '<td style="text-align: center; color: #64748B; font-weight: 600;">' + (p.jogos || 1) + '</td>' +
+        '<td style="text-align: center; font-weight: 800; color: #10B981; font-size: 13px; padding: 8px 6px;">' + p.gols + ' ⚽</td>' +
+        '<td style="text-align: center; color: #64748B; font-weight: 600; font-size: 12px; padding: 8px 6px;">' + (p.assistencias || 0) + ' 👟</td>' +
+        '<td style="text-align: center; color: #0F172A; font-weight: 800; font-size: 13px; padding: 8px 6px;">' + (p.jogos || 1) + '</td>' +
       '</tr>';
     });
 
