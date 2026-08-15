@@ -54,7 +54,7 @@ function startTimerLoop() {
 }
 
 window.App.initPartidas = async function () {
-  initPartidasPeladaSelect();
+  await initPartidasPeladaSelect();
 
   // Resolve a pelada ativa imediatamente se estiver nula
   let peladaId = window.App.activePelada ? window.App.activePelada.id : null;
@@ -1653,22 +1653,40 @@ async function initPartidasPeladaSelect() {
   const select = document.getElementById("partidas-select-pelada-date");
   if (!select) return;
 
-  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-  if (!currentGroup || !currentGroup.id) {
+  let currentGroup = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
+  let groupId = currentGroup ? currentGroup.id : null;
+
+  if (!groupId) {
+    try {
+      const grupos = (window.Api && window.Api.listarGrupos) ? await window.Api.listarGrupos() : ((window.Api && window.Api.getGruposDoGestor) ? await window.Api.getGruposDoGestor() : []);
+      if (Array.isArray(grupos) && grupos.length > 0) {
+        currentGroup = grupos[0];
+        groupId = currentGroup.id;
+        if (window.Auth && !window.Auth.currentGroup) window.Auth.currentGroup = currentGroup;
+        if (window.App) window.App.currentGroup = currentGroup;
+        localStorage.setItem('currentGroup', JSON.stringify(currentGroup));
+      }
+    } catch(e) {
+      console.warn('[initPartidasPeladaSelect] Erro ao buscar grupo ativo:', e);
+    }
+  }
+
+  if (!groupId) {
     select.innerHTML = `<option value="">Nenhum grupo ativo</option>`;
     return;
   }
 
   try {
-    const peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+    const peladas = (window.Api && window.Api.listarDatasDoGrupo) ? await window.Api.listarDatasDoGrupo(groupId) : [];
     if (!peladas || peladas.length === 0) {
       select.innerHTML = `<option value="">Nenhuma pelada agendada</option>`;
       return;
     }
 
     select.innerHTML = peladas.map(p => {
-      const dataFmt = window.Utils ? window.Utils.formatDate(p.data) : p.data;
-      const label = `${dataFmt} ${p.horario ? 'às ' + p.horario : ''} (${p.status || 'agendada'})`;
+      const rawDate = p.data ? String(p.data).split('T')[0] : '';
+      const dataFmt = window.Utils ? window.Utils.formatDate(rawDate || p.data) : (p.data || '');
+      const label = `📅 ${dataFmt} ${p.horario ? '· ' + p.horario : ''} (${p.status === 'finalizada' ? 'Finalizada' : (p.status === 'ativa' ? 'Ao Vivo' : 'Agendada')})`;
       return `<option value="${p.id}">${label}</option>`;
     }).join('');
 
