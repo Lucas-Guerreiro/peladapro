@@ -48,6 +48,7 @@ export default function PlayerCard({
   timeFlagUrl,
   adquirido = false,
   foto,
+  anoAquisicao = 2026,
 }) {
   // Animação de brilho pulsante na borda metálica para VIPs
   const glowAnim = useRef(new Animated.Value(0.5)).current;
@@ -143,11 +144,11 @@ export default function PlayerCard({
               </View>
             </View>
 
-            {/* Canto Direito: Bandeira da Nacionalidade do Atleta */}
+            {/* Canto Direito: Bandeira da Nacionalidade + Desde [ano] */}
             <View style={styles.rightFlagsStack}>
               <View style={styles.flagBadge}>
                 <Text style={styles.flagEmoji}>{nacEmoji}</Text>
-                <Text style={styles.flagText}>{nacCode}</Text>
+                <Text style={styles.flagText}>Desde {anoAquisicao}</Text>
               </View>
             </View>
           </View>

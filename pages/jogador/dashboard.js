@@ -86,9 +86,15 @@ var Dashboard = {
     var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
     this.applyCardStyle(style);
 
-    // Preenche bandeira da nacionalidade do atleta
+    // Preenche bandeira da nacionalidade e ano de aquisição do atleta
     var nacFlagEl = document.getElementById('fut-player-nac-flag');
     if (nacFlagEl) nacFlagEl.textContent = user.nacionalidade_flag || user.nacionalidade || '🇧🇷';
+
+    var sinceEl = document.getElementById('fut-player-member-since');
+    if (sinceEl) {
+      var memberYear = (user.criado_em || user.created_at) ? new Date(user.criado_em || user.created_at).getFullYear() : new Date().getFullYear();
+      sinceEl.textContent = 'Desde ' + memberYear;
+    }
 
     var futAgeEl = document.getElementById('fut-stat-age');
     if (futAgeEl) futAgeEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
