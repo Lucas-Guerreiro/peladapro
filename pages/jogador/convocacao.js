@@ -273,6 +273,56 @@ var Convocacao = {
 
       listEl.innerHTML = html;
 
+      // Renderizar Lista de Espera (Fila)
+      var waitlist = convocados.filter(function (c) {
+        return c.status === 'espera' || c.status === 'fila_espera';
+      }).sort(function (a, b) {
+        return (a.posicao_fila || 99) - (b.posicao_fila || 99);
+      });
+
+      var waitlistContainer = document.getElementById('waitlist-card-container');
+      var waitlistCounter = document.getElementById('waitlist-counter');
+      var waitlistList = document.getElementById('waitlist-players-list');
+
+      if (waitlistContainer && waitlistList) {
+        if (waitlist.length > 0) {
+          waitlistContainer.style.display = 'block';
+          if (waitlistCounter) waitlistCounter.textContent = waitlist.length + (waitlist.length === 1 ? ' na fila' : ' na fila');
+
+          var waitlistHtml = '';
+          waitlist.forEach(function (c, idx) {
+            var nome = c.apelido || c.nome || 'Desconhecido';
+            var isMe = Auth.currentUser && String(c.id) === String(Auth.currentUser.id);
+            var posFila = c.posicao_fila || (idx + 1);
+
+            var avatarHTML = '';
+            var hasPhoto = c.foto || c.photo;
+            if (hasPhoto) {
+              avatarHTML = '<img src="' + hasPhoto + '" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #F59E0B;">';
+            } else {
+              avatarHTML = '<div style="width: 44px; height: 44px; border-radius: 50%; background: #F59E0B; display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 18px; flex-shrink: 0;">' +
+                nome.charAt(0).toUpperCase() +
+                '</div>';
+            }
+
+            waitlistHtml += '<div onclick="Convocacao.openPlayerCardModal(' + c.id + ')" title="Clique para ver o Card do Atleta" style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid rgba(245, 158, 11, 0.15); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\'rgba(245, 158, 11, 0.06)\'" onmouseout="this.style.background=\'transparent\'">' +
+              '<span style="font-weight: 800; font-size: 13px; color: #B45309; min-width: 28px;">#' + posFila + '</span>' +
+              avatarHTML +
+              '<div style="flex: 1; min-width: 0;">' +
+              '<p class="text-inter" style="font-size: 14px; font-weight: 700; color: var(--text-heading); margin: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' +
+              nome + (isMe ? ' <span style="font-size: 10px; color: #B45309; background: #FEF3C7; padding: 2px 6px; border-radius: 8px;">Você</span>' : '') +
+              (c.goleiro ? ' 🧤' : '') +
+              '</p>' +
+              '<p style="font-size: 11px; color: #B45309; margin: 2px 0 0 0; font-weight: 600;">⏳ Fila de Espera</p>' +
+              '</div>' +
+              '</div>';
+          });
+          waitlistList.innerHTML = waitlistHtml;
+        } else {
+          waitlistContainer.style.display = 'none';
+        }
+      }
+
       // Sincronizar localmente no localStorage convocations
       const localConvocations = Api.getConvocations().filter(c => String(c.pelada_id) !== String(peladaId));
       convocados.forEach(c => {
