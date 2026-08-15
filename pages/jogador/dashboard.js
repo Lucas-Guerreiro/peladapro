@@ -82,12 +82,28 @@ var Dashboard = {
       this.applyTeamCardTheme(card, user.time_coracao);
     }
 
-    // Aplica ou remove o estilo premium conforme o estado salvo
-    if (localStorage.getItem(this._PREMIUM_KEY) === 'true') {
-      this._aplicarEstiloPremium();
-    } else {
-      this._removerEstiloPremium();
-    }
+    // Aplica ou remove o estilo de card conforme a escolha do usuário
+    var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
+    this.applyCardStyle(style);
+
+    // Preenche valores FUT Ultimate
+    var ovrEl = document.getElementById('fut-player-rating');
+    if (ovrEl) ovrEl.textContent = user.overall || 99;
+
+    var posFutEl = document.getElementById('fut-player-position');
+    if (posFutEl) posFutEl.textContent = user.goleiro ? 'GK' : (user.posicao ? user.posicao.substring(0, 3).toUpperCase() : 'OM');
+
+    var velEl = document.getElementById('fut-stat-vel');
+    if (velEl) velEl.textContent = user.velocidade || 99;
+
+    var chuEl = document.getElementById('fut-stat-chu');
+    if (chuEl) chuEl.textContent = (user.gols !== undefined && user.gols > 0) ? Math.min(99, 85 + user.gols * 2) : 99;
+
+    var driEl = document.getElementById('fut-stat-dri');
+    if (driEl) driEl.textContent = user.drible || 99;
+
+    var defEl = document.getElementById('fut-stat-def');
+    if (defEl) defEl.textContent = user.goleiro ? 99 : 88;
 
     // Foto
     var avatarEl = document.getElementById('player-avatar');
@@ -887,58 +903,68 @@ var Dashboard = {
     }
   },
 
-  // Aplica o estilo visual premium ao card do dashboard
+  // Aplica o estilo de card escolhido ('free', 'premium', 'fut')
+  applyCardStyle: function (style) {
+    var card = document.getElementById('player-fifa-card');
+    var badgeVip = document.getElementById('badge-vip-card');
+    var user = Auth.currentUser;
+
+    if (!style) style = 'free';
+    localStorage.setItem('peladapro_card_style', style);
+    localStorage.setItem(this._PREMIUM_KEY, style !== 'free' ? 'true' : 'false');
+
+    if (card) {
+      card.classList.remove('premium-ativo', 'fut-ultimate-ativo');
+
+      if (style === 'premium') {
+        card.classList.add('premium-ativo');
+      } else if (style === 'fut') {
+        card.classList.add('fut-ultimate-ativo');
+      }
+
+      if (user && user.time_coracao && style !== 'free') {
+        this.applyTeamCardTheme(card, user.time_coracao);
+      }
+    }
+
+    if (badgeVip) {
+      badgeVip.classList.toggle('hidden', style === 'free');
+    }
+
+    this.updatePremiumButtonState();
+  },
+
   _aplicarEstiloPremium: function () {
-    var card = document.getElementById('player-fifa-card');
-    var badgeVip = document.getElementById('badge-vip-card');
-    var user = Auth.currentUser;
-
-    if (card) {
-      card.classList.add('premium-ativo');
-      if (user && user.time_coracao) {
-        this.applyTeamCardTheme(card, user.time_coracao);
-      }
-    }
-    if (badgeVip) badgeVip.classList.remove('hidden');
-
-    this.updatePremiumButtonState();
+    this.applyCardStyle('premium');
   },
 
-  // Remove o estilo visual premium (retorna ao card básico)
   _removerEstiloPremium: function () {
-    var card = document.getElementById('player-fifa-card');
-    var badgeVip = document.getElementById('badge-vip-card');
-    var user = Auth.currentUser;
-
-    if (card) {
-      card.classList.remove('premium-ativo');
-      if (user && user.time_coracao) {
-        this.applyTeamCardTheme(card, user.time_coracao);
-      } else {
-        this.applyTeamCardTheme(card, null);
-      }
-    }
-    if (badgeVip) badgeVip.classList.add('hidden');
-
-    this.updatePremiumButtonState();
+    this.applyCardStyle('free');
   },
 
-  // Alterna o modo Card Premium para testes do gestor Lucas Fernandes Guerreiro
+  // Alterna ciclicamente entre os estilos (Básico ➔ Premium Verde ➔ FIFA Ultimate) para testes do gestor Lucas Fernandes Guerreiro
   toggleCardPremiumTeste: function () {
-    var isCurrentlyPremium = localStorage.getItem(this._PREMIUM_KEY) === 'true';
-    if (isCurrentlyPremium) {
-      localStorage.setItem(this._PREMIUM_KEY, 'false');
-      this._removerEstiloPremium();
+    var currentStyle = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
+    var nextStyle = 'free';
+
+    if (currentStyle === 'free') {
+      nextStyle = 'premium';
       if (window.App && window.App.showToast) {
-        window.App.showToast("Você SAIU do Card Premium! Card retornado ao modo BÁSICO para testes. 🛑⭐", "info");
+        window.App.showToast("Você ativou o Modo Card PREMIUM ELEGANTE! 👑⭐", "success");
+      }
+    } else if (currentStyle === 'premium') {
+      nextStyle = 'fut';
+      if (window.App && window.App.showToast) {
+        window.App.showToast("Você ativou o Modo Card FIFA ULTIMATE TEAM! 🔥⚽", "success");
       }
     } else {
-      localStorage.setItem(this._PREMIUM_KEY, 'true');
-      this._aplicarEstiloPremium();
+      nextStyle = 'free';
       if (window.App && window.App.showToast) {
-        window.App.showToast("Você ENTROU no Card Premium! Card ativado. 👑⭐", "success");
+        window.App.showToast("Você retornou ao Modo Card BÁSICO. 🛑⭐", "info");
       }
     }
+
+    this.applyCardStyle(nextStyle);
   },
 
   // Sincroniza o estado do botão de upgrade ou teste de Card Premium
@@ -955,28 +981,34 @@ var Dashboard = {
       }
     }
 
-    var isPremium = localStorage.getItem(this._PREMIUM_KEY) === 'true';
+    var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free');
 
     if (isLucasGuerreiro) {
       btnUpgrade.style.display = 'block';
-      if (isPremium) {
-        btnUpgrade.classList.add('ativo');
-        btnUpgrade.textContent = '👑 Sair do Modo Card Premium (Alternar para Básico para Testar)';
-        btnUpgrade.style.background = 'rgba(239, 68, 68, 0.15)';
-        btnUpgrade.style.borderColor = '#EF4444';
-        btnUpgrade.style.color = '#FCA5A5';
-      } else {
+      if (style === 'free') {
         btnUpgrade.classList.remove('ativo');
-        btnUpgrade.textContent = '⭐ Entrar no Modo Card Premium (Ativar Card VIP)';
-        btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37)';
-        btnUpgrade.style.borderColor = '#D4AF37';
+        btnUpgrade.textContent = '⭐ Estilo: BÁSICO (Clique p/ alternar ➔ Premium Verde)';
+        btnUpgrade.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+        btnUpgrade.style.borderColor = '#10B981';
+        btnUpgrade.style.color = '#FFFFFF';
+      } else if (style === 'premium') {
+        btnUpgrade.classList.add('ativo');
+        btnUpgrade.textContent = '👑 Estilo: PREMIUM ELEGANTE (Clique p/ alternar ➔ FIFA Ultimate)';
+        btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270)';
+        btnUpgrade.style.borderColor = '#F5D270';
         btnUpgrade.style.color = '#1A1A1A';
+      } else if (style === 'fut') {
+        btnUpgrade.classList.add('ativo');
+        btnUpgrade.textContent = '🔥 Estilo: FIFA ULTIMATE TEAM (Clique p/ alternar ➔ Básico)';
+        btnUpgrade.style.background = 'linear-gradient(135deg, #8B1A1A, #C8102E)';
+        btnUpgrade.style.borderColor = '#F5D270';
+        btnUpgrade.style.color = '#FFFFFF';
       }
       btnUpgrade.onclick = function () {
         Dashboard.toggleCardPremiumTeste();
       };
     } else {
-      if (isPremium) {
+      if (style !== 'free') {
         btnUpgrade.classList.add('ativo');
         btnUpgrade.textContent = '✓ Card Premium Ativo';
         btnUpgrade.style.background = 'rgba(212, 175, 55, 0.15)';

@@ -356,6 +356,160 @@
     backdrop-filter: blur(4px) !important;
   }
 
+  /* ── ESTILO CARD FIFA ULTIMATE TEAM (FUT SHIELD TOTY/ICON) ────────── */
+  .fut-top-left-stack {
+    display: none;
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1.5px solid #F5D270;
+    padding: 6px 10px;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    z-index: 5;
+  }
+
+  .fut-ovr-rating {
+    font-size: 26px;
+    font-weight: 900;
+    color: #F5D270;
+    line-height: 1;
+    font-family: 'Inter', sans-serif;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  }
+
+  .fut-position-tag {
+    font-size: 11px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: 0.5px;
+  }
+
+  .fut-flag-icon, .fut-club-badge {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  .fut-stats-grid {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1.5px solid rgba(245, 210, 112, 0.5);
+    border-radius: 14px;
+    padding: 10px 20px;
+    margin: 6px 0;
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 6px 18px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+  }
+
+  .fut-stat-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .fut-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fut-stat-num {
+    font-size: 18px;
+    font-weight: 900;
+    color: #FFFFFF;
+    font-family: monospace, sans-serif;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  .fut-stat-lbl {
+    font-size: 11px;
+    font-weight: 800;
+    color: #F5D270;
+    letter-spacing: 0.5px;
+  }
+
+  .fut-stat-divider {
+    width: 1.5px;
+    height: 38px;
+    background: rgba(245, 210, 112, 0.4);
+  }
+
+  /* Aplicação da classe FUT Ultimate */
+  .card-fifa.fut-ultimate-ativo {
+    background: radial-gradient(circle at 50% 25%, #8B1A1A 0%, #3A050A 55%, #0D0103 100%) !important;
+    border: 3.5px solid #F5D270 !important;
+    box-shadow: 0 0 40px rgba(245, 210, 112, 0.5), 0 20px 45px rgba(0, 0, 0, 0.85), inset 0 0 25px rgba(245, 210, 112, 0.3) !important;
+    border-radius: 20px 20px 38px 38px !important;
+    padding: 20px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    color: #FFFFFF !important;
+  }
+
+  .card-fifa.fut-ultimate-ativo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 20%, rgba(245, 210, 112, 0.35) 0%, transparent 65%),
+      repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(245, 210, 112, 0.05) 12px, rgba(245, 210, 112, 0.05) 13px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .card-fifa.fut-ultimate-ativo .fut-top-left-stack {
+    display: flex !important;
+  }
+
+  .card-fifa.fut-ultimate-ativo .fut-stats-grid {
+    display: flex !important;
+  }
+
+  .card-fifa.fut-ultimate-ativo .fifa-stats-grid {
+    display: none !important;
+  }
+
+  .card-fifa.fut-ultimate-ativo .fifa-avatar-container {
+    width: 104px !important;
+    height: 104px !important;
+    border-radius: 50% !important;
+    border: 4px solid #F5D270 !important;
+    box-shadow: 0 0 25px rgba(245, 210, 112, 0.75), 0 8px 24px rgba(0, 0, 0, 0.8) !important;
+    margin: 4px auto 6px !important;
+    position: relative;
+    z-index: 2;
+  }
+
+  .card-fifa.fut-ultimate-ativo .player-card-name-txt {
+    color: #F5D270 !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1.5px !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 15px rgba(245, 210, 112, 0.4) !important;
+    border-bottom: 1.5px solid rgba(245, 210, 112, 0.4);
+    padding-bottom: 6px;
+    margin: 4px 0 8px !important;
+  }
+
+  .card-fifa.fut-ultimate-ativo .player-pill-badge.age-pill,
+  .card-fifa.fut-ultimate-ativo .player-pill-badge.team-pill {
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: #F5D270 !important;
+    border: 1px solid rgba(245, 210, 112, 0.5) !important;
+    backdrop-filter: blur(4px) !important;
+  }
+
   /* ── Saldo ─────────────────────────────────────────────────── */
   .card-fifa-balance {
     background: #E6FDF4 !important; border: 1px solid #C6F6D5 !important;
@@ -510,6 +664,14 @@
 
   <!-- CARD FIFA DO JOGADOR -->
   <div class="card-fifa" id="player-fifa-card">
+    <!-- FUT Stack (Exclusivo da versão FIFA Ultimate Team) -->
+    <div class="fut-top-left-stack">
+      <span class="fut-ovr-rating" id="fut-player-rating">99</span>
+      <span class="fut-position-tag" id="fut-player-position">OM</span>
+      <span class="fut-flag-icon">🇧🇷</span>
+      <span class="fut-club-badge" id="fut-player-club-crest">⚽</span>
+    </div>
+
     <div class="card-fifa-header">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span id="badge-vip-card" class="badge-premium-vip hidden">👑 VIP</span>
@@ -538,6 +700,19 @@
         <span id="player-card-team-badge" class="player-pill-badge team-pill" style="display: none;">
           ⚽ <span id="player-card-team-name">—</span>
         </span>
+      </div>
+    </div>
+
+    <!-- FUT Attributes Grid (VEL, CHU, DRI, DEF - Estilo FIFA Ultimate) -->
+    <div class="fut-stats-grid">
+      <div class="fut-stat-col">
+        <div class="fut-stat-item"><span class="fut-stat-num" id="fut-stat-vel">99</span> <span class="fut-stat-lbl">VEL</span></div>
+        <div class="fut-stat-item"><span class="fut-stat-num" id="fut-stat-chu">99</span> <span class="fut-stat-lbl">CHU</span></div>
+      </div>
+      <div class="fut-stat-divider"></div>
+      <div class="fut-stat-col">
+        <div class="fut-stat-item"><span class="fut-stat-num" id="fut-stat-dri">99</span> <span class="fut-stat-lbl">DRI</span></div>
+        <div class="fut-stat-item"><span class="fut-stat-num" id="fut-stat-def">99</span> <span class="fut-stat-lbl">DEF</span></div>
       </div>
     </div>
 
