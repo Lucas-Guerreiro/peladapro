@@ -298,23 +298,24 @@ var Convocacao = {
             var avatarHTML = '';
             var hasPhoto = c.foto || c.photo;
             if (hasPhoto) {
-              avatarHTML = '<img src="' + hasPhoto + '" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #F59E0B;">';
+              avatarHTML = '<img src="' + hasPhoto + '" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2.5px solid #F59E0B; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
             } else {
-              avatarHTML = '<div style="width: 44px; height: 44px; border-radius: 50%; background: #F59E0B; display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 18px; flex-shrink: 0;">' +
+              avatarHTML = '<div style="width: 56px; height: 56px; border-radius: 50%; background: #D97706; display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 22px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' +
                 nome.charAt(0).toUpperCase() +
                 '</div>';
             }
 
-            waitlistHtml += '<div onclick="Convocacao.openPlayerCardModal(' + c.id + ')" title="Clique para ver o Card do Atleta" style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid rgba(245, 158, 11, 0.15); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\'rgba(245, 158, 11, 0.06)\'" onmouseout="this.style.background=\'transparent\'">' +
-              '<span style="font-weight: 800; font-size: 13px; color: #B45309; min-width: 28px;">#' + posFila + '</span>' +
+            waitlistHtml += '<div onclick="Convocacao.openPlayerCardModal(' + c.id + ')" title="Clique para ver o Card do Atleta" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\'rgba(245,158,11,0.06)\'" onmouseout="this.style.background=\'transparent\'">' +
+              '<span style="font-weight: 800; font-size: 13px; color: #D97706; min-width: 28px;">#' + posFila + '</span>' +
               avatarHTML +
-              '<div style="flex: 1; min-width: 0;">' +
-              '<p class="text-inter" style="font-size: 14px; font-weight: 700; color: var(--text-heading); margin: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' +
-              nome + (isMe ? ' <span style="font-size: 10px; color: #B45309; background: #FEF3C7; padding: 2px 6px; border-radius: 8px;">Você</span>' : '') +
-              (c.goleiro ? ' 🧤' : '') +
+              '<div style="flex: 1;">' +
+              '<p class="text-inter" style="font-size: 15px; font-weight: 700; color: var(--text-heading); margin: 0; display: flex; align-items: center; gap: 6px;">' +
+              nome + (isMe ? ' <span style="font-size: 11px; color: #D97706; background: rgba(245,158,11,0.1); padding: 2px 6px; border-radius: 10px;">Você</span>' : '') +
+              (c.goleiro ? ' <span style="font-size: 11px; color: var(--accent); background: rgba(255,109,0,0.1); padding: 2px 6px; border-radius: 10px;">🧤</span>' : '') +
               '</p>' +
-              '<p style="font-size: 11px; color: #B45309; margin: 2px 0 0 0; font-weight: 600;">⏳ Fila de Espera</p>' +
+              '<p style="font-size: 11px; color: #D97706; margin: 2px 0 0 0; font-weight: 600; display: flex; align-items: center; gap: 3px;">🎴 Ver Card de Atleta</p>' +
               '</div>' +
+              '<span class="badge-status pendente">⏳ Fila</span>' +
               '</div>';
           });
           waitlistList.innerHTML = waitlistHtml;
