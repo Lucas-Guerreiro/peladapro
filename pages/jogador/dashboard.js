@@ -909,6 +909,19 @@ var Dashboard = {
     var badgeVip = document.getElementById('badge-vip-card');
     var user = Auth.currentUser;
 
+    var isLucasGuerreiro = false;
+    if (user) {
+      var name = (user.nome || user.name || user.apelido || '').toLowerCase();
+      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro')) {
+        isLucasGuerreiro = true;
+      }
+    }
+
+    // O estilo FUT Ultimate é exclusivo de teste para Lucas Fernandes Guerreiro
+    if (style === 'fut' && !isLucasGuerreiro) {
+      style = localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'premium' : 'free';
+    }
+
     if (!style) style = 'free';
     localStorage.setItem('peladapro_card_style', style);
     localStorage.setItem(this._PREMIUM_KEY, style !== 'free' ? 'true' : 'false');
@@ -918,7 +931,7 @@ var Dashboard = {
 
       if (style === 'premium') {
         card.classList.add('premium-ativo');
-      } else if (style === 'fut') {
+      } else if (style === 'fut' && isLucasGuerreiro) {
         card.classList.add('fut-ultimate-ativo');
       }
 
