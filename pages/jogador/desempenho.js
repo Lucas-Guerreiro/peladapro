@@ -60,11 +60,8 @@ var Desempenho = {
     await this.renderGoleiros(id);
   },
 
-  // --- Melhor Jogador (Ranking por Pontuação Acumulada de Resultados) -----------
-  renderMelhoresAvaliados: async function(peladaId) {
-    var tbody = document.getElementById('desempenho-rating-body');
-    if (!tbody) return;
-
+  // --- Método Único Centralizado para Calcular Estatísticas de Desempenho -----------
+  computeStatsMap: async function(peladaId) {
     var players = Api.getPlayers() || [];
     var statsMap = {};
 
@@ -91,7 +88,6 @@ var Desempenho = {
       const escalacoesPorPelada = {};
       const token = localStorage.getItem('token');
 
-      // Helper assíncrono para obter escalação real de uma pelada na nuvem
       const carregarEscalacao = async (pId) => {
         if (escalacoesPorPelada[pId]) return;
         try {
@@ -153,7 +149,6 @@ var Desempenho = {
       }
 
       if (Array.isArray(partidas) && partidas.length > 0) {
-        // Mapear partidas por time e por pelada (idêntico ao Ranking)
         const teamMatchesByPelada = {};
         const playerTeamFromEvents = {};
 
@@ -216,7 +211,6 @@ var Desempenho = {
             }
           });
 
-          // Iterar de forma única sobre cada jogador cadastrado para pontuar
           Object.keys(statsMap).forEach(function(nomeKey) {
             const playerObj = statsMap[nomeKey];
             const pIdStr = String(playerObj.id);
@@ -258,7 +252,6 @@ var Desempenho = {
           });
         });
 
-        // Contabiliza total de jogos exato por atleta com base na contagem de jogos do time (Sincronizado com o Ranking)
         Object.keys(statsMap).forEach(function(nomeKey) {
           const playerObj = statsMap[nomeKey];
           const pIdStr = String(playerObj.id);
@@ -288,14 +281,22 @@ var Desempenho = {
             }
           });
 
-          if (totalJogosAtleta > 0) {
-            playerObj.jogos = totalJogosAtleta;
-          }
+          if (totalJogosAtleta > 0) playerObj.jogos = totalJogosAtleta;
         });
       }
-    } catch (e) {
-      console.warn('[Desempenho] Erro ao calcular Melhor Jogador:', e);
+    } catch(e) {
+      console.warn('[Desempenho] Erro ao calcular estatisticas:', e);
     }
+
+    return statsMap;
+  },
+
+  // --- Melhor Jogador (Ranking por Pontuação Acumulada de Resultados) -----------
+  renderMelhoresAvaliados: async function(peladaId) {
+    var tbody = document.getElementById('desempenho-rating-body');
+    if (!tbody) return;
+
+    var statsMap = await this.computeStatsMap(peladaId);
 
     var ranked = Object.values(statsMap)
       .filter(function(p) { return p.jogos > 0 || p.pontos > 0; })
