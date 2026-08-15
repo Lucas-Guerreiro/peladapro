@@ -95,24 +95,43 @@ window.App.initPartidas = async function () {
   const activePelada = window.App.activePelada || {};
   const isFinished = activePelada.status === "finalizada";
 
-  // Se a pelada estiver finalizada, oculta controles de jogo ao vivo e fila
-  if (isFinished) {
-    const liveCol = document.querySelector('.gestor-score-card');
-    const queueCard = document.getElementById('gestor-queue-card');
+  const timerContainer = document.getElementById('gestor-timer-container');
+  const scoreboardContainer = document.getElementById('gestor-scoreboard-container');
+  const statusBadge = document.getElementById('match-live-status-badge');
+  const queueCard = document.getElementById('gestor-queue-card');
+  let finishedBanner = document.getElementById('gestor-finished-banner');
 
-    if (liveCol) {
-      liveCol.innerHTML = `
-        <div style="background-color: #10B981; color: #FFF; border-radius: 12px; padding: 28px; text-align: center;">
-          <span style="font-size: 40px; display: block; margin-bottom: 12px;">🏁</span>
-          <h3 style="color: #FFF; margin-bottom: 8px;">Rodada Finalizada</h3>
-          <p class="text-inter" style="font-size: 14px; opacity: 0.9; margin: 0;">Esta rodada de pelada já foi concluída e encerrada pelo gestor. Veja abaixo o histórico de partidas.</p>
-        </div>
-      `;
+  // Se a pelada estiver finalizada, oculta controles de jogo ao vivo mas preserva o seletor de datas
+  if (isFinished) {
+    if (timerContainer) timerContainer.style.display = 'none';
+    if (scoreboardContainer) scoreboardContainer.style.display = 'none';
+    if (statusBadge) {
+      statusBadge.textContent = 'FINALIZADA';
+      statusBadge.style.background = '#D1FAE5';
+      statusBadge.style.color = '#065F46';
     }
-    if (queueCard) {
-      queueCard.style.display = "none";
+    if (queueCard) queueCard.style.display = 'none';
+
+    if (!finishedBanner) {
+      finishedBanner = document.createElement('div');
+      finishedBanner.id = 'gestor-finished-banner';
+      finishedBanner.style.cssText = 'background-color: #10B981; color: #FFF; border-radius: 12px; padding: 24px; text-align: center; margin-top: 14px;';
+      finishedBanner.innerHTML = `
+        <span style="font-size: 32px; display: block; margin-bottom: 8px;">🏁</span>
+        <h3 style="color: #FFF; margin-bottom: 6px; font-size: 18px;">Rodada Finalizada</h3>
+        <p class="text-inter" style="font-size: 13px; opacity: 0.95; margin: 0;">Esta rodada de pelada foi concluída e encerrada. Selecione outra data no menu acima ou confira o histórico abaixo.</p>
+      `;
+      const liveCol = document.querySelector('.gestor-score-card');
+      if (liveCol) liveCol.appendChild(finishedBanner);
+    } else {
+      finishedBanner.style.display = 'block';
     }
   } else {
+    if (finishedBanner) finishedBanner.style.display = 'none';
+    if (timerContainer) timerContainer.style.display = 'block';
+    if (scoreboardContainer) scoreboardContainer.style.display = 'block';
+    if (queueCard) queueCard.style.display = 'block';
+
     // Escutas dos controles de Cronômetro e Jogo
     const btnToggle = document.getElementById("btn-timer-toggle");
     if (btnToggle) btnToggle.onclick = toggleLiveTimer;
@@ -122,6 +141,7 @@ window.App.initPartidas = async function () {
 
     const btnFinish = document.getElementById("btn-finish-match");
     if (btnFinish) btnFinish.onclick = handleFinishMatch;
+  }
 
     const btnFinishDay = document.getElementById("btn-finish-pelada-day");
     if (btnFinishDay) btnFinishDay.onclick = handleFinishPeladaDay;

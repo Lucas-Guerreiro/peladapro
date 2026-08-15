@@ -305,19 +305,19 @@ const Api = {
 
   async listarDatasDoGrupo(grupoId) {
     if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
-    const token = localStorage.getItem('token');
-    if (!token) return [];
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
     try {
-      const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(`/api/peladas/grupo/${grupoId}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
     } catch (e) {
       console.error('[Api] Erro em listarDatasDoGrupo:', e);
-      return [];
     }
+    const localPeladas = this.getPeladas() || [];
+    return localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
   },
 
   async listarTransacoesDoGrupo(grupoId) {
