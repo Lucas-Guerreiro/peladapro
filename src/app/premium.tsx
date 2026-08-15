@@ -24,6 +24,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import tokens from '../theme/tokens';
 
+import PlayerCard from '../components/PlayerCard';
+
 // ─── CONSTANTES ────────────────────────────────────────────────────────────────
 const GOLD = '#D4AF37';
 const GOLD_LIGHT = '#F5D270';
@@ -46,29 +48,90 @@ export default function CardPremiumScreen() {
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('Atleta');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [isLucasGuerreiro, setIsLucasGuerreiro] = useState(false);
+
+  // Dados do time e estatísticas do atleta vindos do Supabase
+  const [userStats, setUserStats] = useState({
+    posicao: 'ATA',
+    idade: 27,
+    jogos: 28,
+    gols: 12,
+    rating: 99,
+    primaryColor: '#1D9E75',
+    secondaryColor: '#0A1F16',
+    timeNome: 'PELADA PRO',
+    nacionalidade: { code: 'BRA', flagEmoji: '🇧🇷' },
+  });
 
   // Animações: rotação 3D do card hero e pulso do botão
   const cardRotateAnim = useRef(new Animated.Value(0)).current;
   const btnScaleAnim   = useRef(new Animated.Value(1)).current;
 
-  // ── Carregar estado persistido e dados do usuário ─────────────────────────
+  // ── Carregar estado persistido e dados do usuário via Supabase ─────────────
   useEffect(() => {
     (async () => {
       try {
         const stored = await AsyncStorage.getItem(ASYNC_KEY);
         if (stored === 'true') setAdquirido(true);
 
-        // Busca nome/avatar do usuário logado via Supabase
+        // Query Supabase: Busca usuário logado e dados do perfil
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const { data } = await supabase
+          const { data: userData } = await supabase
             .from('usuarios')
-            .select('nome, apelido, foto')
+            .select('nome, apelido, foto, data_nascimento, posicao, gols, jogos, partidas, grupo_id')
             .eq('email', session.user.email)
             .single();
-          if (data) {
-            setUserName(data.apelido || data.nome || 'Atleta');
-            setUserAvatar(data.foto ?? null);
+
+          if (userData) {
+            const name = userData.apelido || userData.nome || 'Atleta';
+            setUserName(name);
+            setUserAvatar(userData.foto ?? null);
+
+            // Verifica se o usuário é o atleta Lucas Fernandes Guerreiro para teste
+            const lowerName = name.toLowerCase();
+            const isLucas = lowerName.includes('lucas fernandes') || lowerName.includes('lucas guerreiro');
+            setIsLucasGuerreiro(isLucas);
+
+            // Calcula idade aproximada
+            let calcIdade = 27;
+            if (userData.data_nascimento) {
+              const birth = new Date(userData.data_nascimento);
+              const ageDifMs = Date.now() - birth.getTime();
+              const ageDate = new Date(ageDifMs);
+              calcIdade = Math.abs(ageDate.getUTCFullYear() - 1970);
+            }
+
+            // Query Supabase: Busca cores primária e secundária do time/grupo
+            let teamPrimary = '#1D9E75';
+            let teamSecondary = '#0A1F16';
+            let groupName = 'PELADA PRO';
+
+            if (userData.grupo_id) {
+              const { data: groupData } = await supabase
+                .from('grupos')
+                .select('cor_primaria, cor_secundaria, nome')
+                .eq('id', userData.grupo_id)
+                .single();
+
+              if (groupData) {
+                teamPrimary = groupData.cor_primaria || teamPrimary;
+                teamSecondary = groupData.cor_secundaria || teamSecondary;
+                groupName = groupData.nome || groupName;
+              }
+            }
+
+            setUserStats({
+              posicao: userData.posicao || 'ATA',
+              idade: calcIdade,
+              jogos: userData.jogos || userData.partidas || 28,
+              gols: userData.gols || 12,
+              rating: 99,
+              primaryColor: teamPrimary,
+              secondaryColor: teamSecondary,
+              timeNome: groupName,
+              nacionalidade: { code: 'BRA', flagEmoji: '🇧🇷' },
+            });
           }
         }
       } catch (e) {
@@ -146,77 +209,94 @@ export default function CardPremiumScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* ── Card Hero Premium ── */}
+        {/* ── Card Hero Premium (Fut PlayerCard Dinâmico para Lucas Fernandes Guerreiro) ── */}
         <View style={styles.cardHeroWrapper}>
-          <Animated.View style={[styles.cardHeroShadow, { transform: [{ rotate: cardRotate }] }]}>
-            <LinearGradient
-              colors={[CARD_BG_START, '#0D4030', CARD_BG_END]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardHero}
-            >
-              {/* Watermark decorativo */}
-              <Text style={styles.watermark}>⚽</Text>
+          {isLucasGuerreiro ? (
+            <PlayerCard
+              nome={userName}
+              posicao={userStats.posicao}
+              idade={userStats.idade}
+              jogos={userStats.jogos}
+              gols={userStats.gols}
+              rating={userStats.rating}
+              primaryColor={userStats.primaryColor}
+              secondaryColor={userStats.secondaryColor}
+              timeNome={userStats.timeNome}
+              nacionalidade={userStats.nacionalidade}
+              adquirido={adquirido}
+              foto={userAvatar ?? undefined}
+            />
+          ) : (
+            <Animated.View style={[styles.cardHeroShadow, { transform: [{ rotate: cardRotate }] }]}>
+              <LinearGradient
+                colors={[CARD_BG_START, '#0D4030', CARD_BG_END]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cardHero}
+              >
+                {/* Watermark decorativo */}
+                <Text style={styles.watermark}>⚽</Text>
 
-              {/* Tag PREMIUM (canto superior direito) */}
-              <View style={styles.premiumTag}>
-                <Text style={styles.premiumTagText}>✦ PREMIUM</Text>
-              </View>
-
-              {/* Avatar + badge VIP */}
-              <View style={styles.avatarSection}>
-                <View style={styles.avatarRing}>
-                  {userAvatar ? (
-                    <Image source={{ uri: userAvatar }} style={styles.avatarImg} />
-                  ) : (
-                    <LinearGradient colors={[CARD_BG_START, '#0A2E1A']} style={styles.avatarPlaceholder}>
-                      <Text style={styles.avatarInitial}>{userName.charAt(0).toUpperCase()}</Text>
-                    </LinearGradient>
-                  )}
+                {/* Tag PREMIUM (canto superior direito) */}
+                <View style={styles.premiumTag}>
+                  <Text style={styles.premiumTagText}>✦ PREMIUM</Text>
                 </View>
-                <View style={styles.vipBadge}>
-                  <Text style={styles.vipBadgeText}>VIP</Text>
+
+                {/* Avatar + badge VIP */}
+                <View style={styles.avatarSection}>
+                  <View style={styles.avatarRing}>
+                    {userAvatar ? (
+                      <Image source={{ uri: userAvatar }} style={styles.avatarImg} />
+                    ) : (
+                      <LinearGradient colors={[CARD_BG_START, '#0A2E1A']} style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarInitial}>{userName.charAt(0).toUpperCase()}</Text>
+                      </LinearGradient>
+                    )}
+                  </View>
+                  <View style={styles.vipBadge}>
+                    <Text style={styles.vipBadgeText}>VIP</Text>
+                  </View>
                 </View>
-              </View>
 
-              {/* Nome e posição */}
-              <Text style={styles.cardName} numberOfLines={1}>{userName}</Text>
-              <View style={styles.posicaoPill}>
-                <Text style={styles.posicaoText}>Atacante</Text>
-              </View>
-
-              {/* 5 estrelas de habilidade douradas */}
-              <View style={styles.starsRow} accessibilityLabel="5 estrelas de habilidade">
-                {[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={16} color={GOLD_LIGHT} />)}
-              </View>
-
-              {/* Estatísticas: Jogos | Gols */}
-              <View style={styles.statsRow}>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>28</Text>
-                  <Text style={styles.statLabel}>Jogos</Text>
+                {/* Nome e posição */}
+                <Text style={styles.cardName} numberOfLines={1}>{userName}</Text>
+                <View style={styles.posicaoPill}>
+                  <Text style={styles.posicaoText}>Atacante</Text>
                 </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>12</Text>
-                  <Text style={styles.statLabel}>Gols</Text>
-                </View>
-              </View>
 
-              {/* Rodapé do card */}
-              <Text style={styles.cardFooter}>
-                {adquirido ? '🏅 Card Ativo • Membro Elite' : 'Membro Elite desde 2026'}
-              </Text>
-
-              {/* Selo ATIVO (visível após aquisição) */}
-              {adquirido && (
-                <View style={styles.activeSeal}>
-                  <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                  <Text style={styles.activeSealText}>ATIVO</Text>
+                {/* 5 estrelas de habilidade douradas */}
+                <View style={styles.starsRow} accessibilityLabel="5 estrelas de habilidade">
+                  {[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={16} color={GOLD_LIGHT} />)}
                 </View>
-              )}
-            </LinearGradient>
-          </Animated.View>
+
+                {/* Estatísticas: Jogos | Gols */}
+                <View style={styles.statsRow}>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statValue}>28</Text>
+                    <Text style={styles.statLabel}>Jogos</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statBox}>
+                    <Text style={styles.statValue}>12</Text>
+                    <Text style={styles.statLabel}>Gols</Text>
+                  </View>
+                </View>
+
+                {/* Rodapé do card */}
+                <Text style={styles.cardFooter}>
+                  {adquirido ? '🏅 Card Ativo • Membro Elite' : 'Membro Elite desde 2026'}
+                </Text>
+
+                {/* Selo ATIVO (visível após aquisição) */}
+                {adquirido && (
+                  <View style={styles.activeSeal}>
+                    <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                    <Text style={styles.activeSealText}>ATIVO</Text>
+                  </View>
+                )}
+              </LinearGradient>
+            </Animated.View>
+          )}
         </View>
 
         {/* ── Benefícios Exclusivos ── */}
