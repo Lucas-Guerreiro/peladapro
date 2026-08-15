@@ -1386,6 +1386,14 @@ body.modo-noturno-ativo textarea {
   color: #047857 !important;
 }
 
+/* Destaque de Valor a Pagar */
+.payment-cost-highlight {
+  color: #047857 !important;
+  background: #ECFDF5 !important;
+  border: 1px solid #6EE7B7 !important;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15) !important;
+}
+
 /* Modo Noturno no Modal de Pagamento */
 body.modo-noturno-ativo .modal-content {
   background: #0F172A !important;
@@ -1396,6 +1404,13 @@ body.modo-noturno-ativo .modal-content {
 body.modo-noturno-ativo #payment-modal-title,
 body.modo-noturno-ativo .modal-content .text-inter {
   color: #FFFFFF !important;
+}
+
+body.modo-noturno-ativo .payment-cost-highlight {
+  color: #6EE7B7 !important;
+  background: rgba(16, 185, 129, 0.2) !important;
+  border: 1px solid #10B981 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
 }
 
 body.modo-noturno-ativo .payment-option-box {
