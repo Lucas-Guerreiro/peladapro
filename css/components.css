@@ -953,7 +953,6 @@ body.modo-noturno-ativo .gestor-header-unified-card,
 body.modo-noturno-ativo .gestor-header-mobile-unified,
 body.modo-noturno-ativo #next-matches-list,
 body.modo-noturno-ativo #next-matches-list > div,
-body.modo-noturno-ativo section > div,
 body.modo-noturno-ativo .acomp-mobile-dropdown,
 body.modo-noturno-ativo .gestor-mobile-dropdown,
 body.modo-noturno-ativo .table-responsive,
@@ -974,6 +973,13 @@ body.modo-noturno-ativo #acomp-tournament-podium-container {
   border: 1px solid var(--border-modo-noturno, rgba(255, 255, 255, 0.2)) !important;
   color: #FFFFFF !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Remover qualquer caixa de fundo do container da grade de estatísticas em Desempenho */
+#my-personal-stats {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Específico para botões secundários / olhos de visualização dentro de cards em modo noturno */
