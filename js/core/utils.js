@@ -366,3 +366,82 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     window.Dashboard.applyModoNoturno(isNight);
   }
 };
+
+window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
+  let pts = 0;
+  let jogos = 0;
+  let gols = 0;
+
+  try {
+    const group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+    const groupId = group ? group.id : null;
+    let partidas = [];
+
+    if (groupId && window.Api && window.Api.listarDatasDoGrupo) {
+      const peladas = await window.Api.listarDatasDoGrupo(groupId);
+      if (Array.isArray(peladas)) {
+        for (const p of peladas) {
+          if (window.Api.listarPartidas) {
+            const listP = await window.Api.listarPartidas(p.id);
+            if (Array.isArray(listP)) partidas.push(...listP);
+          }
+        }
+      }
+    }
+
+    const uIdStr = String(usuarioId || '');
+    const uNomeLower = (usuarioNome || '').trim().toLowerCase();
+
+    partidas.forEach(m => {
+      const tA = (m.time_a_nome || '').trim();
+      const tB = (m.time_b_nome || '').trim();
+      const gA = parseInt(m.gols_time_a) || 0;
+      const gB = parseInt(m.gols_time_b) || 0;
+
+      let ptsA = 0, isWinA = false, ptsB = 0, isWinB = false;
+      if (gA > gB) {
+        isWinA = true;
+        ptsA = (gB === 0) ? (gA >= 2 ? 3.0 : 2.5) : 2.0;
+      } else if (gB > gA) {
+        isWinB = true;
+        ptsB = (gA === 0) ? (gB >= 2 ? 3.0 : 2.5) : 2.0;
+      } else {
+        ptsA = (gA === 0) ? 0.5 : 1.0;
+        ptsB = ptsA;
+      }
+
+      let goalsList = [];
+      if (m.autores_gols) {
+        try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
+      }
+
+      let jogouNestaPartida = false;
+      let timeDoJogador = null;
+
+      (goalsList || []).forEach(g => {
+        const autorIdStr = String(g.autorId || '');
+        const autorNomeLower = (g.autorNome || '').trim().toLowerCase();
+        if ((uIdStr && autorIdStr === uIdStr) || (uNomeLower && autorNomeLower === uNomeLower)) {
+          gols++;
+          jogouNestaPartida = true;
+          if (g.teamName) timeDoJogador = g.teamName.trim().toLowerCase();
+          else if (g.teamKey === 'a') timeDoJogador = tA.toLowerCase();
+          else if (g.teamKey === 'b') timeDoJogador = tB.toLowerCase();
+        }
+      });
+
+      if (jogouNestaPartida) {
+        jogos++;
+        if (timeDoJogador === tA.toLowerCase()) {
+          pts += ptsA;
+        } else if (timeDoJogador === tB.toLowerCase()) {
+          pts += ptsB;
+        }
+      }
+    });
+  } catch(e) {
+    console.warn('[calcPlayerDesempenho] Erro ao calcular:', e);
+  }
+
+  return { pontos: pts, jogos: jogos, gols: gols };
+};

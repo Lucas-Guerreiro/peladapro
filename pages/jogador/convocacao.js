@@ -638,20 +638,25 @@ var Convocacao = {
             ${name}
           </h3>
 
-          <!-- FUT Stats Grid: IDADE | JOGOS | GOLS -->
+          <!-- FUT Stats Grid: PTS | IDADE | JOGOS | GOLS -->
           <div style="display: flex; align-items: center; justify-content: space-around; background: rgba(0, 0, 0, 0.65); border: 1.5px solid rgba(245, 210, 112, 0.5); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; backdrop-filter: blur(8px);">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span id="modal-stat-pts" style="font-size: 18px; font-weight: 900; color: #FFFFFF;">0</span>
+              <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">PTS</span>
+            </div>
+            <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
             <div style="display: flex; flex-direction: column; align-items: center;">
               <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${age}</span>
               <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">IDADE</span>
             </div>
             <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
             <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${games}</span>
+              <span id="modal-stat-games" style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${games}</span>
               <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">JOGOS</span>
             </div>
             <div style="width: 1px; height: 26px; background: rgba(245, 210, 112, 0.4);"></div>
             <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${goals}</span>
+              <span id="modal-stat-goals" style="font-size: 18px; font-weight: 900; color: #FFFFFF;">${goals}</span>
               <span style="font-size: 9px; font-weight: 800; color: #F5D270; letter-spacing: 0.5px;">GOLS</span>
             </div>
           </div>
@@ -689,17 +694,22 @@ var Convocacao = {
           <!-- Stats Grid Básico -->
           <div style="display: flex; align-items: center; justify-content: space-around; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 8px 10px; margin-bottom: 14px;">
             <div style="display: flex; flex-direction: column; align-items: center;">
+              <span id="modal-stat-pts" style="font-size: 16px; font-weight: 800; color: #0F172A;">0</span>
+              <span style="font-size: 9px; font-weight: 700; color: #64748B;">PTS</span>
+            </div>
+            <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
               <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${age}</span>
               <span style="font-size: 9px; font-weight: 700; color: #64748B;">IDADE</span>
             </div>
             <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
             <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${games}</span>
+              <span id="modal-stat-games" style="font-size: 16px; font-weight: 800; color: #0F172A;">${games}</span>
               <span style="font-size: 9px; font-weight: 700; color: #64748B;">JOGOS</span>
             </div>
             <div style="width: 1px; height: 22px; background: #E2E8F0;"></div>
             <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="font-size: 16px; font-weight: 800; color: #0F172A;">${goals}</span>
+              <span id="modal-stat-goals" style="font-size: 16px; font-weight: 800; color: #0F172A;">${goals}</span>
               <span style="font-size: 9px; font-weight: 700; color: #64748B;">GOLS</span>
             </div>
           </div>
@@ -720,6 +730,20 @@ var Convocacao = {
           </button>
         </div>
       `;
+    }
+
+    // Calcula Desempenho Real (PTS, JOGOS, GOLS) do atleta aberto no Pop-Up
+    if (window.App && window.App.calcPlayerDesempenho) {
+      window.App.calcPlayerDesempenho(athleteId, name).then(res => {
+        if (res) {
+          const ptsEl = document.getElementById('modal-stat-pts');
+          const gamesEl = document.getElementById('modal-stat-games');
+          const goalsEl = document.getElementById('modal-stat-goals');
+          if (ptsEl) ptsEl.textContent = (res.pontos % 1 === 0) ? res.pontos : res.pontos.toFixed(1);
+          if (gamesEl && res.jogos > 0) gamesEl.textContent = res.jogos;
+          if (goalsEl && res.gols > 0) goalsEl.textContent = res.gols;
+        }
+      }).catch(() => {});
     }
 
     setTimeout(function() {

@@ -101,12 +101,19 @@ var Dashboard = {
 
     var gamesVal = (user.partidas !== undefined && user.partidas !== null) ? Number(user.partidas) : ((user.jogos !== undefined && user.jogos !== null) ? Number(user.jogos) : 0);
     var goalsVal = (user.gols !== undefined && user.gols !== null) ? Number(user.gols) : ((user.goals !== undefined && user.goals !== null) ? Number(user.goals) : 0);
+    var ptsVal = (user.pontos !== undefined && user.pontos !== null) ? Number(user.pontos) : 0;
+
+    var futPtsEl = document.getElementById('fut-stat-pts');
+    if (futPtsEl) futPtsEl.textContent = (ptsVal % 1 === 0) ? ptsVal : ptsVal.toFixed(1);
 
     var futGamesEl = document.getElementById('fut-stat-games');
     if (futGamesEl) futGamesEl.textContent = gamesVal;
 
     var futGoalsEl = document.getElementById('fut-stat-goals');
     if (futGoalsEl) futGoalsEl.textContent = goalsVal;
+
+    var ptsCardEl = document.getElementById('player-card-pts-val');
+    if (ptsCardEl) ptsCardEl.textContent = (ptsVal % 1 === 0) ? ptsVal : ptsVal.toFixed(1);
 
     // Foto
     var avatarEl = document.getElementById('player-avatar');
@@ -140,6 +147,20 @@ var Dashboard = {
 
     var goalsEl = document.getElementById('player-card-goals-val');
     if (goalsEl) goalsEl.textContent = goalsVal;
+
+    // Recalcula o Desempenho Real (PTS) assincronamente a partir das partidas reais do grupo
+    if (window.App && window.App.calcPlayerDesempenho && user && user.id) {
+      window.App.calcPlayerDesempenho(user.id, user.nome || user.apelido).then(res => {
+        if (res) {
+          if (futPtsEl) futPtsEl.textContent = (res.pontos % 1 === 0) ? res.pontos : res.pontos.toFixed(1);
+          if (ptsCardEl) ptsCardEl.textContent = (res.pontos % 1 === 0) ? res.pontos : res.pontos.toFixed(1);
+          if (futGamesEl && res.jogos > 0) futGamesEl.textContent = res.jogos;
+          if (gamesEl && res.jogos > 0) gamesEl.textContent = res.jogos;
+          if (futGoalsEl && res.gols > 0) futGoalsEl.textContent = res.gols;
+          if (goalsEl && res.gols > 0) goalsEl.textContent = res.gols;
+        }
+      }).catch(() => {});
+    }
 
     var sinceEl = document.getElementById('player-member-since-year');
     if (sinceEl) {

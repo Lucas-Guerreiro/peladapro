@@ -746,8 +746,13 @@
       <h3 id="player-card-name" class="player-card-name-txt">—</h3>
     </div>
 
-    <!-- FUT Attributes Grid (IDADE, JOGOS, GOLS - Estilo FIFA Ultimate) -->
+    <!-- FUT Attributes Grid (PTS, IDADE, JOGOS, GOLS - Estilo FIFA Ultimate) -->
     <div class="fut-stats-grid">
+      <div class="fut-stat-item">
+        <span class="fut-stat-num" id="fut-stat-pts">0</span>
+        <span class="fut-stat-lbl">PTS</span>
+      </div>
+      <div class="fut-stat-divider"></div>
       <div class="fut-stat-item">
         <span class="fut-stat-num" id="fut-stat-age">—</span>
         <span class="fut-stat-lbl">IDADE</span>
@@ -764,8 +769,15 @@
       </div>
     </div>
 
-    <!-- Grid de Estatísticas (Jogos & Gols Lado a Lado - Design Premium) -->
+    <!-- Grid de Estatísticas (Pontos, Jogos & Gols Lado a Lado - Design Premium) -->
     <div class="fifa-stats-grid">
+      <div class="fifa-stat-box">
+        <div class="fifa-stat-icon-wrapper">🏆</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
+          <span class="fifa-stat-label">PTS</span>
+          <span class="fifa-stat-val" id="player-card-pts-val">0</span>
+        </div>
+      </div>
       <div class="fifa-stat-box">
         <div class="fifa-stat-icon-wrapper">⚽</div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
