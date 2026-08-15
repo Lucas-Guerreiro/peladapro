@@ -1074,6 +1074,82 @@ body.modo-noturno-ativo .gestor-score-divider {
   border-bottom-color: rgba(245, 210, 112, 0.4) !important;
 }
 
+/* --- COMPONENTES DE PARTIDA AO VIVO (PLACARES E BADGES) --- */
+.gestor-scoreboard-wrapper {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+}
+
+.gestor-live-tag {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10B981;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 100px;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gestor-live-tag span {
+  width: 6px;
+  height: 6px;
+  background: #10B981;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.match-status-badge-clear {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--text-heading);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.partidas-date-select-clear {
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: var(--text-heading) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Modo noturno dos componentes de partida ao vivo */
+body.modo-noturno-ativo .gestor-scoreboard-wrapper {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(245, 210, 112, 0.4) !important;
+}
+
+body.modo-noturno-ativo .gestor-live-tag {
+  background: rgba(16, 185, 129, 0.25) !important;
+  border: 1px solid #10B981 !important;
+  color: #34D399 !important;
+}
+
+body.modo-noturno-ativo .match-status-badge-clear,
+body.modo-noturno-ativo #match-live-status-badge {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1.5px solid #F5D270 !important;
+  color: #F5D270 !important;
+}
+
+body.modo-noturno-ativo .partidas-date-select-clear,
+body.modo-noturno-ativo #partidas-select-pelada-date,
+body.modo-noturno-ativo #recent-matches-filter-team {
+  background: rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid rgba(245, 210, 112, 0.5) !important;
+  color: #FFFFFF !important;
+}
+
 /* Remover qualquer caixa de fundo do container da grade de estatísticas em Desempenho */
 #my-personal-stats {
   background: transparent !important;

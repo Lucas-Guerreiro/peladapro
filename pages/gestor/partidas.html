@@ -225,18 +225,18 @@
   
   <!-- 1. CARD: Partida em Andamento / Placar e Cronômetro -->
   <div class="gestor-score-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px; gap: 12px; flex-wrap: wrap;">
-      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px; gap: 12px; flex-wrap: wrap;"      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <span class="gestor-live-tag">
           <span></span>AO VIVO
         </span>
-        <select id="partidas-select-pelada-date" class="form-control" style="background: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; max-width: 260px;">
+        <select id="partidas-select-pelada-date" class="form-control partidas-date-select-clear" style="font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; max-width: 260px;">
           <option value="">Carregando datas...</option>
         </select>
       </div>
-      <span class="badge-status" id="match-live-status-badge" style="background: #E2E8F0; color: #475569; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 20px;">AGUARDANDO SORTEIO</span>
+      <span class="badge-status match-status-badge-clear" id="match-live-status-badge">AGUARDANDO SORTEIO</span>
     </div>
-       <!-- Cronômetro Central -->
+    
+    <!-- Cronômetro Central -->
     <div class="gestor-timer-wrapper" id="gestor-timer-container" style="margin-bottom: 24px;">
       <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
         <button id="btn-timer-minus" class="btn-adjust-score" title="Subtrair 1 minuto">-1</button>
@@ -259,7 +259,7 @@
     </div>
 
     <!-- Placar Central e Controle de Placar -->
-    <div id="gestor-scoreboard-container" style="background: #F8FAFC; padding: 14px; border-radius: 16px; border: 1px solid #E2E8F0; margin-bottom: 20px; width: 100%; box-sizing: border-box; overflow: hidden;">
+    <div id="gestor-scoreboard-container" class="gestor-scoreboard-wrapper" style="padding: 14px; margin-bottom: 20px; width: 100%; box-sizing: border-box; overflow: hidden;">
       
       <!-- DESTAQUE PROMINENTE DA FASE DA PARTIDA -->
       <div id="gestor-phase-header-banner" style="margin-bottom: 14px; padding: 10px 16px; border-radius: 12px; text-align: center; font-family: 'Inter', sans-serif; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
