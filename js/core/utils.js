@@ -225,7 +225,7 @@ window.App.getTeamThemeGlobal = function (teamName) {
   }
   if (!teamName) return null;
   var name = teamName.toLowerCase().trim();
-  if (name.includes('flamengo')) return { gradient: 'linear-gradient(135deg, #000000 0%, #3A050A 50%, #C8102E 100%)', border: '#000000', badgeBg: '#000000', accent: '#FFD700' };
+  if (name.includes('flamengo')) return { gradient: 'linear-gradient(135deg, #8B1A1A 0%, #3A050A 50%, #C8102E 100%)', border: '#8B1A1A', badgeBg: '#8B1A1A', accent: '#FFD700' };
   if (name.includes('vasco') || name.includes('botafogo') || name.includes('corinthians')) return { gradient: 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)', border: '#FFFFFF', badgeBg: '#111111', accent: '#F5D270' };
   if (name.includes('palmeiras') || name.includes('guarani')) return { gradient: 'linear-gradient(135deg, #006437 0%, #04391F 50%, #011E10 100%)', border: '#86EFAC', badgeBg: '#006437', accent: '#F5D270' };
   if (name.includes('cruzeiro')) return { gradient: 'linear-gradient(135deg, #003399 0%, #001F66 50%, #050E2E 100%)', border: '#93C5FD', badgeBg: '#003399', accent: '#FFFFFF' };
@@ -291,7 +291,7 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
     roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #000000 100%)', 'important');
+      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%)', 'important');
       toggle.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#FFFFFF') : 'rgba(255,255,255,0.3)', 'important');
     });
 
@@ -318,7 +318,7 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
     roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #000000 100%)', 'important');
+      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%)', 'important');
       toggle.style.removeProperty('border-color');
     });
 

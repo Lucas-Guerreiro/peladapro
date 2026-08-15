@@ -672,8 +672,8 @@ var Dashboard = {
     // Flamengo (Rubro-Negro: Fundo Preto -> Vermelho, Botões e Borda Pretos)
     if (name.includes('flamengo')) {
       return {
-        gradient: 'linear-gradient(135deg, #000000 0%, #3A050A 50%, #C8102E 100%)',
-        border: '#000000',
+        gradient: 'linear-gradient(135deg, #8B1A1A 0%, #3A050A 50%, #C8102E 100%)',
+        border: '#8B1A1A',
         borderGlow: 'rgba(200, 16, 46, 0.4)',
         accent: '#FFD700',
         badgeBg: '#000000',

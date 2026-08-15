@@ -874,7 +874,7 @@
 .role-toggle-switch {
   display: inline-flex;
   align-items: center;
-  background: linear-gradient(135deg, #C8102E 0%, #000000 100%) !important;
+  background: linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%) !important;
   border-radius: 20px;
   padding: 3px;
   position: relative;
@@ -938,7 +938,7 @@
 
 /* Estilos do Role Toggle Switch no Modo Noturno do Time */
 body.modo-noturno-ativo .role-toggle-switch {
-  background: linear-gradient(135deg, #C8102E 0%, #000000 100%) !important;
+  background: linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%) !important;
   border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.3)) !important;
 }
 
