@@ -25,8 +25,13 @@
     },
 
     // --- Carrega dinamicamente o script oficial do Google AdSense ----------
-    loadAdSenseScript(pubId) {
-      if (!pubId) return;
+    loadAdSenseScript(rawPubId) {
+      if (!rawPubId) return;
+      let pubId = rawPubId.trim();
+      if (!pubId.startsWith('ca-pub-')) {
+        pubId = pubId.startsWith('pub-') ? 'ca-' + pubId : 'ca-pub-' + pubId;
+      }
+
       if (document.getElementById('google-adsense-script')) return;
 
       const script = document.createElement('script');
@@ -76,20 +81,24 @@
         return;
       }
 
-      const pubId = this.getPubId();
-      const slotId = customSlotId || this.getSlotId();
+      let pubId = this.getPubId().trim();
+      if (pubId && !pubId.startsWith('ca-pub-')) {
+        pubId = pubId.startsWith('pub-') ? 'ca-' + pubId : 'ca-pub-' + pubId;
+      }
+      const slotId = customSlotId || this.getSlotId().trim();
 
       container.style.display = 'block';
 
-      // Se tiver pubId e slotId válidos, injeta a tag ins do AdSense
-      if (pubId && slotId) {
+      // Se tiver pubId válido, injeta a tag ins do AdSense (slotId é opcional)
+      if (pubId) {
+        const slotAttr = slotId ? `data-ad-slot="${slotId}"` : '';
         container.innerHTML = `
           <div style="text-align: center; margin: 12px 0; overflow: hidden;" class="adsense-box">
             <span style="font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Publicidade</span>
             <ins class="adsbygoogle"
                  style="display:block"
                  data-ad-client="${pubId}"
-                 data-ad-slot="${slotId}"
+                 ${slotAttr}
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
           </div>
@@ -100,7 +109,7 @@
           console.warn('[AdSense] Aviso ao empurrar bloco de anúncio:', e);
         }
       } else {
-        // Banner demonstrativo elegante quando o AdSense está ligado aguardando ID do Publisher
+        // Banner demonstrativo quando o AdSense está ligado aguardando ID do Publisher
         container.innerHTML = `
           <div style="background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); border: 1px dashed #CBD5E1; border-radius: 12px; padding: 14px; text-align: center; margin: 12px 0;">
             <div style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">📢 Espaço de Anúncio Google AdSense (Ativado)</div>
