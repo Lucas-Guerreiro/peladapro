@@ -367,20 +367,266 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
   }
 };
 
-window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
-  try {
-    if (window.Desempenho && window.Desempenho.computeStatsMap) {
-      const statsMap = await window.Desempenho.computeStatsMap(null);
-      const uIdStr = String(usuarioId || '');
-      const uNomeLower = (usuarioNome || '').trim().toLowerCase();
+window.App.computeStatsMap = async function(peladaId) {
+  var players = (window.Api && window.Api.getPlayers) ? window.Api.getPlayers() : [];
+  var statsMap = {};
 
-      const found = Object.values(statsMap).find(p => String(p.id) === uIdStr || (p.nome && p.nome.toLowerCase() === uNomeLower));
-      if (found) {
-        return { pontos: found.pontos, jogos: found.jogos, gols: found.gols };
+  players.forEach(function(p) {
+    if (p.ativo !== false) {
+      var nome = (p.apelido || p.nome || '').trim();
+      statsMap[nome] = {
+        id: p.id,
+        nome: nome,
+        gols: 0,
+        pontos: 0,
+        vitorias: 0,
+        balizaZero: 0,
+        empates: 0,
+        derrotas: 0,
+        jogos: 0,
+        isMe: window.Auth && window.Auth.currentUser && (String(p.id) === String(window.Auth.currentUser.id) || (window.Auth.currentUser.nome && nome.toLowerCase() === window.Auth.currentUser.nome.toLowerCase()) || (window.Auth.currentUser.apelido && nome.toLowerCase() === window.Auth.currentUser.apelido.toLowerCase()))
+      };
+    }
+  });
+
+  try {
+    var partidas = [];
+    const escalacoesPorPelada = {};
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+
+    const carregarEscalacao = async (pId) => {
+      if (escalacoesPorPelada[pId]) return;
+      try {
+        let teams = [];
+        const rawTeams = localStorage.getItem(`teams_${pId}`);
+        if (rawTeams) teams = JSON.parse(rawTeams);
+        if (!teams || teams.length === 0) teams = (window.Api && window.Api.getTeams) ? window.Api.getTeams() : [];
+        if (Array.isArray(teams) && teams.length > 0) {
+          escalacoesPorPelada[pId] = {};
+          teams.forEach(t => {
+            const tName = (t.nome || t.name || '').trim().toLowerCase();
+            if (tName) {
+              escalacoesPorPelada[pId][tName] = new Set();
+              const pList = t.jogadores || t.players || [];
+              (pList || []).forEach(p => {
+                const pApelido = (p.apelido || '').trim().toLowerCase();
+                const pNome = (p.nome || '').trim().toLowerCase();
+                if (pApelido) escalacoesPorPelada[pId][tName].add(pApelido);
+                if (pNome) escalacoesPorPelada[pId][tName].add(pNome);
+                if (p.id) escalacoesPorPelada[pId][tName].add(String(p.id));
+              });
+            }
+          });
+        }
+
+        const resLive = await fetch(`/api/peladas/${pId}/live`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (resLive.ok) {
+          const data = await resLive.json();
+          const liveState = data.state || data || {};
+          const times = liveState.teams || [];
+          if (!escalacoesPorPelada[pId]) escalacoesPorPelada[pId] = {};
+          (times || []).forEach(t => {
+            const tName = (t.nome || t.name || '').trim().toLowerCase();
+            if (tName) {
+              if (!escalacoesPorPelada[pId][tName]) escalacoesPorPelada[pId][tName] = new Set();
+              const pList = t.jogadores || t.players || [];
+              (pList || []).forEach(p => {
+                const pApelido = (p.apelido || '').trim().toLowerCase();
+                const pNome = (p.nome || '').trim().toLowerCase();
+                if (pApelido) escalacoesPorPelada[pId][tName].add(pApelido);
+                if (pNome) escalacoesPorPelada[pId][tName].add(pNome);
+                if (p.id) escalacoesPorPelada[pId][tName].add(String(p.id));
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn(`[computeStatsMap] Erro ao carregar times da pelada ${pId}:`, e);
+      }
+    };
+
+    if (peladaId) {
+      partidas = (window.Api && window.Api.listarPartidas) ? await window.Api.listarPartidas(peladaId) : [];
+      await carregarEscalacao(peladaId);
+    } else {
+      var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
+      if (!group || !group.id) {
+        try {
+          var grupos = window.Api && window.Api.listarGrupos ? await window.Api.listarGrupos() : (window.Api && window.Api.getGruposDoGestor ? await window.Api.getGruposDoGestor() : []);
+          if (Array.isArray(grupos) && grupos.length > 0) group = grupos[0];
+        } catch(e) {}
+      }
+      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
+        var peladasGroup = await window.Api.listarDatasDoGrupo(group.id);
+        if (Array.isArray(peladasGroup)) {
+          for (var i = 0; i < peladasGroup.length; i++) {
+            var listP = window.Api.listarPartidas ? await window.Api.listarPartidas(peladasGroup[i].id) : [];
+            if (Array.isArray(listP) && listP.length > 0) {
+              partidas = partidas.concat(listP);
+              await carregarEscalacao(peladasGroup[i].id);
+            }
+          }
+        }
       }
     }
+
+    if (Array.isArray(partidas) && partidas.length > 0) {
+      const teamMatchesByPelada = {};
+      const playerTeamFromEvents = {};
+
+      partidas.forEach(function(m) {
+        const pId = m.pelada_id;
+        if (!teamMatchesByPelada[pId]) teamMatchesByPelada[pId] = {};
+
+        var tA = (m.time_a_nome || '').trim();
+        var tB = (m.time_b_nome || '').trim();
+        var gA = parseInt(m.gols_time_a) || 0;
+        var gB = parseInt(m.gols_time_b) || 0;
+
+        if (tA) teamMatchesByPelada[pId][tA.toLowerCase()] = (teamMatchesByPelada[pId][tA.toLowerCase()] || 0) + 1;
+        if (tB) teamMatchesByPelada[pId][tB.toLowerCase()] = (teamMatchesByPelada[pId][tB.toLowerCase()] || 0) + 1;
+
+        var ptsA = 0; var isWinA = false; var isCleanA = false;
+        var ptsB = 0; var isWinB = false; var isCleanB = false;
+
+        if (gA > gB) {
+          isWinA = true;
+          if (gB === 0) { ptsA = (gA >= 2) ? 3.0 : 2.5; isCleanA = true; }
+          else { ptsA = 2.0; }
+        } else if (gB > gA) {
+          isWinB = true;
+          if (gA === 0) { ptsB = (gB >= 2) ? 3.0 : 2.5; isCleanB = true; }
+          else { ptsB = 2.0; }
+        } else {
+          if (gA === 0) { ptsA = 0.5; ptsB = 0.5; }
+          else { ptsA = 1.0; ptsB = 1.0; }
+        }
+
+        var playersA = new Set();
+        var playersB = new Set();
+        const escalacaoPelada = escalacoesPorPelada[pId] || {};
+
+        let goalsList = [];
+        if (m.autores_gols) {
+          try { goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols; } catch(e) {}
+        }
+        (goalsList || []).forEach(function(g) {
+          var playerTeam = g.teamName ? g.teamName.trim().toLowerCase() : (g.teamKey === 'a' ? tA.toLowerCase() : (g.teamKey === 'b' ? tB.toLowerCase() : ''));
+          if (g.autorId) playerTeamFromEvents[`${g.autorId}_${pId}`] = playerTeam;
+
+          if (g.autorNome) {
+            var aName = g.autorNome.trim().toLowerCase();
+            if (playerTeam === tA.toLowerCase()) playersA.add(aName);
+            else if (playerTeam === tB.toLowerCase()) playersB.add(aName);
+
+            Object.keys(statsMap).forEach(function(nomeKey) {
+              if (nomeKey.toLowerCase() === aName || (statsMap[nomeKey].id && String(statsMap[nomeKey].id) === String(g.autorId))) {
+                statsMap[nomeKey].gols += 1;
+              }
+            });
+          }
+          if (g.assistId) playerTeamFromEvents[`${g.assistId}_${pId}`] = playerTeam;
+          if (g.assistNome) {
+            var assName = g.assistNome.trim().toLowerCase();
+            if (playerTeam === tA.toLowerCase()) playersA.add(assName);
+            else if (playerTeam === tB.toLowerCase()) playersB.add(assName);
+          }
+        });
+
+        Object.keys(statsMap).forEach(function(nomeKey) {
+          const playerObj = statsMap[nomeKey];
+          const pIdStr = String(playerObj.id);
+          const pNome = playerObj.nome.toLowerCase();
+          
+          let jogouNoTime = null;
+          if (tA && escalacaoPelada[tA.toLowerCase()]) {
+            const setA = escalacaoPelada[tA.toLowerCase()];
+            if (setA.has(pIdStr) || setA.has(pNome)) jogouNoTime = 'a';
+          }
+          if (!jogouNoTime && tB && escalacaoPelada[tB.toLowerCase()]) {
+            const setB = escalacaoPelada[tB.toLowerCase()];
+            if (setB.has(pIdStr) || setB.has(pNome)) jogouNoTime = 'b';
+          }
+
+          let estaEscaladoNestaPelada = false;
+          Object.values(escalacaoPelada).forEach(set => {
+            if (set.has(pIdStr) || set.has(pNome)) estaEscaladoNestaPelada = true;
+          });
+
+          if (!jogouNoTime && !estaEscaladoNestaPelada) {
+            if (playersA.has(pNome) || playersA.has(pIdStr)) jogouNoTime = 'a';
+            else if (playersB.has(pNome) || playersB.has(pIdStr)) jogouNoTime = 'b';
+          }
+
+          if (jogouNoTime === 'a') {
+            playerObj.pontos += ptsA;
+            if (isWinA) playerObj.vitorias += 1;
+            if (isCleanA) playerObj.balizaZero += 1;
+            if (!isWinA && ptsA > 0) playerObj.empates += 1;
+            if (ptsA === 0) playerObj.derrotas += 1;
+          } else if (jogouNoTime === 'b') {
+            playerObj.pontos += ptsB;
+            if (isWinB) playerObj.vitorias += 1;
+            if (isCleanB) playerObj.balizaZero += 1;
+            if (!isWinB && ptsB > 0) playerObj.empates += 1;
+            if (ptsB === 0) playerObj.derrotas += 1;
+          }
+        });
+      });
+
+      Object.keys(statsMap).forEach(function(nomeKey) {
+        const playerObj = statsMap[nomeKey];
+        const pIdStr = String(playerObj.id);
+        const pNome = playerObj.nome.toLowerCase();
+        let totalJogosAtleta = 0;
+
+        Object.keys(teamMatchesByPelada).forEach(function(pId) {
+          const peladaTeams = teamMatchesByPelada[pId] || {};
+          const escalacao = escalacoesPorPelada[pId] || {};
+          let teamName = null;
+
+          Object.keys(escalacao).forEach(function(tName) {
+            const set = escalacao[tName];
+            if (set.has(pIdStr) || set.has(pNome)) teamName = tName;
+          });
+
+          if (!teamName) {
+            const teamFromGoal = playerTeamFromEvents[`${pIdStr}_${pId}`];
+            if (teamFromGoal) teamName = teamFromGoal;
+          }
+
+          if (teamName && peladaTeams[teamName]) {
+            totalJogosAtleta += peladaTeams[teamName];
+          } else if (playerObj.gols > 0) {
+            const allCounts = Object.values(peladaTeams);
+            if (allCounts.length > 0) totalJogosAtleta += Math.max.apply(null, allCounts);
+          }
+        });
+
+        if (totalJogosAtleta > 0) playerObj.jogos = totalJogosAtleta;
+      });
+    }
   } catch(e) {
-    console.warn('[calcPlayerDesempenho] Erro ao delegar para Desempenho.computeStatsMap:', e);
+    console.warn('[computeStatsMap] Erro ao calcular estatisticas:', e);
+  }
+
+  return statsMap;
+};
+
+window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
+  try {
+    const statsMap = await window.App.computeStatsMap(null);
+    const uIdStr = String(usuarioId || '');
+    const uNomeLower = (usuarioNome || '').trim().toLowerCase();
+
+    const found = Object.values(statsMap).find(p => String(p.id) === uIdStr || (p.nome && p.nome.toLowerCase() === uNomeLower));
+    if (found) {
+      return { pontos: found.pontos, jogos: found.jogos, gols: found.gols };
+    }
+  } catch(e) {
+    console.warn('[calcPlayerDesempenho] Erro ao calcular desempenho:', e);
   }
   return { pontos: 0, jogos: 0, gols: 0 };
 };
