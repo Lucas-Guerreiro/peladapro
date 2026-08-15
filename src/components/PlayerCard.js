@@ -209,10 +209,9 @@ export default function PlayerCard({
             </View>
           </View>
 
-          {/* Rodapé do Escudo: Marca Pelada Pro + Estrela no V-Bottom */}
+          {/* Rodapé do Escudo: Estrela no V-Bottom */}
           <View style={styles.footerSection}>
             <View style={styles.footerDivider} />
-            <Text style={styles.footerBrandText}>PELADA PRO</Text>
             <Ionicons name="star" size={12} color={GOLD_LIGHT} style={styles.footerStarIcon} />
           </View>
         </View>
