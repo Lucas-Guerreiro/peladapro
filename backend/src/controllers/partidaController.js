@@ -29,20 +29,16 @@ exports.criarPartida = async (req, res) => {
       autores_gols ? String(autores_gols) : null
     ]);
 
-    // Incrementar partidas disputadas para autores e assistentes envolvidos
+    // Incrementar gols e partidas disputadas para autores e assistentes envolvidos
     if (autores_gols) {
       try {
         const goalsList = typeof autores_gols === 'string' ? JSON.parse(autores_gols) : autores_gols;
-        const playerNames = new Set();
-        (goalsList || []).forEach(g => {
-          if (g.autorNome) playerNames.add(g.autorNome.trim().toLowerCase());
-          if (g.assistNome) playerNames.add(g.assistNome.trim().toLowerCase());
-        });
-        for (let nome of playerNames) {
-          await db.query(
-            "UPDATE usuarios SET partidas = COALESCE(partidas, 0) + 1 WHERE LOWER(nome) = $1 OR LOWER(apelido) = $1",
-            [nome]
-          ).catch(() => {});
+        for (let g of (goalsList || [])) {
+          if (g.autorId) {
+            await db.query("UPDATE usuarios SET gols = COALESCE(gols, 0) + 1 WHERE id = $1", [g.autorId]).catch(() => {});
+          } else if (g.autorNome) {
+            await db.query("UPDATE usuarios SET gols = COALESCE(gols, 0) + 1 WHERE LOWER(nome) = $1 OR LOWER(apelido) = $1", [g.autorNome.trim().toLowerCase()]).catch(() => {});
+          }
         }
       } catch(e) {}
     }
