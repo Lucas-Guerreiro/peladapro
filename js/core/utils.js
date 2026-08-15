@@ -296,8 +296,8 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
   }
   const teamTheme = window.App.getTeamThemeGlobal(teamName);
 
-  const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon, #btn-toggle-modo-noturno');
-  const labels = document.querySelectorAll('.lbl-modo-noturno-txt, #lbl-modo-noturno');
+  const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon');
+  const labels = document.querySelectorAll('.lbl-modo-noturno-txt');
 
   if (isNight) {
     document.body.classList.add('modo-noturno-ativo');
