@@ -280,6 +280,19 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
       document.documentElement.style.setProperty('--accent-modo-noturno', '#1D9E75');
       document.documentElement.style.setProperty('--badge-modo-noturno', '#0F172A');
     }
+
+    const roleToggles = document.querySelectorAll('.role-toggle-switch');
+    const roleSliders = document.querySelectorAll('.role-toggle-slider');
+
+    roleToggles.forEach(toggle => {
+      toggle.style.setProperty('background', '#000000', 'important');
+      toggle.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#FFFFFF') : 'rgba(255,255,255,0.3)', 'important');
+    });
+
+    roleSliders.forEach(slider => {
+      slider.style.setProperty('background', teamTheme ? (teamTheme.badgeBg || teamTheme.border || '#1D9E75') : '#1D9E75', 'important');
+      slider.style.setProperty('box-shadow', '0 2px 8px rgba(0,0,0,0.6)', 'important');
+    });
   } else {
     document.body.classList.remove('modo-noturno-ativo');
     document.documentElement.style.removeProperty('--bg-modo-noturno');
@@ -293,6 +306,19 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
       btn.style.removeProperty('border-color');
       btn.style.removeProperty('color');
       btn.style.removeProperty('box-shadow');
+    });
+
+    const roleToggles = document.querySelectorAll('.role-toggle-switch');
+    const roleSliders = document.querySelectorAll('.role-toggle-slider');
+
+    roleToggles.forEach(toggle => {
+      toggle.style.removeProperty('background');
+      toggle.style.removeProperty('border-color');
+    });
+
+    roleSliders.forEach(slider => {
+      slider.style.removeProperty('background');
+      slider.style.removeProperty('box-shadow');
     });
   }
 

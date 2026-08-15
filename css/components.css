@@ -929,6 +929,27 @@
   background-color: #0284C7;
 }
 
+/* Estilos do Role Toggle Switch no Modo Noturno do Time */
+body.modo-noturno-ativo .role-toggle-switch {
+  background: #000000 !important;
+  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.3)) !important;
+}
+
+body.modo-noturno-ativo .role-toggle-option {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+body.modo-noturno-ativo .role-toggle-switch.is-jogador .role-opt-jogador,
+body.modo-noturno-ativo .role-toggle-switch.is-gestor .role-opt-gestor {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
+
+body.modo-noturno-ativo .role-toggle-slider {
+  background-color: var(--badge-modo-noturno, var(--border-modo-noturno, #F5D270)) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
 /* ── MODO NOTURNO GLOBAL NO TEMA DO TIME DE FUTEBOL ───────── */
 body.modo-noturno-ativo,
 body.modo-noturno-ativo .acomp-web-body,
