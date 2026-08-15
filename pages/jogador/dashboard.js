@@ -970,48 +970,42 @@ var Dashboard = {
 
   initPremiumState: function () {
     var user = Auth.currentUser;
+  initCardStyle: function () {
+    var user = Auth.currentUser;
     var isLucasGuerreiro = false;
     if (user) {
       var name = (user.nome || user.name || user.apelido || '').toLowerCase();
-      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro')) {
+      var email = (user.email || '').toLowerCase();
+      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro') || email.includes('lucasguerreiro')) {
         isLucasGuerreiro = true;
       }
     }
 
-    var isVipUser = user && (user.card_style === 'fut' || user.plano === 'vip' || user.plano === 'ultimate' || user.card_ultimate === true);
+    var hasUltimateCard = user && (user.card_ultimate === true || user.plano === 'ultimate' || user.card_style === 'fut' || localStorage.getItem('peladapro_ultimate_purchased') === 'true');
+    var isVipUser = (window.App && window.App.isVipPlan && window.App.isVipPlan()) || isLucasGuerreiro;
     var savedStyle = localStorage.getItem('peladapro_card_style');
 
     var initialStyle = 'free';
-    if (isLucasGuerreiro || isVipUser) {
+    if (isLucasGuerreiro || hasUltimateCard || isVipUser) {
       initialStyle = savedStyle || 'fut';
     } else {
       localStorage.setItem('peladapro_card_style', 'free');
-      localStorage.setItem('peladapro_premium_adquirido', 'false');
       initialStyle = 'free';
     }
 
     this.applyCardStyle(initialStyle);
   },
 
-  // Aplica o estilo de card escolhido ('free', 'premium', 'fut')
+  // Aplica o estilo de card do perfil ('free', 'premium', 'fut')
   applyCardStyle: function (style) {
     var card = document.getElementById('player-fifa-card');
     var badgeVip = document.getElementById('badge-vip-card');
     var user = Auth.currentUser;
 
-    var isLucasGuerreiro = false;
-    if (user) {
-      var name = (user.nome || user.name || user.apelido || '').toLowerCase();
-      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro')) {
-        isLucasGuerreiro = true;
-      }
-    }
-
     if (style === 'premium') style = 'fut';
     if (!style) style = 'free';
 
     localStorage.setItem('peladapro_card_style', style);
-    localStorage.setItem(this._PREMIUM_KEY, style !== 'free' ? 'true' : 'false');
 
     if (card) {
       card.classList.remove('premium-ativo', 'fut-ultimate-ativo');

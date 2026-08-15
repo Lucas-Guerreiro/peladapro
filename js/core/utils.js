@@ -221,6 +221,13 @@ window.App = window.App || {};
 
 window.App.isVipPlan = function () {
   try {
+    const user = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
+    if (user && (user.vip === true || user.premium === true || user.is_vip === true || user.plano === 'vip' || user.plano === 'premium')) {
+      return true;
+    }
+    if (localStorage.getItem('peladapro_vip_adquirido') === 'true') {
+      return true;
+    }
     const override = localStorage.getItem('pp_vip_test_override');
     if (override) {
       return override === 'ativa';
@@ -262,7 +269,7 @@ window.App.getTeamThemeGlobal = function (teamName) {
 window.App.toggleModoNoturnoGlobal = function () {
   if (window.App.isVipPlan && !window.App.isVipPlan()) {
     if (window.App && window.App.showToast) {
-      window.App.showToast('⭐ O Modo Noturno e Tema do Time é um recurso exclusivo do Plano VIP!', 'warning');
+      window.App.showToast('⭐ O Modo Noturno no estilo do seu time é exclusivo para membros VIP ou Premium! Ter o Card Ultimate não dá acesso a essa funcionalidade.', 'warning');
     }
     window.App.applyModoNoturnoGlobal(false);
     return;
