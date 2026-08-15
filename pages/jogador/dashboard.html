@@ -278,12 +278,18 @@
   .fifa-avatar-container {
     width: 84px; height: 84px; border-radius: 50%;
     border: 3px solid #1D9E75 !important;
+    padding: 0 !important;
     box-shadow: 0 4px 14px rgba(29, 158, 117, 0.18) !important;
     margin: 4px auto 0 !important;
-    overflow: hidden; background: #F1F5F9;
+    overflow: hidden; background: transparent !important;
     transition: all 0.4s ease;
   }
-  .fifa-avatar { width: 100%; height: 100%; object-fit: cover; }
+  .fifa-avatar {
+    width: 100%; height: 100%; object-fit: cover;
+    border: none !important; outline: none !important;
+    padding: 0 !important; margin: 0 !important;
+    border-radius: 50%;
+  }
 
   /* ── Nome do Atleta (padrão) ───────────────────────────────── */
   .player-card-name-txt {

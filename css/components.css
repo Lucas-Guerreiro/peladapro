@@ -375,7 +375,7 @@
   height: 80px;
   border-radius: 50%;
   border: 3px solid var(--secondary);
-  padding: 3px;
+  padding: 0;
   background-color: rgba(15, 27, 45, 0.5);
   box-shadow: 0 0 15px rgba(0, 230, 118, 0.2);
 }
