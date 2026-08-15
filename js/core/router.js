@@ -363,6 +363,9 @@ const Router = {
       if (window.AcompanhamentoGlobal) window.AcompanhamentoGlobal.renderUserInfo();
     } catch(e) {}
     try {
+      if (window.App && window.App.applyModoNoturnoGlobal) window.App.applyModoNoturnoGlobal();
+    } catch(e) {}
+    try {
       document.dispatchEvent(new CustomEvent('page:loaded', { detail: { route } }));
     } catch(e) {}
   },

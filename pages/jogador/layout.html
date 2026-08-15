@@ -253,6 +253,9 @@
           <!-- Toggle Switch de Perfil (Exclusivo para tipo 'ambos') -->
           {{ROLE_TOGGLE}}
 
+          <button class="btn-global-modo-noturno" onclick="window.App.toggleModoNoturnoGlobal()" title="Alternar Modo Noturno no Tema do Time">
+            🌙 <span class="lbl-modo-noturno-txt">Modo Noturno</span>
+          </button>
           <button class="btn btn-sm" onclick="window.PWAInstaller.triggerInstall()" style="background: #0284C7; color: #FFF; font-weight: 700; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;">📲 Instalar App</button>
           <span class="acomp-user-name-clear" id="layout-user-name-desktop">{{USER_NAME}}</span>
           <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
@@ -276,7 +279,10 @@
           <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 20px; height: 20px;"></i>
           PELADA<span>PRO</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn-global-modo-noturno" onclick="window.App.toggleModoNoturnoGlobal()" title="Alternar Modo Noturno no Tema do Time" style="padding: 4px 8px; font-size: 10px;">
+            🌙 <span class="lbl-modo-noturno-txt">Modo Noturno</span>
+          </button>
           <button class="acomp-btn-sair-clear" onclick="Auth.logout()">SAIR</button>
           <button class="acomp-hamburger-btn" onclick="AcompanhamentoGlobal.toggleMobileMenu()">☰</button>
         </div>

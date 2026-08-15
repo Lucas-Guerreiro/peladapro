@@ -924,3 +924,102 @@
   transform: translateX(100%);
   background-color: #0284C7;
 }
+
+/* ── MODO NOTURNO GLOBAL NO TEMA DO TIME DE FUTEBOL ───────── */
+body.modo-noturno-ativo,
+body.modo-noturno-ativo .acomp-web-body,
+body.modo-noturno-ativo .gestor-web-body,
+body.modo-noturno-ativo .login-container,
+body.modo-noturno-ativo .app-container {
+  background: var(--bg-modo-noturno, linear-gradient(135deg, #0F172A 0%, #020617 100%)) !important;
+  color: #F8FAFC !important;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+body.modo-noturno-ativo .acomp-header-unified-card,
+body.modo-noturno-ativo .acomp-header-mobile-unified,
+body.modo-noturno-ativo .gestor-header-unified-card,
+body.modo-noturno-ativo .gestor-header-mobile-unified,
+body.modo-noturno-ativo .card,
+body.modo-noturno-ativo .modal-content,
+body.modo-noturno-ativo .acomp-mobile-dropdown,
+body.modo-noturno-ativo .gestor-mobile-dropdown,
+body.modo-noturno-ativo .card-fifa:not(.has-team-theme) {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.2)) !important;
+  backdrop-filter: blur(12px) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.modo-noturno-ativo h1,
+body.modo-noturno-ativo h2,
+body.modo-noturno-ativo h3,
+body.modo-noturno-ativo h4,
+body.modo-noturno-ativo .acomp-logo-clear,
+body.modo-noturno-ativo .gestor-logo-clear,
+body.modo-noturno-ativo .text-dark,
+body.modo-noturno-ativo label,
+body.modo-noturno-ativo .card-title,
+body.modo-noturno-ativo .stat-value {
+  color: #FFFFFF !important;
+}
+
+body.modo-noturno-ativo .acomp-user-name-clear,
+body.modo-noturno-ativo .gestor-user-name-clear {
+  color: var(--accent-modo-noturno, #F5D270) !important;
+}
+
+body.modo-noturno-ativo .acomp-nav-item-clear,
+body.modo-noturno-ativo .gestor-nav-item-clear,
+body.modo-noturno-ativo .tab-btn {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.modo-noturno-ativo .acomp-nav-item-clear.active,
+body.modo-noturno-ativo .gestor-nav-item-clear.active,
+body.modo-noturno-ativo .tab-btn.active {
+  background: var(--border-modo-noturno, rgba(255, 255, 255, 0.25)) !important;
+  color: var(--accent-modo-noturno, #F5D270) !important;
+  border-color: var(--accent-modo-noturno, #F5D270) !important;
+}
+
+body.modo-noturno-ativo table,
+body.modo-noturno-ativo th,
+body.modo-noturno-ativo td {
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.modo-noturno-ativo th {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--accent-modo-noturno, #F5D270) !important;
+}
+
+body.modo-noturno-ativo input,
+body.modo-noturno-ativo select,
+body.modo-noturno-ativo textarea {
+  background: rgba(0, 0, 0, 0.35) !important;
+  color: #FFFFFF !important;
+  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.3)) !important;
+}
+
+.btn-global-modo-noturno {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+.btn-global-modo-noturno:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

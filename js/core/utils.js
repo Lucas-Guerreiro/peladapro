@@ -216,3 +216,87 @@ const Utils = {
 };
 
 window.Utils = Utils;
+
+window.App = window.App || {};
+
+window.App.getTeamThemeGlobal = function (teamName) {
+  if (window.Dashboard && window.Dashboard.getTeamTheme) {
+    return window.Dashboard.getTeamTheme(teamName);
+  }
+  if (!teamName) return null;
+  var name = teamName.toLowerCase().trim();
+  if (name.includes('flamengo')) return { gradient: 'linear-gradient(135deg, #000000 0%, #3A050A 50%, #C8102E 100%)', border: '#000000', badgeBg: '#000000', accent: '#FFD700' };
+  if (name.includes('vasco') || name.includes('botafogo') || name.includes('corinthians')) return { gradient: 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)', border: '#FFFFFF', badgeBg: '#111111', accent: '#F5D270' };
+  if (name.includes('palmeiras') || name.includes('guarani')) return { gradient: 'linear-gradient(135deg, #006437 0%, #04391F 50%, #011E10 100%)', border: '#86EFAC', badgeBg: '#006437', accent: '#F5D270' };
+  if (name.includes('cruzeiro')) return { gradient: 'linear-gradient(135deg, #003399 0%, #001F66 50%, #050E2E 100%)', border: '#93C5FD', badgeBg: '#003399', accent: '#FFFFFF' };
+  if (name.includes('fluminense')) return { gradient: 'linear-gradient(135deg, #831D1C 0%, #4A0E0E 40%, #006633 100%)', border: '#D4AF37', badgeBg: '#831D1C', accent: '#F5D270' };
+  if (name.includes('são paulo') || name.includes('sao paulo')) return { gradient: 'linear-gradient(135deg, #C8102E 0%, #2B0007 45%, #0A0A0A 100%)', border: '#FFFFFF', badgeBg: '#C8102E', accent: '#F5D270' };
+  return null;
+};
+
+window.App.toggleModoNoturnoGlobal = function () {
+  const isCurrentlyNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
+  const nextNight = !isCurrentlyNight;
+  localStorage.setItem('peladapro_modo_noturno', nextNight ? 'true' : 'false');
+  window.App.applyModoNoturnoGlobal(nextNight);
+
+  if (window.App && window.App.showToast) {
+    window.App.showToast(nextNight ? '🌙 Modo Noturno no Tema do Time ativado!' : '☀️ Modo Claro ativado!', 'info');
+  } else if (window.Utils && window.Utils.toast) {
+    window.Utils.toast(nextNight ? '🌙 Modo Noturno no Tema do Time ativado!' : '☀️ Modo Claro ativado!', 'info');
+  }
+};
+
+window.App.applyModoNoturnoGlobal = function (isNight) {
+  if (isNight === undefined) {
+    isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
+  }
+
+  const user = window.Auth ? window.Auth.currentUser : null;
+  const teamName = user ? user.time_coracao : null;
+  const teamTheme = window.App.getTeamThemeGlobal(teamName);
+
+  const buttons = document.querySelectorAll('.btn-global-modo-noturno, #btn-toggle-modo-noturno');
+  const labels = document.querySelectorAll('.lbl-modo-noturno-txt, #lbl-modo-noturno');
+
+  if (isNight) {
+    document.body.classList.add('modo-noturno-ativo');
+    labels.forEach(lbl => lbl.textContent = 'Modo Noturno (Ativo)');
+    buttons.forEach(btn => {
+      btn.style.setProperty('background', teamTheme ? (teamTheme.badgeBg || '#0F172A') : '#0F172A', 'important');
+      btn.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#1D9E75') : '#1D9E75', 'important');
+      btn.style.setProperty('color', '#FFFFFF', 'important');
+      btn.style.setProperty('box-shadow', '0 4px 12px rgba(0,0,0,0.3)', 'important');
+    });
+
+    if (teamTheme) {
+      document.documentElement.style.setProperty('--bg-modo-noturno', teamTheme.gradient);
+      document.documentElement.style.setProperty('--border-modo-noturno', teamTheme.border);
+      document.documentElement.style.setProperty('--accent-modo-noturno', teamTheme.accent || '#F5D270');
+      document.documentElement.style.setProperty('--badge-modo-noturno', teamTheme.badgeBg || '#111111');
+    } else {
+      document.documentElement.style.setProperty('--bg-modo-noturno', 'linear-gradient(135deg, #0F172A 0%, #020617 100%)');
+      document.documentElement.style.setProperty('--border-modo-noturno', '#1D9E75');
+      document.documentElement.style.setProperty('--accent-modo-noturno', '#1D9E75');
+      document.documentElement.style.setProperty('--badge-modo-noturno', '#0F172A');
+    }
+  } else {
+    document.body.classList.remove('modo-noturno-ativo');
+    document.documentElement.style.removeProperty('--bg-modo-noturno');
+    document.documentElement.style.removeProperty('--border-modo-noturno');
+    document.documentElement.style.removeProperty('--accent-modo-noturno');
+    document.documentElement.style.removeProperty('--badge-modo-noturno');
+
+    labels.forEach(lbl => lbl.textContent = 'Modo Noturno');
+    buttons.forEach(btn => {
+      btn.style.removeProperty('background');
+      btn.style.removeProperty('border-color');
+      btn.style.removeProperty('color');
+      btn.style.removeProperty('box-shadow');
+    });
+  }
+
+  if (window.Dashboard && window.Dashboard.applyModoNoturno) {
+    window.Dashboard.applyModoNoturno(isNight);
+  }
+};
