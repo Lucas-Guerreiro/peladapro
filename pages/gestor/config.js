@@ -748,8 +748,30 @@ async function handleActivateLicense() {
   }
 }
 
-// --- Lógica do Painel de Monetização AdSense (Ligar/Desligar) ------------
+// --- Lógica do Painel de Monetização AdSense (Exclusivo para Lucas Fernandes Guerreiro) ------------
 function initAdSenseUI() {
+  const cardMonetizacao = document.getElementById("card-monetizacao");
+  const currentUser = (window.Auth && window.Auth.currentUser) 
+    || JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+  const nomeNormalizado = String(currentUser.nome || currentUser.name || '').toLowerCase().trim();
+  const emailNormalizado = String(currentUser.email || '').toLowerCase().trim();
+
+  // Permite visualização exclusivamente para o gestor Lucas Fernandes Guerreiro
+  const isLucasGuerreiro = nomeNormalizado.includes("lucas fernandes guerreiro") || 
+                           nomeNormalizado.includes("lucas guerreiro") ||
+                           emailNormalizado.includes("lucas.guerreiro") ||
+                           emailNormalizado.includes("lucasguerreiro");
+
+  if (cardMonetizacao) {
+    if (isLucasGuerreiro) {
+      cardMonetizacao.style.display = "flex";
+    } else {
+      cardMonetizacao.style.display = "none";
+      return;
+    }
+  }
+
   const toggle = document.getElementById("adsense-toggle-enable");
   const pubInput = document.getElementById("adsense-pub-id-input");
   const slotInput = document.getElementById("adsense-slot-id-input");
