@@ -546,17 +546,20 @@
 /* --- TIMES (DRAFT) -------------------------------------------------------- */
 .teams-setup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-top: 24px; }
 
-.team-draft-card { background-color: var(--surface); border: 2px dashed var(--border-color); border-radius: var(--border-radius-card); padding: 16px; min-height: 320px; transition: var(--transition); }
-.team-draft-card.dragover { border-color: var(--secondary); background-color: rgba(0,230,118,0.03); transform: scale(1.02); }
+.team-draft-card { background-color: rgba(255, 255, 255, 0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px dashed var(--border-color); border-radius: var(--border-radius-card); padding: 16px; min-height: 320px; transition: var(--transition); box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+.team-draft-card.dragover { border-color: var(--secondary); background-color: rgba(0,230,118,0.08); transform: scale(1.02); }
 
 .team-draft-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; }
 .team-draft-title-input { font-family: var(--font-display); font-size: 20px; border: none; background: none; width: 70%; color: var(--text-heading); }
 .team-draft-title-input:focus { outline: none; border-bottom: 1px solid var(--secondary); }
 .team-draft-players { display: flex; flex-direction: column; gap: 8px; }
 
-.player-draft-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background-color: var(--background); border-radius: 8px; cursor: grab; user-select: none; transition: var(--transition); border: 1px solid transparent; }
-.player-draft-item:hover  { background-color: #EEE; border-color: rgba(15,27,45,0.1); }
+.player-draft-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; cursor: grab; user-select: none; transition: var(--transition); border: 1px solid rgba(0,0,0,0.06); }
+.player-draft-item:hover  { background-color: rgba(255, 255, 255, 0.9); border-color: rgba(15,27,45,0.15); }
 .player-draft-item:active { cursor: grabbing; }
+
+.checkin-athlete-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 10px; transition: var(--transition); border: 1px solid rgba(0,0,0,0.06); }
+.checkin-athlete-card:hover { background-color: rgba(255, 255, 255, 0.9); }
 
 .player-draft-name  { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
 .player-draft-stars { color: var(--warning); font-size: 12px; }
@@ -999,10 +1002,21 @@ body.modo-noturno-ativo .acomp-timer-wrapper-clear,
 body.modo-noturno-ativo #acomp-live-goals-feed,
 body.modo-noturno-ativo #acomp-tournament-card,
 body.modo-noturno-ativo #acomp-tournament-podium-container {
-  background: #000000 !important;
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid var(--border-modo-noturno, rgba(255, 255, 255, 0.2)) !important;
   color: #FFFFFF !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.modo-noturno-ativo .player-draft-item,
+body.modo-noturno-ativo .checkin-athlete-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #FFFFFF !important;
 }
 
 /* Remover qualquer caixa de fundo do container da grade de estatísticas em Desempenho */

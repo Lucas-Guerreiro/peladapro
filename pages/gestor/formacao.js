@@ -406,11 +406,11 @@ async function updateCheckinPlayersList(peladaId) {
         window.App.presentPlayers.push(c.id);
       }
       const div = document.createElement("div");
+      div.className = "checkin-athlete-card";
       div.style.display = "flex";
       div.style.justifyContent = "space-between";
       div.style.alignItems = "center";
       div.style.padding = "10px 12px";
-      div.style.backgroundColor = "var(--background)";
       div.style.borderRadius = "10px";
       div.style.marginBottom = "8px";
       const nameStr = c.apelido || c.nome || 'Atleta';
