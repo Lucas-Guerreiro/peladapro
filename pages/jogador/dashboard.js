@@ -666,14 +666,14 @@ var Dashboard = {
     if (!teamName) return null;
     var name = teamName.toLowerCase().trim();
 
-    // Flamengo (Vermelho Rubro-Negro & Preto)
+    // Flamengo (Rubro-Negro: Fundo Preto -> Vermelho, Botões Pretos)
     if (name.includes('flamengo')) {
       return {
-        gradient: 'linear-gradient(135deg, #C8102E 0%, #7A0A1C 45%, #000000 100%)',
-        border: '#E31C23',
+        gradient: 'linear-gradient(135deg, #000000 0%, #3A050A 50%, #C8102E 100%)',
+        border: '#C8102E',
         borderGlow: 'rgba(200, 16, 46, 0.5)',
         accent: '#FFD700',
-        badgeBg: '#C8102E',
+        badgeBg: '#000000',
         badgeText: '#FFFFFF',
         ratingColor: '#FFD700'
       };
