@@ -304,6 +304,8 @@ exports.listarConvocados = async (req, res) => {
 
     const query = `
       SELECT u.id, u.nome, u.apelido, u.goleiro, u.autoavaliacao, u.foto, u.saldo,
+             COALESCE(u.gols, 0) AS gols, COALESCE(u.partidas, 0) AS partidas, COALESCE(u.partidas, 0) AS jogos,
+             u.data_nascimento, u.time_coracao,
              c.status, c.forma_pagamento, c.data_convocacao, c.presenca, c.posicao_fila,
              COALESCE(c.saldo_estornado, FALSE) AS saldo_estornado
       FROM convocacoes c

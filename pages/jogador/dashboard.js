@@ -99,11 +99,14 @@ var Dashboard = {
     var futAgeEl = document.getElementById('fut-stat-age');
     if (futAgeEl) futAgeEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
+    var gamesVal = (user.partidas !== undefined && user.partidas !== null) ? Number(user.partidas) : ((user.jogos !== undefined && user.jogos !== null) ? Number(user.jogos) : 0);
+    var goalsVal = (user.gols !== undefined && user.gols !== null) ? Number(user.gols) : ((user.goals !== undefined && user.goals !== null) ? Number(user.goals) : 0);
+
     var futGamesEl = document.getElementById('fut-stat-games');
-    if (futGamesEl) futGamesEl.textContent = (user.jogos !== undefined) ? user.jogos : ((user.partidas !== undefined) ? user.partidas : 0);
+    if (futGamesEl) futGamesEl.textContent = gamesVal;
 
     var futGoalsEl = document.getElementById('fut-stat-goals');
-    if (futGoalsEl) futGoalsEl.textContent = (user.gols !== undefined) ? user.gols : ((user.goals !== undefined) ? user.goals : 0);
+    if (futGoalsEl) futGoalsEl.textContent = goalsVal;
 
     // Foto
     var avatarEl = document.getElementById('player-avatar');
@@ -133,10 +136,10 @@ var Dashboard = {
 
     // Jogos, Gols e Membro desde
     var gamesEl = document.getElementById('player-card-games-val');
-    if (gamesEl) gamesEl.textContent = (user.jogos !== undefined) ? user.jogos : ((user.partidas !== undefined) ? user.partidas : 0);
+    if (gamesEl) gamesEl.textContent = gamesVal;
 
     var goalsEl = document.getElementById('player-card-goals-val');
-    if (goalsEl) goalsEl.textContent = (user.gols !== undefined) ? user.gols : ((user.goals !== undefined) ? user.goals : 0);
+    if (goalsEl) goalsEl.textContent = goalsVal;
 
     var sinceEl = document.getElementById('player-member-since-year');
     if (sinceEl) {

@@ -580,9 +580,17 @@ var Convocacao = {
     }
     age = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
 
-    // Tratamento seguro de Jogos (partidas) e Gols
-    var games = (athlete.jogos !== undefined && athlete.jogos !== null) ? athlete.jogos : ((athlete.partidas !== undefined && athlete.partidas !== null) ? athlete.partidas : ((athlete.games !== undefined && athlete.games !== null) ? athlete.games : 0));
-    var goals = (athlete.gols !== undefined && athlete.gols !== null) ? athlete.gols : ((athlete.goals !== undefined && athlete.goals !== null) ? athlete.goals : 0);
+    // Extrai valores reais numéricos com fallback seguro entre as fontes de dados
+    var games = 0;
+    if (athlete && athlete.partidas !== undefined && athlete.partidas !== null && !isNaN(athlete.partidas)) games = Number(athlete.partidas);
+    else if (athlete && athlete.jogos !== undefined && athlete.jogos !== null && !isNaN(athlete.jogos)) games = Number(athlete.jogos);
+    else if (fullUserLocal && fullUserLocal.partidas !== undefined && fullUserLocal.partidas !== null) games = Number(fullUserLocal.partidas);
+    else if (convocadosItem && convocadosItem.partidas !== undefined && convocadosItem.partidas !== null) games = Number(convocadosItem.partidas);
+
+    var goals = 0;
+    if (athlete && athlete.gols !== undefined && athlete.gols !== null && !isNaN(athlete.gols)) goals = Number(athlete.gols);
+    else if (fullUserLocal && fullUserLocal.gols !== undefined && fullUserLocal.gols !== null) goals = Number(fullUserLocal.gols);
+    else if (convocadosItem && convocadosItem.gols !== undefined && convocadosItem.gols !== null) goals = Number(convocadosItem.gols);
 
     var memberYear = (athlete.criado_em || athlete.created_at) ? new Date(athlete.criado_em || athlete.created_at).getFullYear() : new Date().getFullYear();
     var flag = athlete.nacionalidade_flag || athlete.nacionalidade || '🇧🇷';
