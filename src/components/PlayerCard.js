@@ -133,22 +133,17 @@ export default function PlayerCard({
 
         {/* Conteúdo Interno Posicionado dentro do Escudo */}
         <View style={styles.cardContentContainer}>
-          {/* Topo: VIP Badge, Rating, Posição e Bandeiras */}
+          {/* Topo: VIP Badge + Bandeiras da Nacionalidade e Time */}
           <View style={styles.topRow}>
-            {/* Canto Esquerdo: Badge VIP + Rating + Posição */}
+            {/* Canto Esquerdo: Badge VIP */}
             <View style={styles.leftInfoStack}>
-              {/* Badge VIP */}
               <View style={styles.vipBadge}>
                 <Ionicons name="crown" size={10} color={GOLD_LIGHT} />
                 <Text style={styles.vipBadgeText}>VIP</Text>
               </View>
-
-              {/* Rating Geral */}
-              <Text style={styles.ratingNumber}>{rating}</Text>
-              <Text style={styles.posicaoAbbr}>{posAbbr}</Text>
             </View>
 
-            {/* Canto Direito: Bandeira Nacional + Bandeira do Time */}
+            {/* Canto Direito: Bandeira Nacional + Bandeira do Time do Atleta */}
             <View style={styles.rightFlagsStack}>
               {/* Nacionalidade */}
               <View style={styles.flagBadge}>
@@ -156,7 +151,7 @@ export default function PlayerCard({
                 <Text style={styles.flagText}>{nacCode}</Text>
               </View>
 
-              {/* Time */}
+              {/* Time do Coração do Atleta */}
               <View style={styles.flagBadge}>
                 {timeFlagUrl ? (
                   <Image source={{ uri: timeFlagUrl }} style={styles.timeFlagImg} />
