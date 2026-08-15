@@ -125,9 +125,9 @@ const Utils = {
     setTimeout(() => {
       el.style.animation = 'none';
       el.style.opacity = '0';
-      el.style.transform = 'translateY(-20px)';
-      el.style.transition = 'opacity 0.3s, transform 0.3s';
-      setTimeout(() => el.remove(), 350);
+      el.style.transform = 'translateX(120%)';
+      el.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      setTimeout(() => el.remove(), 380);
     }, duration);
   },
 

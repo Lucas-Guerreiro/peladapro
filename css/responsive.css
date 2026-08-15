@@ -29,13 +29,14 @@
     padding-bottom: 4px;
   }
 
-  /* Toast centralizado no mobile */
+  /* Toast posicionado na parte inferior deslizando da direita para a esquerda (Right to Left) */
   .toast-container {
-    top: 16px;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: 90%;
+    bottom: 16px;
+    right: 16px;
+    left: auto;
+    top: auto;
+    transform: none;
+    max-width: calc(100vw - 32px);
   }
 
   /* Formulário de atleta em coluna */
