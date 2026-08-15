@@ -216,7 +216,27 @@ var Convocacao = {
         return c.status === 'confirmado';
       });
 
-      if (counterEl) counterEl.textContent = confirmed.length + ' / ' + max;
+      if (counterEl) {
+        counterEl.textContent = confirmed.length + ' / ' + max;
+
+        // Aplica o tema do time do coração do usuário logado (ou tema esportivo verde/dourado)
+        const user = Auth.currentUser || (window.Auth && window.Auth.currentUser);
+        const teamTheme = (user && user.time_coracao && window.App && window.App.getTeamThemeGlobal)
+          ? window.App.getTeamThemeGlobal(user.time_coracao)
+          : null;
+
+        if (teamTheme) {
+          counterEl.style.background = teamTheme.gradient || teamTheme.badgeBg || '#0F172A';
+          counterEl.style.color = teamTheme.accent || teamTheme.badgeText || '#F5D270';
+          counterEl.style.border = '1px solid ' + (teamTheme.border || 'rgba(245,210,112,0.4)');
+          counterEl.style.boxShadow = '0 2px 8px ' + (teamTheme.borderGlow || 'rgba(0,0,0,0.2)');
+        } else {
+          counterEl.style.background = 'linear-gradient(135deg, #059669, #047857)';
+          counterEl.style.color = '#FFFFFF';
+          counterEl.style.border = '1px solid #10B981';
+          counterEl.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+        }
+      }
 
       if (confirmed.length === 0) {
         listEl.innerHTML = '<div class="empty-state" style="padding: 32px;"><span style="font-size: 32px;">👥</span><p class="text-inter" style="font-size: 14px;">Nenhum jogador confirmado ainda.</p></div>';
