@@ -705,8 +705,9 @@ var Convocacao = {
       athlete = { id: athleteId, nome: 'Atleta', apelido: 'Atleta', gols: 0, partidas: 0 };
     }
 
-    // 3. Regra de Acesso aos Cards:
-    const isPremiumDisabledGlobally = localStorage.getItem('peladapro_premium_desativado') === 'true';
+    // 3. Regra de Acesso aos Cards (Individual por Atleta):
+    const disabledAthletesList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+    const isThisAthleteDisabled = disabledAthletesList.map(String).includes(String(athleteId)) || disabledAthletesList.map(String).includes(String(athlete.id));
 
     const currentUser = Auth.currentUser || (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
     const viewerName = (currentUser.nome || currentUser.name || currentUser.apelido || '').toLowerCase();
@@ -721,11 +722,11 @@ var Convocacao = {
     const targetIsLucas = targetName.includes('lucas fernandes') || targetName.includes('lucas guerreiro');
     let targetIsVip = (athlete.vip || athlete.premium || athlete.is_vip || targetIsLucas);
 
-    if (isPremiumDisabledGlobally) {
+    if (isThisAthleteDisabled) {
       targetIsVip = false;
     }
 
-    const shouldShowUltimateCard = (!isPremiumDisabledGlobally && (viewerIsVip || targetIsVip)) || (viewerIsLucas && !isPremiumDisabledGlobally);
+    const shouldShowUltimateCard = (!isThisAthleteDisabled && (viewerIsVip || targetIsVip)) || (viewerIsLucas && !isThisAthleteDisabled);
 
     // Cria overlay no DOM se não existir
     var modalOverlay = document.getElementById('modal-athlete-card-overlay');
@@ -938,29 +939,42 @@ var Convocacao = {
 
     // Se o espectador for o Gestor Lucas Fernandes Guerreiro, injeta o botão de desativar/ativar no modal
     if (viewerIsLucas) {
-      const isCardDisabled = localStorage.getItem('peladapro_premium_desativado') === 'true';
+      const disabledListCurr = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+      const isCardDisabledForThisAthlete = disabledListCurr.map(String).includes(String(athleteId)) || disabledListCurr.map(String).includes(String(athlete.id));
+      const targetAthleteName = athlete.apelido || athlete.nome || 'Atleta';
+
       const masterBtnHtml = `
         <div style="margin-top: 14px; text-align: center; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 12px;">
-          <button id="btn-lucas-toggle-card-overlay" style="background: ${isCardDisabled ? '#059669' : '#DC2626'}; color: #FFFFFF; font-weight: 800; font-size: 12px; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">
-            ${isCardDisabled ? '✨ Ativar Card Premium dos Atletas' : '🚫 Desativar Card Premium dos Atletas'}
+          <button id="btn-lucas-toggle-card-overlay" style="background: ${isCardDisabledForThisAthlete ? '#059669' : '#DC2626'}; color: #FFFFFF; font-weight: 800; font-size: 12px; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${isCardDisabledForThisAthlete ? '✨ Ativar Card Premium deste Atleta' : '🚫 Desativar Card Premium deste Atleta'}
           </button>
         </div>
       `;
 
       const cardBox = modalOverlay.querySelector('div > div');
-      if (cardBox && !document.getElementById('btn-lucas-toggle-card-overlay')) {
+      if (cardBox) {
+        const existingBtn = document.getElementById('btn-lucas-toggle-card-overlay');
+        if (existingBtn && existingBtn.parentElement) {
+          existingBtn.parentElement.remove();
+        }
+
         cardBox.insertAdjacentHTML('beforeend', masterBtnHtml);
         const overlayBtn = document.getElementById('btn-lucas-toggle-card-overlay');
         if (overlayBtn) {
           overlayBtn.onclick = function(e) {
             e.stopPropagation();
-            const currDisabled = localStorage.getItem('peladapro_premium_desativado') === 'true';
-            if (currDisabled) {
-              localStorage.setItem('peladapro_premium_desativado', 'false');
-              if (window.App && window.App.showToast) window.App.showToast('✨ Card Premium dos Atletas ATIVADO com sucesso!', 'success');
+            let dList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+            const athIdStr = String(athleteId || athlete.id);
+            const idx = dList.indexOf(athIdStr);
+
+            if (idx >= 0) {
+              dList.splice(idx, 1);
+              localStorage.setItem('peladapro_disabled_premium_athletes', JSON.stringify(dList));
+              if (window.App && window.App.showToast) window.App.showToast(`✨ Card Premium REATIVADO para ${targetAthleteName}!`, 'success');
             } else {
-              localStorage.setItem('peladapro_premium_desativado', 'true');
-              if (window.App && window.App.showToast) window.App.showToast('🚫 Card Premium dos Atletas DESATIVADO com sucesso!', 'warning');
+              dList.push(athIdStr);
+              localStorage.setItem('peladapro_disabled_premium_athletes', JSON.stringify(dList));
+              if (window.App && window.App.showToast) window.App.showToast(`🚫 Card Premium DESATIVADO para ${targetAthleteName}!`, 'warning');
             }
             Convocacao.closePlayerCardModal();
             setTimeout(() => Convocacao.openPlayerCardModal(athleteId), 150);

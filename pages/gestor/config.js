@@ -900,43 +900,140 @@ function checkLucasMasterControls() {
   const isLucasMaster = name.includes('lucas fernandes') || name.includes('lucas guerreiro') || email.includes('lucasguerreiro') || email.includes('lucas.fernandes') || String(currentUser.id) === '1' || String(currentUser.id) === '3';
 
   const panel = document.getElementById("panel-lucas-master-controls");
-  const btn = document.getElementById("btn-toggle-premium-card-master");
+  if (!panel) return;
 
-  if (!panel || !btn) return;
-
-  if (isLucasMaster) {
-    panel.style.display = "block";
-    updateLucasMasterBtnState();
-
-    btn.onclick = function() {
-      const isDisabled = localStorage.getItem("peladapro_premium_desativado") === "true";
-      if (isDisabled) {
-        localStorage.setItem("peladapro_premium_desativado", "false");
-        window.App.showToast("✨ Card Premium dos Atletas ATIVADO com sucesso!", "success");
-      } else {
-        localStorage.setItem("peladapro_premium_desativado", "true");
-        window.App.showToast("🚫 Card Premium dos Atletas DESATIVADO com sucesso!", "warning");
-      }
-      updateLucasMasterBtnState();
-    };
-  } else {
+  if (!isLucasMaster) {
     panel.style.display = "none";
+    return;
+  }
+
+  panel.style.display = "block";
+  populateLucasAthleteSelect();
+
+  const select = document.getElementById("select-lucas-athlete-master");
+  const btn = document.getElementById("btn-toggle-premium-athlete-master");
+
+  if (select) {
+    select.onchange = updateLucasAthleteStatusUI;
+  }
+
+  if (btn) {
+    btn.onclick = function() {
+      const selectedId = select ? select.value : null;
+      if (!selectedId) {
+        if (window.App && window.App.showToast) window.App.showToast("Selecione um atleta da lista.", "warning");
+        return;
+      }
+
+      let disabledList = getDisabledAthletesList();
+      const idStr = String(selectedId);
+      const index = disabledList.indexOf(idStr);
+
+      if (index >= 0) {
+        disabledList.splice(index, 1);
+        saveDisabledAthletesList(disabledList);
+        if (window.App && window.App.showToast) window.App.showToast("✨ Card Premium REATIVADO para este atleta!", "success");
+      } else {
+        disabledList.push(idStr);
+        saveDisabledAthletesList(disabledList);
+        if (window.App && window.App.showToast) window.App.showToast("🚫 Card Premium DESATIVADO para este atleta!", "warning");
+      }
+
+      updateLucasAthleteStatusUI();
+    };
+  }
+
+  updateLucasAthleteStatusUI();
+}
+
+function getDisabledAthletesList() {
+  try {
+    return JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+  } catch (e) {
+    return [];
   }
 }
 
-function updateLucasMasterBtnState() {
-  const btn = document.getElementById("btn-toggle-premium-card-master");
-  if (!btn) return;
-  const isDisabled = localStorage.getItem("peladapro_premium_desativado") === "true";
-  if (isDisabled) {
-    btn.textContent = "✨ Ativar Card Premium dos Atletas";
-    btn.style.background = "#059669";
-    btn.style.color = "#FFFFFF";
-    btn.style.border = "none";
+function saveDisabledAthletesList(list) {
+  localStorage.setItem('peladapro_disabled_premium_athletes', JSON.stringify(list));
+}
+
+function populateLucasAthleteSelect() {
+  const select = document.getElementById("select-lucas-athlete-master");
+  if (!select) return;
+
+  const users = (window.Api && window.Api.getUsuarios ? window.Api.getUsuarios() : null) || JSON.parse(localStorage.getItem('players') || '[]');
+  select.innerHTML = '<option value="">-- Selecione um Atleta --</option>';
+
+  users.forEach(u => {
+    const nome = u.apelido || u.nome || `Atleta #${u.id}`;
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = `${nome} (ID: ${u.id})`;
+    select.appendChild(opt);
+  });
+}
+
+function updateLucasAthleteStatusUI() {
+  const select = document.getElementById("select-lucas-athlete-master");
+  const btn = document.getElementById("btn-toggle-premium-athlete-master");
+  const badge = document.getElementById("lucas-athlete-status-badge");
+  const disabledListEl = document.getElementById("lucas-disabled-athletes-list");
+
+  const disabledList = getDisabledAthletesList();
+  const selectedId = select ? select.value : null;
+
+  if (selectedId && disabledList.map(String).includes(String(selectedId))) {
+    if (badge) badge.innerHTML = '<span style="color: #EF4444; font-weight: 800;">🚫 Card Premium DESATIVADO</span>';
+    if (btn) {
+      btn.textContent = "✨ Ativar Card Premium";
+      btn.style.background = "#059669";
+      btn.style.color = "#FFFFFF";
+      btn.style.border = "none";
+    }
+  } else if (selectedId) {
+    if (badge) badge.innerHTML = '<span style="color: #059669; font-weight: 800;">✨ Card Premium ATIVO</span>';
+    if (btn) {
+      btn.textContent = "🚫 Desativar Card Premium";
+      btn.style.background = "#DC2626";
+      btn.style.color = "#FFFFFF";
+      btn.style.border = "none";
+    }
   } else {
-    btn.textContent = "🚫 Desativar Card Premium dos Atletas";
-    btn.style.background = "#DC2626";
-    btn.style.color = "#FFFFFF";
-    btn.style.border = "none";
+    if (badge) badge.textContent = "Status: Selecione um atleta";
+    if (btn) {
+      btn.textContent = "Alterar Status";
+      btn.style.background = "#64748B";
+      btn.style.color = "#FFFFFF";
+      btn.style.border = "none";
+    }
+  }
+
+  if (disabledListEl) {
+    if (disabledList.length === 0) {
+      disabledListEl.innerHTML = '<span style="font-size: 12px; color: #78350F; font-style: italic;">Nenhum atleta desativado individualmente.</span>';
+    } else {
+      const users = (window.Api && window.Api.getUsuarios ? window.Api.getUsuarios() : null) || JSON.parse(localStorage.getItem('players') || '[]');
+      let html = "";
+      disabledList.forEach(id => {
+        const u = users.find(x => String(x.id) === String(id));
+        const nome = u ? (u.apelido || u.nome) : `Atleta #${id}`;
+        html += `
+          <span style="background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+            ${nome}
+            <button onclick="removerDesativacaoAtletaLucas('${id}')" style="background: none; border: none; color: #EF4444; font-weight: 800; cursor: pointer; padding: 0 2px; line-height: 1;" title="Reativar Card Premium">✕</button>
+          </span>
+        `;
+      });
+      disabledListEl.innerHTML = html;
+    }
   }
 }
+
+window.removerDesativacaoAtletaLucas = function(athleteId) {
+  let disabledList = getDisabledAthletesList();
+  disabledList = disabledList.filter(id => String(id) !== String(athleteId));
+  saveDisabledAthletesList(disabledList);
+  if (window.App && window.App.showToast) window.App.showToast("✨ Card Premium REATIVADO para o atleta!", "success");
+  updateLucasAthleteStatusUI();
+};
