@@ -371,6 +371,44 @@ exports.remover = async (req, res) => {
       );
     }
 
+    // 4.6 Se o atleta removido era da FILA DE ESPERA, notificar o gestor e o próximo da fila
+    if (statusAntes === 'espera' || statusAntes === 'fila_espera') {
+      try {
+        const { sendNotificationInternal } = require('./pushController');
+        const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
+        const grupo_id = peladaRes.rows[0] ? peladaRes.rows[0].grupo_id : null;
+        const dataPelada = peladaRes.rows[0] ? peladaRes.rows[0].data : null;
+        const dataFmt = formatarDataDDMM(dataPelada);
+
+        const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+        const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
+
+        // Notificar Gestores
+        if (grupo_id) {
+          sendNotificationInternal({
+            onlyGestores: true,
+            grupoId: grupo_id,
+            title: '⏳ Fila de Espera Atualizada',
+            body: `${atletaNome} desconvocou-se e saiu da fila de espera para a pelada de ${dataFmt}.`,
+            url: '/#/gestor/partidas'
+          }).catch(e => console.warn('[Push] Erro gestor:', e.message));
+        }
+
+        // Notificar o próximo da fila (se houver alguém na fila agora)
+        if (restantesRes.rows.length > 0) {
+          const proximoId = restantesRes.rows[0].usuario_id;
+          sendNotificationInternal({
+            usuarioId: proximoId,
+            title: '⏳ Posição Atualizada na Fila!',
+            body: `Um atleta saiu da fila. Sua nova posição na fila de espera é #1 para a pelada de ${dataFmt}.`,
+            url: '/#/jogador/convocacao'
+          }).catch(e => console.warn('[Push] Erro próximo da fila:', e.message));
+        }
+      } catch (e) {
+        console.warn('[Push] Erro nas notificações de remoção da fila:', e);
+      }
+    }
+
     await client.query('COMMIT');
     res.json({ message: 'Remoção processada com sucesso!', estornado: statusAntes === 'confirmado' && podeEstornar && opcao_remocao === 'estorno' });
   } catch (err) {

@@ -29,37 +29,58 @@ function calculateHoursLeft(pelada) {
 window.App.initModalRemocao = function (pelada) {
   localPelada = pelada;
 
-  const hoursLeft = calculateHoursLeft(pelada);
-  const cost = parseFloat(pelada.valor_convocacao) || 20.00;
-  const costFmt = `R$ ${cost.toFixed(2).replace('.', ',')}`;
+  const user = window.Auth?.currentUser || window.App?.currentUser;
+  const convocations = window.Api?.getConvocations ? window.Api.getConvocations() : [];
+  const myConv = convocations.find(c => String(c.pelada_id) === String(pelada.id) && String(c.player_id || c.usuario_id) === String(user?.id));
+  const isWaitlist = myConv && (myConv.status === 'espera' || myConv.status === 'fila_espera');
+
   const infoDiv = document.getElementById("removal-reimbursement-info");
 
-  if (hoursLeft >= 2) {
-    infoDiv.style.backgroundColor = "rgba(0, 200, 83, 0.12)";
-    infoDiv.style.border = "1px solid rgba(0, 200, 83, 0.3)";
-    infoDiv.style.color = "#047857";
+  if (isWaitlist) {
+    infoDiv.style.backgroundColor = "rgba(245, 158, 11, 0.12)";
+    infoDiv.style.border = "1px solid rgba(245, 158, 11, 0.3)";
+    infoDiv.style.color = "#B45309";
     infoDiv.innerHTML = `
       <div style="display: flex; gap: 10px; align-items: start;">
-        <span style="font-size: 20px;">✅</span>
+        <span style="font-size: 20px;">⏳</span>
         <div>
-          <strong style="font-size: 14px; color: #047857;">Estorno de Saldo Permitido!</strong>
-          <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #065F46;">Você está se desconvocando com antecedência. O valor pago (<b>${costFmt}</b>) será <b>estornado integralmente</b> para o seu saldo no aplicativo!</span>
+          <strong style="font-size: 14px; color: #B45309;">Remoção da Fila de Espera</strong>
+          <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #92400E;">Como você está na fila de espera, nenhum pagamento foi cobrado. Ao confirmar a desconvocação, seu nome será removido da fila.</span>
         </div>
       </div>
     `;
   } else {
-    infoDiv.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
-    infoDiv.style.border = "1px solid rgba(239, 68, 68, 0.3)";
-    infoDiv.style.color = "#B91C1C";
-    infoDiv.innerHTML = `
-      <div style="display: flex; gap: 10px; align-items: start;">
-        <span style="font-size: 20px;">⚠️</span>
-        <div>
-          <strong style="font-size: 14px; color: #B91C1C;">Faltam menos de 2 horas para a pelada!</strong>
-          <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #991B1B;">Pela política de antecedência, faltam menos de 2 horas para o início do jogo. Se você se desconvocar agora, o valor pago <b>não poderá ser estornado</b>.</span>
+    const hoursLeft = calculateHoursLeft(pelada);
+    const cost = parseFloat(pelada.valor_convocacao) || 20.00;
+    const costFmt = `R$ ${cost.toFixed(2).replace('.', ',')}`;
+
+    if (hoursLeft >= 2) {
+      infoDiv.style.backgroundColor = "rgba(0, 200, 83, 0.12)";
+      infoDiv.style.border = "1px solid rgba(0, 200, 83, 0.3)";
+      infoDiv.style.color = "#047857";
+      infoDiv.innerHTML = `
+        <div style="display: flex; gap: 10px; align-items: start;">
+          <span style="font-size: 20px;">✅</span>
+          <div>
+            <strong style="font-size: 14px; color: #047857;">Estorno de Saldo Permitido!</strong>
+            <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #065F46;">Você está se desconvocando com antecedência. O valor pago (<b>${costFmt}</b>) será <b>estornado integralmente</b> para o seu saldo no aplicativo!</span>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      infoDiv.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
+      infoDiv.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      infoDiv.style.color = "#B91C1C";
+      infoDiv.innerHTML = `
+        <div style="display: flex; gap: 10px; align-items: start;">
+          <span style="font-size: 20px;">⚠️</span>
+          <div>
+            <strong style="font-size: 14px; color: #B91C1C;">Faltam menos de 2 horas para a pelada!</strong>
+            <span style="display:block; font-size: 13px; margin-top: 4px; line-height: 1.4; color: #991B1B;">Pela política de antecedência, faltam menos de 2 horas para o início do jogo. Se você se desconvocar agora, o valor pago <b>não poderá ser estornado</b>.</span>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // Escutas
