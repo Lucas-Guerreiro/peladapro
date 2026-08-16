@@ -641,14 +641,23 @@ var Dashboard = {
       }
     }
 
-    // Se já está ativo, mostra botão desabilitado
+    // Sincroniza o estado do botão de ativação dentro do modal
     var btnAdquirir = document.getElementById('btn-modal-adquirir');
-    var jaAtivo = localStorage.getItem(this._PREMIUM_KEY) === 'true';
-    if (btnAdquirir && jaAtivo) {
-      btnAdquirir.textContent = '✓ Card Premium Ativo';
-      btnAdquirir.disabled = true;
-      btnAdquirir.style.opacity = '0.7';
-      btnAdquirir.style.cursor = 'default';
+    var jaAtivo = (window.App && window.App.isVipPlan && window.App.isVipPlan());
+    if (btnAdquirir) {
+      if (jaAtivo) {
+        btnAdquirir.textContent = '✓ Versão Premium Ativa!';
+        btnAdquirir.disabled = true;
+        btnAdquirir.style.opacity = '0.7';
+        btnAdquirir.style.cursor = 'default';
+        btnAdquirir.style.background = '#64748B';
+      } else {
+        btnAdquirir.textContent = '✨ Ativar Versão Premium Grátis (Testes)';
+        btnAdquirir.disabled = false;
+        btnAdquirir.style.opacity = '1';
+        btnAdquirir.style.cursor = 'pointer';
+        btnAdquirir.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+      }
     }
 
     overlay.classList.add('open');
