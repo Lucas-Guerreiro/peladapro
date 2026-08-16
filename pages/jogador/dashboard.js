@@ -828,7 +828,6 @@ var Dashboard = {
 
   // Retorna paleta visual temática baseada no time do coração do atleta
   getTeamTheme: function (teamName) {
-    if (window.App && window.App.isVipPlan && !window.App.isVipPlan()) return null;
     if (!teamName) return null;
     var name = teamName.toLowerCase().trim();
 

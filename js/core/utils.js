@@ -230,7 +230,6 @@ window.App.isVipPlan = function () {
 };
 
 window.App.getTeamThemeGlobal = function (teamName) {
-  if (window.App.isVipPlan && !window.App.isVipPlan()) return null;
   if (window.Dashboard && window.Dashboard.getTeamTheme) {
     return window.Dashboard.getTeamTheme(teamName);
   }
