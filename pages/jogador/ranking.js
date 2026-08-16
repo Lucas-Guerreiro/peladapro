@@ -7,6 +7,9 @@ var Ranking = {
   init: function() {
     this.populateFilter();
     this.bindEvents();
+    if (window.AdSenseManager) {
+      window.AdSenseManager.renderAdContainer('adsense-ranking-banner');
+    }
   },
 
   // --- Popula o filtro de peladas do grupo ativo ---

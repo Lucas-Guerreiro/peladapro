@@ -12,36 +12,14 @@
     },
 
     isVipGroup() {
-      try {
-        const override = localStorage.getItem('pp_vip_test_override');
-        if (override) {
-          return override === 'ativa';
-        }
-        let grp = (window.App && window.App.currentGroup) ? window.App.currentGroup : null;
-        if (!grp && window.Auth) grp = window.Auth.currentGroup;
-        if (!grp) {
-          const raw = localStorage.getItem('currentGroup');
-          if (raw) grp = JSON.parse(raw);
-        }
-        if (grp && grp.licenca_status === 'ativa') {
-          if (grp.licenca_expira_em) {
-            const exp = new Date(grp.licenca_expira_em);
-            if (exp > new Date()) return true;
-          } else {
-            return true;
-          }
-        }
-      } catch (e) { }
+      // Neste momento (período de testes gratuito), os anúncios devem ser exibidos para TODOS (mesmo membros VIP/Premium)
       return false;
     },
 
     isEnabled() {
-      // Se o grupo estiver no Modo VIP (Licença Ativa), NENHUM anúncio ou palavra 'Publicidade' deve ser exibido!
-      if (this.isVipGroup()) {
-        return false;
-      }
+      // Ativado por padrão para testes de propaganda em todos os planos
       const stored = localStorage.getItem(this.KEYS.enabled);
-      return stored === 'true';
+      return stored === 'false' ? false : true;
     },
 
     getPubId() {
@@ -89,7 +67,7 @@
 
       this.loadAdSenseScript(pubId || this.getPubId());
       this.refreshAllContainers();
-      console.log('✅ [AdSense] Anúncios Google AdSense ATIVADOS.');
+      console.log('✅ [AdSense] Anúncios Google AdSense ATIVADOS para todos os atletas.');
     },
 
     disable() {
@@ -117,12 +95,12 @@
 
       container.style.display = 'block';
 
-      // Se tiver pubId válido, injeta a tag ins do AdSense (slotId é opcional)
+      // Se tiver pubId válido do Google AdSense, injeta a tag ins oficial do AdSense
       if (pubId) {
         const slotAttr = slotId ? `data-ad-slot="${slotId}"` : '';
         container.innerHTML = `
           <div style="text-align: center; margin: 12px 0; overflow: hidden;" class="adsense-box">
-            <span style="font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Publicidade</span>
+            <span style="font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Publicidade Patrocinada</span>
             <ins class="adsbygoogle"
                  style="display:block"
                  data-ad-client="${pubId}"
@@ -137,11 +115,18 @@
           console.warn('[AdSense] Aviso ao empurrar bloco de anúncio:', e);
         }
       } else {
-        // Banner demonstrativo quando o AdSense está ligado aguardando ID do Publisher
+        // Banner de teste / demonstrativo exibido para validar o funcionamento do anúncio
         container.innerHTML = `
-          <div style="background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); border: 1px dashed #CBD5E1; border-radius: 12px; padding: 14px; text-align: center; margin: 12px 0;">
-            <div style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">📢 Espaço de Anúncio Google AdSense (Ativado)</div>
-            <div style="font-size: 12px; color: #475569; font-weight: 500;">O espaço de publicidade está ativado. Insira o seu <strong>ID do Publisher</strong> (ca-pub-xxx) no painel de Configurações para exibir os anúncios do Google.</div>
+          <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); border: 1.5px solid #10B981; border-radius: 14px; padding: 16px; text-align: center; margin: 12px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3); position: relative;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px;">
+              <span style="background: #10B981; color: #FFFFFF; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">📢 ANÚNCIO / PUBLICIDADE LIVE</span>
+              <span style="font-size: 11px; color: #94A3B8; font-weight: 700;">Google AdSense</span>
+            </div>
+            <div style="font-size: 13px; color: #F8FAFC; font-weight: 700; margin-bottom: 4px;">🏆 PeladaPro · Espaço Publicitário de Anúncios</div>
+            <div style="font-size: 11px; color: #CBD5E1; font-weight: 500; line-height: 1.4;">
+              Espaço de anúncio ativado e visível para todos os atletas (Versão Gratuita, VIP & Premium). 
+              Insira o ID do Publisher <code>ca-pub-xxx</code> em Configurações para carregar anúncios reais do Google AdSense.
+            </div>
           </div>
         `;
       }
