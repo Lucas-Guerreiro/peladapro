@@ -805,6 +805,11 @@ var Convocacao = {
             ✕
           </button>
 
+          <!-- Tag Dourada Card Premium no Canto Superior Direito -->
+          <div style="position: absolute; top: 16px; right: 56px; background: rgba(0, 0, 0, 0.65); border: 1.5px solid #F5D270; color: #F5D270; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; backdrop-filter: blur(6px); box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
+            Card Premium
+          </div>
+
           <!-- Stack de Nacionalidade & Membro no Canto Superior Esquerdo -->
           <div style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, 0.65); border: 1.5px solid #F5D270; padding: 4px 8px; border-radius: 10px; backdrop-filter: blur(6px);">
             <span style="font-size: 14px;">${flag}</span>

@@ -55,17 +55,24 @@
     font-weight: 800 !important;
     font-size: 11px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  .premium-tag-card {
+    display: none !important;
   }
-  .card-fifa.premium-ativo .premium-tag-card {
-    display: inline-block !important;
-    font-style: italic !important;
-    font-weight: 900 !important;
+  .card-fifa.premium-ativo .premium-tag-card,
+  .card-fifa.fut-ultimate-ativo .premium-tag-card {
+    display: inline-flex !important;
+    align-items: center !important;
     color: #F5D270 !important;
-    letter-spacing: 1.5px !important;
-    font-size: 14px !important;
-    background: transparent !important;
-    border: none !important;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8) !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1.5px solid #F5D270 !important;
+    padding: 4px 10px !important;
+    border-radius: 12px !important;
+    font-weight: 900 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
   }
   /* ── Por padrão (Modo Gratuito), Oculta Jogos/Gols e Legenda Membro Elite ── */
   .fifa-stats-grid {
