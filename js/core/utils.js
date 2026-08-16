@@ -247,7 +247,10 @@ window.App.getTeamThemeGlobal = function (teamName) {
 window.App.toggleModoNoturnoGlobal = function () {
   if (window.App.isVipPlan && !window.App.isVipPlan()) {
     if (window.App && window.App.showToast) {
-      window.App.showToast('⭐ O Modo Noturno no estilo do seu time é exclusivo para membros VIP ou Premium! Ter o Card Ultimate não dá acesso a essa funcionalidade.', 'warning');
+      window.App.showToast('⭐ O Modo Noturno no estilo do seu time é exclusivo para membros VIP ou Premium!', 'warning');
+    }
+    if (window.Dashboard && window.Dashboard.openModalPremium) {
+      window.Dashboard.openModalPremium();
     }
     window.App.applyModoNoturnoGlobal(false);
     return;

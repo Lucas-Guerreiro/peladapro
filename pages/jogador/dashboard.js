@@ -1168,12 +1168,17 @@ var Dashboard = {
       };
     } else {
       if (style !== 'free') {
+        // Após adquirir o Card Premium, o botão '✓ Card Premium Ativo' deixa de existir
+        // e em seu lugar é exibido o botão para alternar o Modo Noturno / Assinatura Premium
+        var isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
         btnUpgrade.classList.add('ativo');
-        btnUpgrade.textContent = '✓ Card Premium Ativo';
-        btnUpgrade.style.background = 'rgba(212, 175, 55, 0.15)';
-        btnUpgrade.style.borderColor = '#D4AF37';
-        btnUpgrade.style.color = '#D4AF37';
-        btnUpgrade.onclick = null;
+        btnUpgrade.textContent = isNight ? '☀️ Alternar para Modo Claro' : '🌙 Alternar Modo Noturno (Tema do Time)';
+        btnUpgrade.style.background = isNight ? '#0F172A' : 'linear-gradient(135deg, #1E293B, #0F172A)';
+        btnUpgrade.style.borderColor = '#F5D270';
+        btnUpgrade.style.color = '#F5D270';
+        btnUpgrade.onclick = function () {
+          window.App.toggleModoNoturnoGlobal();
+        };
       } else {
         btnUpgrade.classList.remove('ativo');
         btnUpgrade.textContent = '⭐ Ativar Card Premium';
