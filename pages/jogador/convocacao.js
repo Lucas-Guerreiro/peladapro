@@ -705,24 +705,20 @@ var Convocacao = {
       athlete = { id: athleteId, nome: 'Atleta', apelido: 'Atleta', gols: 0, partidas: 0 };
     }
 
-    // 3. Regra de Acesso aos Cards (Card Ultimate vs VIP/Premium):
+    // 3. Regra de Exibição dos Cards em Convocação:
+    // Ao clicar no nome do atleta em Convocação, o card exibido deve SER SEMPRE O PREMIUM (FUT Ultimate),
+    // a menos que esteja explicitamente desativado pelo Controle Master.
     const disabledAthletesList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
-    const isThisAthleteDisabled = disabledAthletesList.map(String).includes(String(athleteId)) || disabledAthletesList.map(String).includes(String(athlete.id));
+    const isThisAthleteDisabled = (window.App && window.App.isAthleteCardDisabled) 
+      ? window.App.isAthleteCardDisabled(athleteId || athlete.id) 
+      : (disabledAthletesList.map(String).includes(String(athleteId)) || disabledAthletesList.map(String).includes(String(athlete.id)));
 
     const currentUser = Auth.currentUser || (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
     const viewerName = (currentUser.nome || currentUser.name || currentUser.apelido || '').toLowerCase();
     const viewerEmail = (currentUser.email || '').toLowerCase();
     const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro') || viewerEmail.includes('lucasguerreiro') || viewerEmail.includes('lucas.fernandes') || String(currentUser.id) === '1' || String(currentUser.id) === '3';
 
-    const targetName = (athlete.apelido || athlete.nome || '').toLowerCase();
-    const hasUltimateCard = athlete.card_ultimate === true || athlete.plano === 'ultimate' || athlete.vip || athlete.premium || athlete.card_style === 'fut';
-
-    let targetCanShowUltimate = hasUltimateCard;
-    if (isThisAthleteDisabled) {
-      targetCanShowUltimate = false;
-    }
-
-    const shouldShowUltimateCard = !isThisAthleteDisabled && targetCanShowUltimate;
+    const shouldShowUltimateCard = !isThisAthleteDisabled;
 
     // Cria overlay no DOM se não existir
     var modalOverlay = document.getElementById('modal-athlete-card-overlay');
