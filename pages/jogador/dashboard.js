@@ -662,14 +662,24 @@ var Dashboard = {
     document.body.style.overflow = '';
   },
 
-  // Ativa o card premium: persiste, fecha modal e transforma o card
+  // Ativa o card e plano premium para testes: persiste, fecha modal e transforma o card
   ativarCardPremium: function () {
     localStorage.setItem(this._PREMIUM_KEY, 'true');
+    localStorage.setItem('peladapro_vip_adquirido', 'true');
+    localStorage.setItem('peladapro_premium_adquirido', 'true');
+
+    if (Auth.currentUser) {
+      Auth.currentUser.vip = true;
+      Auth.currentUser.premium = true;
+      Auth.currentUser.plano = 'vip';
+      localStorage.setItem('currentUser', JSON.stringify(Auth.currentUser));
+      localStorage.setItem('usuario', JSON.stringify(Auth.currentUser));
+    }
 
     // Feedback visual no botão do modal
     var btn = document.getElementById('btn-modal-adquirir');
     if (btn) {
-      btn.textContent = '✓ Card Premium Ativo!';
+      btn.textContent = '✓ Versão Premium Ativada!';
       btn.disabled = true;
       btn.style.opacity = '0.7';
     }
@@ -681,9 +691,10 @@ var Dashboard = {
       document.body.style.overflow = '';
       self._aplicarEstiloPremium();
 
-      // Mostra toast de sucesso se disponível
-      if (window.Toast && window.Toast.show) {
-        window.Toast.show('🏆 Card Premium ativado com sucesso!', 'success');
+      if (window.App && window.App.showToast) {
+        window.App.showToast('🎉 Parabéns! Versão Premium Vitalícia (R$ 4,99) ativada gratuitamente para testes!', 'success');
+      } else if (window.Toast && window.Toast.show) {
+        window.Toast.show('🎉 Versão Premium Vitalícia ativada gratuitamente para testes!', 'success');
       }
     }, 800);
   },
