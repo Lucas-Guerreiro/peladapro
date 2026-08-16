@@ -1040,21 +1040,12 @@ var Dashboard = {
     var disabledList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
     var isAthleteDisabledByMaster = user && disabledList.map(String).includes(String(user.id));
 
-    var isLucasGuerreiro = false;
-    if (user) {
-      var name = (user.nome || user.name || user.apelido || '').toLowerCase();
-      var email = (user.email || '').toLowerCase();
-      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro') || email.includes('lucasguerreiro')) {
-        isLucasGuerreiro = true;
-      }
-    }
-
     var hasUltimateCard = user && (user.card_ultimate === true || user.plano === 'ultimate' || user.card_style === 'fut' || localStorage.getItem('peladapro_ultimate_purchased') === 'true');
     var isVipUser = (window.App && window.App.isVipPlan && window.App.isVipPlan());
     var savedStyle = localStorage.getItem('peladapro_card_style');
 
     var initialStyle = 'free';
-    if (!isAthleteDisabledByMaster && (isLucasGuerreiro || hasUltimateCard || isVipUser)) {
+    if (!isAthleteDisabledByMaster && (hasUltimateCard || isVipUser)) {
       initialStyle = savedStyle || 'fut';
     } else {
       localStorage.setItem('peladapro_card_style', 'free');
@@ -1075,6 +1066,7 @@ var Dashboard = {
 
     if (isAthleteDisabledByMaster) {
       style = 'free';
+      localStorage.setItem('peladapro_card_style', 'free');
     }
 
     if (style === 'premium') style = 'fut';
@@ -1114,21 +1106,19 @@ var Dashboard = {
     this.applyCardStyle('free');
   },
 
-  // Alterna entre os estilos (Básico ➔ FIFA Ultimate) para testes do gestor Lucas Fernandes Guerreiro
   toggleCardPremiumTeste: function () {
-    var currentStyle = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'fut' : 'free');
-    var nextStyle = currentStyle === 'free' ? 'fut' : 'free';
-
-    if (nextStyle === 'fut') {
+    var user = Auth.currentUser;
+    var disabledList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+    if (user && disabledList.map(String).includes(String(user.id))) {
       if (window.App && window.App.showToast) {
-        window.App.showToast("Você ativou o Modo Card FIFA ULTIMATE TEAM! 🔥⚽", "success");
+        window.App.showToast("🚫 O Card Premium deste atleta foi desativado pelo Controle Master.", "warning");
       }
-    } else {
-      if (window.App && window.App.showToast) {
-        window.App.showToast("Você retornou ao Modo Card BÁSICO. 🛑⭐", "info");
-      }
+      this.applyCardStyle('free');
+      return;
     }
 
+    var currentStyle = localStorage.getItem('peladapro_card_style') || 'free';
+    var nextStyle = currentStyle === 'free' ? 'fut' : 'free';
     this.applyCardStyle(nextStyle);
   },
 
@@ -1138,57 +1128,41 @@ var Dashboard = {
     if (!btnUpgrade) return;
 
     var user = Auth.currentUser;
-    var isLucasGuerreiro = false;
-    if (user) {
-      var name = (user.nome || user.name || user.apelido || '').toLowerCase();
-      if (name.includes('lucas fernandes') || name.includes('lucas guerreiro')) {
-        isLucasGuerreiro = true;
-      }
+    var disabledList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+    var isAthleteDisabledByMaster = user && disabledList.map(String).includes(String(user.id));
+    var style = localStorage.getItem('peladapro_card_style') || 'free';
+
+    if (isAthleteDisabledByMaster) {
+      btnUpgrade.classList.remove('ativo');
+      btnUpgrade.textContent = '⭐ Ativar Card Premium';
+      btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37)';
+      btnUpgrade.style.borderColor = '#D4AF37';
+      btnUpgrade.style.color = '#1A1A1A';
+      btnUpgrade.onclick = function () {
+        Dashboard.openModalPremium();
+      };
+      return;
     }
 
-    var style = localStorage.getItem('peladapro_card_style') || (localStorage.getItem(this._PREMIUM_KEY) === 'true' ? 'fut' : 'free');
-
-    if (isLucasGuerreiro) {
-      btnUpgrade.style.display = 'block';
-      if (style === 'free') {
-        btnUpgrade.classList.remove('ativo');
-        btnUpgrade.textContent = '⭐ Estilo: BÁSICO (Clique p/ alternar ➔ FIFA Ultimate)';
-        btnUpgrade.style.background = 'linear-gradient(135deg, #10B981, #059669)';
-        btnUpgrade.style.borderColor = '#10B981';
-        btnUpgrade.style.color = '#FFFFFF';
-      } else {
-        btnUpgrade.classList.add('ativo');
-        btnUpgrade.textContent = '🔥 Estilo: FIFA ULTIMATE TEAM (Clique p/ alternar ➔ Básico)';
-        btnUpgrade.style.background = 'linear-gradient(135deg, #8B1A1A, #C8102E)';
-        btnUpgrade.style.borderColor = '#F5D270';
-        btnUpgrade.style.color = '#FFFFFF';
-      }
+    if (style !== 'free') {
+      var isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
+      btnUpgrade.classList.add('ativo');
+      btnUpgrade.textContent = isNight ? '☀️ Alternar para Modo Claro' : '🌙 Alternar Modo Noturno (Tema do Time)';
+      btnUpgrade.style.background = isNight ? '#0F172A' : 'linear-gradient(135deg, #1E293B, #0F172A)';
+      btnUpgrade.style.borderColor = '#F5D270';
+      btnUpgrade.style.color = '#F5D270';
       btnUpgrade.onclick = function () {
-        Dashboard.toggleCardPremiumTeste();
+        window.App.toggleModoNoturnoGlobal();
       };
     } else {
-      if (style !== 'free') {
-        // Após adquirir o Card Premium, o botão '✓ Card Premium Ativo' deixa de existir
-        // e em seu lugar é exibido o botão para alternar o Modo Noturno / Assinatura Premium
-        var isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
-        btnUpgrade.classList.add('ativo');
-        btnUpgrade.textContent = isNight ? '☀️ Alternar para Modo Claro' : '🌙 Alternar Modo Noturno (Tema do Time)';
-        btnUpgrade.style.background = isNight ? '#0F172A' : 'linear-gradient(135deg, #1E293B, #0F172A)';
-        btnUpgrade.style.borderColor = '#F5D270';
-        btnUpgrade.style.color = '#F5D270';
-        btnUpgrade.onclick = function () {
-          window.App.toggleModoNoturnoGlobal();
-        };
-      } else {
-        btnUpgrade.classList.remove('ativo');
-        btnUpgrade.textContent = '⭐ Ativar Card Premium';
-        btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37)';
-        btnUpgrade.style.borderColor = '#D4AF37';
-        btnUpgrade.style.color = '#1A1A1A';
-        btnUpgrade.onclick = function () {
-          Dashboard.openModalPremium();
-        };
-      }
+      btnUpgrade.classList.remove('ativo');
+      btnUpgrade.textContent = '⭐ Ativar Card Premium';
+      btnUpgrade.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270, #D4AF37)';
+      btnUpgrade.style.borderColor = '#D4AF37';
+      btnUpgrade.style.color = '#1A1A1A';
+      btnUpgrade.onclick = function () {
+        Dashboard.openModalPremium();
+      };
     }
   }
 };

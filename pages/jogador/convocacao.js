@@ -715,15 +715,14 @@ var Convocacao = {
     const viewerIsLucas = viewerName.includes('lucas fernandes') || viewerName.includes('lucas guerreiro') || viewerEmail.includes('lucasguerreiro') || viewerEmail.includes('lucas.fernandes') || String(currentUser.id) === '1' || String(currentUser.id) === '3';
 
     const targetName = (athlete.apelido || athlete.nome || '').toLowerCase();
-    const targetIsLucas = targetName.includes('lucas fernandes') || targetName.includes('lucas guerreiro');
-    const hasUltimateCard = athlete.card_ultimate === true || athlete.plano === 'ultimate' || athlete.vip || athlete.premium || targetIsLucas;
+    const hasUltimateCard = athlete.card_ultimate === true || athlete.plano === 'ultimate' || athlete.vip || athlete.premium || athlete.card_style === 'fut';
 
     let targetCanShowUltimate = hasUltimateCard;
     if (isThisAthleteDisabled) {
       targetCanShowUltimate = false;
     }
 
-    const shouldShowUltimateCard = targetCanShowUltimate || (viewerIsLucas && !isThisAthleteDisabled);
+    const shouldShowUltimateCard = !isThisAthleteDisabled && targetCanShowUltimate;
 
     // Cria overlay no DOM se não existir
     var modalOverlay = document.getElementById('modal-athlete-card-overlay');

@@ -936,6 +936,25 @@ function checkLucasMasterControls() {
       } else {
         disabledList.push(idStr);
         saveDisabledAthletesList(disabledList);
+
+        // Se o atleta desativado for o próprio usuário logado, limpa as chaves locais
+        const currUser = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
+        if (String(currUser.id) === idStr) {
+          localStorage.removeItem('peladapro_ultimate_purchased');
+          localStorage.removeItem('peladapro_vip_adquirido');
+          localStorage.removeItem('peladapro_premium_adquirido');
+          localStorage.setItem('peladapro_card_style', 'free');
+          if (currUser) {
+            currUser.card_ultimate = false;
+            currUser.vip = false;
+            currUser.premium = false;
+            currUser.plano = 'gratis';
+            currUser.card_style = 'free';
+            localStorage.setItem('currentUser', JSON.stringify(currUser));
+            localStorage.setItem('usuario', JSON.stringify(currUser));
+          }
+        }
+
         if (window.App && window.App.showToast) window.App.showToast("🚫 Card Premium DESATIVADO para este atleta!", "warning");
       }
 

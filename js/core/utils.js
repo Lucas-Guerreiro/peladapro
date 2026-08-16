@@ -219,9 +219,22 @@ window.Utils = Utils;
 
 window.App = window.App || {};
 
+window.App.isAthleteCardDisabled = function (athleteId) {
+  if (!athleteId) return false;
+  try {
+    const disabledList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+    return disabledList.map(String).includes(String(athleteId));
+  } catch (e) {
+    return false;
+  }
+};
+
 window.App.isVipPlan = function () {
   try {
     const user = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || JSON.parse(localStorage.getItem('usuario') || localStorage.getItem('currentUser') || '{}');
+    if (user && user.id && window.App.isAthleteCardDisabled(user.id)) {
+      return false;
+    }
     if (user && (user.vip === true || user.premium === true || user.is_vip === true || user.plano === 'vip' || user.plano === 'premium')) {
       return true;
     }
