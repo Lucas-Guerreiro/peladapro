@@ -970,12 +970,33 @@
       </div>
     </div>
 
-    <!-- Preço + Oferta de Teste Vitalício -->
-    <div style="margin: 0 20px 12px; background: rgba(30, 41, 59, 0.95); border: 1.5px solid #F5D270; border-radius: 16px; padding: 18px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4);">
-      <div style="display: inline-block; background: #FEF3C7; color: #B45309; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-        🎁 OFERTA DE LANÇAMENTO
+    <!-- OPÇÃO 1: CARD ULTIMATE (PERFIL DO ATLETA) -->
+    <div style="margin: 0 20px 16px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 16px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏆</span>
+          <div>
+            <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #F5D270;">1. Card Ultimate (Perfil)</h4>
+            <span style="font-size: 11px; color: #94A3B8;">Estilo de Brasão FUT reluzente para o seu perfil</span>
+          </div>
+        </div>
       </div>
-      <p style="font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px;">Assinatura Premium Vitalícia</p>
+      <p style="font-size: 11px; color: #CBD5E1; margin: 0 0 12px; line-height: 1.4;">
+        Altera visualmente o card do seu perfil no sistema para a moldura FIFA Ultimate. <em>(Não libera Modo Noturno/Tema do Time no sistema).</em>
+      </p>
+      <button id="btn-modal-ativar-ultimate" onclick="Dashboard.ativarApenasCardUltimate()"
+        style="width: 100%; background: linear-gradient(135deg, #D4AF37, #F5D270); color: #1A1A1A; font-weight: 800; font-size: 13px; border: none; border-radius: 10px; padding: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">
+        🏆 Ativar Apenas Card Ultimate
+      </button>
+    </div>
+
+    <!-- OPÇÃO 2: ASSINATURA VIP / PREMIUM (SISTEMA & MODO NOTURNO) -->
+    <div style="margin: 0 20px 16px; background: rgba(30, 41, 59, 0.95); border: 1.5px solid #10B981; border-radius: 16px; padding: 18px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4);">
+      <div style="display: inline-block; background: #FEF3C7; color: #B45309; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+        🎁 OFERTA SEPARADA DE LANÇAMENTO
+      </div>
+      <h4 style="font-size: 15px; font-weight: 800; color: #10B981; margin: 0 0 4px;">2. Assinatura VIP / Premium (Sistema)</h4>
+      <p style="font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px;">Acesso Completo ao Sistema</p>
       
       <!-- Preço De R$ 4,99 Por GRÁTIS -->
       <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 4px 0 6px;">
@@ -983,24 +1004,24 @@
         <span style="font-size: 32px; font-weight: 900; color: #10B981; line-height: 1;">GRÁTIS</span>
       </div>
 
-      <p style="font-size: 12px; color: #E2E8F0; font-weight: 600; margin: 0 0 16px;">
-        Preço normal de <strong>R$ 4,99 vitalício</strong>. Aproveite o período de testes e ative agora <strong>sem nenhum custo</strong>!
+      <p style="font-size: 12px; color: #E2E8F0; font-weight: 600; margin: 0 0 14px; line-height: 1.4;">
+        Preço normal de <strong>R$ 4,99 vitalício</strong>. Libera o Modo Noturno com as cores do seu time no aplicativo! Ative agora <strong>sem custo</strong> no período de testes.
       </p>
 
-      <button id="btn-modal-adquirir" onclick="Dashboard.ativarCardPremium()"
-        style="width: 100%; background: linear-gradient(135deg, #10B981, #059669); color: #FFFFFF; font-weight: 800; font-size: 15px; border: none; border-radius: 12px; padding: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 16px rgba(16,185,129,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
-        ✨ Ativar Versão Premium Grátis (Testes)
+      <button id="btn-modal-adquirir" onclick="Dashboard.ativarApenasAssinaturaVIP()"
+        style="width: 100%; background: linear-gradient(135deg, #10B981, #059669); color: #FFFFFF; font-weight: 800; font-size: 14px; border: none; border-radius: 12px; padding: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 16px rgba(16,185,129,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
+        ✨ Ativar Assinatura VIP / Premium (Grátis)
       </button>
 
       <p style="font-size: 11px; color: #94A3B8; margin: 12px 0 0;">
-        🔒 Sem cobrança • Acesso Vitalício • Grátis no Período de Testes
+        🔒 Adquirido separadamente do Card Ultimate • Grátis para Testes
       </p>
     </div>
 
     <!-- Banner modo teste -->
-    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 20px 10px;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 20px 14px;">
       <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
-      <span style="font-size: 12px; color: #10B981; font-weight: 600;">Modo Teste — Grátis no Período Atual</span>
+      <span style="font-size: 12px; color: #10B981; font-weight: 600;">Modo Teste — Produtos Adquiridos Separadamente</span>
     </div>
 
   </div>
