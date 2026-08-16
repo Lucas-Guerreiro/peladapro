@@ -221,15 +221,9 @@ window.App = window.App || {};
 
 window.App.isVipPlan = function () {
   try {
-    const user = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
-    if (user) {
-      if (user.vip === true || user.premium === true || user.is_vip === true || user.plano === 'vip' || user.plano === 'premium') {
-        return true;
-      }
-    }
-    const override = localStorage.getItem('pp_vip_test_override');
-    if (override) {
-      return override === 'ativa';
+    const user = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || JSON.parse(localStorage.getItem('usuario') || localStorage.getItem('currentUser') || '{}');
+    if (user && (user.vip === true || user.premium === true || user.is_vip === true || user.plano === 'vip' || user.plano === 'premium')) {
+      return true;
     }
   } catch (e) { }
   return false;

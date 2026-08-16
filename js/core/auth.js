@@ -413,6 +413,15 @@ const Auth = {
   _startSession(player, forcedRole = null) {
     this.currentUser = player;
 
+    // Limpa chaves VIP legadas se o atleta não for VIP ativo no servidor
+    const isVipInBackend = player && (player.vip === true || player.premium === true || player.is_vip === true || player.plano === 'vip' || player.plano === 'premium');
+    if (!isVipInBackend) {
+      localStorage.removeItem('peladapro_vip_adquirido');
+      localStorage.removeItem('peladapro_premium_adquirido');
+      localStorage.removeItem('peladapro_is_vip');
+      localStorage.removeItem('pp_vip_test_override');
+    }
+
     const isGestorOnly = (player.tipo === 'gestor');
     const isJogadorOnly = (player.tipo === 'jogador');
     let activeRole = 'jogador';
