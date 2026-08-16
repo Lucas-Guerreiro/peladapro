@@ -1066,7 +1066,19 @@ var Dashboard = {
 
     if (isAthleteDisabledByMaster) {
       style = 'free';
+      localStorage.removeItem('peladapro_ultimate_purchased');
+      localStorage.removeItem('peladapro_vip_adquirido');
+      localStorage.removeItem('peladapro_premium_adquirido');
       localStorage.setItem('peladapro_card_style', 'free');
+      if (user) {
+        user.card_ultimate = false;
+        user.vip = false;
+        user.premium = false;
+        user.plano = 'gratis';
+        user.card_style = 'free';
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('usuario', JSON.stringify(user));
+      }
     }
 
     if (style === 'premium') style = 'fut';
@@ -1074,20 +1086,30 @@ var Dashboard = {
 
     localStorage.setItem('peladapro_card_style', style);
 
+    if (style === 'free') {
+      if (card) {
+        card.classList.remove('premium-ativo', 'fut-ultimate-ativo', 'has-team-theme');
+        card.removeAttribute('style');
+        card.querySelectorAll('[style]').forEach(function (el) {
+          el.removeAttribute('style');
+        });
+      }
+      if (badgeVip) {
+        badgeVip.classList.add('hidden');
+      }
+      this.updatePremiumButtonState();
+      return;
+    }
+
     if (card) {
       card.classList.remove('premium-ativo', 'fut-ultimate-ativo');
 
-      if (style === 'fut' || style === 'premium') {
+      if (style === 'fut') {
         card.classList.add('fut-ultimate-ativo');
       }
 
-      if (user && user.time_coracao && style !== 'free') {
+      if (user && user.time_coracao) {
         this.applyTeamCardTheme(card, user.time_coracao);
-      } else {
-        card.style.removeProperty('background');
-        card.style.removeProperty('border-color');
-        card.style.removeProperty('border-width');
-        card.style.removeProperty('box-shadow');
       }
     }
 

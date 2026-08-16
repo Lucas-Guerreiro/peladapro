@@ -953,6 +953,9 @@ function checkLucasMasterControls() {
             localStorage.setItem('currentUser', JSON.stringify(currUser));
             localStorage.setItem('usuario', JSON.stringify(currUser));
           }
+          if (window.Dashboard && window.Dashboard.applyCardStyle) {
+            window.Dashboard.applyCardStyle('free');
+          }
         }
 
         if (window.App && window.App.showToast) window.App.showToast("🚫 Card Premium DESATIVADO para este atleta!", "warning");

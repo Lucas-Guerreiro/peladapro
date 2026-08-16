@@ -971,6 +971,27 @@ var Convocacao = {
             } else {
               dList.push(athIdStr);
               localStorage.setItem('peladapro_disabled_premium_athletes', JSON.stringify(dList));
+
+              const cUser = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
+              if (String(cUser.id) === athIdStr) {
+                localStorage.removeItem('peladapro_ultimate_purchased');
+                localStorage.removeItem('peladapro_vip_adquirido');
+                localStorage.removeItem('peladapro_premium_adquirido');
+                localStorage.setItem('peladapro_card_style', 'free');
+                if (cUser) {
+                  cUser.card_ultimate = false;
+                  cUser.vip = false;
+                  cUser.premium = false;
+                  cUser.plano = 'gratis';
+                  cUser.card_style = 'free';
+                  localStorage.setItem('currentUser', JSON.stringify(cUser));
+                  localStorage.setItem('usuario', JSON.stringify(cUser));
+                }
+                if (window.Dashboard && window.Dashboard.applyCardStyle) {
+                  window.Dashboard.applyCardStyle('free');
+                }
+              }
+
               if (window.App && window.App.showToast) window.App.showToast(`🚫 Card Premium DESATIVADO para ${targetAthleteName}!`, 'warning');
             }
             Convocacao.closePlayerCardModal();
