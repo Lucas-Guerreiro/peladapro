@@ -281,11 +281,15 @@ window.App.toggleModoNoturnoGlobal = function () {
 };
 
 window.App.applyModoNoturnoGlobal = function (isNight) {
-  if (window.App.isVipPlan && !window.App.isVipPlan()) {
-    isNight = false;
-  } else if (isNight === undefined) {
-    isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
-  }
+  if (window.App._isApplyingModoNoturno) return;
+  window.App._isApplyingModoNoturno = true;
+
+  try {
+    if (window.App.isVipPlan && !window.App.isVipPlan()) {
+      isNight = false;
+    } else if (isNight === undefined) {
+      isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
+    }
 
   const user = window.Auth ? window.Auth.currentUser : null;
   let teamName = user ? user.time_coracao : null;
@@ -365,6 +369,9 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
 
   if (window.Dashboard && window.Dashboard.applyModoNoturno) {
     window.Dashboard.applyModoNoturno(isNight);
+  }
+  } finally {
+    window.App._isApplyingModoNoturno = false;
   }
 };
 

@@ -1024,10 +1024,13 @@ var Dashboard = {
   },
 
   applyModoNoturno: function (isNight) {
-    if (window.App && window.App.applyModoNoturnoGlobal) {
-      window.App.applyModoNoturnoGlobal(isNight);
-    } else {
-      document.body.classList.remove('modo-noturno-ativo');
+    var card = document.getElementById('player-fifa-card');
+    var user = Auth.currentUser;
+    if (card && isNight && user && user.time_coracao) {
+      var style = localStorage.getItem('peladapro_card_style') || 'free';
+      if (style !== 'free') {
+        this.applyTeamCardTheme(card, user.time_coracao);
+      }
     }
   },
 

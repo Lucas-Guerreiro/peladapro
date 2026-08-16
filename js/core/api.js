@@ -305,6 +305,10 @@ const Api = {
 
   async listarDatasDoGrupo(grupoId) {
     if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
+    if (isNaN(Number(grupoId)) && String(grupoId).startsWith('g')) {
+      const localPeladas = this.getPeladas() || [];
+      return localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
+    }
     const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
     try {
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
