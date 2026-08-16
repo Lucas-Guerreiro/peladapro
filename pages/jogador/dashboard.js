@@ -1037,6 +1037,9 @@ var Dashboard = {
 
   initCardStyle: function () {
     var user = Auth.currentUser;
+    var disabledList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+    var isAthleteDisabledByMaster = user && disabledList.map(String).includes(String(user.id));
+
     var isLucasGuerreiro = false;
     if (user) {
       var name = (user.nome || user.name || user.apelido || '').toLowerCase();
@@ -1047,11 +1050,11 @@ var Dashboard = {
     }
 
     var hasUltimateCard = user && (user.card_ultimate === true || user.plano === 'ultimate' || user.card_style === 'fut' || localStorage.getItem('peladapro_ultimate_purchased') === 'true');
-    var isVipUser = (window.App && window.App.isVipPlan && window.App.isVipPlan()) || isLucasGuerreiro;
+    var isVipUser = (window.App && window.App.isVipPlan && window.App.isVipPlan());
     var savedStyle = localStorage.getItem('peladapro_card_style');
 
     var initialStyle = 'free';
-    if (isLucasGuerreiro || hasUltimateCard || isVipUser) {
+    if (!isAthleteDisabledByMaster && (isLucasGuerreiro || hasUltimateCard || isVipUser)) {
       initialStyle = savedStyle || 'fut';
     } else {
       localStorage.setItem('peladapro_card_style', 'free');
@@ -1067,6 +1070,13 @@ var Dashboard = {
     var badgeVip = document.getElementById('badge-vip-card');
     var user = Auth.currentUser;
 
+    var disabledList = JSON.parse(localStorage.getItem('peladapro_disabled_premium_athletes') || '[]');
+    var isAthleteDisabledByMaster = user && disabledList.map(String).includes(String(user.id));
+
+    if (isAthleteDisabledByMaster) {
+      style = 'free';
+    }
+
     if (style === 'premium') style = 'fut';
     if (!style) style = 'free';
 
@@ -1081,6 +1091,11 @@ var Dashboard = {
 
       if (user && user.time_coracao && style !== 'free') {
         this.applyTeamCardTheme(card, user.time_coracao);
+      } else {
+        card.style.removeProperty('background');
+        card.style.removeProperty('border-color');
+        card.style.removeProperty('border-width');
+        card.style.removeProperty('box-shadow');
       }
     }
 
