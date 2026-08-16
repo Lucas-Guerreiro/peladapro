@@ -836,6 +836,50 @@ const Api = {
     } catch(e) {
       return { error: 'Erro ao conectar ao servidor para simular aprovação.' };
     }
+  },
+
+  async atualizarPerfil(dados) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('/api/usuarios/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(dados)
+      });
+      const data = await res.json();
+      if (res.ok && data.usuario) {
+        const currentUser = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
+        const updated = Object.assign({}, currentUser, data.usuario);
+        if (window.Auth) window.Auth.currentUser = updated;
+        localStorage.setItem('currentUser', JSON.stringify(updated));
+        localStorage.setItem('usuario', JSON.stringify(updated));
+      }
+      return data;
+    } catch(e) {
+      return { error: 'Erro ao conectar ao servidor para atualizar perfil.' };
+    }
+  },
+
+  async atualizarUsuarioPorGestor(atletaId, dados) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch(`/api/usuarios/${atletaId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(dados)
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro ao conectar ao servidor.' };
+    }
   }
 };
 

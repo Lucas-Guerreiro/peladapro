@@ -932,10 +932,19 @@ function checkLucasMasterControls() {
       if (index >= 0) {
         disabledList.splice(index, 1);
         saveDisabledAthletesList(disabledList);
+
+        if (window.Api && window.Api.atualizarUsuarioPorGestor) {
+          window.Api.atualizarUsuarioPorGestor(selectedId, { vip: true, premium: true, card_ultimate: true, plano: 'vip' }).catch(e => console.warn('[Api] Erro ao reativar no backend:', e));
+        }
+
         if (window.App && window.App.showToast) window.App.showToast("✨ Card Premium REATIVADO para este atleta!", "success");
       } else {
         disabledList.push(idStr);
         saveDisabledAthletesList(disabledList);
+
+        if (window.Api && window.Api.atualizarUsuarioPorGestor) {
+          window.Api.atualizarUsuarioPorGestor(selectedId, { vip: false, premium: false, card_ultimate: false, plano: 'gratis' }).catch(e => console.warn('[Api] Erro ao desativar no backend:', e));
+        }
 
         // Se o atleta desativado for o próprio usuário logado, limpa as chaves locais
         const currUser = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');

@@ -1,10 +1,22 @@
 const db = require('../config/database');
 
+// Migration automática para garantir colunas VIP/Ultimate na tabela usuarios
+(async () => {
+  try {
+    await db.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS vip BOOLEAN DEFAULT FALSE");
+    await db.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS premium BOOLEAN DEFAULT FALSE");
+    await db.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS card_ultimate BOOLEAN DEFAULT FALSE");
+    await db.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS plano VARCHAR(50) DEFAULT 'gratis'");
+  } catch (e) {
+    console.warn('[DB Migration] Notice on usuarios columns:', e.message);
+  }
+})();
+
 exports.me = async (req, res) => {
   const usuario_id = req.usuarioId;
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, ativo, time_coracao FROM usuarios WHERE id = $1',
+      'SELECT id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, ativo, time_coracao, vip, premium, card_ultimate, plano FROM usuarios WHERE id = $1',
       [usuario_id]
     );
 
@@ -20,7 +32,7 @@ exports.me = async (req, res) => {
 
 exports.atualizarPerfil = async (req, res) => {
   const usuario_id = req.usuarioId;
-  const { nome, apelido, email, senha, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao, time_coracao } = req.body;
+  const { nome, apelido, email, senha, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao, time_coracao, vip, premium, card_ultimate, plano } = req.body;
 
   try {
     const bcrypt = require('bcrypt');
@@ -62,7 +74,7 @@ exports.atualizarPerfil = async (req, res) => {
       newHash = await bcrypt.hash(senha.trim(), 10);
     }
 
-    // 4. Executar UPDATE flexível
+    // 4. Executar UPDATE flexível com persistência de colunas VIP/Ultimate
     const query = `
       UPDATE usuarios 
       SET nome = COALESCE($1, nome),
@@ -75,9 +87,13 @@ exports.atualizarPerfil = async (req, res) => {
           cpf = COALESCE($8, cpf),
           data_nascimento = COALESCE($9, data_nascimento),
           autoavaliacao = COALESCE($10, autoavaliacao),
-          time_coracao = COALESCE($11, time_coracao)
-      WHERE id = $12
-      RETURNING id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, time_coracao`;
+          time_coracao = COALESCE($11, time_coracao),
+          vip = COALESCE($12, vip),
+          premium = COALESCE($13, premium),
+          card_ultimate = COALESCE($14, card_ultimate),
+          plano = COALESCE($15, plano)
+      WHERE id = $16
+      RETURNING id, nome, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, apelido, foto, saldo, gols, partidas, avaliacao_media, time_coracao, vip, premium, card_ultimate, plano`;
     
     const { rows } = await db.query(query, [
       nome ? nome.trim() : null, 
@@ -91,6 +107,10 @@ exports.atualizarPerfil = async (req, res) => {
       data_nascimento || null,
       autoavaliacao !== undefined && parseInt(autoavaliacao) >= 1 && parseInt(autoavaliacao) <= 5 ? parseInt(autoavaliacao) : null,
       time_coracao !== undefined ? (time_coracao ? time_coracao.trim() : null) : null,
+      vip !== undefined ? !!vip : null,
+      premium !== undefined ? !!premium : null,
+      card_ultimate !== undefined ? !!card_ultimate : null,
+      plano !== undefined ? plano : null,
       usuario_id
     ]);
 
@@ -104,7 +124,7 @@ exports.atualizarPerfil = async (req, res) => {
 exports.listarTodos = async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao FROM usuarios ORDER BY nome ASC'
+      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao, vip, premium, card_ultimate, plano FROM usuarios ORDER BY nome ASC'
     );
     res.json(rows);
   } catch (err) {
@@ -116,7 +136,7 @@ exports.obterDetalhes = async (req, res) => {
   const { id } = req.params;
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao FROM usuarios WHERE id = $1',
+      'SELECT id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, foto, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao, vip, premium, card_ultimate, plano FROM usuarios WHERE id = $1',
       [id]
     );
 
@@ -333,20 +353,18 @@ exports.atualizarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem atualizar outros atletas.' });
   }
 
-  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao } = req.body;
-
-  if (!nome) {
-    return res.status(400).json({ error: 'O nome é obrigatório.' });
-  }
+  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao, vip, premium, card_ultimate, plano } = req.body;
 
   try {
     const bcrypt = require('bcrypt');
 
     // 1. Verificar se o atleta existe
-    const { rows: userCheck } = await db.query('SELECT id, email FROM usuarios WHERE id = $1', [id]);
+    const { rows: userCheck } = await db.query('SELECT id, email, nome FROM usuarios WHERE id = $1', [id]);
     if (userCheck.length === 0) {
       return res.status(404).json({ error: 'Atleta não encontrado.' });
     }
+
+    const nomeFinal = nome ? nome.trim() : userCheck[0].nome;
 
     // 2. Verificar unicidade de e-mail se foi alterado
     if (email && email.trim().toLowerCase() !== userCheck[0].email.toLowerCase()) {
@@ -379,34 +397,42 @@ exports.atualizarPorGestor = async (req, res) => {
     // 5. Atualizar no banco PostgreSQL
     const query = `
       UPDATE usuarios 
-      SET nome = $1,
-          apelido = $2,
-          cpf = $3,
-          data_nascimento = $4,
-          whatsapp = $5,
-          goleiro = $6,
+      SET nome = COALESCE($1, nome),
+          apelido = COALESCE($2, apelido),
+          cpf = COALESCE($3, cpf),
+          data_nascimento = COALESCE($4, data_nascimento),
+          whatsapp = COALESCE($5, whatsapp),
+          goleiro = COALESCE($6, goleiro),
           autoavaliacao = COALESCE($7, autoavaliacao),
           foto = COALESCE($8, foto),
           avaliacao_media = COALESCE($9, avaliacao_media),
           email = COALESCE($10, email),
           senha_hash = COALESCE($11, senha_hash),
-          time_coracao = COALESCE($12, time_coracao)
-      WHERE id = $13
-      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao`;
+          time_coracao = COALESCE($12, time_coracao),
+          vip = COALESCE($13, vip),
+          premium = COALESCE($14, premium),
+          card_ultimate = COALESCE($15, card_ultimate),
+          plano = COALESCE($16, plano)
+      WHERE id = $17
+      RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao, vip, premium, card_ultimate, plano`;
 
     const { rows } = await db.query(query, [
-      nome.trim(),
-      apelido ? apelido.trim() : nome.split(' ')[0],
+      nomeFinal,
+      apelido ? apelido.trim() : null,
       cpf ? cpf.trim() : null,
       data_nascimento || null,
       whatsapp || null,
-      !!goleiro,
+      goleiro !== undefined ? !!goleiro : null,
       autoavaliacao !== undefined && parseInt(autoavaliacao) >= 1 && parseInt(autoavaliacao) <= 5 ? parseInt(autoavaliacao) : null,
       foto || null,
       autoavaliacao !== undefined && parseFloat(autoavaliacao) >= 1 && parseFloat(autoavaliacao) <= 5 ? parseFloat(autoavaliacao) : null,
       email ? email.trim().toLowerCase() : null,
       newHash,
       time_coracao ? time_coracao.trim() : null,
+      vip !== undefined ? !!vip : null,
+      premium !== undefined ? !!premium : null,
+      card_ultimate !== undefined ? !!card_ultimate : null,
+      plano !== undefined ? plano : null,
       id
     ]);
 

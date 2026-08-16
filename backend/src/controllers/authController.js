@@ -250,7 +250,11 @@ exports.login = async (req, res) => {
         partidas: usuario.partidas,
         avaliacao_media: parseFloat(usuario.avaliacao_media || 0),
         verificado: true,
-        time_coracao: usuario.time_coracao
+        time_coracao: usuario.time_coracao,
+        vip: usuario.vip === true,
+        premium: usuario.premium === true,
+        card_ultimate: usuario.card_ultimate === true,
+        plano: usuario.plano || 'gratis'
       }
     });
   } catch (err) {

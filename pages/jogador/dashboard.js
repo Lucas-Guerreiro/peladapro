@@ -688,8 +688,8 @@ var Dashboard = {
     document.body.style.overflow = '';
   },
 
-  // 1. Ativa APENAS o Card Ultimate do Perfil (cosmético de perfil, sem dar VIP/modo noturno)
-  ativarApenasCardUltimate: function () {
+  // 1. Ativa APENAS o Card Ultimate do Perfil (persiste no backend e localStorage)
+  ativarApenasCardUltimate: async function () {
     localStorage.setItem('peladapro_ultimate_purchased', 'true');
     localStorage.setItem('peladapro_card_style', 'fut');
 
@@ -698,6 +698,10 @@ var Dashboard = {
       Auth.currentUser.card_style = 'fut';
       localStorage.setItem('currentUser', JSON.stringify(Auth.currentUser));
       localStorage.setItem('usuario', JSON.stringify(Auth.currentUser));
+    }
+
+    if (window.Api && window.Api.atualizarPerfil) {
+      window.Api.atualizarPerfil({ card_ultimate: true, plano: 'ultimate' }).catch(e => console.warn('[Api] Erro ao persistir card_ultimate no backend:', e));
     }
 
     var btn = document.getElementById('btn-modal-ativar-ultimate');
@@ -719,8 +723,8 @@ var Dashboard = {
     }, 800);
   },
 
-  // 2. Ativa APENAS a Assinatura VIP / Premium (Sistema, Modo Noturno e Cores do Time)
-  ativarApenasAssinaturaVIP: function () {
+  // 2. Ativa APENAS a Assinatura VIP / Premium (persiste no backend e localStorage)
+  ativarApenasAssinaturaVIP: async function () {
     localStorage.setItem('peladapro_vip_adquirido', 'true');
 
     if (Auth.currentUser) {
@@ -729,6 +733,10 @@ var Dashboard = {
       Auth.currentUser.plano = 'vip';
       localStorage.setItem('currentUser', JSON.stringify(Auth.currentUser));
       localStorage.setItem('usuario', JSON.stringify(Auth.currentUser));
+    }
+
+    if (window.Api && window.Api.atualizarPerfil) {
+      window.Api.atualizarPerfil({ vip: true, premium: true, plano: 'vip' }).catch(e => console.warn('[Api] Erro ao persistir VIP no backend:', e));
     }
 
     var btn = document.getElementById('btn-modal-adquirir');

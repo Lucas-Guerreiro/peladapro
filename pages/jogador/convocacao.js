@@ -967,10 +967,19 @@ var Convocacao = {
             if (idx >= 0) {
               dList.splice(idx, 1);
               localStorage.setItem('peladapro_disabled_premium_athletes', JSON.stringify(dList));
+
+              if (window.Api && window.Api.atualizarUsuarioPorGestor) {
+                window.Api.atualizarUsuarioPorGestor(athIdStr, { vip: true, premium: true, card_ultimate: true, plano: 'vip' }).catch(e => console.warn('[Api] Erro ao reativar no backend:', e));
+              }
+
               if (window.App && window.App.showToast) window.App.showToast(`✨ Card Premium REATIVADO para ${targetAthleteName}!`, 'success');
             } else {
               dList.push(athIdStr);
               localStorage.setItem('peladapro_disabled_premium_athletes', JSON.stringify(dList));
+
+              if (window.Api && window.Api.atualizarUsuarioPorGestor) {
+                window.Api.atualizarUsuarioPorGestor(athIdStr, { vip: false, premium: false, card_ultimate: false, plano: 'gratis' }).catch(e => console.warn('[Api] Erro ao desativar no backend:', e));
+              }
 
               const cUser = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('usuario') || '{}');
               if (String(cUser.id) === athIdStr) {
