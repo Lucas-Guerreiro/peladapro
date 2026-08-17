@@ -504,13 +504,33 @@ const Api = {
   async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams) {
     if (!peladaId) return { error: 'Pelada ID não informado.' };
 
-    const liveStateObj = { liveMatch, waitingQueue, teams };
+    // Sanitiza 'teams' removendo fotos base64 gigantes dos jogadores para EVITAR ERRO 413 (Content Too Large)
+    let cleanTeams = teams;
+    if (Array.isArray(teams)) {
+      cleanTeams = teams.map(t => {
+        if (!t) return t;
+        const cleanT = { ...t };
+        if (Array.isArray(cleanT.jogadores)) {
+          cleanT.jogadores = cleanT.jogadores.map(j => {
+            if (!j) return j;
+            const { foto, ...rest } = j;
+            if (foto && String(foto).startsWith('data:')) {
+              return rest;
+            }
+            return j;
+          });
+        }
+        return cleanT;
+      });
+    }
+
+    const liveStateObj = { liveMatch, waitingQueue, teams: cleanTeams };
 
     // Salva localmente para resposta instantânea na UI
     try {
       if (liveMatch) localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
       if (waitingQueue) localStorage.setItem("waitingQueue", JSON.stringify(waitingQueue));
-      if (teams) localStorage.setItem("teams", JSON.stringify(teams));
+      if (cleanTeams && cleanTeams.length > 0) localStorage.setItem("teams", JSON.stringify(cleanTeams));
     } catch (e) {}
 
     // 1. Tenta via Supabase direto (JAMstack / Vercel)
@@ -535,9 +555,28 @@ const Api = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ liveMatch, waitingQueue, teams })
+          body: JSON.stringify(liveStateObj)
         });
         if (res.ok) return await res.json();
+        else if (res.status === 413) {
+          console.warn('[Api] 413 Content Too Large em /live. Tentando enviar payload compacto...');
+          const ultraCleanTeams = (cleanTeams || []).map(t => ({
+            id: t.id,
+            nome: t.nome || t.name,
+            cor: t.cor,
+            emblema: t.emblema,
+            jogadores: (t.jogadores || []).map(j => ({ id: j.id, nome: j.nome || j.name, posicao: j.posicao }))
+          }));
+          const res2 = await fetch(`/api/peladas/${peladaId}/live`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ liveMatch, waitingQueue, teams: ultraCleanTeams })
+          });
+          if (res2.ok) return await res2.json();
+        }
       } catch(e) {}
     }
 

@@ -1840,21 +1840,30 @@ async function carregarLiveStateDaPelada(peladaId) {
     }
   }
 
-  // 2. Leitura dos dados guardados no localStorage local (garante resgate do sorteio do gestor)
+  // Leitura dos dados guardados no localStorage local (garante resgate do sorteio do gestor)
   const localTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams");
   const localQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue");
   const localLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch");
 
-  // Prioriza o servidor se ele tiver times; se o servidor retornar null/vazio, NUNCA apaga o sorteio local!
-  const finalTeams = (serverTeams && serverTeams.length > 0) 
-    ? serverTeams 
-    : ((localTeams && localTeams.length > 0) ? localTeams : (window.App.teams || []));
+  // Prioriza o sorteio local se ele tiver mais ou o mesmo número de times do servidor (evita que servidor desatualizado apague o sorteio recente)
+  let finalTeams = [];
+  if (localTeams && Array.isArray(localTeams) && localTeams.length > 0) {
+    if (!serverTeams || serverTeams.length <= localTeams.length) {
+      finalTeams = localTeams;
+    } else {
+      finalTeams = serverTeams;
+    }
+  } else if (serverTeams && Array.isArray(serverTeams) && serverTeams.length > 0) {
+    finalTeams = serverTeams;
+  } else {
+    finalTeams = window.App.teams || [];
+  }
 
-  const finalQueue = (serverQueue && serverQueue.length > 0) 
-    ? serverQueue 
-    : (localQueue || window.App.waitingQueue || []);
+  const finalQueue = (localQueue && Array.isArray(localQueue) && localQueue.length > 0) 
+    ? localQueue 
+    : ((serverQueue && Array.isArray(serverQueue)) ? serverQueue : (window.App.waitingQueue || []));
 
-  const finalLiveMatch = serverLiveMatch || localLiveMatch || window.App.liveMatch;
+  const finalLiveMatch = localLiveMatch || serverLiveMatch || window.App.liveMatch;
 
   window.App.teams = finalTeams;
   window.App.waitingQueue = finalQueue;
@@ -2001,7 +2010,35 @@ function renderTournamentUI() {
 
   const peladaAtiva = window.App.activePelada || {};
   const liveMatch = window.App.liveMatch || {};
-  const tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null);
+  let tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+
+  const drawnTeams = window.App.teams || [];
+  
+  // Se existirem times sorteados e tState tiver número diferente de times, sincroniza/recalcula tState com TODOS OS TIMES!
+  if (drawnTeams.length >= 2 && window.TournamentEngine) {
+    if (!tState || !tState.teams || tState.teams.length !== drawnTeams.length) {
+      const turnoAtual = (tState && tState.turno) || 'ida_volta';
+      const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
+      const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
+      tState = {
+        modo: 'torneio',
+        fase: 'grupo',
+        turno: turnoAtual,
+        teams: drawnTeams,
+        matches: matches,
+        standings: standings,
+        knockoutMatches: (tState && tState.knockoutMatches) || [],
+        finalsMatches: (tState && tState.finalsMatches) || []
+      };
+      if (peladaAtiva.id) {
+        safeLocalStorageSetItem(`tournamentState_${peladaAtiva.id}`, tState);
+      }
+      safeLocalStorageSetItem('tournamentState', tState);
+      if (window.App.liveMatch) {
+        window.App.liveMatch.tournamentState = tState;
+      }
+    }
+  }
 
   const isTorneio = (peladaAtiva.modo === 'torneio') || !!tState;
 
