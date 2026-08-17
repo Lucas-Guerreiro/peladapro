@@ -574,7 +574,7 @@ function applyAthleteTeamStyleToPartidasCards() {
   if (!theme) return;
 
   // Aplica o tema visual do time em todos os cards da tela Partida ao Vivo
-  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container');
+  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card');
   cards.forEach(card => {
     if (!card) return;
     card.classList.add('has-team-theme');
@@ -583,6 +583,21 @@ function applyAthleteTeamStyleToPartidasCards() {
     if (theme.borderGlow) {
       card.style.setProperty('box-shadow', `0 8px 24px ${theme.borderGlow}`, 'important');
     }
+
+    // Garante contraste alto dos títulos
+    const headers = card.querySelectorAll('h1, h2, h3, h4, h5, .card-title, .title');
+    headers.forEach(h => {
+      h.style.setProperty('color', '#FFFFFF', 'important');
+      h.style.setProperty('text-shadow', '0 2px 4px rgba(0,0,0,0.5)', 'important');
+    });
+
+    // Garante contraste das labels e subtextos
+    const subtitles = card.querySelectorAll('p, span, label, .sub, .text-muted, .text-slate');
+    subtitles.forEach(p => {
+      if (!p.classList.contains('badge') && !p.classList.contains('btn') && !p.id.includes('score') && !p.classList.contains('btn-adjust-score')) {
+        p.style.setProperty('color', 'rgba(255,255,255,0.92)', 'important');
+      }
+    });
   });
 
   // Estilização Individual dos Cards dos Times no Placar (Time A e Time B)
@@ -1958,21 +1973,31 @@ function renderTournamentUI() {
   tournamentCard.style.display = "block";
   if (queueCard) queueCard.style.display = "none";
 
+  const isTeamTheme = tournamentCard.classList.contains("has-team-theme");
+
   // Badge da Fase
   const badgeEl = document.getElementById("tournament-phase-badge");
   if (badgeEl) {
     if (tState.fase === 'grupo') {
       badgeEl.textContent = "FASE DE GRUPOS (TABELA MISTA)";
-      badgeEl.style.background = "#FEF3C7"; badgeEl.style.color = "#B45309";
+      badgeEl.style.background = isTeamTheme ? "rgba(254, 243, 199, 0.25)" : "#FEF3C7";
+      badgeEl.style.color = isTeamTheme ? "#FDE68A" : "#B45309";
+      badgeEl.style.border = "1px solid #F59E0B";
     } else if (tState.fase === 'mata_mata') {
       badgeEl.textContent = "SEMIFINAIS (MATA-MATA)";
-      badgeEl.style.background = "#E0F2FE"; badgeEl.style.color = "#0369A1";
+      badgeEl.style.background = isTeamTheme ? "rgba(224, 242, 254, 0.25)" : "#E0F2FE";
+      badgeEl.style.color = isTeamTheme ? "#BAE6FD" : "#0369A1";
+      badgeEl.style.border = "1px solid #0284C7";
     } else if (tState.fase === 'finais') {
       badgeEl.textContent = "FINAIS & DISPUTA DE 3º LUGAR";
-      badgeEl.style.background = "#FCE7F3"; badgeEl.style.color = "#9D174D";
+      badgeEl.style.background = isTeamTheme ? "rgba(252, 231, 243, 0.25)" : "#FCE7F3";
+      badgeEl.style.color = isTeamTheme ? "#FBCFE8" : "#9D174D";
+      badgeEl.style.border = "1px solid #EC4899";
     } else if (tState.fase === 'finalizado') {
       badgeEl.textContent = "🏆 TORNEIO FINALIZADO";
-      badgeEl.style.background = "#D1FAE5"; badgeEl.style.color = "#065F46";
+      badgeEl.style.background = isTeamTheme ? "rgba(209, 250, 229, 0.25)" : "#D1FAE5";
+      badgeEl.style.color = isTeamTheme ? "#A7F3D0" : "#065F46";
+      badgeEl.style.border = "1px solid #10B981";
     }
   }
 
@@ -1981,23 +2006,29 @@ function renderTournamentUI() {
   if (standingsBody) {
     const standings = tState.standings || [];
     if (standings.length === 0) {
-      standingsBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:12px; color:#64748B;">Nenhum time sorteado ainda.</td></tr>`;
+      standingsBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:12px; color:${isTeamTheme ? '#CBD5E1' : '#64748B'};">Nenhum time sorteado ainda.</td></tr>`;
     } else {
       let html = '';
       standings.forEach((st, idx) => {
         const medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+        const rowBg = isTeamTheme 
+          ? (idx === 0 ? 'background: rgba(254, 243, 199, 0.25);' : 'background: rgba(255, 255, 255, 0.08);')
+          : (idx === 0 ? 'background: rgba(254, 243, 199, 0.5);' : '');
+        const textColor = isTeamTheme ? '#FFFFFF' : '#0F172A';
+        const ptsColor = isTeamTheme ? '#FDE68A' : '#D97706';
+
         html += `
-          <tr style="${idx === 0 ? 'font-weight:700; background:rgba(254,243,199,0.3);' : ''}">
-            <td style="text-align:center; font-weight:700;">${idx + 1}</td>
-            <td style="font-weight:700; color:#0F172A;">${medal}${st.nome}</td>
-            <td style="text-align:center;">${st.jogos}</td>
-            <td style="text-align:center;">${st.vitorias}</td>
-            <td style="text-align:center;">${st.empates}</td>
-            <td style="text-align:center;">${st.derrotas}</td>
-            <td style="text-align:center;">${st.golsPro}</td>
-            <td style="text-align:center;">${st.golsContra}</td>
-            <td style="text-align:center;">${st.saldoGols > 0 ? '+' + st.saldoGols : st.saldoGols}</td>
-            <td style="text-align:center; font-weight:800; color:#D97706; font-size:13px;">${st.pontos}</td>
+          <tr style="${rowBg} border-bottom: 1px solid ${isTeamTheme ? 'rgba(255,255,255,0.15)' : '#E2E8F0'};">
+            <td style="text-align:center; font-weight:700; color:${textColor};">${idx + 1}</td>
+            <td style="font-weight:700; color:${textColor};">${medal}${st.nome}</td>
+            <td style="text-align:center; color:${textColor};">${st.jogos}</td>
+            <td style="text-align:center; color:${textColor};">${st.vitorias}</td>
+            <td style="text-align:center; color:${textColor};">${st.empates}</td>
+            <td style="text-align:center; color:${textColor};">${st.derrotas}</td>
+            <td style="text-align:center; color:${textColor};">${st.golsPro}</td>
+            <td style="text-align:center; color:${textColor};">${st.golsContra}</td>
+            <td style="text-align:center; color:${textColor};">${st.saldoGols > 0 ? '+' + st.saldoGols : st.saldoGols}</td>
+            <td style="text-align:center; font-weight:800; color:${ptsColor}; font-size:13px;">${st.pontos}</td>
           </tr>
         `;
       });
@@ -2005,7 +2036,7 @@ function renderTournamentUI() {
     }
   }
 
-  // 2. Lista de Jogos do Torneio
+  // 2. Lista de Jogos (Agenda do Torneio)
   const matchesList = document.getElementById("tournament-matches-list");
   if (matchesList) {
     let allMatches = [];
@@ -2014,7 +2045,7 @@ function renderTournamentUI() {
     if (Array.isArray(tState.finalsMatches)) allMatches.push(...tState.finalsMatches);
 
     if (allMatches.length === 0) {
-      matchesList.innerHTML = `<div style="text-align:center; padding:12px; color:#64748B;">Nenhum jogo gerado.</div>`;
+      matchesList.innerHTML = `<div style="text-align:center; padding:12px; color:${isTeamTheme ? '#CBD5E1' : '#64748B'};">Nenhum jogo gerado.</div>`;
     } else {
       let html = '';
       allMatches.forEach((m, idx) => {
@@ -2025,15 +2056,26 @@ function renderTournamentUI() {
           ? `<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ${m.golsA} x ${m.golsB}</span>`
           : (isCurrent
             ? `<span style="font-size:10px; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px; font-weight:700;">⚽ EM ANDAMENTO</span>`
-            : `<span style="font-size:10px; background:#F1F5F9; color:#64748B; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>`);
+            : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255,255,255,0.2)' : '#F1F5F9'}; color:${isTeamTheme ? '#FFFFFF' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>`);
+
+        const rowBg = isTeamTheme 
+          ? (isCurrent ? 'rgba(254, 243, 199, 0.25)' : 'rgba(255, 255, 255, 0.12)')
+          : (isCurrent ? '#FFFBEB' : '#F8FAFC');
+
+        const rowBorder = isTeamTheme
+          ? (isCurrent ? '#FCD34D' : 'rgba(255, 255, 255, 0.2)')
+          : (isCurrent ? '#FCD34D' : '#E2E8F0');
+
+        const textColor = isTeamTheme ? '#FFFFFF' : '#0F172A';
+        const subTextColor = isTeamTheme ? 'rgba(255, 255, 255, 0.85)' : '#64748B';
 
         html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:${isCurrent ? '#FFFBEB' : '#F8FAFC'}; border:1px solid ${isCurrent ? '#FCD34D' : '#E2E8F0'}; border-radius:8px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:${rowBg}; border:1px solid ${rowBorder}; border-radius:10px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px);">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-weight:700; color:#64748B; font-size:11px;">${m.faseNome || 'Jogo ' + (idx + 1)}:</span>
-              <strong style="color:#0F172A;">${m.teamA}</strong>
-              <span style="color:#94A3B8; font-size:11px;">vs</span>
-              <strong style="color:#0F172A;">${m.teamB}</strong>
+              <span style="font-weight:700; color:${subTextColor}; font-size:11px;">${m.faseNome || 'Jogo ' + (idx + 1)}:</span>
+              <strong style="color:${textColor}; font-weight:700;">${m.teamA}</strong>
+              <span style="color:${subTextColor}; font-size:11px;">vs</span>
+              <strong style="color:${textColor}; font-weight:700;">${m.teamB}</strong>
             </div>
             <div>${statusTag}</div>
           </div>
@@ -2050,30 +2092,39 @@ function renderTournamentUI() {
     if (tState.podium || tState.fase === 'finalizado') {
       const pod = tState.podium || (window.TournamentEngine ? window.TournamentEngine.determinePodium(tState.finalsMatches, tState.standings) : {});
       podiumCont.style.display = "block";
+      podiumCont.style.background = isTeamTheme ? "rgba(0,0,0,0.3)" : "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)";
+      podiumCont.style.border = "1.5px solid #FCD34D";
+
+      const cardBg = isTeamTheme ? "rgba(255, 255, 255, 0.18)" : "#FFF";
+      const cardText = isTeamTheme ? "#FFFFFF" : "#0F172A";
+
       podiumCards.innerHTML = `
-        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #FCD34D; flex:1; min-width:110px;">
+        <div style="background:${cardBg}; padding:10px; border-radius:8px; border:1px solid #FCD34D; flex:1; min-width:110px;">
           <div style="font-size:24px;">🥇</div>
-          <div style="font-size:10px; color:#B45309; font-weight:700;">CAMPEÃO</div>
-          <strong style="font-size:13px; color:#0F172A;">${pod.primeiro || '—'}</strong>
+          <div style="font-size:10px; color:#FDE68A; font-weight:700;">CAMPEÃO</div>
+          <strong style="font-size:13px; color:${cardText};">${pod.primeiro || '—'}</strong>
         </div>
-        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #CBD5E1; flex:1; min-width:110px;">
+        <div style="background:${cardBg}; padding:10px; border-radius:8px; border:1px solid #CBD5E1; flex:1; min-width:110px;">
           <div style="font-size:24px;">🥈</div>
-          <div style="font-size:10px; color:#475569; font-weight:700;">VICE-CAMPEÃO</div>
-          <strong style="font-size:13px; color:#0F172A;">${pod.segundo || '—'}</strong>
+          <div style="font-size:10px; color:#E2E8F0; font-weight:700;">VICE-CAMPEÃO</div>
+          <strong style="font-size:13px; color:${cardText};">${pod.segundo || '—'}</strong>
         </div>
-        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #FDBA74; flex:1; min-width:110px;">
+        <div style="background:${cardBg}; padding:10px; border-radius:8px; border:1px solid #FDBA74; flex:1; min-width:110px;">
           <div style="font-size:24px;">🥉</div>
-          <div style="font-size:10px; color:#C2410C; font-weight:700;">3º LUGAR</div>
-          <strong style="font-size:13px; color:#0F172A;">${pod.terceiro || '—'}</strong>
+          <div style="font-size:10px; color:#FFEDD5; font-weight:700;">3º LUGAR</div>
+          <strong style="font-size:13px; color:${cardText};">${pod.terceiro || '—'}</strong>
         </div>
-        <div style="background:#FFF; padding:10px; border-radius:8px; border:1px solid #E2E8F0; flex:1; min-width:110px;">
+        <div style="background:${cardBg}; padding:10px; border-radius:8px; border:1px solid #E2E8F0; flex:1; min-width:110px;">
           <div style="font-size:24px;">4️⃣</div>
-          <div style="font-size:10px; color:#64748B; font-weight:700;">4º LUGAR</div>
-          <strong style="font-size:13px; color:#0F172A;">${pod.quarto || '—'}</strong>
+          <div style="font-size:10px; color:#CBD5E1; font-weight:700;">4º LUGAR</div>
+          <strong style="font-size:13px; color:${cardText};">${pod.quarto || '—'}</strong>
         </div>
       `;
     } else {
       podiumCont.style.display = "none";
     }
   }
+
+  // Garante a aplicação do estilo do time em todo o card de torneio e seus filhos
+  applyAthleteTeamStyleToPartidasCards();
 }
