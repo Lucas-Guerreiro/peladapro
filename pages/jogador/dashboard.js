@@ -52,16 +52,16 @@ var Dashboard = {
     }
     var self = this;
     this._visHandler = function () {
-      if (document.visibilityState === 'visible') {
-        console.log('[Dashboard] iPhone / App voltou ao foco — re-sincronizando dados do banco...');
+      // SÓ EXECUTA SE ESTIVER NA TELA DO DASHBOARD DO ATLETA
+      if (document.visibilityState === 'visible' && document.getElementById('player-fifa-card')) {
         if (window.Auth && window.Auth.refreshCurrentUser) {
           window.Auth.refreshCurrentUser().then(function () {
             self.renderPlayerData();
-            self.renderNextMatches();
+            if (document.getElementById('next-matches-list')) self.renderNextMatches();
           });
         } else {
           self.renderPlayerData();
-          self.renderNextMatches();
+          if (document.getElementById('next-matches-list')) self.renderNextMatches();
         }
       }
     };

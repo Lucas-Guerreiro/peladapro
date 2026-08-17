@@ -56,7 +56,7 @@
     <!-- BOTÕES -->
     <div class="modal-footer" style="padding: 0; display: flex; gap: 10px; justify-content: flex-end;">
       <button type="button" class="btn btn-secondary" onclick="window.App.closeModal()" style="border-radius: 10px; font-weight: 600;">Cancelar</button>
-      <button type="button" id="btn-confirmar-transferencia" class="btn btn-primary" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); border: none; font-weight: 700; padding: 10px 20px; border-radius: 10px;">
+      <button type="button" id="btn-confirmar-transferencia" onclick="window.App.executarTransferenciaConvidado(event)" class="btn btn-primary" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); border: none; font-weight: 700; padding: 10px 20px; border-radius: 10px; cursor: pointer;">
         🔄 Confirmar & Mesclar Dados
       </button>
     </div>
