@@ -216,13 +216,19 @@ window.App.executarTransferenciaConvidado = async function (e) {
 
       if (errUser) throw new Error('Erro ao atualizar atleta no Supabase: ' + errUser.message);
 
-      // Deleta a conta temporária de convidado
+      // Deleta ou desativa a conta temporária de convidado
       const { error: errDel } = await window.supabase
         .from('usuarios')
         .delete()
         .eq('id', convidadoId);
 
-      if (errDel) console.warn('[transferirConvidado] Supabase delete convidado notice:', errDel.message);
+      if (errDel) {
+        console.warn('[transferirConvidado] Supabase delete falhou devido a FKs, aplicando soft-delete:', errDel.message);
+        await window.supabase
+          .from('usuarios')
+          .update({ ativo: false, verificado: false, tipo: 'incorporado' })
+          .eq('id', convidadoId);
+      }
 
       sucesso = true;
       mensagemSucesso = `Histórico de ${cObj.nome || convidadoNome} transferido e integrado com sucesso ao perfil de ${aObj.nome || atletaNome}!`;
@@ -246,10 +252,14 @@ window.App.executarTransferenciaConvidado = async function (e) {
           body: JSON.stringify({ convidado_id: convidadoId, usuario_id: usuarioId })
         });
 
+        const data = await res.json();
+
         if (res.ok) {
-          const data = await res.json();
           sucesso = true;
           mensagemSucesso = data.message || `Dados transferidos com sucesso!`;
+        } else {
+          console.error('[executarTransferenciaConvidado] Resposta de erro da API REST:', data);
+          if (data.error) mensagemSucesso = data.error;
         }
       }
     } catch (errApi) {

@@ -491,16 +491,19 @@ exports.transferirConvidado = async (req, res) => {
     const saldoTransferido = parseFloat(convidado.saldo || 0);
 
     // 3. Atualizar convocações: remove duplicadas na mesma pelada se houver
-    await client.query(`
-      DELETE FROM convocacoes 
-      WHERE usuario_id = $1 AND pelada_id IN (SELECT pelada_id FROM convocacoes WHERE usuario_id = $2)
-    `, [convidado_id, usuario_id]);
+    try {
+      await client.query(`
+        DELETE FROM convocacoes 
+        WHERE usuario_id = $1 AND pelada_id IN (SELECT pelada_id FROM convocacoes WHERE usuario_id = $2)
+      `, [convidado_id, usuario_id]);
 
-    // Transfere o restante das convocações do convidado para o atleta
-    await client.query(
-      'UPDATE convocacoes SET usuario_id = $1 WHERE usuario_id = $2',
-      [usuario_id, convidado_id]
-    );
+      await client.query(
+        'UPDATE convocacoes SET usuario_id = $1 WHERE usuario_id = $2',
+        [usuario_id, convidado_id]
+      );
+    } catch (eConv) {
+      console.warn('[transferirConvidado] Aviso convocações:', eConv.message);
+    }
 
     // 4. Somar estatísticas (Gols, Partidas, Saldo) no perfil do Atleta Cadastrado
     await client.query(`
@@ -512,20 +515,39 @@ exports.transferirConvidado = async (req, res) => {
     `, [golsTransferidos, partidasTransferidas, saldoTransferido, usuario_id]);
 
     // 5. Transferir transações financeiras (se houver)
-    await client.query('UPDATE transacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+    try {
+      await client.query('UPDATE transacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+    } catch (e) {}
 
-    // 6. Transferir MVP da partida (se houver)
+    // 6. Transferir MVP / Notificações / Jogadores de Partida (se houver)
     try {
       await client.query('UPDATE mvp_partida SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
     } catch (e) {}
+    try {
+      await client.query('UPDATE notificacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+    } catch (e) {}
+    try {
+      await client.query('UPDATE partida_jogadores SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+    } catch (e) {}
 
-    // 7. Excluir a conta temporária de convidado
-    await client.query('DELETE FROM usuarios WHERE id = $1', [convidado_id]);
+    // 7. Excluir ou desativar a conta temporária de convidado
+    try {
+      await client.query('DELETE FROM usuarios WHERE id = $1', [convidado_id]);
+    } catch (eDel) {
+      console.warn('[transferirConvidado] Exclusão direta falhou devido a FKs, aplicando soft-delete:', eDel.message);
+      await client.query(`
+        UPDATE usuarios 
+        SET ativo = false, 
+            verificado = false, 
+            tipo = 'incorporado' 
+        WHERE id = $1
+      `, [convidado_id]);
+    }
 
     await client.query('COMMIT');
 
     res.json({
-      message: `Sucesso! Histórico e números de ${convidado.nome} foram integrados ao perfil de ${atleta.nome}.`,
+      message: `Sucesso! Histórico e estatísticas de ${convidado.nome} foram integrados ao perfil de ${atleta.nome}.`,
       convidadoNome: convidado.nome,
       atletaNome: atleta.nome,
       golsTransferidos,
