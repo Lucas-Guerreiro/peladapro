@@ -160,6 +160,8 @@ window.App.initPartidas = async function () {
     await carregarLiveStateDaPelada(peladaId);
   }
 
+  applyAthleteTeamStyleToPartidasCards();
+
   const activePelada = window.App.activePelada || {};
   const isFinished = activePelada.status === "finalizada";
 
@@ -529,6 +531,89 @@ function getMatchPhaseInfo(liveMatch, peladaAtiva) {
   };
 }
 
+function applyAthleteTeamStyleToPartidasCards() {
+  const user = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('currentUser') || 'null');
+  let teamName = user ? user.time_coracao : null;
+  if (!teamName) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('usuario'));
+      if (stored && stored.time_coracao) teamName = stored.time_coracao;
+    } catch(e) {}
+  }
+
+  let theme = null;
+  if (teamName && window.App && window.App.getTeamThemeGlobal) {
+    theme = window.App.getTeamThemeGlobal(teamName);
+  } else if (teamName && window.Dashboard && window.Dashboard.getTeamTheme) {
+    theme = window.Dashboard.getTeamTheme(teamName);
+  }
+
+  // Se não houver time_coracao individual do atleta, resgata a paleta dos times sorteados da partida
+  let teams = window.App.teams || [];
+  if (!teams || teams.length === 0) {
+    try { teams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
+  }
+
+  if (!theme && teams && teams.length > 0) {
+    const t0 = teams[0];
+    if (t0 && window.TeamEmblems && window.TeamEmblems.getTheme) {
+      const embT = window.TeamEmblems.getTheme(t0.emblema !== undefined ? t0.emblema : 0);
+      if (embT) {
+        theme = {
+          gradient: `linear-gradient(135deg, ${embT.bg} 0%, #0F172A 100%)`,
+          border: embT.border || embT.accent,
+          borderGlow: embT.bg + '66',
+          accent: embT.accent || '#F5D270',
+          badgeBg: embT.bg,
+          badgeText: embT.accent || '#FFFFFF'
+        };
+      }
+    }
+  }
+
+  if (!theme) return;
+
+  // Aplica o tema visual do time em todos os cards da tela Partida ao Vivo
+  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container');
+  cards.forEach(card => {
+    if (!card) return;
+    card.classList.add('has-team-theme');
+    card.style.setProperty('background', theme.gradient || theme.bg, 'important');
+    card.style.setProperty('border', `1.5px solid ${theme.border}`, 'important');
+    if (theme.borderGlow) {
+      card.style.setProperty('box-shadow', `0 8px 24px ${theme.borderGlow}`, 'important');
+    }
+  });
+
+  // Estilização Individual dos Cards dos Times no Placar (Time A e Time B)
+  if (teams && teams.length >= 2) {
+    const tA = teams[0];
+    const tB = teams[1];
+    const cardA = document.getElementById("acomp-team-a");
+    const cardB = document.getElementById("acomp-team-b");
+
+    if (tA && window.TeamEmblems && cardA) {
+      const themeA = window.TeamEmblems.getTheme(tA.emblema !== undefined ? tA.emblema : 0);
+      if (themeA) {
+        cardA.style.setProperty('background', `linear-gradient(135deg, ${themeA.bg} 0%, #1E293B 100%)`, 'important');
+        cardA.style.setProperty('border', `1.5px solid ${themeA.border || themeA.accent}`, 'important');
+        cardA.style.setProperty('border-radius', '12px', 'important');
+        cardA.style.setProperty('padding', '8px 12px', 'important');
+      }
+    }
+
+    if (tB && window.TeamEmblems && cardB) {
+      const themeB = window.TeamEmblems.getTheme(tB.emblema !== undefined ? tB.emblema : 1);
+      if (themeB) {
+        cardB.style.setProperty('background', `linear-gradient(135deg, ${themeB.bg} 0%, #1E293B 100%)`, 'important');
+        cardB.style.setProperty('border', `1.5px solid ${themeB.border || themeB.accent}`, 'important');
+        cardB.style.setProperty('border-radius', '12px', 'important');
+        cardB.style.setProperty('padding', '8px 12px', 'important');
+      }
+    }
+  }
+}
+
 function renderLiveMatchUI() {
   // Se a pelada ativa estiver finalizada, não renderiza o confronto ao vivo
   const activePelada = window.App.activePelada || {};
@@ -798,6 +883,7 @@ function renderLiveMatchUI() {
 
   updateTimerDisplay();
   renderTournamentUI();
+  applyAthleteTeamStyleToPartidasCards();
 }
 
 function limparEstadoPartida() {
@@ -944,6 +1030,8 @@ function renderWaitingQueue() {
       window.App.openModal("ver_time", { teamName: teamObj.nome || tName, players: teamObj.players || teamObj.jogadores || [] });
     };
   });
+
+  applyAthleteTeamStyleToPartidasCards();
 }
 
 function toggleLiveTimer() {
