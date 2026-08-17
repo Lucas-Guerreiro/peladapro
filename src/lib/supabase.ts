@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://ktppxvhxtpuoikcephsy.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Br3p7pqTGri1GQ-GS9KbkA_dMrSOUtg';
+const SUPABASE_URL = 'https://xgsdaavryzhqxkwsonkk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhnc2RhYXZyeXpocXhrd3NvbmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzg1MTEsImV4cCI6MjA5OTk1NDUxMX0.dFI2FZk-YRIo5uODTGbGQofcH0aXyAtnXXaIP-IpDCE';
 
 // ===================== Table Row Types =====================
 
@@ -169,6 +169,44 @@ export interface RankingPeriodo {
   created_at: Date;
 }
 
+// ===================== Usuario Interface =====================
+
+/**
+ * Linha da tabela `usuarios` — modelo principal do app.
+ * Campos adicionados via migration: premium_status, premium_ativado_em, nacionalidade.
+ */
+export interface Usuario {
+  id: number;
+  nome: string | null;
+  email: string | null;
+  cpf: string | null;
+  whatsapp: string | null;
+  foto: string | null;
+  apelido: string | null;
+  goleiro: boolean | null;
+  autoavaliacao: number | null;
+  saldo: number | null;
+  gols: number | null;
+  partidas: number | null;
+  avaliacao_media: number | null;
+  ativo: boolean | null;
+  verificado: boolean | null;
+  tipo: string | null;              // 'jogador' | 'gestor' | 'ambos'
+  time_coracao: string | null;      // ex: 'flamengo', 'palmeiras'
+  data_nascimento: string | null;   // ISO date: '1997-05-14'
+  premium_status: boolean | null;
+  premium_ativado_em: string | null;
+  nacionalidade: string | null;     // código ISO-2: 'BR', 'AR', etc.
+  vip: boolean | null;
+  premium: boolean | null;
+  card_ultimate: boolean | null;
+  card_style: string | null;        // 'free' | 'premium' | 'fut'
+  plano: string | null;             // 'free' | 'vip' | 'ultimate'
+  created_at: string | null;
+  criado_em: string | null;
+  updated_at: string | null;
+}
+
 // ===================== Database Type =====================
 
 export type Database = {
@@ -178,6 +216,12 @@ export type Database = {
         Row: Profile;
         Insert: Partial<Profile>;
         Update: Partial<Profile>;
+      };
+      /** Tabela principal dos atletas/gestores do app */
+      usuarios: {
+        Row: Usuario;
+        Insert: Partial<Usuario>;
+        Update: Partial<Usuario>;
       };
       conquistas: {
         Row: Conquista;

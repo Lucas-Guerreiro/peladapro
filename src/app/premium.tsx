@@ -4,27 +4,26 @@
  * Modo teste: sem cobrança real — aquisição simulada com Alert + AsyncStorage
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  Animated,
-  Image,
-  StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, router } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  AppState,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import tokens from '../theme/tokens';
-
-import PlayerCard from '../components/PlayerCard';
 
 // ─── CONSTANTES ────────────────────────────────────────────────────────────────
 const GOLD = '#D4AF37';
@@ -36,10 +35,10 @@ const MODO_TESTE = true; // Desativar para ativar pagamento real no futuro
 
 // ─── LISTA DE BENEFÍCIOS ───────────────────────────────────────────────────────
 const BENEFICIOS = [
-  { icon: 'trophy',     label: 'Craque da Partida (MVP) destacado' },
-  { icon: 'medal',      label: 'Medalha de ouro no ranking' },
-  { icon: 'star',       label: 'Destaque no perfil do grupo' },
-  { icon: 'bar-chart',  label: 'Estatísticas avançadas exclusivas' },
+  { icon: 'trophy', label: 'Craque da Partida (MVP) destacado' },
+  { icon: 'medal', label: 'Medalha de ouro no ranking' },
+  { icon: 'star', label: 'Destaque no perfil do grupo' },
+  { icon: 'bar-chart', label: 'Estatísticas avançadas exclusivas' },
 ];
 
 // ─── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
@@ -48,96 +47,55 @@ export default function CardPremiumScreen() {
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('Atleta');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const [isLucasGuerreiro, setIsLucasGuerreiro] = useState(false);
-
-  // Dados do time e estatísticas do atleta vindos do Supabase
-  const [userStats, setUserStats] = useState({
-    posicao: 'ATA',
-    idade: 27,
-    jogos: 28,
-    gols: 12,
-    rating: 99,
-    primaryColor: '#1D9E75',
-    secondaryColor: '#0A1F16',
-    timeNome: 'PELADA PRO',
-    nacionalidade: { code: 'BRA', flagEmoji: '🇧🇷' },
-  });
 
   // Animações: rotação 3D do card hero e pulso do botão
   const cardRotateAnim = useRef(new Animated.Value(0)).current;
-  const btnScaleAnim   = useRef(new Animated.Value(1)).current;
+  const btnScaleAnim = useRef(new Animated.Value(1)).current;
 
-  // ── Carregar estado persistido e dados do usuário via Supabase ─────────────
-  useEffect(() => {
-    (async () => {
-      try {
-        const stored = await AsyncStorage.getItem(ASYNC_KEY);
-        if (stored === 'true') setAdquirido(true);
+  // ── Carregar dados do usuário e status do Supabase (Fonte da Verdade) ─────────
+  const carregarDadosDoBanco = useCallback(async () => {
+    try {
+      // 1. Tenta carregar cache local (resposta rápida)
+      const cached = await AsyncStorage.getItem(ASYNC_KEY);
+      if (cached === 'true') setAdquirido(true);
 
-        // Query Supabase: Busca usuário logado e dados do perfil
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: userData } = await supabase
-            .from('usuarios')
-            .select('nome, apelido, foto, data_nascimento, posicao, gols, jogos, partidas, grupo_id')
-            .eq('email', session.user.email)
-            .single();
+      // 2. Consulta a fonte da verdade: Supabase Database
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase
+          .from('usuarios')
+          .select('nome, apelido, foto, premium_status, vip, premium, card_ultimate, plano')
+          .eq('email', session.user.email)
+          .single();
 
-          if (userData) {
-            const name = userData.apelido || userData.nome || 'Atleta';
-            setUserName(name);
-            setUserAvatar(userData.foto ?? null);
+        if (data) {
+          setUserName(data.apelido || data.nome || 'Atleta');
+          setUserAvatar(data.foto ?? null);
 
-            // Verifica se o usuário é o atleta Lucas Fernandes Guerreiro para teste
-            const lowerName = name.toLowerCase();
-            const isLucas = lowerName.includes('lucas fernandes') || lowerName.includes('lucas guerreiro');
-            setIsLucasGuerreiro(isLucas);
+          // Verifica se possui o status premium ativado no banco de dados
+          const statusNoBanco = !!(
+            data.premium_status ||
+            data.vip ||
+            data.premium ||
+            data.card_ultimate ||
+            data.plano === 'vip' ||
+            data.plano === 'ultimate'
+          );
 
-            // Calcula idade aproximada
-            let calcIdade = 27;
-            if (userData.data_nascimento) {
-              const birth = new Date(userData.data_nascimento);
-              const ageDifMs = Date.now() - birth.getTime();
-              const ageDate = new Date(ageDifMs);
-              calcIdade = Math.abs(ageDate.getUTCFullYear() - 1970);
-            }
-
-            // Query Supabase: Busca cores primária e secundária do time/grupo
-            let teamPrimary = '#1D9E75';
-            let teamSecondary = '#0A1F16';
-            let groupName = 'PELADA PRO';
-
-            if (userData.grupo_id) {
-              const { data: groupData } = await supabase
-                .from('grupos')
-                .select('cor_primaria, cor_secundaria, nome')
-                .eq('id', userData.grupo_id)
-                .single();
-
-              if (groupData) {
-                teamPrimary = groupData.cor_primaria || teamPrimary;
-                teamSecondary = groupData.cor_secundaria || teamSecondary;
-                groupName = groupData.nome || groupName;
-              }
-            }
-
-            setUserStats({
-              posicao: userData.posicao || 'ATA',
-              idade: calcIdade,
-              jogos: userData.jogos || userData.partidas || 28,
-              gols: userData.gols || 12,
-              rating: 99,
-              primaryColor: teamPrimary,
-              secondaryColor: teamSecondary,
-              timeNome: groupName,
-              nacionalidade: { code: 'BRA', flagEmoji: '🇧🇷' },
-            });
+          if (statusNoBanco) {
+            setAdquirido(true);
+            await AsyncStorage.setItem(ASYNC_KEY, 'true').catch(() => {});
           }
         }
-      } catch (e) {
-        console.warn('[Premium] Erro ao carregar dados:', e);
       }
-    })();
+    } catch (e) {
+      console.warn('[Premium] Erro ao carregar do Supabase:', e);
+    }
+  }, []);
+
+  // Inicialização na montagem da tela
+  useEffect(() => {
+    carregarDadosDoBanco();
 
     // Animação suave de inclinação do card ao entrar na tela
     Animated.spring(cardRotateAnim, {
@@ -146,7 +104,34 @@ export default function CardPremiumScreen() {
       friction: 10,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [carregarDadosDoBanco]);
+
+  // Re-hidratação ao focar na tela / voltar do background (crítico para iPhone)
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
+      const rehidratar = async () => {
+        if (isMounted) {
+          await carregarDadosDoBanco();
+        }
+      };
+
+      rehidratar();
+
+      // Listener para quando o app no iPhone volta do background para o primeiro plano
+      const subscription = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'active' && isMounted) {
+          rehidratar();
+        }
+      });
+
+      return () => {
+        isMounted = false;
+        subscription.remove();
+      };
+    }, [carregarDadosDoBanco])
+  );
 
   // Interpola de -8° (início) para -4° (final) — efeito levemente inclinado
   const cardRotate = cardRotateAnim.interpolate({
@@ -154,7 +139,7 @@ export default function CardPremiumScreen() {
     outputRange: ['-8deg', '-4deg'],
   });
 
-  // ── Ação: adquirir card (modo teste) ────────────────────────────────────
+  // ── Ação: adquirir card (persistência real no Supabase) ────────────────────
   const handleAdquirir = async () => {
     if (adquirido || loading) return;
 
@@ -165,12 +150,36 @@ export default function CardPremiumScreen() {
     ]).start();
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900)); // Simula latência de rede
 
     try {
       if (MODO_TESTE) {
-        await AsyncStorage.setItem(ASYNC_KEY, 'true');
+        // 1. Atualiza o estado da memória imediatamente (UX instantânea)
         setAdquirido(true);
+
+        // 2. Atualiza o cache local
+        await AsyncStorage.setItem(ASYNC_KEY, 'true').catch(() => {});
+
+        // 3. PERSISTÊNCIA REAL NO SUPABASE (Sobrevive a qualquer limpeza do iPhone)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { error } = await supabase
+            .from('usuarios')
+            .update({
+              premium_status: true,
+              premium_ativado_em: new Date().toISOString(),
+              vip: true,
+              premium: true,
+              card_ultimate: true,
+              card_style: 'fut',
+              plano: 'vip',
+            })
+            .eq('email', session.user.email);
+
+          if (error) {
+            console.warn('[Premium] Aviso ao salvar no Supabase:', error.message);
+          }
+        }
+
         Alert.alert(
           '🏆 Card Premium Ativado!',
           `Parabéns, ${userName}! Seu Card Premium foi ativado com sucesso.\n\n✓ Modo Teste — sem cobrança nesta versão.`,
@@ -266,7 +275,7 @@ export default function CardPremiumScreen() {
 
                 {/* 5 estrelas de habilidade douradas */}
                 <View style={styles.starsRow} accessibilityLabel="5 estrelas de habilidade">
-                  {[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={16} color={GOLD_LIGHT} />)}
+                  {[1, 2, 3, 4, 5].map(i => <Ionicons key={i} name="star" size={16} color={GOLD_LIGHT} />)}
                 </View>
 
                 {/* Estatísticas: Jogos | Gols */}
@@ -296,8 +305,7 @@ export default function CardPremiumScreen() {
                 )}
               </LinearGradient>
             </Animated.View>
-          )}
-        </View>
+          </View>
 
         {/* ── Benefícios Exclusivos ── */}
         <View style={styles.benefitsCard}>
