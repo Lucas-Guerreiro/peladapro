@@ -267,6 +267,14 @@ window.App.initPartidas = async function () {
       };
     });
 
+    // Botão Zerar Testes da Pelada
+    const btnZerar = document.getElementById("btn-zerar-dados-pelada");
+    if (btnZerar) {
+      btnZerar.onclick = () => {
+        window.App.zerarDadosPelada();
+      };
+    }
+
     // Botões de Visualização do Time (Olho)
     const btnViewA = document.getElementById("btn-view-team-a");
     if (btnViewA) {
@@ -943,6 +951,58 @@ function renderLiveMatchUI() {
   renderTournamentUI();
   applyAthleteTeamStyleToPartidasCards();
 }
+
+window.App.zerarDadosPelada = async function(peladaId) {
+  const activePelada = window.App.activePelada || {};
+  const pId = peladaId || (activePelada ? String(activePelada.id) : null);
+
+  if (!pId) {
+    if (window.App.showToast) window.App.showToast("Nenhuma pelada selecionada para zerar.", "warning");
+    return;
+  }
+
+  const dataFmt = activePelada.data ? (window.Utils ? window.Utils.formatDate(activePelada.data) : activePelada.data) : "17/08/2026";
+  const confirmed = confirm(`Tem certeza que deseja zerar TODOS os dados de jogos, tabela e gols da pelada do dia ${dataFmt}? Esta ação é recomendada após testes para iniciar uma nova rodada limpa.`);
+  if (!confirmed) return;
+
+  try {
+    const keysToRemove = [
+      "teams", `teams_${pId}`,
+      "liveMatch", `liveMatch_${pId}`,
+      "waitingQueue", `waitingQueue_${pId}`,
+      "tournamentState", `tournamentState_${pId}`,
+      "recentMatches", `recentMatches_${pId}`
+    ];
+    keysToRemove.forEach(k => {
+      try { localStorage.removeItem(k); } catch(e) {}
+    });
+
+    window.App.teams = [];
+    window.App.waitingQueue = [];
+    window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
+
+    if (window.supabase) {
+      try {
+        await window.supabase.from('peladas').update({ live_state: null }).eq('id', pId);
+      } catch(e) {}
+    }
+
+    if (window.Api && window.Api.atualizarLiveState) {
+      try {
+        await window.Api.atualizarLiveState(pId, null, [], []);
+      } catch(e) {}
+    }
+
+    renderLiveMatchUI();
+    renderWaitingQueue();
+    renderTournamentUI();
+    await renderRecentMatches();
+    if (window.App.showToast) window.App.showToast(`Todos os dados de testes da data ${dataFmt} foram zerados com sucesso!`, "success");
+  } catch (err) {
+    console.error("[zerarDadosPelada]", err);
+    if (window.App.showToast) window.App.showToast("Erro ao zerar dados da pelada.", "error");
+  }
+};
 
 function limparEstadoPartida() {
   window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
