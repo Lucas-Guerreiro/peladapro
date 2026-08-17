@@ -648,13 +648,13 @@ function applyAthleteTeamStyleToPartidasCards() {
     phaseSub.style.setProperty('text-shadow', '0 1px 2px rgba(0,0,0,0.5)', 'important');
   }
 
-  // Estilização do Badge de Status "EM ANDAMENTO" / "AGUARDANDO SORTEIO"
+  // Estilização do Badge de Status "EM ANDAMENTO" / "AGUARDANDO SORTEIO" (No mesmo estilo de "A JOGAR")
   const badgeEl = document.getElementById("match-live-status-badge");
   if (badgeEl) {
-    badgeEl.style.setProperty('background', theme.badgeBg || 'rgba(0,0,0,0.4)', 'important');
-    badgeEl.style.setProperty('color', theme.accent || '#FFFFFF', 'important');
-    badgeEl.style.setProperty('border', `1px solid ${theme.border || '#F59E0B'}`, 'important');
-    badgeEl.style.setProperty('font-weight', '800', 'important');
+    badgeEl.style.setProperty('background', 'rgba(255, 255, 255, 0.2)', 'important');
+    badgeEl.style.setProperty('color', '#FFFFFF', 'important');
+    badgeEl.style.setProperty('border', '1px solid rgba(255, 255, 255, 0.3)', 'important');
+    badgeEl.style.setProperty('font-weight', '600', 'important');
   }
 }
 
@@ -925,21 +925,17 @@ function renderLiveMatchUI() {
 
   if (badgeEl) {
     const isTeamTheme = document.querySelector('.gestor-score-card')?.classList.contains('has-team-theme');
+    badgeEl.style.background = isTeamTheme ? "rgba(255, 255, 255, 0.2)" : "#F1F5F9";
+    badgeEl.style.color = isTeamTheme ? "#FFFFFF" : "#64748B";
+    badgeEl.style.border = isTeamTheme ? "1px solid rgba(255, 255, 255, 0.3)" : "none";
+    badgeEl.style.fontWeight = "600";
+
     if (window.App.liveMatch.isPlaying) {
       badgeEl.textContent = "EM ANDAMENTO";
-      badgeEl.style.background = isTeamTheme ? "rgba(16, 185, 129, 0.35)" : "var(--success)";
-      badgeEl.style.color = isTeamTheme ? "#A7F3D0" : "#FFF";
-      badgeEl.style.border = isTeamTheme ? "1px solid #10B981" : "none";
     } else if (window.App.liveMatch.timerSeconds > 0) {
       badgeEl.textContent = "PAUSADO";
-      badgeEl.style.background = isTeamTheme ? "rgba(245, 158, 11, 0.35)" : "var(--warning)";
-      badgeEl.style.color = isTeamTheme ? "#FDE68A" : "var(--primary)";
-      badgeEl.style.border = isTeamTheme ? "1px solid #F59E0B" : "none";
     } else {
       badgeEl.textContent = "PRONTO PARA INICIAR";
-      badgeEl.style.background = isTeamTheme ? "rgba(2, 132, 199, 0.35)" : "var(--secondary)";
-      badgeEl.style.color = isTeamTheme ? "#BAE6FD" : "var(--primary)";
-      badgeEl.style.border = isTeamTheme ? "1px solid #0284C7" : "none";
     }
   }
 
@@ -2100,10 +2096,10 @@ function renderTournamentUI() {
         const isDone = m.status === 'encerrado';
 
         const statusTag = isDone
-          ? `<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ${m.golsA} x ${m.golsB}</span>`
+          ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5'}; color:${isTeamTheme ? '#A7F3D0' : '#065F46'}; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ${m.golsA} x ${m.golsB}</span>`
           : (isCurrent
-            ? `<span style="font-size:10px; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px; font-weight:700;">⚽ EM ANDAMENTO</span>`
-            : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255,255,255,0.2)' : '#F1F5F9'}; color:${isTeamTheme ? '#FFFFFF' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>`);
+            ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.2)' : '#F1F5F9'}; color:${isTeamTheme ? '#FFFFFF' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.3)' : 'none'};">⚽ EM ANDAMENTO</span>`
+            : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.2)' : '#F1F5F9'}; color:${isTeamTheme ? '#FFFFFF' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.3)' : 'none'};">⏳ A JOGAR</span>`);
 
         const rowBg = isTeamTheme 
           ? (isCurrent ? 'rgba(254, 243, 199, 0.25)' : 'rgba(255, 255, 255, 0.12)')
