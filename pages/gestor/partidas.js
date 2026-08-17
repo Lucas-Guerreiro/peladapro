@@ -761,6 +761,21 @@ function renderLiveMatchUI() {
   if (queueCard) queueCard.style.display = "block";
   if (infoCard) infoCard.style.display = "none";
 
+  // Sincronização automática em modo Torneio com a partida agendada na tabela
+  const peladaAct = window.App.activePelada || {};
+  const tStateSync = (window.App.liveMatch ? window.App.liveMatch.tournamentState : null) || (peladaAct.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAct.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+  if (tStateSync && Array.isArray(tStateSync.matches) && tStateSync.matches.length > 0) {
+    let currentMatch = tStateSync.matches.find(m => m.id === (window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null) || m.status === 'em_andamento');
+    if (!currentMatch) {
+      currentMatch = tStateSync.matches.find(m => m.status !== 'encerrado') || tStateSync.matches[0];
+    }
+    if (currentMatch && !window.App.liveMatch.isPlaying && (window.App.liveMatch.scoreA || 0) === 0 && (window.App.liveMatch.scoreB || 0) === 0) {
+      window.App.liveMatch.teamA = currentMatch.teamA;
+      window.App.liveMatch.teamB = currentMatch.teamB;
+      window.App.liveMatch.tournamentMatchId = currentMatch.id;
+    }
+  }
+
   const teamA = window.App.liveMatch.teamA || "Time A";
   const teamB = window.App.liveMatch.teamB || "Time B";
   const scoreA = window.App.liveMatch.scoreA || 0;
@@ -1066,6 +1081,14 @@ window.App.zerarDadosPelada = async function(peladaId) {
         knockoutMatches: [],
         finalsMatches: []
       };
+
+      // Define a primeira partida agendada no torneio para o placar ao vivo!
+      if (matches.length > 0) {
+        window.App.liveMatch.teamA = matches[0].teamA;
+        window.App.liveMatch.teamB = matches[0].teamB;
+        window.App.liveMatch.tournamentMatchId = matches[0].id;
+      }
+
       safeLocalStorageSetItem(`tournamentState_${pId}`, newTState);
       safeLocalStorageSetItem('tournamentState', newTState);
       window.App.liveMatch.tournamentState = newTState;
@@ -2021,13 +2044,30 @@ async function carregarLiveStateDaPelada(peladaId) {
 
   // 3. Se houverem pelo menos 2 times no sorteio:
   if (finalTeams && finalTeams.length >= 2) {
-    const tA = finalTeams[0].nome || finalTeams[0].name || "Time 1";
-    const tB = finalTeams[1].nome || finalTeams[1].name || "Time 2";
+    const tStateCheck = (window.App.liveMatch ? window.App.liveMatch.tournamentState : null) || (strPeladaId ? JSON.parse(localStorage.getItem(`tournamentState_${strPeladaId}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+    
+    let tA = finalTeams[0].nome || finalTeams[0].name || "Time 1";
+    let tB = finalTeams[1].nome || finalTeams[1].name || "Time 2";
+    let tourneyMatchId = null;
+
+    // Se for modo torneio, resgata o primeiro confronto agendado na tabela do torneio (ex: Time A vs Time D)
+    if (tStateCheck && Array.isArray(tStateCheck.matches) && tStateCheck.matches.length > 0) {
+      let currentMatch = tStateCheck.matches.find(m => m.id === (window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null) || m.status === 'em_andamento');
+      if (!currentMatch) {
+        currentMatch = tStateCheck.matches.find(m => m.status !== 'encerrado') || tStateCheck.matches[0];
+      }
+      if (currentMatch) {
+        tA = currentMatch.teamA;
+        tB = currentMatch.teamB;
+        tourneyMatchId = currentMatch.id;
+      }
+    }
 
     if (!window.App.liveMatch || !window.App.liveMatch.teamA || window.App.liveMatch.teamA === "Time A") {
       window.App.liveMatch = window.App.liveMatch || {};
       window.App.liveMatch.teamA = tA;
       window.App.liveMatch.teamB = tB;
+      if (tourneyMatchId) window.App.liveMatch.tournamentMatchId = tourneyMatchId;
       window.App.liveMatch.scoreA = window.App.liveMatch.scoreA || 0;
       window.App.liveMatch.scoreB = window.App.liveMatch.scoreB || 0;
       window.App.liveMatch.isPlaying = false;
