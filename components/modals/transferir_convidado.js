@@ -171,12 +171,7 @@ window.App.executarTransferenciaConvidado = async function (e) {
   const convidadoNome = selectConvidado.options[selectConvidado.selectedIndex]?.text || (convidadoSel ? (convidadoSel.nome || convidadoSel.apelido) : 'Convidado');
   const atletaNome = selectAtleta.options[selectAtleta.selectedIndex]?.text || (atletaSel ? (atletaSel.nome || atletaSel.apelido) : 'Atleta');
 
-  const confirmMsg = `Tem certeza que deseja transferir todo o histórico e estatísticas de:\n"${convidadoNome}"\n\npara o atleta cadastrado:\n"${atletaNome}"?\n\nEsta ação somará os gols, jogos e saldo no perfil do atleta e removerá o convidado temporário.`;
-
-  if (!confirm(confirmMsg)) {
-    console.log('[executarTransferenciaConvidado] Operação cancelada pelo usuário.');
-    return;
-  }
+  console.log('[executarTransferenciaConvidado] Iniciando mesclagem de:', convidadoNome, 'para:', atletaNome);
 
   if (btnConfirm) {
     btnConfirm.disabled = true;
