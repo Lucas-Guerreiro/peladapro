@@ -96,6 +96,12 @@ var Acompanhamento = {
       if (!peladas || peladas.length === 0) {
         peladas = Api.getPeladas ? Api.getPeladas().filter(function (p) { return String(p.grupo_id) === String(currentGroup.id); }) : [];
       }
+      if ((!peladas || peladas.length === 0) && window.supabase) {
+        try {
+          var { data: dbPeladas } = await window.supabase.from('peladas').select('*').order('data', { ascending: false });
+          if (dbPeladas && dbPeladas.length > 0) peladas = dbPeladas;
+        } catch (e) {}
+      }
 
       if (!peladas || peladas.length === 0) {
         select.innerHTML = '<option value="">Nenhuma pelada agendada</option>';

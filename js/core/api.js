@@ -620,15 +620,18 @@ const Api = {
   },
 
   async listarDatasDoGrupo(grupoId) {
-    if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
-
     // 1. Tenta via Supabase direto
     if (window.supabase) {
       try {
-        let query = window.supabase.from('peladas').select('*');
-        if (grupoId) query = query.eq('grupo_id', grupoId);
-        const { data, error } = await query.order('data', { ascending: false });
-        if (data && Array.isArray(data) && data.length > 0) return data;
+        let query = window.supabase.from('peladas').select('*').order('data', { ascending: false });
+        const { data, error } = await query;
+        if (data && Array.isArray(data) && data.length > 0) {
+          if (grupoId && grupoId !== 'null' && grupoId !== 'undefined') {
+            const filtered = data.filter(p => String(p.grupo_id) === String(grupoId) || String(p.grupoId) === String(grupoId));
+            if (filtered.length > 0) return filtered;
+          }
+          return data;
+        }
       } catch (eSupabase) {
         console.warn('[Api] Erro Supabase em listarDatasDoGrupo:', eSupabase);
       }
@@ -636,7 +639,7 @@ const Api = {
 
     // 2. Tenta via API REST Backend
     const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
-    if (token) {
+    if (token && grupoId) {
       try {
         const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -652,7 +655,11 @@ const Api = {
 
     // 3. Fallback local em localStorage
     const localPeladas = this.getPeladas() || [];
-    return localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
+    if (grupoId) {
+      const filtered = localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
+      if (filtered.length > 0) return filtered;
+    }
+    return localPeladas;
   },
 
   async listarTransacoesDoGrupo(grupoId) {

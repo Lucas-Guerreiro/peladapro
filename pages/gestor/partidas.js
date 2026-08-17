@@ -1697,7 +1697,14 @@ async function initPartidasPeladaSelect() {
   }
 
   try {
-    const peladas = (window.Api && window.Api.listarDatasDoGrupo) ? await window.Api.listarDatasDoGrupo(groupId) : [];
+    let peladas = (window.Api && window.Api.listarDatasDoGrupo) ? await window.Api.listarDatasDoGrupo(groupId) : [];
+    if ((!peladas || peladas.length === 0) && window.supabase) {
+      try {
+        const { data: dbP } = await window.supabase.from('peladas').select('*').order('data', { ascending: false });
+        if (dbP && dbP.length > 0) peladas = dbP;
+      } catch (e) {}
+    }
+
     if (!peladas || peladas.length === 0) {
       select.innerHTML = `<option value="">Nenhuma pelada agendada</option>`;
       return;
