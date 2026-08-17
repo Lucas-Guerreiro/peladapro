@@ -5,60 +5,82 @@
 window.App = window.App || {};
 
 window.App.initModalTransferir_convidado = async function (data = {}) {
+  console.log('[transferir_convidado] Inicializando modal...', data);
+
   const selectConvidado = document.getElementById('select-convidado-origem');
   const selectAtleta = document.getElementById('select-atleta-destino');
   const btnConfirm = document.getElementById('btn-confirmar-transferencia');
 
-  if (!selectConvidado || !selectAtleta) return;
+  if (!selectConvidado || !selectAtleta || !btnConfirm) {
+    console.error('[transferir_convidado] Elementos do modal não encontrados.');
+    return;
+  }
 
   const targetAthleteId = data.athleteId || data.usuarioId || null;
 
-  // Carregar lista de atletas (do localStorage ou Supabase / Backend)
+  // 1. Carregar a lista mais recente de atletas do banco de dados (Supabase / Backend)
   let players = [];
-  try {
-    players = JSON.parse(localStorage.getItem('players') || '[]');
-  } catch (e) { }
 
-  if (players.length === 0 && window.supabase) {
+  if (window.supabase) {
     try {
       const { data: dbPlayers } = await window.supabase.from('usuarios').select('*');
-      if (dbPlayers) players = dbPlayers;
+      if (dbPlayers && dbPlayers.length > 0) players = dbPlayers;
+    } catch (e) {
+      console.warn('[transferir_convidado] Erro ao buscar no Supabase:', e);
+    }
+  }
+
+  if (players.length === 0) {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const res = await fetch('/api/usuarios', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) players = await res.json();
+      }
     } catch (e) { }
   }
 
-  // Filtrar Convidados (tipo === 'convidado' ou e-mail contendo convidado)
-  const convidados = players.filter(p =>
-    p.tipo === 'convidado' ||
-    (p.email && (p.email.includes('@convidado.com') || p.email.startsWith('convidado_'))) ||
-    p.is_convidado === true
-  );
+  if (players.length === 0) {
+    try {
+      players = JSON.parse(localStorage.getItem('players') || '[]');
+    } catch (e) { }
+  }
 
-  // Filtrar Atletas Cadastrados (tipo !== 'convidado')
-  const atletasCadastrados = players.filter(p =>
-    p.tipo !== 'convidado' &&
-    (!p.email || !p.email.includes('@convidado.com')) &&
-    !p.is_convidado
-  );
+  // Função auxiliar para identificar se é convidado
+  const isConvidadoUser = (p) => {
+    if (!p) return false;
+    const type = String(p.tipo || '').toLowerCase();
+    const email = String(p.email || '').toLowerCase();
+    return (
+      type === 'convidado' ||
+      email.includes('@convidado.com') ||
+      email.startsWith('convidado_') ||
+      p.is_convidado === true ||
+      p.convidado === true
+    );
+  };
+
+  const convidados = players.filter(isConvidadoUser);
+  const atletasCadastrados = players.filter(p => !isConvidadoUser(p));
 
   // Preencher Select Convidado
   selectConvidado.innerHTML = '<option value="">-- Selecione o Convidado --</option>';
-  if (convidados.length === 0) {
-    selectConvidado.innerHTML = '<option value="">Nenhum convidado temporário encontrado</option>';
-  } else {
-    convidados.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = `${c.nome || c.apelido} (${c.gols || 0} gols | ${c.partidas || c.jogos || 0} jogos)`;
-      selectConvidado.appendChild(opt);
-    });
-  }
+  const listaParaConvidados = convidados.length > 0 ? convidados : players;
+  listaParaConvidados.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.nome || c.apelido || 'Sem Nome'} (${c.gols || 0} gols | ${c.partidas || c.jogos || 0} jogos)`;
+    selectConvidado.appendChild(opt);
+  });
 
   // Preencher Select Atleta Cadastrado
   selectAtleta.innerHTML = '<option value="">-- Selecione o Atleta --</option>';
   atletasCadastrados.forEach(a => {
     const opt = document.createElement('option');
     opt.value = a.id;
-    opt.textContent = `${a.nome || a.apelido} ${a.email ? '(' + a.email + ')' : ''}`;
+    opt.textContent = `${a.nome || a.apelido || 'Sem Nome'} ${a.email ? '(' + a.email + ')' : ''}`;
     if (targetAthleteId && String(a.id) === String(targetAthleteId)) {
       opt.selected = true;
     }
@@ -68,7 +90,7 @@ window.App.initModalTransferir_convidado = async function (data = {}) {
   // Atualiza preview ao selecionar um convidado
   selectConvidado.onchange = function () {
     const cid = selectConvidado.value;
-    const convidadoSel = convidados.find(c => String(c.id) === String(cid));
+    const convidadoSel = players.find(c => String(c.id) === String(cid));
 
     const golsEl = document.getElementById('preview-transfer-gols');
     const jogosEl = document.getElementById('preview-transfer-jogos');
@@ -90,76 +112,120 @@ window.App.initModalTransferir_convidado = async function (data = {}) {
   };
 
   // Submissão do formulário de transferência
-  if (btnConfirm) {
-    btnConfirm.onclick = async function () {
-      const convidadoId = selectConvidado.value;
-      const usuarioId = selectAtleta.value;
+  btnConfirm.onclick = async function (e) {
+    if (e) e.preventDefault();
 
-      if (!convidadoId) {
-        window.App.showToast('Selecione o convidado temporário de origem.', 'warning');
-        return;
-      }
-      if (!usuarioId) {
-        window.App.showToast('Selecione o atleta cadastrado de destino.', 'warning');
-        return;
-      }
-      if (String(convidadoId) === String(usuarioId)) {
-        window.App.showToast('O convidado e o atleta cadastrado devem ser pessoas diferentes.', 'error');
-        return;
-      }
+    const convidadoId = selectConvidado.value;
+    const usuarioId = selectAtleta.value;
 
-      const convidadoSel = convidados.find(c => String(c.id) === String(convidadoId));
-      const atletaSel = atletasCadastrados.find(a => String(a.id) === String(usuarioId));
+    if (!convidadoId) {
+      if (window.App && window.App.showToast) window.App.showToast('Selecione o convidado temporário de origem.', 'warning');
+      else alert('Selecione o convidado temporário de origem.');
+      return;
+    }
+    if (!usuarioId) {
+      if (window.App && window.App.showToast) window.App.showToast('Selecione o atleta cadastrado de destino.', 'warning');
+      else alert('Selecione o atleta cadastrado de destino.');
+      return;
+    }
+    if (String(convidadoId) === String(usuarioId)) {
+      if (window.App && window.App.showToast) window.App.showToast('O convidado e o atleta cadastrado devem ser pessoas diferentes.', 'error');
+      else alert('O convidado e o atleta cadastrado devem ser pessoas diferentes.');
+      return;
+    }
 
-      const convidadoNome = convidadoSel ? convidadoSel.nome : 'Convidado';
-      const atletaNome = atletaSel ? atletaSel.nome : 'Atleta';
+    const convidadoSel = players.find(c => String(c.id) === String(convidadoId));
+    const atletaSel = players.find(a => String(a.id) === String(usuarioId));
 
-      if (!confirm(`Tem certeza que deseja transferir todo o histórico e números de "${convidadoNome}" para o atleta cadastrado "${atletaNome}"?\n\nEsta ação integrará os gols, jogos e saldo, e excluirá o perfil de convidado.`)) {
-        return;
-      }
+    const convidadoNome = convidadoSel ? (convidadoSel.nome || convidadoSel.apelido) : 'Convidado';
+    const atletaNome = atletaSel ? (atletaSel.nome || atletaSel.apelido) : 'Atleta';
 
-      try {
-        btnConfirm.disabled = true;
-        btnConfirm.textContent = '🔄 Transferindo dados...';
+    if (!confirm(`Tem certeza que deseja transferir todo o histórico e números de "${convidadoNome}" para o atleta cadastrado "${atletaNome}"?\n\nEsta ação integrará os gols, jogos e saldo, e excluirá o perfil de convidado.`)) {
+      return;
+    }
 
-        const token = localStorage.getItem('token');
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = '🔄 Transferindo dados...';
+
+    let sucesso = false;
+    let mensagemSucesso = '';
+
+    // 1. Tenta via Backend REST Endpoint (/api/usuarios/transferir-convidado)
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
         const res = await fetch('/api/usuarios/transferir-convidado', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            convidado_id: convidadoId,
-            usuario_id: usuarioId
-          })
+          body: JSON.stringify({ convidado_id: convidadoId, usuario_id: usuarioId })
         });
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          window.App.showToast(data.error || 'Erro ao transferir convidado.', 'error');
-          btnConfirm.disabled = false;
-          btnConfirm.textContent = '🔄 Confirmar & Mesclar Dados';
-          return;
+        if (res.ok) {
+          const data = await res.json();
+          sucesso = true;
+          mensagemSucesso = data.message || `Dados de ${convidadoNome} transferidos com sucesso para ${atletaNome}!`;
         }
-
-        window.App.showToast(`🎉 ${data.message || 'Dados transferidos com sucesso!'}`, 'success');
-
-        // Atualiza a lista de atletas na tela do gestor
-        if (window.App.syncAthletesList) {
-          await window.App.syncAthletesList();
-        } else if (window.App.renderManagerAthletesList) {
-          window.App.renderManagerAthletesList();
-        }
-
-        window.App.closeModal();
-      } catch (err) {
-        console.error('[transferirConvidado] Erro ao submeter:', err);
-        window.App.showToast('Erro de conexão ao transferir convidado.', 'error');
-        btnConfirm.disabled = false;
-        btnConfirm.textContent = '🔄 Confirmar & Mesclar Dados';
       }
-    };
-  }
+    } catch (err) {
+      console.warn('[transferirConvidado] Fallback para Supabase direto devido a erro na API:', err);
+    }
+
+    // 2. Fallback direto via Supabase se o endpoint da API não respondeu com sucesso
+    if (!sucesso && window.supabase) {
+      try {
+        const golsC = parseInt(convidadoSel?.gols || 0);
+        const jogosC = parseInt(convidadoSel?.partidas || convidadoSel?.jogos || 0);
+        const saldoC = parseFloat(convidadoSel?.saldo || 0);
+
+        // Transfere convocações
+        await window.supabase
+          .from('convocacoes')
+          .update({ usuario_id: usuarioId })
+          .eq('usuario_id', convidadoId);
+
+        // Soma gols, partidas e saldo no atleta cadastrado
+        await window.supabase
+          .from('usuarios')
+          .update({
+            gols: parseInt(atletaSel?.gols || 0) + golsC,
+            partidas: parseInt(atletaSel?.partidas || 0) + jogosC,
+            saldo: parseFloat(atletaSel?.saldo || 0) + saldoC
+          })
+          .eq('id', usuarioId);
+
+        // Exclui a conta do convidado temporário
+        await window.supabase
+          .from('usuarios')
+          .delete()
+          .eq('id', convidadoId);
+
+        sucesso = true;
+        mensagemSucesso = `Histórico de ${convidadoNome} mesclado com sucesso no perfil de ${atletaNome}!`;
+      } catch (errDb) {
+        console.error('[transferirConvidado] Erro ao transferir via Supabase:', errDb);
+      }
+    }
+
+    if (sucesso) {
+      if (window.App && window.App.showToast) window.App.showToast(`🎉 ${mensagemSucesso}`, 'success');
+      else alert(mensagemSucesso);
+
+      // Recarrega a lista de atletas na interface
+      if (window.App.syncAthletesList) {
+        await window.App.syncAthletesList();
+      } else if (window.App.renderManagerAthletesList) {
+        window.App.renderManagerAthletesList();
+      }
+
+      window.App.closeModal();
+    } else {
+      if (window.App && window.App.showToast) window.App.showToast('Erro ao processar a transferência do convidado.', 'error');
+      else alert('Erro ao processar a transferência do convidado.');
+      btnConfirm.disabled = false;
+      btnConfirm.textContent = '🔄 Confirmar & Mesclar Dados';
+    }
+  };
 };
