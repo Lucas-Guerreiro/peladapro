@@ -649,31 +649,51 @@ var Dashboard = {
     var hasUltimate = user && (user.card_ultimate === true || user.plano === 'ultimate' || localStorage.getItem('peladapro_ultimate_purchased') === 'true');
     var isVip = (window.App && window.App.isVipPlan && window.App.isVipPlan());
 
+    var currentCardStyle = localStorage.getItem('peladapro_card_style') || 'free';
+
     if (btnUltimate) {
       if (hasUltimate) {
-        btnUltimate.textContent = '✓ Card Ultimate Já Adquirido';
-        btnUltimate.disabled = true;
-        btnUltimate.style.opacity = '0.7';
-        btnUltimate.style.background = '#64748B';
+        if (currentCardStyle === 'free') {
+          btnUltimate.textContent = '⚡ Aplicar Card Ultimate no Perfil';
+          btnUltimate.disabled = false;
+          btnUltimate.style.opacity = '1';
+          btnUltimate.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270)';
+          btnUltimate.onclick = function() { Dashboard.ativarApenasCardUltimate(); };
+        } else {
+          btnUltimate.textContent = '✓ Card Ultimate Ativo';
+          btnUltimate.disabled = true;
+          btnUltimate.style.opacity = '0.7';
+          btnUltimate.style.background = '#64748B';
+        }
       } else {
         btnUltimate.textContent = '🏆 Ativar Apenas Card Ultimate';
         btnUltimate.disabled = false;
         btnUltimate.style.opacity = '1';
         btnUltimate.style.background = 'linear-gradient(135deg, #D4AF37, #F5D270)';
+        btnUltimate.onclick = function() { Dashboard.ativarApenasCardUltimate(); };
       }
     }
 
     if (btnVip) {
       if (isVip) {
-        btnVip.textContent = '✓ Assinatura VIP / Premium Ativa';
-        btnVip.disabled = true;
-        btnVip.style.opacity = '0.7';
-        btnVip.style.background = '#64748B';
+        if (currentCardStyle === 'free') {
+          btnVip.textContent = '⚡ Aplicar Card Premium no Perfil';
+          btnVip.disabled = false;
+          btnVip.style.opacity = '1';
+          btnVip.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+          btnVip.onclick = function() { Dashboard.ativarApenasAssinaturaVIP(); };
+        } else {
+          btnVip.textContent = '✓ Assinatura VIP / Premium Ativa';
+          btnVip.disabled = true;
+          btnVip.style.opacity = '0.7';
+          btnVip.style.background = '#64748B';
+        }
       } else {
         btnVip.textContent = '✨ Ativar Assinatura VIP / Premium (Grátis)';
         btnVip.disabled = false;
         btnVip.style.opacity = '1';
         btnVip.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+        btnVip.onclick = function() { Dashboard.ativarApenasAssinaturaVIP(); };
       }
     }
 
@@ -726,17 +746,19 @@ var Dashboard = {
   // 2. Ativa APENAS a Assinatura VIP / Premium (persiste no backend e localStorage)
   ativarApenasAssinaturaVIP: async function () {
     localStorage.setItem('peladapro_vip_adquirido', 'true');
+    localStorage.setItem('peladapro_card_style', 'fut');
 
     if (Auth.currentUser) {
       Auth.currentUser.vip = true;
       Auth.currentUser.premium = true;
       Auth.currentUser.plano = 'vip';
+      Auth.currentUser.card_style = 'fut';
       localStorage.setItem('currentUser', JSON.stringify(Auth.currentUser));
       localStorage.setItem('usuario', JSON.stringify(Auth.currentUser));
     }
 
     if (window.Api && window.Api.atualizarPerfil) {
-      window.Api.atualizarPerfil({ vip: true, premium: true, plano: 'vip' }).catch(e => console.warn('[Api] Erro ao persistir VIP no backend:', e));
+      window.Api.atualizarPerfil({ vip: true, premium: true, plano: 'vip', card_style: 'fut' }).catch(e => console.warn('[Api] Erro ao persistir VIP no backend:', e));
     }
 
     var btn = document.getElementById('btn-modal-adquirir');
@@ -746,12 +768,14 @@ var Dashboard = {
       btn.style.opacity = '0.7';
     }
 
+    var self = this;
     setTimeout(function () {
       document.getElementById('modal-premium-overlay')?.classList.remove('open');
       document.body.style.overflow = '';
+      self._aplicarEstiloPremium();
 
       if (window.App && window.App.showToast) {
-        window.App.showToast('🎉 Parabéns! Assinatura VIP / Premium (R$ 4,99) ativada gratuitamente para testes!', 'success');
+        window.App.showToast('🎉 Parabéns! Card Premium ativado e aplicado com sucesso!', 'success');
       }
     }, 800);
   },
@@ -1057,7 +1081,8 @@ var Dashboard = {
 
     var initialStyle = 'free';
     if (!isAthleteDisabledByMaster && (hasUltimateCard || isVipUser)) {
-      initialStyle = savedStyle || 'fut';
+      initialStyle = (savedStyle === 'free') ? 'fut' : (savedStyle || 'fut');
+      localStorage.setItem('peladapro_card_style', initialStyle);
     } else {
       localStorage.setItem('peladapro_card_style', 'free');
       initialStyle = 'free';
