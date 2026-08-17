@@ -571,18 +571,40 @@ const Auth = {
   },
 
   async refreshCurrentUser() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
     try {
-      const res = await fetch('/api/usuarios/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const user = await res.json();
-        if (user && user.id) {
-          this.currentUser = { ...this.currentUser, ...user, saldo: parseFloat(user.saldo || 0) };
-          localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-          this.checkUserEmailTest();
+      // 1. Tenta buscar usuário atualizado via Supabase (Fonte da Verdade)
+      if (window.supabase) {
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (session?.user?.email) {
+          const { data: userData } = await window.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+
+          if (userData) {
+            this.currentUser = { ...this.currentUser, ...userData, saldo: parseFloat(userData.saldo || 0) };
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('usuario', JSON.stringify(this.currentUser));
+            this.checkUserEmailTest();
+          }
+        }
+      }
+
+      // 2. Tenta buscar usuário atualizado via API REST backend
+      const token = localStorage.getItem('token');
+      if (token) {
+        const res = await fetch('/api/usuarios/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const user = await res.json();
+          if (user && user.id) {
+            this.currentUser = { ...this.currentUser, ...user, saldo: parseFloat(user.saldo || 0) };
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('usuario', JSON.stringify(this.currentUser));
+            this.checkUserEmailTest();
+          }
         }
       }
     } catch (e) {

@@ -85,6 +85,9 @@ export default function CardPremiumScreen() {
           if (statusNoBanco) {
             setAdquirido(true);
             await AsyncStorage.setItem(ASYNC_KEY, 'true').catch(() => {});
+          } else {
+            setAdquirido(false);
+            await AsyncStorage.removeItem(ASYNC_KEY).catch(() => {});
           }
         }
       }

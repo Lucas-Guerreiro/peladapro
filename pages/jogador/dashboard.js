@@ -35,10 +35,38 @@ var Dashboard = {
     // Aplicar Modo Noturno no Tema do Time se estiver ativo
     this.applyModoNoturno();
 
+    // CORREÇÃO IPHONE: Re-sincroniza ao voltar ao foco/visibilidade
+    this._bindVisibilityRefresh();
+
     // Renderizar anúncio Google AdSense (se ativado pelo gestor)
     if (window.AdSenseManager) {
       window.AdSenseManager.renderAdContainer('adsense-dashboard-banner');
     }
+  },
+
+  // --- CORREÇÃO iPhone: Re-sincroniza dados do banco ao voltar ao foco ------
+  _bindVisibilityRefresh: function () {
+    if (this._visHandler) {
+      document.removeEventListener('visibilitychange', this._visHandler);
+      window.removeEventListener('focus', this._visHandler);
+    }
+    var self = this;
+    this._visHandler = function () {
+      if (document.visibilityState === 'visible') {
+        console.log('[Dashboard] iPhone / App voltou ao foco — re-sincronizando dados do banco...');
+        if (window.Auth && window.Auth.refreshCurrentUser) {
+          window.Auth.refreshCurrentUser().then(function () {
+            self.renderPlayerData();
+            self.renderNextMatches();
+          });
+        } else {
+          self.renderPlayerData();
+          self.renderNextMatches();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', this._visHandler);
+    window.addEventListener('focus', this._visHandler);
   },
 
   // --- Dados do jogador logado -------------------------------------------
@@ -193,6 +221,98 @@ var Dashboard = {
     if (groupNameEl && Auth.currentGroup) {
       groupNameEl.textContent = Auth.currentGroup.nome || '—';
     }
+
+    // CORREÇÃO IPHONE: Busca assincronamente os dados atualizados no banco de dados (Supabase / Backend)
+    this.syncPlayerDataWithDatabase();
+  },
+
+  // --- Sincroniza dados com o Banco de Dados (Supabase / Backend) -----------
+  syncPlayerDataWithDatabase: async function () {
+    if (this._syncingDb) return;
+    this._syncingDb = true;
+    try {
+      if (window.supabase) {
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (session?.user?.email) {
+          const { data } = await window.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+
+          if (data) {
+            var currentUser = window.Auth ? window.Auth.currentUser : null;
+            var merged = currentUser ? { ...currentUser, ...data } : data;
+            if (window.Auth) window.Auth.currentUser = merged;
+            localStorage.setItem('currentUser', JSON.stringify(merged));
+            localStorage.setItem('usuario', JSON.stringify(merged));
+
+            // Sincroniza estado premium com o banco de dados
+            var isPremiumInDb = !!(data.premium_status || data.vip || data.premium || data.card_ultimate || data.plano === 'vip' || data.plano === 'ultimate');
+            if (isPremiumInDb) {
+              localStorage.setItem('peladapro_vip_adquirido', 'true');
+              if (!localStorage.getItem('peladapro_card_style') || localStorage.getItem('peladapro_card_style') === 'free') {
+                localStorage.setItem('peladapro_card_style', data.card_style || 'fut');
+              }
+            } else {
+              localStorage.removeItem('peladapro_vip_adquirido');
+              localStorage.setItem('peladapro_card_style', 'free');
+            }
+
+            // Atualiza elementos do DOM com os dados reais do banco
+            this._repopulateCardDOM(merged);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Dashboard] Aviso ao sincronizar com banco:', e);
+    } finally {
+      this._syncingDb = false;
+    }
+  },
+
+  _repopulateCardDOM: function (user) {
+    if (!user) return;
+
+    var nameEl = document.getElementById('player-card-name');
+    if (nameEl) nameEl.textContent = user.apelido || user.nome || user.name || '—';
+
+    var age = Utils.calcAge(user.data_nascimento);
+    var ageEl = document.getElementById('player-card-age');
+    if (ageEl) ageEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
+
+    var futAgeEl = document.getElementById('fut-stat-age');
+    if (futAgeEl) futAgeEl.textContent = (age !== null && age !== undefined && !isNaN(age)) ? age : '—';
+
+    var teamBadge = document.getElementById('player-card-team-badge');
+    var teamNameEl = document.getElementById('player-card-team-name');
+    var teamTheme = this.getTeamTheme(user.time_coracao);
+
+    if (teamBadge && teamNameEl) {
+      if (user.time_coracao && user.time_coracao.trim()) {
+        teamNameEl.textContent = user.time_coracao.trim();
+        teamBadge.style.display = 'inline-flex';
+
+        if (teamTheme) {
+          teamBadge.style.background = teamTheme.badgeBg;
+          teamBadge.style.color = teamTheme.badgeText;
+          teamBadge.style.borderColor = teamTheme.border;
+        }
+      } else {
+        teamBadge.style.display = 'none';
+      }
+    }
+
+    var card = document.getElementById('player-fifa-card');
+    if (card) {
+      this.applyTeamCardTheme(card, user.time_coracao);
+    }
+
+    var nacFlagEl = document.getElementById('fut-player-nac-flag');
+    if (nacFlagEl) nacFlagEl.textContent = user.nacionalidade_flag || user.nacionalidade || '🇧🇷';
+
+    this.initCardStyle();
+    this.updatePremiumButtonState();
   },
 
   // --- Próximas peladas ---------------------------------------------------
