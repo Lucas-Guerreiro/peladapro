@@ -23,7 +23,9 @@
     },
 
     getPubId() {
-      return localStorage.getItem(this.KEYS.clientPubId) || '';
+      const stored = localStorage.getItem(this.KEYS.clientPubId);
+      if (stored && stored.trim()) return stored.trim();
+      return 'ca-pub-7952143569713459';
     },
 
     getSlotId() {
@@ -66,6 +68,7 @@
     isPlaceholderPubId(pubId) {
       if (!pubId) return true;
       const clean = pubId.trim().toLowerCase();
+      if (clean.includes('7952143569713459')) return false; // ID real do usuário
       return clean.includes('1234567890') || clean.includes('xxx') || clean.includes('example') || clean.length < 10;
     },
 
