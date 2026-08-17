@@ -4,6 +4,73 @@
 
 var timerInterval = null;
 
+// --- Helpers de Armazenamento Seguro contra QuotaExceededError ---
+function safeLocalStorageSetItem(key, value) {
+  try {
+    let stringVal = typeof value === 'string' ? value : JSON.stringify(value);
+
+    // Remove imagens pesadas em Base64 se presentes para economizar espaço
+    if (typeof value === 'object' && value !== null) {
+      const sanitized = JSON.parse(JSON.stringify(value, (k, v) => {
+        if (typeof v === 'string' && (v.startsWith('data:image/') || v.length > 100000)) return undefined;
+        return v;
+      }));
+      stringVal = JSON.stringify(sanitized);
+    }
+
+    // Não grava se o payload exceder 4MB
+    if (stringVal.length > 4 * 1024 * 1024) {
+      console.warn(`[Storage] Payload para ${key} excede 4MB. Ignorando escrita no localStorage.`);
+      return false;
+    }
+
+    localStorage.setItem(key, stringVal);
+    return true;
+  } catch (e) {
+    console.warn(`[Storage] QuotaExceededError ou erro ao gravar ${key}:`, e);
+    return false;
+  }
+}
+
+function safeLocalStorageGetItem(key, fallback = null) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn(`[Storage] Erro ao ler/parsear ${key} do localStorage:`, e);
+    return fallback;
+  }
+}
+
+function limparCachesAntigos() {
+  try {
+    const currentPeladaId = (window.App && window.App.activePelada) ? String(window.App.activePelada.id) : null;
+    const keysToRemove = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+
+      if (key.startsWith("liveMatch_") || key.startsWith("teams_") || key.startsWith("waitingQueue_")) {
+        if (currentPeladaId && !key.endsWith("_" + currentPeladaId)) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+
+    keysToRemove.forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) { }
+    });
+
+    if (keysToRemove.length > 0) {
+      console.log(`🧹 [Storage] Limpeza preventiva executada. Removidas ${keysToRemove.length} chaves de cache antigas.`);
+    }
+  } catch (e) {
+    console.warn("[Storage] Erro em limparCachesAntigos:", e);
+  }
+}
+
 // Centraliza a criação do loop de contagem regressiva.
 // Garante que jamais coexistam dois intervalos ao mesmo tempo.
 function startTimerLoop() {
@@ -54,6 +121,7 @@ function startTimerLoop() {
 }
 
 window.App.initPartidas = async function () {
+  limparCachesAntigos();
   await initPartidasPeladaSelect();
 
   // Resolve a pelada ativa imediatamente se estiver nula
@@ -1483,20 +1551,27 @@ function setupHistoryActions() {
 }
 
 async function saveLiveMatchState() {
+  const peladaId = window.App.activePelada ? String(window.App.activePelada.id) : null;
   if (window.App.liveMatch) {
     window.App.liveMatch.updatedAt = Date.now();
   }
-  localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-  localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+
+  safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
+  if (peladaId) safeLocalStorageSetItem(`liveMatch_${peladaId}`, window.App.liveMatch);
+
+  safeLocalStorageSetItem("waitingQueue", window.App.waitingQueue);
+  if (peladaId) safeLocalStorageSetItem(`waitingQueue_${peladaId}`, window.App.waitingQueue);
+
   if (window.App.activePelada) {
-    localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+    safeLocalStorageSetItem("activePelada", window.App.activePelada);
   }
 
   // Envia atualização em tempo real para a API do backend
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
     let teams = [];
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+    try {
+      teams = (window.App.teams && window.App.teams.length > 0) ? window.App.teams : (safeLocalStorageGetItem("teams") || (peladaId ? safeLocalStorageGetItem(`teams_${peladaId}`) : null) || []);
+    } catch (e) { }
     await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
   }
 }
@@ -1595,94 +1670,95 @@ function playAlarmSound() {
 async function carregarLiveStateDaPelada(peladaId) {
   if (!peladaId) return;
 
-  const groupConfigs = window.Api.getConfigs() || [];
-  const currentGrp = window.Auth.currentGroup;
+  const strPeladaId = String(peladaId);
+  const liveMatchKey = `liveMatch_${strPeladaId}`;
+  const teamsKey = `teams_${strPeladaId}`;
+  const queueKey = `waitingQueue_${strPeladaId}`;
+
+  const groupConfigs = window.Api ? (window.Api.getConfigs() || []) : [];
+  const currentGrp = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
   const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
   const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
 
   let stateCarregado = false;
 
+  // 1. Tenta buscar no backend como Fonte da Verdade
   if (window.Api && window.Api.obterLiveState) {
     try {
       const res = await window.Api.obterLiveState(peladaId);
       if (res && res.state) {
         if (res.state.liveMatch) {
           window.App.liveMatch = res.state.liveMatch;
-          localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
+          safeLocalStorageSetItem(liveMatchKey, res.state.liveMatch);
+          safeLocalStorageSetItem("liveMatch", res.state.liveMatch);
         }
 
-        if (res.state.teams && res.state.teams.length > 0) {
-          localStorage.setItem("teams", JSON.stringify(res.state.teams));
-          localStorage.setItem("teams_" + peladaId, JSON.stringify(res.state.teams));
+        if (res.state.teams && Array.isArray(res.state.teams) && res.state.teams.length > 0) {
           window.App.teams = res.state.teams;
+          safeLocalStorageSetItem(teamsKey, res.state.teams);
+          safeLocalStorageSetItem("teams", res.state.teams);
         }
 
-        if (res.state.waitingQueue && res.state.waitingQueue.length > 0) {
+        if (res.state.waitingQueue && Array.isArray(res.state.waitingQueue)) {
           window.App.waitingQueue = res.state.waitingQueue;
-          localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
-          localStorage.setItem("waitingQueue_" + peladaId, JSON.stringify(res.state.waitingQueue));
+          safeLocalStorageSetItem(queueKey, res.state.waitingQueue);
+          safeLocalStorageSetItem("waitingQueue", res.state.waitingQueue);
         }
         stateCarregado = true;
       }
     } catch (e) {
-      console.error("[Partidas] Erro ao obter live state da pelada:", e);
+      console.warn("[Partidas] Erro/Timeout ao obter live state no backend:", e);
     }
   }
 
-  // Tenta carregar os times do localStorage caso não tenham vindo do servidor
-  if (!window.App.teams || window.App.teams.length === 0) {
-    try {
-      const raw = localStorage.getItem("teams") || localStorage.getItem("teams_" + peladaId);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          window.App.teams = parsed;
-          localStorage.setItem("teams", JSON.stringify(parsed));
-        }
-      }
-    } catch(e) {}
+  // 2. Fallback de Leitura do localStorage se o backend não retornou dados (envolvido em try/catch seguro)
+  if (!stateCarregado) {
+    const cachedLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch");
+    if (cachedLiveMatch) {
+      window.App.liveMatch = cachedLiveMatch;
+    }
+
+    const cachedTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams");
+    if (cachedTeams && Array.isArray(cachedTeams) && cachedTeams.length > 0) {
+      window.App.teams = cachedTeams;
+    }
+
+    const cachedQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue");
+    if (cachedQueue && Array.isArray(cachedQueue)) {
+      window.App.waitingQueue = cachedQueue;
+    }
   }
 
-  // Tenta carregar a fila do localStorage caso não tenha vindo do servidor
-  if (!window.App.waitingQueue || window.App.waitingQueue.length === 0) {
-    try {
-      const rawQ = localStorage.getItem("waitingQueue") || localStorage.getItem("waitingQueue_" + peladaId);
-      if (rawQ) {
-        const parsedQ = JSON.parse(rawQ);
-        if (Array.isArray(parsedQ) && parsedQ.length > 0) {
-          window.App.waitingQueue = parsedQ;
-        }
-      }
-    } catch(e) {}
+  // 3. Garantia de Objeto liveMatch em memória
+  if (!window.App.liveMatch) {
+    window.App.liveMatch = {
+      teamA: "Time A",
+      teamB: "Time B",
+      scoreA: 0,
+      scoreB: 0,
+      isPlaying: false,
+      timerRunning: false,
+      timerSeconds: durationMin * 60,
+      goals: []
+    };
   }
 
-  // Se os times existem mas o liveMatch está no padrão "Time A" / "Time B", atualiza os nomes dos times
+  // Se houverem times sorteados em memória, sincroniza os nomes dos dois primeiros times
   if (window.App.teams && window.App.teams.length >= 2) {
-    if (!window.App.liveMatch || !window.App.liveMatch.teamA || window.App.liveMatch.teamA === "Time A") {
-      window.App.liveMatch = window.App.liveMatch || {};
-      window.App.liveMatch.teamA = window.App.teams[0].nome || window.App.teams[0].name || "Time A";
-      window.App.liveMatch.teamB = window.App.teams[1].nome || window.App.teams[1].name || "Time B";
-      window.App.liveMatch.scoreA = window.App.liveMatch.scoreA || 0;
-      window.App.liveMatch.scoreB = window.App.liveMatch.scoreB || 0;
-      localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+    const tA = window.App.teams[0].nome || window.App.teams[0].name || "Time A";
+    const tB = window.App.teams[1].nome || window.App.teams[1].name || "Time B";
+
+    if (!window.App.liveMatch.teamA || window.App.liveMatch.teamA === "Time A") {
+      window.App.liveMatch.teamA = tA;
+    }
+    if (!window.App.liveMatch.teamB || window.App.liveMatch.teamB === "Time B") {
+      window.App.liveMatch.teamB = tB;
     }
   }
 
-  if (!stateCarregado && (!window.App.teams || window.App.teams.length < 2)) {
-    if (!window.App.liveMatch) {
-      window.App.liveMatch = {
-        teamA: "Time A",
-        teamB: "Time B",
-        scoreA: 0,
-        scoreB: 0,
-        isPlaying: false,
-        timerRunning: false,
-        timerSeconds: durationMin * 60,
-        goals: []
-      };
-      localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-    }
-  }
+  // 4. Gravação Opcional e Protegida no localStorage (com aviso em console se QuotaExceededError ocorrer)
+  safeLocalStorageSetItem(liveMatchKey, window.App.liveMatch);
+  safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
 }
 
 async function initPartidasPeladaSelect() {
