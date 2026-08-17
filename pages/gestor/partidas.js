@@ -2268,7 +2268,7 @@ function renderTournamentUI() {
     } else {
       let html = '';
       standings.forEach((st, idx) => {
-        const medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+        const medal = '';
         const rowBg = isTeamTheme 
           ? (idx === 0 ? 'background: rgba(254, 243, 199, 0.25);' : 'background: rgba(255, 255, 255, 0.08);')
           : (idx === 0 ? 'background: rgba(254, 243, 199, 0.5);' : '');

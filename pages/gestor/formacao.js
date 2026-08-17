@@ -30,6 +30,10 @@ window.App.initFormacao = async function () {
   if (btnDraw) {
     btnDraw.onclick = () => window.App.openModal("sorteio");
   }
+  const btnNomesTimes = document.getElementById("btn-cadastrar-nomes-times");
+  if (btnNomesTimes) {
+    btnNomesTimes.onclick = () => window.App.abrirModalNomesTimes();
+  }
   const btnSyncCloud = document.getElementById("btn-sync-teams-cloud");
   if (btnSyncCloud) {
     btnSyncCloud.onclick = async () => {
@@ -1289,6 +1293,53 @@ async function removerDaFilaGestor(peladaId, usuarioId, atletaNome) {
     window.App.showToast("Erro ao conectar com o servidor.", "error");
   }
 }
+
+window.App.abrirModalNomesTimes = function() {
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = currentGroup ? currentGroup.id : null;
+  
+  let currentCustom = [];
+  try {
+    currentCustom = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+  } catch(e) {}
+
+  const rawInput = prompt(
+    `Cadastre os nomes personalizados dos times da pelada (separados por vírgula):\n\nExemplo: Flamengo, Vasco, Corinthians, Palmeiras\n\n(Deixe em branco para voltar aos nomes padrão: Time A, Time B...)`,
+    (currentCustom && currentCustom.length > 0) ? currentCustom.join(', ') : ''
+  );
+
+  if (rawInput === null) return; // Gestor cancelou o prompt
+
+  const newNames = rawInput.split(',').map(s => s.trim()).filter(Boolean);
+  try {
+    if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(newNames));
+    localStorage.setItem('customTeamNames', JSON.stringify(newNames));
+  } catch(e) {}
+
+  // Se já existirem times sorteados na tela, atualiza o nome de cada time!
+  const drawnTeams = window.App.teams || [];
+  if (Array.isArray(drawnTeams) && drawnTeams.length > 0) {
+    drawnTeams.forEach((t, idx) => {
+      if (newNames[idx]) {
+        t.nome = newNames[idx];
+      }
+    });
+    const teamsKey = getTeamsKey();
+    try {
+      localStorage.setItem(teamsKey, JSON.stringify(drawnTeams));
+      localStorage.setItem('teams', JSON.stringify(drawnTeams));
+    } catch(e) {}
+    if (window.App.renderDrawnTeams) window.App.renderDrawnTeams();
+  }
+
+  if (window.App.showToast) {
+    if (newNames.length > 0) {
+      window.App.showToast(`Nomes dos times cadastrados com sucesso: ${newNames.join(', ')}`, "success");
+    } else {
+      window.App.showToast("Nomes dos times restaurados para o padrão.", "info");
+    }
+  }
+};
 
 window.desconvocarAtleta = desconvocarAtleta;
 window.removerDaFilaGestor = removerDaFilaGestor;

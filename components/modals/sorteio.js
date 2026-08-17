@@ -5,11 +5,37 @@
 window.App.initModalSorteio = function () {
   document.getElementById("btn-close-sorteio-modal").onclick = window.App.closeModal;
   document.getElementById("btn-execute-sorteio").onclick = handleExecuteSorteio;
+
+  // Carrega nomes cadastrados de times no input do modal
+  const inputNomes = document.getElementById("input-sorteio-custom-team-names");
+  if (inputNomes) {
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    const groupId = currentGroup ? currentGroup.id : null;
+    let customNames = [];
+    try {
+      customNames = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+    } catch(e) {}
+    inputNomes.value = Array.isArray(customNames) ? customNames.join(', ') : '';
+  }
 };
 
 function handleExecuteSorteio() {
   const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
   const type = checkedRadio ? checkedRadio.value : "todos";
+
+  // Salva novos nomes digitados no modal de sorteio antes de rodar o draft
+  const inputNomes = document.getElementById("input-sorteio-custom-team-names");
+  if (inputNomes) {
+    const rawVal = inputNomes.value || '';
+    const newNames = rawVal.split(',').map(s => s.trim()).filter(Boolean);
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    const groupId = currentGroup ? currentGroup.id : null;
+    try {
+      if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(newNames));
+      localStorage.setItem('customTeamNames', JSON.stringify(newNames));
+    } catch(e) {}
+  }
+
   window.App.closeModal();
 
   const players = JSON.parse(localStorage.getItem("players")) || [];
@@ -89,10 +115,19 @@ function handleExecuteSorteio() {
   const teamColors = ["#2196F3", "#FFC107", "#FF1744", "#00C853", "#FF6D00", "#9C27B0", "#E91E63", "#00BCD4", "#795548", "#607D8B"];
   const groupEmblems = window._groupEmblemsList || [];
 
+  // Busca nomes de times cadastrados pelo gestor
+  let customNames = [];
+  try {
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    const groupId = currentGroup ? currentGroup.id : null;
+    customNames = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+  } catch(e) {}
+
   for (let i = 0; i < qtyTeams; i++) {
+    const customName = (customNames && customNames[i] && String(customNames[i]).trim()) ? String(customNames[i]).trim() : `Time ${getColoName(i)}`;
     const teamObj = {
       id: `team_${i + 1}`,
-      nome: `Time ${getColoName(i)}`,
+      nome: customName,
       cor: teamColors[i] || "#777",
       emblema: i % 10,
       players: []

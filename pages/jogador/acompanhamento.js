@@ -1007,7 +1007,7 @@ var Acompanhamento = {
       } else {
         var html = '';
         standings.forEach(function (st, idx) {
-          var medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+          var medal = '';
           html += '<tr style="' + (idx === 0 ? 'font-weight:700; background:rgba(254,243,199,0.3);' : '') + '">' +
             '<td style="text-align:center; font-weight:700;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:700; color:#0F172A;">' + medal + st.nome + '</td>' +
