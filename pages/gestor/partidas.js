@@ -962,46 +962,100 @@ window.App.zerarDadosPelada = async function(peladaId) {
   }
 
   const dataFmt = activePelada.data ? (window.Utils ? window.Utils.formatDate(activePelada.data) : activePelada.data) : "17/08/2026";
-  const confirmed = confirm(`Tem certeza que deseja zerar TODOS os dados de jogos, tabela e gols da pelada do dia ${dataFmt}? Esta ação é recomendada após testes para iniciar uma nova rodada limpa.`);
+  const confirmed = confirm(`Tem certeza que deseja zerar o histórico de partidas, placares e gols da pelada do dia ${dataFmt}?\n\nNota: A formação e os times sorteados serão MANTIDOS intactos.`);
   if (!confirmed) return;
 
   try {
+    // 1. Resgata e preserva os times sorteados atuais
+    let currentTeams = window.App.teams || [];
+    if (!currentTeams || currentTeams.length === 0) {
+      currentTeams = safeLocalStorageGetItem(`teams_${pId}`) || safeLocalStorageGetItem("teams") || [];
+    }
+
+    // 2. Limpa dados de confrontos e histórico, mas MANTÉM os times
     const keysToRemove = [
-      "teams", `teams_${pId}`,
       "liveMatch", `liveMatch_${pId}`,
-      "waitingQueue", `waitingQueue_${pId}`,
-      "tournamentState", `tournamentState_${pId}`,
-      "recentMatches", `recentMatches_${pId}`
+      "recentMatches", `recentMatches_${pId}`,
+      "tournamentState", `tournamentState_${pId}`
     ];
     keysToRemove.forEach(k => {
       try { localStorage.removeItem(k); } catch(e) {}
     });
 
-    window.App.teams = [];
-    window.App.waitingQueue = [];
-    window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
+    const teamAName = (currentTeams && currentTeams[0]) ? (currentTeams[0].nome || currentTeams[0].name) : "Time A";
+    const teamBName = (currentTeams && currentTeams[1]) ? (currentTeams[1].nome || currentTeams[1].name) : "Time B";
+    const queueNames = (currentTeams && currentTeams.length > 2) ? currentTeams.slice(2).map(t => t.nome || t.name) : [];
 
-    // 3. Força o reset definitivo na API REST Backend, Supabase e LocalStorage
+    window.App.teams = currentTeams;
+    window.App.waitingQueue = queueNames;
+    window.App.liveMatch = {
+      teamA: teamAName,
+      teamB: teamBName,
+      scoreA: 0,
+      scoreB: 0,
+      isPlaying: false,
+      timerSeconds: 480,
+      goals: []
+    };
+
+    safeLocalStorageSetItem(`teams_${pId}`, currentTeams);
+    safeLocalStorageSetItem("teams", currentTeams);
+    safeLocalStorageSetItem(`waitingQueue_${pId}`, queueNames);
+    safeLocalStorageSetItem("waitingQueue", queueNames);
+    safeLocalStorageSetItem(`liveMatch_${pId}`, window.App.liveMatch);
+    safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
+
+    // 3. Limpa histórico de jogos e gols do banco de dados (Supabase & API Backend)
+    if (window.supabase) {
+      try {
+        await window.supabase.from('gols').delete().eq('pelada_id', pId);
+        await window.supabase.from('partidas').delete().eq('pelada_id', pId);
+        await window.supabase.from('peladas').update({
+          live_state: {
+            liveMatch: window.App.liveMatch,
+            waitingQueue: queueNames,
+            teams: currentTeams
+          }
+        }).eq('id', pId);
+      } catch(eSupabase) {
+        console.warn("[zerarDadosPelada] Supabase clear:", eSupabase);
+      }
+    }
+
     if (window.Api && window.Api.atualizarLiveState) {
       try {
-        await window.Api.atualizarLiveState(pId, null, [], [], true);
+        await window.Api.atualizarLiveState(pId, window.App.liveMatch, queueNames, currentTeams);
       } catch(e) {}
     }
 
-    if (window.supabase) {
-      try {
-        await window.supabase.from('peladas').update({ live_state: null }).eq('id', pId);
-      } catch(e) {}
+    // 4. Se for modo torneio, reinicializa a tabela do torneio com os times preservados
+    if (window.TournamentEngine && currentTeams.length >= 2) {
+      const matches = window.TournamentEngine.generateGroupSchedule(currentTeams, 'ida_volta');
+      const standings = window.TournamentEngine.calculateStandings(currentTeams, matches);
+      const newTState = {
+        modo: 'torneio',
+        fase: 'grupo',
+        turno: 'ida_volta',
+        teams: currentTeams,
+        matches: matches,
+        standings: standings,
+        knockoutMatches: [],
+        finalsMatches: []
+      };
+      safeLocalStorageSetItem(`tournamentState_${pId}`, newTState);
+      safeLocalStorageSetItem('tournamentState', newTState);
+      window.App.liveMatch.tournamentState = newTState;
     }
 
     renderLiveMatchUI();
     renderWaitingQueue();
     renderTournamentUI();
     await renderRecentMatches();
-    if (window.App.showToast) window.App.showToast(`Todos os dados de testes da data ${dataFmt} foram zerados com sucesso!`, "success");
+
+    if (window.App.showToast) window.App.showToast(`Histórico de jogos e gols zerados! A formação dos times foi mantida.`, "success");
   } catch (err) {
     console.error("[zerarDadosPelada]", err);
-    if (window.App.showToast) window.App.showToast("Erro ao zerar dados da pelada.", "error");
+    if (window.App.showToast) window.App.showToast("Erro ao zerar histórico.", "error");
   }
 };
 
