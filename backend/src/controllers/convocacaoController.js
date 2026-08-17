@@ -371,42 +371,67 @@ exports.remover = async (req, res) => {
       );
     }
 
-    // 4.6 Se o atleta removido era da FILA DE ESPERA, notificar o gestor e o próximo da fila
-    if (statusAntes === 'espera' || statusAntes === 'fila_espera') {
-      try {
-        const { sendNotificationInternal } = require('./pushController');
-        const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
-        const grupo_id = peladaRes.rows[0] ? peladaRes.rows[0].grupo_id : null;
-        const dataPelada = peladaRes.rows[0] ? peladaRes.rows[0].data : null;
-        const dataFmt = formatarDataDDMM(dataPelada);
-
-        const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
-        const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
-
-        // Notificar Gestores
-        if (grupo_id) {
-          sendNotificationInternal({
-            onlyGestores: true,
-            grupoId: grupo_id,
-            title: '⏳ Fila de Espera Atualizada',
-            body: `${atletaNome} desconvocou-se e saiu da fila de espera para a pelada de ${dataFmt}.`,
-            url: '/#/gestor/partidas'
-          }).catch(e => console.warn('[Push] Erro gestor:', e.message));
-        }
-
-        // Notificar o próximo da fila (se houver alguém na fila agora)
-        if (restantesRes.rows.length > 0) {
-          const proximoId = restantesRes.rows[0].usuario_id;
-          sendNotificationInternal({
-            usuarioId: proximoId,
-            title: '⏳ Posição Atualizada na Fila!',
-            body: `Um atleta saiu da fila. Sua nova posição na fila de espera é #1 para a pelada de ${dataFmt}.`,
-            url: '/#/jogador/convocacao'
-          }).catch(e => console.warn('[Push] Erro próximo da fila:', e.message));
-        }
-      } catch (e) {
-        console.warn('[Push] Erro nas notificações de remoção da fila:', e);
+    // 4.6 Notificar o Gestor e gravar notificação em banco para TODAS as desconvocações
+    try {
+      const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
+      const grupo_id = peladaRes.rows[0] ? peladaRes.rows[0].grupo_id : null;
+      const dataPelada = peladaRes.rows[0] ? peladaRes.rows[0].data : null;
+      
+      let dataFmt = '';
+      if (dataPelada) {
+        const d = new Date(dataPelada);
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        dataFmt = `${dia}/${mes}`;
       }
+
+      const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+      const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Um atleta';
+
+      if (grupo_id) {
+        // Busca os IDs de todos os gestores do grupo
+        const gestoresRes = await client.query(`
+          SELECT DISTINCT u.id 
+          FROM usuarios u
+          LEFT JOIN grupo_membros gm ON gm.usuario_id = u.id AND gm.grupo_id = $1
+          WHERE u.tipo IN ('gestor', 'ambos', 'admin') OR gm.papel IN ('gestor', 'admin')
+        `, [grupo_id]);
+
+        const tituloNotif = '🚫 Atleta Desconvocado';
+        const msgNotif = `O atleta ${atletaNome} desconvocou-se da pelada do dia ${dataFmt}.${statusAntes === 'confirmado' ? ' Vaga liberada na lista oficial!' : ' (Fila de Espera)'}`;
+
+        // Inserir registro na tabela 'notificacoes' para cada gestor
+        for (const gestor of gestoresRes.rows) {
+          await client.query(`
+            INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem, lida, created_at)
+            VALUES ($1, 'desconvocacao', $2, $3, false, NOW())
+          `, [gestor.id, tituloNotif, msgNotif]);
+        }
+
+        // Disparar Push Notification para os gestores
+        const { sendNotificationInternal } = require('./pushController');
+        sendNotificationInternal({
+          onlyGestores: true,
+          grupoId: grupo_id,
+          title: tituloNotif,
+          body: msgNotif,
+          url: '/#/gestor/partidas'
+        }).catch(e => console.warn('[Push] Erro ao notificar gestor sobre desconvocação:', e.message));
+      }
+
+      // Se o atleta era da FILA DE ESPERA, notificar o próximo da fila
+      if ((statusAntes === 'espera' || statusAntes === 'fila_espera') && restantesRes.rows.length > 0) {
+        const proximoId = restantesRes.rows[0].usuario_id;
+        const { sendNotificationInternal } = require('./pushController');
+        sendNotificationInternal({
+          usuarioId: proximoId,
+          title: '⏳ Posição Atualizada na Fila!',
+          body: `Um atleta saiu da fila. Sua nova posição na fila de espera é #1 para a pelada de ${dataFmt}.`,
+          url: '/#/jogador/convocacao'
+        }).catch(e => console.warn('[Push] Erro próximo da fila:', e.message));
+      }
+    } catch (e) {
+      console.warn('[Notificação] Erro nas notificações de desconvocação:', e);
     }
 
     await client.query('COMMIT');

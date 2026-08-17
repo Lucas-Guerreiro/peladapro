@@ -147,6 +147,31 @@ async function handleConfirmRemoval() {
       window.Dashboard.renderPlayerData();
     }
 
+    // Notifica gestores no Supabase se ativo no frontend
+    if (window.supabase && localPelada) {
+      try {
+        const u = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || {};
+        const atletaNome = u.apelido || u.nome || 'Atleta';
+        const { data: gestores } = await window.supabase
+          .from('usuarios')
+          .select('id')
+          .or('tipo.eq.gestor,tipo.eq.ambos,tipo.eq.admin');
+
+        if (gestores && gestores.length > 0) {
+          const notifs = gestores.map(g => ({
+            usuario_id: g.id,
+            tipo: 'desconvocacao',
+            titulo: '🚫 Atleta Desconvocado',
+            mensagem: `O atleta ${atletaNome} desconvocou-se da pelada.`,
+            lida: false
+          }));
+          await window.supabase.from('notificacoes').insert(notifs);
+        }
+      } catch (e) {
+        console.warn('[remocao] Aviso ao salvar notificação para o gestor:', e);
+      }
+    }
+
     window.App.closeModal();
   } catch (err) {
     console.error("[remocao] Erro:", err);
