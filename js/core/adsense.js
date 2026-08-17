@@ -56,10 +56,17 @@
 
       if (this.isEnabled()) {
         const pubId = this.getPubId();
-        if (pubId) {
+        if (pubId && !this.isPlaceholderPubId(pubId)) {
           this.loadAdSenseScript(pubId);
         }
+        this.refreshAllContainers();
       }
+    },
+
+    isPlaceholderPubId(pubId) {
+      if (!pubId) return true;
+      const clean = pubId.trim().toLowerCase();
+      return clean.includes('1234567890') || clean.includes('xxx') || clean.includes('example') || clean.length < 10;
     },
 
     // --- Sincroniza as configurações de anúncio do banco de dados ----------
@@ -188,8 +195,8 @@
 
       container.style.display = 'block';
 
-      // Se tiver pubId válido do Google AdSense, injeta a tag ins oficial do AdSense
-      if (pubId) {
+      // Se tiver pubId real e válido do Google AdSense, injeta a tag ins oficial do AdSense
+      if (pubId && !this.isPlaceholderPubId(pubId)) {
         const slotAttr = slotId ? `data-ad-slot="${slotId}"` : '';
         container.innerHTML = `
           <div style="text-align: center; margin: 12px 0; overflow: hidden;" class="adsense-box">
