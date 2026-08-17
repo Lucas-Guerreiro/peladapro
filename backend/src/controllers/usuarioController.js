@@ -456,30 +456,24 @@ exports.transferirConvidado = async (req, res) => {
     return res.status(400).json({ error: 'O convidado e o atleta de destino não podem ser a mesma pessoa.' });
   }
 
-  let client;
   try {
-    client = await db.pool.connect();
-    await client.query('BEGIN');
-
     // 1. Busca dados do Convidado
-    const { rows: convidadoRows } = await client.query(
+    const { rows: convidadoRows } = await db.query(
       'SELECT id, nome, email, saldo, gols, partidas FROM usuarios WHERE id = $1',
       [convidado_id]
     );
 
     if (convidadoRows.length === 0) {
-      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Perfil do convidado não encontrado.' });
     }
 
     // 2. Busca dados do Atleta Cadastrado
-    const { rows: atletaRows } = await client.query(
+    const { rows: atletaRows } = await db.query(
       'SELECT id, nome, email, saldo, gols, partidas FROM usuarios WHERE id = $1',
       [usuario_id]
     );
 
     if (atletaRows.length === 0) {
-      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Atleta cadastrado de destino não encontrado.' });
     }
 
@@ -490,23 +484,23 @@ exports.transferirConvidado = async (req, res) => {
     const partidasTransferidas = parseInt(convidado.partidas || 0);
     const saldoTransferido = parseFloat(convidado.saldo || 0);
 
-    // 3. Atualizar convocações: remove duplicadas na mesma pelada se houver
+    // 3. Atualizar convocações (remove duplicadas primeiro e depois atualiza)
     try {
-      await client.query(`
+      await db.query(`
         DELETE FROM convocacoes 
         WHERE usuario_id = $1 AND pelada_id IN (SELECT pelada_id FROM convocacoes WHERE usuario_id = $2)
       `, [convidado_id, usuario_id]);
+    } catch (e) {}
 
-      await client.query(
+    try {
+      await db.query(
         'UPDATE convocacoes SET usuario_id = $1 WHERE usuario_id = $2',
         [usuario_id, convidado_id]
       );
-    } catch (eConv) {
-      console.warn('[transferirConvidado] Aviso convocações:', eConv.message);
-    }
+    } catch (e) {}
 
     // 4. Somar estatísticas (Gols, Partidas, Saldo) no perfil do Atleta Cadastrado
-    await client.query(`
+    await db.query(`
       UPDATE usuarios 
       SET gols = COALESCE(gols, 0) + $1,
           partidas = COALESCE(partidas, 0) + $2,
@@ -516,37 +510,27 @@ exports.transferirConvidado = async (req, res) => {
 
     // 5. Transferir transações financeiras (se houver)
     try {
-      await client.query('UPDATE transacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+      await db.query('UPDATE transacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
     } catch (e) {}
 
-    // 6. Transferir MVP / Notificações / Jogadores de Partida (se houver)
+    // 6. Transferir MVP / Notificações (se houver)
     try {
-      await client.query('UPDATE mvp_partida SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+      await db.query('UPDATE mvp_partida SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
     } catch (e) {}
     try {
-      await client.query('UPDATE notificacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
-    } catch (e) {}
-    try {
-      await client.query('UPDATE partida_jogadores SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+      await db.query('UPDATE notificacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
     } catch (e) {}
 
-    // 7. Excluir ou desativar a conta temporária de convidado
-    try {
-      await client.query('DELETE FROM usuarios WHERE id = $1', [convidado_id]);
-    } catch (eDel) {
-      console.warn('[transferirConvidado] Exclusão direta falhou devido a FKs, aplicando soft-delete:', eDel.message);
-      await client.query(`
-        UPDATE usuarios 
-        SET ativo = false, 
-            verificado = false, 
-            tipo = 'incorporado' 
-        WHERE id = $1
-      `, [convidado_id]);
-    }
+    // 7. Desativar conta temporária de convidado (preserva histórico de DB sem violações de FK)
+    await db.query(`
+      UPDATE usuarios 
+      SET ativo = false, 
+          verificado = false, 
+          tipo = 'incorporado' 
+      WHERE id = $1
+    `, [convidado_id]);
 
-    await client.query('COMMIT');
-
-    res.json({
+    return res.json({
       message: `Sucesso! Histórico e estatísticas de ${convidado.nome} foram integrados ao perfil de ${atleta.nome}.`,
       convidadoNome: convidado.nome,
       atletaNome: atleta.nome,
@@ -555,10 +539,7 @@ exports.transferirConvidado = async (req, res) => {
       saldoTransferido
     });
   } catch (err) {
-    if (client) await client.query('ROLLBACK');
     console.error('[transferirConvidado] Erro:', err);
-    res.status(500).json({ error: 'Erro ao transferir histórico do convidado.', detail: err.message });
-  } finally {
-    if (client) client.release();
+    return res.status(500).json({ error: 'Erro ao transferir histórico do convidado.', detail: err.message });
   }
 };
