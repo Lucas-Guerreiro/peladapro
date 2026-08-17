@@ -443,3 +443,100 @@ exports.atualizarPorGestor = async (req, res) => {
     res.status(500).json({ error: 'Erro ao atualizar atleta.', detail: err.message });
   }
 };
+
+// Transferir estatísticas e histórico de um Convidado para um Atleta Cadastrado
+exports.transferirConvidado = async (req, res) => {
+  const { convidado_id, usuario_id } = req.body;
+
+  if (!convidado_id || !usuario_id) {
+    return res.status(400).json({ error: 'IDs do convidado e do atleta cadastrado são obrigatórios.' });
+  }
+
+  if (String(convidado_id) === String(usuario_id)) {
+    return res.status(400).json({ error: 'O convidado e o atleta de destino não podem ser a mesma pessoa.' });
+  }
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Busca dados do Convidado
+    const { rows: convidadoRows } = await client.query(
+      'SELECT id, nome, email, saldo, gols, partidas FROM usuarios WHERE id = $1',
+      [convidado_id]
+    );
+
+    if (convidadoRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Perfil do convidado não encontrado.' });
+    }
+
+    // 2. Busca dados do Atleta Cadastrado
+    const { rows: atletaRows } = await client.query(
+      'SELECT id, nome, email, saldo, gols, partidas FROM usuarios WHERE id = $1',
+      [usuario_id]
+    );
+
+    if (atletaRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Atleta cadastrado de destino não encontrado.' });
+    }
+
+    const convidado = convidadoRows[0];
+    const atleta = atletaRows[0];
+
+    const golsTransferidos = parseInt(convidado.gols || 0);
+    const partidasTransferidas = parseInt(convidado.partidas || 0);
+    const saldoTransferido = parseFloat(convidado.saldo || 0);
+
+    // 3. Atualizar convocações: remove duplicadas na mesma pelada se houver
+    await client.query(`
+      DELETE FROM convocacoes 
+      WHERE usuario_id = $1 AND pelada_id IN (SELECT pelada_id FROM convocacoes WHERE usuario_id = $2)
+    `, [convidado_id, usuario_id]);
+
+    // Transfere o restante das convocações do convidado para o atleta
+    await client.query(
+      'UPDATE convocacoes SET usuario_id = $1 WHERE usuario_id = $2',
+      [usuario_id, convidado_id]
+    );
+
+    // 4. Somar estatísticas (Gols, Partidas, Saldo) no perfil do Atleta Cadastrado
+    await client.query(`
+      UPDATE usuarios 
+      SET gols = COALESCE(gols, 0) + $1,
+          partidas = COALESCE(partidas, 0) + $2,
+          saldo = COALESCE(saldo, 0) + $3
+      WHERE id = $4
+    `, [golsTransferidos, partidasTransferidas, saldoTransferido, usuario_id]);
+
+    // 5. Transferir transações financeiras (se houver)
+    await client.query('UPDATE transacoes SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+
+    // 6. Transferir MVP da partida (se houver)
+    try {
+      await client.query('UPDATE mvp_partida SET usuario_id = $1 WHERE usuario_id = $2', [usuario_id, convidado_id]);
+    } catch (e) {}
+
+    // 7. Excluir a conta temporária de convidado
+    await client.query('DELETE FROM usuarios WHERE id = $1', [convidado_id]);
+
+    await client.query('COMMIT');
+
+    res.json({
+      message: `Sucesso! Histórico e números de ${convidado.nome} foram integrados ao perfil de ${atleta.nome}.`,
+      convidadoNome: convidado.nome,
+      atletaNome: atleta.nome,
+      golsTransferidos,
+      partidasTransferidas,
+      saldoTransferido
+    });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[transferirConvidado] Erro:', err);
+    res.status(500).json({ error: 'Erro ao transferir histórico do convidado.', detail: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};

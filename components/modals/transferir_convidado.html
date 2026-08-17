@@ -1,0 +1,64 @@
+<!-- Modal: Transferir Histórico de Convidado para Atleta Cadastrado (Gestor) -->
+<div class="modal-backdrop" id="modal-transferir-convidado-backdrop">
+  <div class="modal-content" style="max-width: 480px; border-radius: 16px;">
+    <div class="modal-header" style="border-bottom: 1px solid rgba(226, 232, 240, 0.8); padding-bottom: 14px;">
+      <h3 id="transferir-convidado-title" style="font-size: 18px; font-weight: 800; color: var(--text-heading); display: flex; align-items: center; gap: 8px; margin: 0;">
+        🔄 Transferir Convidado para Atleta
+      </h3>
+      <button class="modal-close" onclick="window.App.closeModal()">&times;</button>
+    </div>
+
+    <p style="font-size: 13px; color: #64748B; margin-top: 12px; margin-bottom: 16px; line-height: 1.5;">
+      Selecione um <strong>Convidado</strong> temporário para integrar todos os seus gols, partidas, convocações e saldo ao perfil oficial de um <strong>Atleta Cadastrado</strong>.
+    </p>
+
+    <!-- 1. SELEÇÃO DO CONVIDADO (ORIGEM) -->
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="select-convidado-origem" class="form-label" style="font-weight: 700; font-size: 13px; color: #1E293B;">
+        👤 1. Convidado Temporário (Origem dos dados)
+      </label>
+      <select id="select-convidado-origem" class="form-control" style="font-weight: 600; font-size: 14px; height: 42px; border-radius: 10px;">
+        <option value="">-- Selecione o Convidado --</option>
+      </select>
+    </div>
+
+    <!-- 2. SELEÇÃO DO ATLETA CADASTRADO (DESTINO) -->
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="select-atleta-destino" class="form-label" style="font-weight: 700; font-size: 13px; color: #1E293B;">
+        ⚽ 2. Atleta Cadastrado (Receberá o histórico)
+      </label>
+      <select id="select-atleta-destino" class="form-control" style="font-weight: 600; font-size: 14px; height: 42px; border-radius: 10px;">
+        <option value="">-- Selecione o Atleta --</option>
+      </select>
+    </div>
+
+    <!-- PREVIEW DAS ESTATÍSTICAS QUE SERÃO TRANSFERIDAS -->
+    <div id="transfer-preview-card" style="background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); border: 1.5px dashed #CBD5E1; border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+      <span style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">
+        📊 Resumo a ser Transferido
+      </span>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+        <div style="background: #FFFFFF; border-radius: 8px; padding: 8px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 10px; color: #64748B; display: block;">⚽ Gols</span>
+          <strong id="preview-transfer-gols" style="font-size: 16px; color: #0F172A;">0</strong>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 8px; padding: 8px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 10px; color: #64748B; display: block;">🏟️ Jogos</span>
+          <strong id="preview-transfer-jogos" style="font-size: 16px; color: #0F172A;">0</strong>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 8px; padding: 8px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 10px; color: #64748B; display: block;">💰 Saldo</span>
+          <strong id="preview-transfer-saldo" style="font-size: 16px; color: #10B981;">R$ 0,00</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTÕES -->
+    <div class="modal-footer" style="padding: 0; display: flex; gap: 10px; justify-content: flex-end;">
+      <button type="button" class="btn btn-secondary" onclick="window.App.closeModal()" style="border-radius: 10px; font-weight: 600;">Cancelar</button>
+      <button type="button" id="btn-confirmar-transferencia" class="btn btn-primary" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); border: none; font-weight: 700; padding: 10px 20px; border-radius: 10px;">
+        🔄 Confirmar & Mesclar Dados
+      </button>
+    </div>
+  </div>
+</div>

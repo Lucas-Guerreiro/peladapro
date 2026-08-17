@@ -12,5 +12,6 @@ router.get('/:id', authMiddleware, usuarioController.obterDetalhes);
 router.post('/:id/aprovar', authMiddleware, usuarioController.aprovarAtleta);
 router.delete('/:id', authMiddleware, usuarioController.recusarAtleta);
 router.post('/:id/gol', authMiddleware, usuarioController.adicionarGol);
+router.post('/transferir-convidado', authMiddleware, usuarioController.transferirConvidado);
 
 module.exports = router;

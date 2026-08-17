@@ -8,7 +8,11 @@ window.App.initAtletas = function() {
   // Sincroniza dados com o backend na entrada para carregar as solicitações
   window.App.syncAthletesList();
 
-  document.getElementById("btn-open-add-athlete-modal").onclick = () => window.App.openModal("atleta");
+  const btnAdd = document.getElementById("btn-open-add-athlete-modal");
+  if (btnAdd) btnAdd.onclick = () => window.App.openModal("atleta");
+
+  const btnTransfer = document.getElementById("btn-open-transfer-guest-modal");
+  if (btnTransfer) btnTransfer.onclick = () => window.App.openModal("transferir_convidado");
 
   const searchInput = document.getElementById("athlete-search-input");
   if (searchInput) {
@@ -159,6 +163,7 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
         </div>
         <div class="athlete-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
           ${downloadBtnHTML}
+          <button class="btn btn-sm btn-outline btn-merge-athlete" data-id="${p.id}" title="Incorporar Histórico de Convidado" style="border-color: #2563EB; color: #2563EB; font-weight: 600;">🔄 Convidado</button>
           <button class="btn btn-sm btn-secondary btn-saldo-athlete" data-id="${p.id}" title="Lançar Crédito / Patrocínio / Ajuste">💰 Saldo</button>
           <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}" title="Editar Atleta">✏️ Editar</button>
           <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}" title="Excluir Atleta">🗑️ Excluir</button>
@@ -172,6 +177,15 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
       const downloadBtn = card.querySelector(".btn-download-athlete-photo");
       if (downloadBtn) downloadBtn.onclick = () => window.Utils.downloadImage(p.foto, p.nome);
+    }
+
+    const btnMerge = card.querySelector(".btn-merge-athlete");
+    if (btnMerge) {
+      btnMerge.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.App.openModal("transferir_convidado", { athleteId: p.id });
+      };
     }
 
     const btnSaldo = card.querySelector(".btn-saldo-athlete");
