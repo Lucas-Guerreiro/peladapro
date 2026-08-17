@@ -303,26 +303,7 @@ const Api = {
     return this.getGruposDoGestor();
   },
 
-  async listarDatasDoGrupo(grupoId) {
-    if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
-    if (isNaN(Number(grupoId)) && String(grupoId).startsWith('g')) {
-      const localPeladas = this.getPeladas() || [];
-      return localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
-    }
-    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
-    try {
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const res = await fetch(`/api/peladas/grupo/${grupoId}`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch (e) {
-      console.error('[Api] Erro em listarDatasDoGrupo:', e);
-    }
-    const localPeladas = this.getPeladas() || [];
-    return localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
-  },
+
 
   async listarTransacoesDoGrupo(grupoId) {
     const token = localStorage.getItem('token');
@@ -620,17 +601,47 @@ const Api = {
   },
 
   async listarDatasDoGrupo(grupoId) {
+    let cleanGroupId = grupoId;
+    if (cleanGroupId && typeof cleanGroupId === 'object') {
+      cleanGroupId = cleanGroupId.id || cleanGroupId.grupo_id || cleanGroupId._id;
+    }
+    if (!cleanGroupId || cleanGroupId === 'null' || cleanGroupId === 'undefined') {
+      const currentGroup = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+      if (currentGroup && currentGroup.id) {
+        cleanGroupId = currentGroup.id;
+      } else {
+        const groups = this.getGroups();
+        if (groups.length > 0) cleanGroupId = groups[0].id;
+      }
+    }
+
+    if (!cleanGroupId || cleanGroupId === 'null' || cleanGroupId === 'undefined') {
+      return [];
+    }
+
+    const strGroupId = String(cleanGroupId);
+
+    // Timeout helper para chamadas assíncronas
+    const withTimeout = (promise, ms = 2000) => {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
+      ]);
+    };
+
     // 1. Tenta via Supabase direto
     if (window.supabase) {
       try {
-        let query = window.supabase.from('peladas').select('*').order('data', { ascending: false });
-        const { data, error } = await query;
+        const queryPromise = window.supabase
+          .from('peladas')
+          .select('*')
+          .order('data', { ascending: false });
+        const { data, error } = await withTimeout(queryPromise, 2000);
         if (data && Array.isArray(data) && data.length > 0) {
-          if (grupoId && grupoId !== 'null' && grupoId !== 'undefined') {
-            const filtered = data.filter(p => String(p.grupo_id) === String(grupoId) || String(p.grupoId) === String(grupoId));
-            if (filtered.length > 0) return filtered;
-          }
-          return data;
+          const filtered = data.filter(p =>
+            String(p.grupo_id) === strGroupId || String(p.grupoId) === strGroupId
+          );
+          if (filtered.length > 0) return filtered;
         }
       } catch (eSupabase) {
         console.warn('[Api] Erro Supabase em listarDatasDoGrupo:', eSupabase);
@@ -639,27 +650,45 @@ const Api = {
 
     // 2. Tenta via API REST Backend
     const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
-    if (token && grupoId) {
-      try {
-        const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) return data;
-        }
-      } catch(e) {
-        console.warn('[Api] Erro ao listar datas do grupo:', e);
+    try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const fetchPromise = fetch(`/api/peladas/grupo/${cleanGroupId}`, { headers }).then(async res => {
+        if (!res.ok) return null;
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) return null;
+        return await res.json();
+      });
+
+      const data = await withTimeout(fetchPromise, 2000);
+      if (data && Array.isArray(data) && data.length > 0) {
+        return data;
       }
+    } catch (e) {
+      console.warn('[Api] Erro ao listar datas do grupo no backend:', e);
     }
 
     // 3. Fallback local em localStorage
     const localPeladas = this.getPeladas() || [];
-    if (grupoId) {
-      const filtered = localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
-      if (filtered.length > 0) return filtered;
+    const filtered = localPeladas.filter(p => String(p.grupo_id) === strGroupId);
+    if (filtered.length > 0) {
+      return filtered;
     }
-    return localPeladas;
+
+    // 4. Se não existirem peladas no localStorage para este grupo, injeta uma data padrão agendada
+    const todayStr = new Date().toISOString().split('T')[0];
+    const defaultPelada = {
+      id: 'p_auto_' + strGroupId + '_' + Date.now(),
+      grupo_id: isNaN(Number(cleanGroupId)) ? strGroupId : parseInt(cleanGroupId),
+      data: todayStr,
+      horario: '20:00',
+      status: 'agendada',
+      local: 'Campo Principal',
+      max_jogadores: 14,
+      valor_convocacao: 20
+    };
+    localPeladas.push(defaultPelada);
+    this.savePeladas(localPeladas);
+    return [defaultPelada];
   },
 
   async listarTransacoesDoGrupo(grupoId) {

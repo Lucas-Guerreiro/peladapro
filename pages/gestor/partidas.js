@@ -234,14 +234,12 @@ window.App.initPartidas = async function () {
         window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: "b", players: teamObj.players });
       };
     }
-  }
 
   setTimeout(() => {
     if (window.App && window.App.applyModoNoturnoGlobal) {
       window.App.applyModoNoturnoGlobal();
     }
   }, 50);
-};
 
   window.App.updateAcompanhamentoUI = async function () {
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
@@ -1751,6 +1749,9 @@ async function initPartidasPeladaSelect() {
     };
   } catch (err) {
     console.error("[initPartidasPeladaSelect]", err);
+    if (select && select.options.length <= 1 && select.value === "") {
+      select.innerHTML = `<option value="">Nenhuma pelada agendada</option>`;
+    }
   }
 }
 
