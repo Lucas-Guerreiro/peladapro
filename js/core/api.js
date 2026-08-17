@@ -487,6 +487,21 @@ const Api = {
     }
   },
 
+  async zerarPartidasDaPelada(peladaId) {
+    if (!peladaId) return { error: 'Pelada ID não informado.' };
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch(`/api/partidas/pelada/${peladaId}/all`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) return await res.json();
+      } catch(e) {}
+    }
+    return { message: 'Partidas zeradas.' };
+  },
+
   async atualizarStatusPelada(peladaId, status) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };

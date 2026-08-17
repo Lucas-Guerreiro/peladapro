@@ -7,5 +7,6 @@ router.post('/', authMiddleware, partidaController.criarPartida);
 router.get('/pelada/:peladaId', authMiddleware, partidaController.listarPartidas);
 router.put('/:id', authMiddleware, partidaController.editarPartida);
 router.delete('/:id', authMiddleware, partidaController.deletarPartida);
+router.delete('/pelada/:peladaId/all', authMiddleware, partidaController.deletarTodasPartidasDaPelada);
 
 module.exports = router;

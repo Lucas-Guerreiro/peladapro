@@ -1006,6 +1006,12 @@ window.App.zerarDadosPelada = async function(peladaId) {
     safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
 
     // 3. Limpa histórico de jogos e gols do banco de dados (Supabase & API Backend)
+    if (window.Api && window.Api.zerarPartidasDaPelada) {
+      try {
+        await window.Api.zerarPartidasDaPelada(pId);
+      } catch(e) {}
+    }
+
     if (window.supabase) {
       try {
         await window.supabase.from('gols').delete().eq('pelada_id', pId);
@@ -1028,10 +1034,28 @@ window.App.zerarDadosPelada = async function(peladaId) {
       } catch(e) {}
     }
 
-    // 4. Se for modo torneio, reinicializa a tabela do torneio com os times preservados
+    // 4. Se for modo torneio, reinicializa a tabela do torneio com os times preservados e ESTATÍSTICAS ZERADAS (0 vitorias, 0 gols, 0 pontos)
     if (window.TournamentEngine && currentTeams.length >= 2) {
       const matches = window.TournamentEngine.generateGroupSchedule(currentTeams, 'ida_volta');
+      // Força o status 'a_jogar' em todas as partidas da agenda
+      matches.forEach(m => {
+        m.status = 'a_jogar';
+        m.golsA = null;
+        m.golsB = null;
+      });
       const standings = window.TournamentEngine.calculateStandings(currentTeams, matches);
+      // Garante que a tabela exiba TODOS OS CAMPOS ZERADOS
+      standings.forEach(st => {
+        st.jogos = 0;
+        st.vitorias = 0;
+        st.empates = 0;
+        st.derrotas = 0;
+        st.golsPro = 0;
+        st.golsContra = 0;
+        st.saldoGols = 0;
+        st.pontos = 0;
+      });
+
       const newTState = {
         modo: 'torneio',
         fase: 'grupo',

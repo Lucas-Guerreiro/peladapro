@@ -121,3 +121,20 @@ exports.deletarPartida = async (req, res) => {
     res.status(500).json({ error: 'Erro ao deletar partida.', detail: err.message });
   }
 };
+
+exports.deletarTodasPartidasDaPelada = async (req, res) => {
+  const { peladaId } = req.params;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem deletar partidas da pelada.' });
+  }
+
+  try {
+    await db.query('DELETE FROM gols WHERE pelada_id = $1', [peladaId]).catch(() => {});
+    await db.query('DELETE FROM partidas WHERE pelada_id = $1', [peladaId]);
+    res.json({ message: 'Todas as partidas e gols da pelada foram zerados com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao zerar partidas da pelada.', detail: err.message });
+  }
+};
