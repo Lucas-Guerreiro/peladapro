@@ -46,16 +46,16 @@ function safeLocalStorageGetItem(key, fallback = null) {
 function limparCachesAntigos() {
   try {
     const currentPeladaId = (window.App && window.App.activePelada) ? String(window.App.activePelada.id) : null;
-    const keysToRemove = [];
+    if (!currentPeladaId) return;
 
+    const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
 
-      if (key.startsWith("liveMatch_") || key.startsWith("teams_") || key.startsWith("waitingQueue_")) {
-        if (currentPeladaId && !key.endsWith("_" + currentPeladaId)) {
-          keysToRemove.push(key);
-        }
+      // Remove apenas chaves temporárias antigas de liveMatch que não pertencem à pelada ativa (NUNCA remove times sorteados)
+      if (key.startsWith("liveMatch_") && !key.endsWith("_" + currentPeladaId)) {
+        keysToRemove.push(key);
       }
     }
 
@@ -64,7 +64,7 @@ function limparCachesAntigos() {
     });
 
     if (keysToRemove.length > 0) {
-      console.log(`🧹 [Storage] Limpeza preventiva executada. Removidas ${keysToRemove.length} chaves de cache antigas.`);
+      console.log(`🧹 [Storage] Limpeza preventiva executada. Removidas ${keysToRemove.length} chaves de liveMatch antigas.`);
     }
   } catch (e) {
     console.warn("[Storage] Erro em limparCachesAntigos:", e);
@@ -1712,13 +1712,9 @@ async function saveLiveMatchState() {
     safeLocalStorageSetItem("activePelada", window.App.activePelada);
   }
 
-  // Envia atualização em tempo real para a API do backend
-  if (peladaId && window.Api && window.Api.atualizarLiveState) {
-    let teams = [];
-    try {
-      teams = (window.App.teams && window.App.teams.length > 0) ? window.App.teams : (safeLocalStorageGetItem("teams") || (peladaId ? safeLocalStorageGetItem(`teams_${peladaId}`) : null) || []);
-    } catch (e) { }
-    await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+  // Envia atualização em tempo real para a API do backend somente se houver pelada e times sorteados
+  if (peladaId && window.Api && window.Api.atualizarLiveState && window.App.teams && window.App.teams.length >= 2) {
+    await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, window.App.teams);
   }
 }
 
@@ -1826,85 +1822,88 @@ async function carregarLiveStateDaPelada(peladaId) {
   const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
   const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
 
-  let stateCarregado = false;
+  let serverTeams = null;
+  let serverLiveMatch = null;
+  let serverQueue = null;
 
   // 1. Tenta buscar no backend como Fonte da Verdade
   if (window.Api && window.Api.obterLiveState) {
     try {
       const res = await window.Api.obterLiveState(peladaId);
       if (res && res.state) {
-        if (res.state.liveMatch) {
-          window.App.liveMatch = res.state.liveMatch;
-          safeLocalStorageSetItem(liveMatchKey, res.state.liveMatch);
-          safeLocalStorageSetItem("liveMatch", res.state.liveMatch);
-        }
-
-        if (res.state.teams && Array.isArray(res.state.teams) && res.state.teams.length > 0) {
-          window.App.teams = res.state.teams;
-          safeLocalStorageSetItem(teamsKey, res.state.teams);
-          safeLocalStorageSetItem("teams", res.state.teams);
-        }
-
-        if (res.state.waitingQueue && Array.isArray(res.state.waitingQueue)) {
-          window.App.waitingQueue = res.state.waitingQueue;
-          safeLocalStorageSetItem(queueKey, res.state.waitingQueue);
-          safeLocalStorageSetItem("waitingQueue", res.state.waitingQueue);
-        }
-        stateCarregado = true;
+        if (res.state.liveMatch) serverLiveMatch = res.state.liveMatch;
+        if (res.state.teams && Array.isArray(res.state.teams) && res.state.teams.length > 0) serverTeams = res.state.teams;
+        if (res.state.waitingQueue && Array.isArray(res.state.waitingQueue)) serverQueue = res.state.waitingQueue;
       }
     } catch (e) {
       console.warn("[Partidas] Erro/Timeout ao obter live state no backend:", e);
     }
   }
 
-  // 2. Fallback de Leitura do localStorage se o backend não retornou dados (envolvido em try/catch seguro)
-  if (!stateCarregado) {
-    const cachedLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch");
-    if (cachedLiveMatch) {
-      window.App.liveMatch = cachedLiveMatch;
-    }
+  // 2. Leitura dos dados guardados no localStorage local (garante resgate do sorteio do gestor)
+  const localTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams");
+  const localQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue");
+  const localLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch");
 
-    const cachedTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams");
-    if (cachedTeams && Array.isArray(cachedTeams) && cachedTeams.length > 0) {
-      window.App.teams = cachedTeams;
-    }
+  // Prioriza o servidor se ele tiver times; se o servidor retornar null/vazio, NUNCA apaga o sorteio local!
+  const finalTeams = (serverTeams && serverTeams.length > 0) 
+    ? serverTeams 
+    : ((localTeams && localTeams.length > 0) ? localTeams : (window.App.teams || []));
 
-    const cachedQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue");
-    if (cachedQueue && Array.isArray(cachedQueue)) {
-      window.App.waitingQueue = cachedQueue;
-    }
+  const finalQueue = (serverQueue && serverQueue.length > 0) 
+    ? serverQueue 
+    : (localQueue || window.App.waitingQueue || []);
+
+  const finalLiveMatch = serverLiveMatch || localLiveMatch || window.App.liveMatch;
+
+  window.App.teams = finalTeams;
+  window.App.waitingQueue = finalQueue;
+  window.App.liveMatch = finalLiveMatch;
+
+  // Persiste no localStorage do dispositivo preservando os times do sorteio
+  if (finalTeams && finalTeams.length > 0) {
+    safeLocalStorageSetItem(teamsKey, finalTeams);
+    safeLocalStorageSetItem("teams", finalTeams);
   }
 
-  // 3. Garantia de Objeto liveMatch em memória
-  if (!window.App.liveMatch) {
-    window.App.liveMatch = {
-      teamA: "Time A",
-      teamB: "Time B",
-      scoreA: 0,
-      scoreB: 0,
-      isPlaying: false,
-      timerRunning: false,
-      timerSeconds: durationMin * 60,
-      goals: []
-    };
+  if (finalQueue && finalQueue.length > 0) {
+    safeLocalStorageSetItem(queueKey, finalQueue);
+    safeLocalStorageSetItem("waitingQueue", finalQueue);
   }
 
-  // Se houverem times sorteados em memória, sincroniza os nomes dos dois primeiros times
-  if (window.App.teams && window.App.teams.length >= 2) {
-    const tA = window.App.teams[0].nome || window.App.teams[0].name || "Time A";
-    const tB = window.App.teams[1].nome || window.App.teams[1].name || "Time B";
+  // 3. Se houverem pelo menos 2 times no sorteio:
+  if (finalTeams && finalTeams.length >= 2) {
+    const tA = finalTeams[0].nome || finalTeams[0].name || "Time 1";
+    const tB = finalTeams[1].nome || finalTeams[1].name || "Time 2";
 
-    if (!window.App.liveMatch.teamA || window.App.liveMatch.teamA === "Time A") {
+    if (!window.App.liveMatch || !window.App.liveMatch.teamA || window.App.liveMatch.teamA === "Time A") {
+      window.App.liveMatch = window.App.liveMatch || {};
       window.App.liveMatch.teamA = tA;
-    }
-    if (!window.App.liveMatch.teamB || window.App.liveMatch.teamB === "Time B") {
       window.App.liveMatch.teamB = tB;
+      window.App.liveMatch.scoreA = window.App.liveMatch.scoreA || 0;
+      window.App.liveMatch.scoreB = window.App.liveMatch.scoreB || 0;
+      window.App.liveMatch.isPlaying = false;
+      window.App.liveMatch.timerSeconds = window.App.liveMatch.timerSeconds || (durationMin * 60);
+      window.App.liveMatch.goals = window.App.liveMatch.goals || [];
+    }
+
+    // Se houverem mais de 2 times e a fila estiver vazia, adiciona os demais times na fila de espera
+    if ((!window.App.waitingQueue || window.App.waitingQueue.length === 0) && finalTeams.length > 2) {
+      window.App.waitingQueue = finalTeams.slice(2).map(t => t.nome || t.name);
+      safeLocalStorageSetItem(queueKey, window.App.waitingQueue);
+      safeLocalStorageSetItem("waitingQueue", window.App.waitingQueue);
+    }
+
+    safeLocalStorageSetItem(liveMatchKey, window.App.liveMatch);
+    safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
+  } else {
+    // Se o gestor não sorteou os times ainda, limpa estado fictício
+    if (!window.App.liveMatch) {
+      window.App.liveMatch = {
+        teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: durationMin * 60, goals: []
+      };
     }
   }
-
-  // 4. Gravação Opcional e Protegida no localStorage (com aviso em console se QuotaExceededError ocorrer)
-  safeLocalStorageSetItem(liveMatchKey, window.App.liveMatch);
-  safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
 }
 
 async function initPartidasPeladaSelect() {
