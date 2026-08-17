@@ -1728,8 +1728,8 @@ async function initPartidasPeladaSelect() {
       const found = peladas.find(p => String(p.id) === String(selectedId));
       if (found) {
         window.App.activePelada = found;
-        // Se a pelada selecionada não estiver em andamento, limpa confronto/fila
-        if (found.status !== "ativa") {
+        // Só limpa se a pelada estiver explicitamente 'finalizada'
+        if (found.status === "finalizada") {
           limparEstadoPartida();
         }
         localStorage.setItem("activePelada", JSON.stringify(found));

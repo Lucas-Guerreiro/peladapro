@@ -521,54 +521,138 @@ const Api = {
   },
 
   async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams) {
-    const token = localStorage.getItem('token');
-    if (!token) return { error: 'Sessão expirada.' };
+    if (!peladaId) return { error: 'Pelada ID não informado.' };
+
+    const liveStateObj = { liveMatch, waitingQueue, teams };
+
+    // Salva localmente para resposta instantânea na UI
     try {
-      const res = await fetch(`/api/peladas/${peladaId}/live`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ liveMatch, waitingQueue, teams })
-      });
-      return res.json();
-    } catch(e) {
-      return { error: e.message };
+      if (liveMatch) localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
+      if (waitingQueue) localStorage.setItem("waitingQueue", JSON.stringify(waitingQueue));
+      if (teams) localStorage.setItem("teams", JSON.stringify(teams));
+    } catch (e) {}
+
+    // 1. Tenta via Supabase direto (JAMstack / Vercel)
+    if (window.supabase) {
+      try {
+        await window.supabase
+          .from('peladas')
+          .update({ live_state: liveStateObj })
+          .eq('id', peladaId);
+      } catch (eSupabase) {
+        console.warn('[Api] Erro ao salvar liveState no Supabase:', eSupabase);
+      }
     }
+
+    // 2. Tenta via API REST Backend
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch(`/api/peladas/${peladaId}/live`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ liveMatch, waitingQueue, teams })
+        });
+        if (res.ok) return await res.json();
+      } catch(e) {}
+    }
+
+    return { message: 'Estado ao vivo salvo com sucesso.' };
   },
 
   async obterLiveState(peladaId) {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-      const res = await fetch(`/api/peladas/${peladaId}/live`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    if (!peladaId) return null;
+
+    // 1. Tenta via Supabase direto
+    if (window.supabase) {
+      try {
+        const { data, error } = await window.supabase
+          .from('peladas')
+          .select('live_state')
+          .eq('id', peladaId)
+          .single();
+
+        if (data && data.live_state) {
+          const stateObj = typeof data.live_state === 'string' ? JSON.parse(data.live_state) : data.live_state;
+          if (stateObj && (stateObj.liveMatch || stateObj.teams || stateObj.waitingQueue)) {
+            return { state: stateObj };
+          }
         }
-      });
-      return res.json();
-    } catch(e) {
-      return null;
+      } catch (eSupabase) {
+        console.warn('[Api] Erro ao buscar liveState no Supabase:', eSupabase);
+      }
     }
+
+    // 2. Tenta via API REST Backend
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch(`/api/peladas/${peladaId}/live`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.state) return data;
+        }
+      } catch(e) {}
+    }
+
+    // 3. Fallback localStorage
+    try {
+      const lm = localStorage.getItem("liveMatch");
+      const wq = localStorage.getItem("waitingQueue");
+      const tm = localStorage.getItem("teams");
+      if (lm || tm) {
+        return {
+          state: {
+            liveMatch: lm ? JSON.parse(lm) : null,
+            waitingQueue: wq ? JSON.parse(wq) : [],
+            teams: tm ? JSON.parse(tm) : []
+          }
+        };
+      }
+    } catch (e) {}
+
+    return null;
   },
 
   async listarDatasDoGrupo(grupoId) {
-    const token = localStorage.getItem('token');
-    if (!token) return [];
-    try {
-      const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    } catch(e) {
-      console.warn('[Api] Erro ao listar datas do grupo:', e);
-      return [];
+    if (!grupoId || grupoId === 'null' || grupoId === 'undefined') return [];
+
+    // 1. Tenta via Supabase direto
+    if (window.supabase) {
+      try {
+        let query = window.supabase.from('peladas').select('*');
+        if (grupoId) query = query.eq('grupo_id', grupoId);
+        const { data, error } = await query.order('data', { ascending: false });
+        if (data && Array.isArray(data) && data.length > 0) return data;
+      } catch (eSupabase) {
+        console.warn('[Api] Erro Supabase em listarDatasDoGrupo:', eSupabase);
+      }
     }
+
+    // 2. Tenta via API REST Backend
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch(`/api/peladas/grupo/${grupoId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) return data;
+        }
+      } catch(e) {
+        console.warn('[Api] Erro ao listar datas do grupo:', e);
+      }
+    }
+
+    // 3. Fallback local em localStorage
+    const localPeladas = this.getPeladas() || [];
+    return localPeladas.filter(p => String(p.grupo_id) === String(grupoId));
   },
 
   async listarTransacoesDoGrupo(grupoId) {

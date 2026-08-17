@@ -149,9 +149,9 @@ var Acompanhamento = {
   _fetchServerLiveState: async function () {
     var peladaId = window.App.activePelada ? window.App.activePelada.id : null;
 
-    // Se a pelada ativa NÃO estiver em andamento (não for 'ativa'), limpa e NÃO recarrega confronto/fila
     var peladaAtiva = window.App.activePelada || {};
-    if (peladaAtiva.status !== "ativa") {
+    // Só limpa se a pelada for explicitamente 'finalizada' sem dados de partida ao vivo
+    if (peladaAtiva.status === "finalizada" && !localStorage.getItem("liveMatch")) {
       this._limparEstado();
       return;
     }
