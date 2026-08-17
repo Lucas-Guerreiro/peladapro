@@ -501,8 +501,46 @@ const Api = {
     return res.json();
   },
 
-  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams) {
+  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams, isReset = false) {
     if (!peladaId) return { error: 'Pelada ID não informado.' };
+
+    if (isReset) {
+      try {
+        localStorage.removeItem("liveMatch");
+        localStorage.removeItem(`liveMatch_${peladaId}`);
+        localStorage.removeItem("teams");
+        localStorage.removeItem(`teams_${peladaId}`);
+        localStorage.removeItem("waitingQueue");
+        localStorage.removeItem(`waitingQueue_${peladaId}`);
+        localStorage.removeItem("tournamentState");
+        localStorage.removeItem(`tournamentState_${peladaId}`);
+      } catch (e) {}
+
+      if (window.supabase) {
+        try {
+          await window.supabase
+            .from('peladas')
+            .update({ live_state: null })
+            .eq('id', peladaId);
+        } catch (eSupabase) { }
+      }
+
+      const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+      if (token) {
+        try {
+          await fetch(`/api/peladas/${peladaId}/live`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ isReset: true })
+          });
+        } catch(e) {}
+      }
+
+      return { message: 'Estado ao vivo zerado com sucesso.' };
+    }
 
     // Sanitiza 'teams' removendo fotos base64 gigantes dos jogadores para EVITAR ERRO 413 (Content Too Large)
     let cleanTeams = teams;

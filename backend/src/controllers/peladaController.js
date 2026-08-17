@@ -354,13 +354,19 @@ const liveStateMap = new Map();
 
 exports.atualizarLiveState = async (req, res) => {
   const { id } = req.params;
-  const { liveMatch, waitingQueue, teams } = req.body;
+  const { liveMatch, waitingQueue, teams, isReset } = req.body;
 
   if (!id) {
     return res.status(400).json({ error: 'ID da pelada é obrigatório' });
   }
 
   try {
+    // Se for solicitação de reset, zera completamente o live_state da pelada no banco
+    if (isReset) {
+      await db.query('UPDATE peladas SET live_state = NULL WHERE id = $1', [id]);
+      return res.json({ message: 'Estado ao vivo zerado com sucesso no servidor.' });
+    }
+
     // 1. Busca estado anterior do banco de dados
     const selectRes = await db.query('SELECT live_state FROM peladas WHERE id = $1', [id]);
     let existing = {};

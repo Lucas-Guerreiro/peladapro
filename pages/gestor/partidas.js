@@ -981,15 +981,16 @@ window.App.zerarDadosPelada = async function(peladaId) {
     window.App.waitingQueue = [];
     window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
 
-    if (window.supabase) {
+    // 3. Força o reset definitivo na API REST Backend, Supabase e LocalStorage
+    if (window.Api && window.Api.atualizarLiveState) {
       try {
-        await window.supabase.from('peladas').update({ live_state: null }).eq('id', pId);
+        await window.Api.atualizarLiveState(pId, null, [], [], true);
       } catch(e) {}
     }
 
-    if (window.Api && window.Api.atualizarLiveState) {
+    if (window.supabase) {
       try {
-        await window.Api.atualizarLiveState(pId, null, [], []);
+        await window.supabase.from('peladas').update({ live_state: null }).eq('id', pId);
       } catch(e) {}
     }
 
