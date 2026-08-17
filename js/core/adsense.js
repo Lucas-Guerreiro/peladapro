@@ -50,7 +50,10 @@
     },
 
     // --- Inicialização do serviço na inicialização do app ------------------
-    init() {
+    async init() {
+      // 1. Tenta sincronizar com o banco de dados (Supabase / Backend)
+      await this.syncWithDatabase();
+
       if (this.isEnabled()) {
         const pubId = this.getPubId();
         if (pubId) {
@@ -59,21 +62,111 @@
       }
     },
 
-    // --- Ligar / Desligar --------------------------------------------------
-    enable(pubId, slotId = '') {
-      localStorage.setItem(this.KEYS.enabled, 'true');
-      if (pubId) localStorage.setItem(this.KEYS.clientPubId, pubId.trim());
-      if (slotId) localStorage.setItem(this.KEYS.slotId, slotId.trim());
+    // --- Sincroniza as configurações de anúncio do banco de dados ----------
+    async syncWithDatabase() {
+      try {
+        let pubId = '';
+        let slotId = '';
+        let enabled = null;
 
-      this.loadAdSenseScript(pubId || this.getPubId());
-      this.refreshAllContainers();
-      console.log('✅ [AdSense] Anúncios Google AdSense ATIVADOS para todos os atletas.');
+        // Tenta buscar via Supabase
+        if (window.supabase) {
+          const { data: { session } } = await window.supabase.auth.getSession();
+          if (session?.user) {
+            const { data } = await window.supabase
+              .from('usuarios')
+              .select('adsense_pub_id, adsense_slot_id, adsense_enabled')
+              .eq('email', session.user.email)
+              .single();
+
+            if (data) {
+              if (data.adsense_pub_id) pubId = data.adsense_pub_id;
+              if (data.adsense_slot_id) slotId = data.adsense_slot_id;
+              if (data.adsense_enabled !== null && data.adsense_enabled !== undefined) {
+                enabled = data.adsense_enabled;
+              }
+            }
+          }
+        }
+
+        // Tenta buscar via Auth.currentUser (Web App)
+        if (!pubId && window.Auth && window.Auth.currentUser) {
+          const u = window.Auth.currentUser;
+          if (u.adsense_pub_id) pubId = u.adsense_pub_id;
+          if (u.adsense_slot_id) slotId = u.adsense_slot_id;
+          if (u.adsense_enabled !== undefined) enabled = u.adsense_enabled;
+        }
+
+        // Se encontrou configurações no banco, atualiza o cache local
+        if (pubId) localStorage.setItem(this.KEYS.clientPubId, pubId);
+        if (slotId) localStorage.setItem(this.KEYS.slotId, slotId);
+        if (enabled !== null) localStorage.setItem(this.KEYS.enabled, enabled ? 'true' : 'false');
+
+      } catch (e) {
+        console.warn('⚠️ [AdSense] Erro ao sincronizar AdSense com o banco:', e);
+      }
     },
 
-    disable() {
+    // --- Ligar / Desligar (Salva no LocalStorage E no Banco de Dados) -------
+    async enable(pubId, slotId = '') {
+      const cleanPub = pubId ? pubId.trim() : this.getPubId();
+      const cleanSlot = slotId ? slotId.trim() : this.getSlotId();
+
+      localStorage.setItem(this.KEYS.enabled, 'true');
+      if (cleanPub) localStorage.setItem(this.KEYS.clientPubId, cleanPub);
+      if (cleanSlot) localStorage.setItem(this.KEYS.slotId, cleanSlot);
+
+      this.loadAdSenseScript(cleanPub);
+      this.refreshAllContainers();
+
+      // Persiste no banco de dados (Supabase & Backend API)
+      await this.saveToDatabase(true, cleanPub, cleanSlot);
+      console.log('✅ [AdSense] Anúncios Google AdSense ATIVADOS e salvos no banco.');
+    },
+
+    async disable() {
       localStorage.setItem(this.KEYS.enabled, 'false');
       this.refreshAllContainers();
-      console.log('🛑 [AdSense] Anúncios Google AdSense DESATIVADOS.');
+
+      // Persiste desativação no banco de dados
+      await this.saveToDatabase(false, this.getPubId(), this.getSlotId());
+      console.log('🛑 [AdSense] Anúncios Google AdSense DESATIVADOS e salvos no banco.');
+    },
+
+    // --- Persiste as configurações no Banco de Dados (Supabase / Backend) ----
+    async saveToDatabase(enabled, pubId, slotId) {
+      try {
+        const payload = {
+          adsense_enabled: enabled,
+          adsense_pub_id: pubId || '',
+          adsense_slot_id: slotId || '',
+        };
+
+        // 1. Persiste no Supabase (se autenticado)
+        if (window.supabase) {
+          const { data: { session } } = await window.supabase.auth.getSession();
+          if (session?.user) {
+            await window.supabase
+              .from('usuarios')
+              .update(payload)
+              .eq('email', session.user.email);
+          }
+        }
+
+        // 2. Persiste via API Backend (se disponível)
+        if (window.Api && window.Api.atualizarPerfil) {
+          window.Api.atualizarPerfil(payload).catch(() => {});
+        }
+
+        // 3. Atualiza Auth.currentUser
+        if (window.Auth && window.Auth.currentUser) {
+          Object.assign(window.Auth.currentUser, payload);
+          localStorage.setItem('usuario', JSON.stringify(window.Auth.currentUser));
+          localStorage.setItem('currentUser', JSON.stringify(window.Auth.currentUser));
+        }
+      } catch (e) {
+        console.warn('⚠️ [AdSense] Erro ao salvar configurações no banco:', e);
+      }
     },
 
     // --- Renderiza um contêiner de anúncio em um elemento da página -------
