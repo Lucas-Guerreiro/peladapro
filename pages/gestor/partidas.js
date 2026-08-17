@@ -1668,22 +1668,20 @@ async function carregarLiveStateDaPelada(peladaId) {
     }
   }
 
-  if (!stateCarregado) {
-    window.App.liveMatch = {
-      teamA: "Time A",
-      teamB: "Time B",
-      scoreA: 0,
-      scoreB: 0,
-      isPlaying: false,
-      timerRunning: false,
-      timerSeconds: durationMin * 60,
-      goals: []
-    };
-    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-    localStorage.removeItem("teams");
-    window.App.teams = [];
-    window.App.waitingQueue = [];
-    localStorage.setItem("waitingQueue", "[]");
+  if (!stateCarregado && (!window.App.teams || window.App.teams.length < 2)) {
+    if (!window.App.liveMatch) {
+      window.App.liveMatch = {
+        teamA: "Time A",
+        teamB: "Time B",
+        scoreA: 0,
+        scoreB: 0,
+        isPlaying: false,
+        timerRunning: false,
+        timerSeconds: durationMin * 60,
+        goals: []
+      };
+      localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+    }
   }
 }
 
