@@ -627,6 +627,35 @@ function applyAthleteTeamStyleToPartidasCards() {
       }
     }
   }
+
+  // Estilização do Banner da Fase da Partida (ex: ⚽ FASE DE GRUPOS — JOGO 1 DE 2)
+  const phaseBanner = document.getElementById("gestor-phase-header-banner");
+  const phaseTitle = document.getElementById("gestor-phase-header-title");
+  const phaseSub = document.getElementById("gestor-phase-header-sub");
+
+  if (phaseBanner) {
+    phaseBanner.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important');
+    phaseBanner.style.setProperty('border', `1.5px solid ${theme.border || '#F59E0B'}`, 'important');
+    phaseBanner.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
+    phaseBanner.style.setProperty('box-shadow', '0 4px 14px rgba(0,0,0,0.2)', 'important');
+  }
+  if (phaseTitle) {
+    phaseTitle.style.setProperty('color', '#FFFFFF', 'important');
+    phaseTitle.style.setProperty('text-shadow', '0 2px 4px rgba(0,0,0,0.5)', 'important');
+  }
+  if (phaseSub) {
+    phaseSub.style.setProperty('color', theme.accent || '#FDE68A', 'important');
+    phaseSub.style.setProperty('text-shadow', '0 1px 2px rgba(0,0,0,0.5)', 'important');
+  }
+
+  // Estilização do Badge de Status "EM ANDAMENTO" / "AGUARDANDO SORTEIO"
+  const badgeEl = document.getElementById("match-live-status-badge");
+  if (badgeEl) {
+    badgeEl.style.setProperty('background', theme.badgeBg || 'rgba(0,0,0,0.4)', 'important');
+    badgeEl.style.setProperty('color', theme.accent || '#FFFFFF', 'important');
+    badgeEl.style.setProperty('border', `1px solid ${theme.border || '#F59E0B'}`, 'important');
+    badgeEl.style.setProperty('font-weight', '800', 'important');
+  }
 }
 
 function renderLiveMatchUI() {
@@ -749,9 +778,23 @@ function renderLiveMatchUI() {
     const pInfo = getMatchPhaseInfo(window.App.liveMatch, window.App.activePelada);
     phaseTitle.textContent = pInfo.title;
     if (phaseSub) phaseSub.textContent = pInfo.sub;
-    phaseBanner.style.background = pInfo.bg;
-    phaseBanner.style.color = pInfo.color;
-    phaseBanner.style.border = pInfo.border;
+
+    const isTeamTheme = document.querySelector('.gestor-score-card')?.classList.contains('has-team-theme');
+    if (isTeamTheme) {
+      phaseBanner.style.background = "rgba(255, 255, 255, 0.15)";
+      phaseBanner.style.backdropFilter = "blur(10px)";
+      phaseBanner.style.border = "1.5px solid rgba(255, 255, 255, 0.25)";
+      phaseTitle.style.color = "#FFFFFF";
+      phaseTitle.style.textShadow = "0 2px 4px rgba(0,0,0,0.5)";
+      if (phaseSub) {
+        phaseSub.style.color = "#FDE68A";
+        phaseSub.style.textShadow = "0 1px 2px rgba(0,0,0,0.5)";
+      }
+    } else {
+      phaseBanner.style.background = pInfo.bg;
+      phaseBanner.style.color = pInfo.color;
+      phaseBanner.style.border = pInfo.border;
+    }
     phaseBanner.style.display = "block";
   }
 
@@ -881,18 +924,22 @@ function renderLiveMatchUI() {
   });
 
   if (badgeEl) {
+    const isTeamTheme = document.querySelector('.gestor-score-card')?.classList.contains('has-team-theme');
     if (window.App.liveMatch.isPlaying) {
       badgeEl.textContent = "EM ANDAMENTO";
-      badgeEl.style.background = "var(--success)";
-      badgeEl.style.color = "#FFF";
+      badgeEl.style.background = isTeamTheme ? "rgba(16, 185, 129, 0.35)" : "var(--success)";
+      badgeEl.style.color = isTeamTheme ? "#A7F3D0" : "#FFF";
+      badgeEl.style.border = isTeamTheme ? "1px solid #10B981" : "none";
     } else if (window.App.liveMatch.timerSeconds > 0) {
       badgeEl.textContent = "PAUSADO";
-      badgeEl.style.background = "var(--warning)";
-      badgeEl.style.color = "var(--primary)";
+      badgeEl.style.background = isTeamTheme ? "rgba(245, 158, 11, 0.35)" : "var(--warning)";
+      badgeEl.style.color = isTeamTheme ? "#FDE68A" : "var(--primary)";
+      badgeEl.style.border = isTeamTheme ? "1px solid #F59E0B" : "none";
     } else {
       badgeEl.textContent = "PRONTO PARA INICIAR";
-      badgeEl.style.background = "var(--secondary)";
-      badgeEl.style.color = "var(--primary)";
+      badgeEl.style.background = isTeamTheme ? "rgba(2, 132, 199, 0.35)" : "var(--secondary)";
+      badgeEl.style.color = isTeamTheme ? "#BAE6FD" : "var(--primary)";
+      badgeEl.style.border = isTeamTheme ? "1px solid #0284C7" : "none";
     }
   }
 
