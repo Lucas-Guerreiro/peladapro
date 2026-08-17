@@ -294,10 +294,9 @@ function startGestorPolling() {
       return;
     }
 
-    // Se a pelada ativa estiver finalizada, limpa o estado e NÃO recarrega confronto/fila
+    // Se a pelada ativa estiver finalizada, oculta a interface ao vivo sem apagar o histórico local
     const peladaAtivaPoll = window.App.activePelada || {};
     if (peladaAtivaPoll.status === "finalizada") {
-      limparEstadoPartida();
       renderLiveMatchUI();
       renderWaitingQueue();
       if (window.App.gestorPollingInterval !== null) {
@@ -479,9 +478,10 @@ function renderLiveMatchUI() {
   // Verificar se existem times sorteados
   let teamsList = [];
   try {
+    const activePId = window.App.activePelada ? window.App.activePelada.id : null;
     teamsList = (window.App && window.App.teams && window.App.teams.length > 0)
       ? window.App.teams
-      : JSON.parse(localStorage.getItem("teams")) || [];
+      : (JSON.parse(localStorage.getItem("teams")) || (activePId ? JSON.parse(localStorage.getItem("teams_" + activePId)) : null) || []);
   } catch (e) { }
 
   const timerCont = document.getElementById("gestor-timer-container");
@@ -770,12 +770,15 @@ function renderWaitingQueue() {
   container.innerHTML = "";
 
   // 1. Obtém a fila de espera do estado global ou do localStorage
+  const activePIdQueue = window.App.activePelada ? window.App.activePelada.id : null;
   let queue = (window.App.waitingQueue && Array.isArray(window.App.waitingQueue) && window.App.waitingQueue.length > 0)
     ? window.App.waitingQueue
     : [];
 
   if (!queue || queue.length === 0) {
-    try { queue = JSON.parse(localStorage.getItem("waitingQueue")) || []; } catch (e) { }
+    try {
+      queue = JSON.parse(localStorage.getItem("waitingQueue")) || (activePIdQueue ? JSON.parse(localStorage.getItem("waitingQueue_" + activePIdQueue)) : null) || [];
+    } catch (e) { }
   }
 
   // 2. Obtém os times sorteados/cadastrados de todas as fontes possíveis
@@ -1591,12 +1594,6 @@ function playAlarmSound() {
 
 async function carregarLiveStateDaPelada(peladaId) {
   if (!peladaId) return;
-  // Se a pelada ativa NÃO estiver em andamento (ex: 'agendada' para o futuro ou 'finalizada'), limpa confronto/fila
-  const peladaAtiva = window.App.activePelada || {};
-  if (peladaAtiva.status !== "ativa" && peladaAtiva.status !== "em_andamento") {
-    limparEstadoPartida();
-    return;
-  }
 
   const groupConfigs = window.Api.getConfigs() || [];
   const currentGrp = window.Auth.currentGroup;
@@ -1612,39 +1609,62 @@ async function carregarLiveStateDaPelada(peladaId) {
         if (res.state.liveMatch) {
           window.App.liveMatch = res.state.liveMatch;
           localStorage.setItem("liveMatch", JSON.stringify(res.state.liveMatch));
-        } else {
-          window.App.liveMatch = {
-            teamA: "Time A",
-            teamB: "Time B",
-            scoreA: 0,
-            scoreB: 0,
-            isPlaying: false,
-            timerRunning: false,
-            timerSeconds: durationMin * 60,
-            goals: []
-          };
-          localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
         }
 
         if (res.state.teams && res.state.teams.length > 0) {
           localStorage.setItem("teams", JSON.stringify(res.state.teams));
+          localStorage.setItem("teams_" + peladaId, JSON.stringify(res.state.teams));
           window.App.teams = res.state.teams;
-        } else {
-          localStorage.removeItem("teams");
-          window.App.teams = [];
         }
 
-        if (res.state.waitingQueue) {
+        if (res.state.waitingQueue && res.state.waitingQueue.length > 0) {
           window.App.waitingQueue = res.state.waitingQueue;
           localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
-        } else {
-          window.App.waitingQueue = [];
-          localStorage.setItem("waitingQueue", "[]");
+          localStorage.setItem("waitingQueue_" + peladaId, JSON.stringify(res.state.waitingQueue));
         }
         stateCarregado = true;
       }
     } catch (e) {
       console.error("[Partidas] Erro ao obter live state da pelada:", e);
+    }
+  }
+
+  // Tenta carregar os times do localStorage caso não tenham vindo do servidor
+  if (!window.App.teams || window.App.teams.length === 0) {
+    try {
+      const raw = localStorage.getItem("teams") || localStorage.getItem("teams_" + peladaId);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          window.App.teams = parsed;
+          localStorage.setItem("teams", JSON.stringify(parsed));
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Tenta carregar a fila do localStorage caso não tenha vindo do servidor
+  if (!window.App.waitingQueue || window.App.waitingQueue.length === 0) {
+    try {
+      const rawQ = localStorage.getItem("waitingQueue") || localStorage.getItem("waitingQueue_" + peladaId);
+      if (rawQ) {
+        const parsedQ = JSON.parse(rawQ);
+        if (Array.isArray(parsedQ) && parsedQ.length > 0) {
+          window.App.waitingQueue = parsedQ;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Se os times existem mas o liveMatch está no padrão "Time A" / "Time B", atualiza os nomes dos times
+  if (window.App.teams && window.App.teams.length >= 2) {
+    if (!window.App.liveMatch || !window.App.liveMatch.teamA || window.App.liveMatch.teamA === "Time A") {
+      window.App.liveMatch = window.App.liveMatch || {};
+      window.App.liveMatch.teamA = window.App.teams[0].nome || window.App.teams[0].name || "Time A";
+      window.App.liveMatch.teamB = window.App.teams[1].nome || window.App.teams[1].name || "Time B";
+      window.App.liveMatch.scoreA = window.App.liveMatch.scoreA || 0;
+      window.App.liveMatch.scoreB = window.App.liveMatch.scoreB || 0;
+      localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
     }
   }
 
