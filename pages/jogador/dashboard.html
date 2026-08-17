@@ -813,12 +813,12 @@
     </div>
 
     <!-- Botões de Ação -->
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
-      <button class="btn btn-outline-secondary" style="flex: 1; padding: 10px; min-width: 80px;"
+    <div class="card-fifa-actions">
+      <button class="btn btn-outline-secondary btn-card-edit"
         onclick="Router.openModal('atleta', { playerId: Auth.currentUser?.id, mode: 'edit' })">
         ✏️ Editar
       </button>
-      <button class="btn btn-accent" style="flex: 1.5; padding: 10px;"
+      <button class="btn btn-accent btn-card-convocacao"
         onclick="Router.navigate('#/jogador/convocacao')">
         📋 Convocação
       </button>

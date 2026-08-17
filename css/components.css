@@ -412,6 +412,59 @@
 .card-fifa-balance .value  { font-family: var(--font-display); font-size: 24px; }
 .card-fifa-balance.negative .value { color: var(--danger); }
 
+/* --- BOTÕES DO CARD DO ATLETA (EDITAR & CONVOCAÇÃO) --- */
+.card-fifa-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.card-fifa-actions .btn {
+  flex: 1 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+.card-fifa-actions .btn-card-edit {
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.card-fifa-actions .btn-card-edit:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.card-fifa-actions .btn-card-convocacao {
+  background: linear-gradient(135deg, #F5D270 0%, #D4AF37 100%);
+  color: #1A1A1A;
+  border: 1px solid #F5D270;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
+}
+
+.card-fifa-actions .btn-card-convocacao:hover {
+  background: linear-gradient(135deg, #FFE187 0%, #E2BE46 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+}
+
 /* --- TELA DE LOGIN -------------------------------------------------------- */
 .login-container {
   display: flex;

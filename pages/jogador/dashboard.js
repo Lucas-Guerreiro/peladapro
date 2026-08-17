@@ -795,18 +795,18 @@ var Dashboard = {
       cardEl.style.setProperty('border-width', '1.5px', 'important');
       cardEl.style.setProperty('box-shadow', `0 16px 40px ${theme.borderGlow}, 0 0 0 1px ${theme.border}`, 'important');
 
-      // Harmoniza o botão Convocação (btn-accent) com as cores de destaque do clube
-      var btnAccent = cardEl.querySelector('.btn-accent');
+      // Harmoniza o botão Convocação com as cores de destaque do clube
+      var btnAccent = cardEl.querySelector('.btn-card-convocacao, .btn-accent');
       if (btnAccent) {
         btnAccent.style.setProperty('background', 'linear-gradient(135deg, #F5D270, #D4AF37)', 'important');
         btnAccent.style.setProperty('color', '#1A1A1A', 'important');
         btnAccent.style.setProperty('border-color', '#F5D270', 'important');
       }
 
-      // Harmoniza o botão Editar (btn-outline-secondary) com estilo vidro fosco
-      var btnEdit = cardEl.querySelector('.btn-outline-secondary');
+      // Harmoniza o botão Editar com estilo vidro fosco
+      var btnEdit = cardEl.querySelector('.btn-card-edit, .btn-outline-secondary');
       if (btnEdit) {
-        btnEdit.style.setProperty('background', 'rgba(255, 255, 255, 0.16)', 'important');
+        btnEdit.style.setProperty('background', 'rgba(255, 255, 255, 0.18)', 'important');
         btnEdit.style.setProperty('color', '#FFFFFF', 'important');
         btnEdit.style.setProperty('border-color', 'rgba(255, 255, 255, 0.45)', 'important');
       }
