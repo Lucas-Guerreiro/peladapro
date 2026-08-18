@@ -2130,6 +2130,16 @@ async function initPartidasPeladaSelect() {
     await carregarLiveStateDaPelada(activePelada.id);
     await renderRecentMatches();
 
+    const btnCorrigir = document.getElementById("btn-corrigir-jogos-excedentes");
+    if (btnCorrigir) {
+      btnCorrigir.onclick = async () => {
+        const confirmCorrigir = confirm("Deseja remover as partidas excedentes de testes e recalcular a Tabela de Classificação com os 12 jogos reais da Fase de Grupos?");
+        if (confirmCorrigir) {
+          await window.App.corrigirEJogosExcedentes(activePelada.id);
+        }
+      };
+    }
+
     select.onchange = async () => {
       const selectedId = select.value;
       const found = peladas.find(p => String(p.id) === String(selectedId));
@@ -2360,4 +2370,122 @@ function renderTournamentUI() {
 
   // Garante a aplicação do estilo do time em todo o card de torneio e seus filhos
   applyAthleteTeamStyleToPartidasCards();
+}
+
+window.App.corrigirEJogosExcedentes = async function(peladaId) {
+  const activePelada = window.App.activePelada || {};
+  const pId = peladaId || (activePelada ? String(activePelada.id) : null);
+  if (!pId) return;
+
+  try {
+    let partidas = await Api.listarPartidas(pId);
+    if (!Array.isArray(partidas) || partidas.length === 0) {
+      if (window.App.showToast) window.App.showToast("Nenhuma partida encontrada nesta pelada.", "info");
+      return;
+    }
+
+    // Ordena as partidas por ID para separar os 12 jogos reais iniciais da fase de grupos
+    partidas.sort((a, b) => (parseInt(a.id) || 0) - (parseInt(b.id) || 0));
+
+    const reaisMatches = partidas.slice(0, 12);
+    const excedentesMatches = partidas.slice(12);
+    const idsParaRemover = excedentesMatches.map(m => parseInt(m.id)).filter(id => !isNaN(id) && id > 0);
+
+    if (idsParaRemover.length > 0) {
+      if (window.Api && window.Api.deletarPartidasPorIds) {
+        await window.Api.deletarPartidasPorIds(idsParaRemover);
+      }
+      if (window.supabase) {
+        try {
+          await window.supabase.from('gols').delete().in('partida_id', idsParaRemover);
+          await window.supabase.from('partidas').delete().in('id', idsParaRemover);
+        } catch(e) {}
+      }
+    }
+
+    await recalcularEEstabelecerTorneio(pId, reaisMatches);
+
+    if (window.App.showToast) {
+      window.App.showToast(`Limpeza concluída! ${idsParaRemover.length} partidas excedentes removidas. Tabela recalculada com os 12 jogos reais!`, "success");
+    }
+  } catch(err) {
+    console.error("[corrigirEJogosExcedentes]", err);
+    if (window.App.showToast) window.App.showToast("Erro ao corrigir jogos excedentes.", "error");
+  }
+};
+
+async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
+  const peladaAtiva = window.App.activePelada || {};
+  let tState = window.App.liveMatch ? window.App.liveMatch.tournamentState : null;
+  if (!tState) {
+    tState = safeLocalStorageGetItem(`tournamentState_${pId}`) || safeLocalStorageGetItem("tournamentState");
+  }
+
+  let drawnTeams = window.App.teams || [];
+  if (!drawnTeams || drawnTeams.length === 0) {
+    drawnTeams = safeLocalStorageGetItem(`teams_${pId}`) || safeLocalStorageGetItem("teams") || [];
+  }
+  if ((!drawnTeams || drawnTeams.length === 0) && tState && tState.teams) {
+    drawnTeams = tState.teams;
+  }
+
+  if (!drawnTeams || drawnTeams.length < 2 || !window.TournamentEngine) return;
+
+  const turnoAtual = (tState && tState.turno) || 'ida_volta';
+  const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
+
+  // Preenche as 12 partidas da fase de grupos com o resultado dos 12 jogos reais
+  matches.forEach((m, idx) => {
+    const real = (reaisMatches || [])[idx];
+    if (real) {
+      m.golsA = parseInt(real.gols_time_a) || 0;
+      m.golsB = parseInt(real.gols_time_b) || 0;
+      m.status = 'encerrado';
+      m.vencedor = m.golsA > m.golsB ? m.teamA : (m.golsB > m.golsA ? m.teamB : m.teamA);
+    }
+  });
+
+  // Recalcula a Tabela de Classificação usando APENAS as 12 partidas reais mantidas
+  const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
+
+  // Gera as Semifinais (Mata-Mata) oficiais a partir da classificação real
+  const knockoutMatches = window.TournamentEngine.generateKnockoutMatches(standings);
+
+  const newTState = {
+    modo: 'torneio',
+    fase: 'mata_mata',
+    turno: turnoAtual,
+    teams: drawnTeams,
+    matches: matches,
+    standings: standings,
+    knockoutMatches: knockoutMatches,
+    finalsMatches: [],
+    podium: null
+  };
+
+  // Carrega a primeira Semifinal no placar ao vivo (0 x 0)
+  if (knockoutMatches && knockoutMatches.length > 0) {
+    knockoutMatches[0].status = 'em_andamento';
+    window.App.liveMatch = window.App.liveMatch || {};
+    window.App.liveMatch.teamA = knockoutMatches[0].teamA;
+    window.App.liveMatch.teamB = knockoutMatches[0].teamB;
+    window.App.liveMatch.tournamentMatchId = knockoutMatches[0].id;
+    window.App.liveMatch.scoreA = 0;
+    window.App.liveMatch.scoreB = 0;
+    window.App.liveMatch.goals = [];
+  }
+
+  window.App.liveMatch.tournamentState = newTState;
+  safeLocalStorageSetItem(`tournamentState_${pId}`, newTState);
+  safeLocalStorageSetItem('tournamentState', newTState);
+  safeLocalStorageSetItem(`liveMatch_${pId}`, window.App.liveMatch);
+  safeLocalStorageSetItem('liveMatch', window.App.liveMatch);
+
+  if (window.Api && window.Api.atualizarLiveState) {
+    await window.Api.atualizarLiveState(pId, window.App.liveMatch, window.App.waitingQueue || [], drawnTeams);
+  }
+
+  renderLiveMatchUI();
+  renderTournamentUI();
+  await renderRecentMatches();
 }

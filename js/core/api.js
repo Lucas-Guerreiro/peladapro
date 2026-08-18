@@ -502,6 +502,25 @@ const Api = {
     return { message: 'Partidas zeradas.' };
   },
 
+  async deletarPartidasPorIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) return { message: 'Nenhum ID.' };
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch('/api/partidas/delete-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ids })
+        });
+        if (res.ok) return await res.json();
+      } catch(e) {}
+    }
+    return { message: 'Partidas removidas.' };
+  },
+
   async atualizarStatusPelada(peladaId, status) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Sessão expirada.' };
