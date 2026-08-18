@@ -624,8 +624,8 @@ function applyAthleteTeamStyleToPartidasCards() {
 
   if (!theme) return;
 
-  // Aplica o tema visual do time em todos os cards da tela Partida ao Vivo
-  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card, #gestor-recent-matches-card');
+  // Aplica o tema visual do time em todos os cards da tela Partida ao Vivo e no Cabeçalho
+  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card, #gestor-recent-matches-card, .gestor-header-unified-card, .gestor-header-mobile-unified');
   cards.forEach(card => {
     if (!card) return;
     card.classList.add('has-team-theme');
@@ -644,10 +644,33 @@ function applyAthleteTeamStyleToPartidasCards() {
     // Garante contraste das labels e subtextos
     const subtitles = card.querySelectorAll('p, span, label, .sub, .text-muted, .text-slate');
     subtitles.forEach(p => {
-      if (!p.classList.contains('badge') && !p.classList.contains('btn') && !p.id.includes('score') && !p.classList.contains('btn-adjust-score')) {
+      if (!p.classList.contains('badge') && !p.classList.contains('btn') && !p.id.includes('score') && !p.classList.contains('btn-adjust-score') && !p.classList.contains('gestor-badge-role')) {
         p.style.setProperty('color', 'rgba(255,255,255,0.92)', 'important');
       }
     });
+  });
+
+  // Estiliza a estrutura da página (fundo, cabeçalho e badge "Painel Gestor")
+  const webBody = document.querySelector('.gestor-web-body');
+  if (webBody) {
+    webBody.style.setProperty('background', 'linear-gradient(135deg, #0B0F19 0%, #111827 100%)', 'important');
+  }
+
+  const roleBadges = document.querySelectorAll('.gestor-badge-role');
+  roleBadges.forEach(b => {
+    b.style.setProperty('background', 'rgba(254, 243, 199, 0.25)', 'important');
+    b.style.setProperty('color', '#FDE68A', 'important');
+    b.style.setProperty('border', '1px solid #F59E0B', 'important');
+  });
+
+  const logos = document.querySelectorAll('.gestor-logo-clear');
+  logos.forEach(l => {
+    l.style.setProperty('color', '#FFFFFF', 'important');
+  });
+
+  const userNames = document.querySelectorAll('.gestor-user-name-clear');
+  userNames.forEach(n => {
+    n.style.setProperty('color', 'rgba(255, 255, 255, 0.9)', 'important');
   });
 
   // Estilização Individual dos Cards dos Times no Placar (Time A e Time B)
