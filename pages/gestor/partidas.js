@@ -2257,6 +2257,28 @@ function renderTournamentUI() {
 
   const drawnTeams = window.App.teams || [];
   
+  const resolveOfficialTeamName = (nameStr) => {
+    if (!nameStr) return nameStr;
+    const str = String(nameStr).trim();
+    const low = str.toLowerCase();
+
+    if (low === "azul" || low === "time azul" || low === "time a" || low === "time 1" || low === "team 1") {
+      return (drawnTeams[0] && (drawnTeams[0].nome || drawnTeams[0].name)) || "Time A";
+    }
+    if (low === "branco" || low === "time branco" || low === "time b" || low === "time 2" || low === "team 2") {
+      return (drawnTeams[1] && (drawnTeams[1].nome || drawnTeams[1].name)) || "Time B";
+    }
+    if (low === "preto" || low === "time preto" || low === "time c" || low === "time 3" || low === "team 3") {
+      return (drawnTeams[2] && (drawnTeams[2].nome || drawnTeams[2].name)) || "Time C";
+    }
+    if (low === "laranja" || low === "time laranja" || low === "time d" || low === "time 4" || low === "team 4") {
+      return (drawnTeams[3] && (drawnTeams[3].nome || drawnTeams[3].name)) || "Time D";
+    }
+
+    const found = drawnTeams.find(t => (t.nome || t.name || '').trim().toLowerCase() === low);
+    return found ? (found.nome || found.name) : str;
+  };
+  
   // Se existirem times sorteados e tState tiver número diferente de times, sincroniza/recalcula tState com TODOS OS TIMES!
   if (drawnTeams.length >= 2 && window.TournamentEngine) {
     if (!tState || !tState.teams || tState.teams.length !== drawnTeams.length) {
@@ -2342,7 +2364,7 @@ function renderTournamentUI() {
         html += `
           <tr style="${rowBg} border-bottom: 1px solid ${isTeamTheme ? 'rgba(255,255,255,0.15)' : '#E2E8F0'};">
             <td style="text-align:center; font-weight:700; color:${textColor};">${idx + 1}</td>
-            <td style="font-weight:700; color:${textColor};">${medal}${st.nome}</td>
+            <td style="font-weight:700; color:${textColor};">${medal}${resolveOfficialTeamName(st.nome)}</td>
             <td style="text-align:center; color:${textColor};">${st.jogos}</td>
             <td style="text-align:center; color:${textColor};">${st.vitorias}</td>
             <td style="text-align:center; color:${textColor};">${st.empates}</td>
@@ -2395,9 +2417,9 @@ function renderTournamentUI() {
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:${rowBg}; border:1px solid ${rowBorder}; border-radius:10px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px);">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-weight:700; color:${subTextColor}; font-size:11px;">${m.faseNome || 'Jogo ' + (idx + 1)}:</span>
-              <strong style="color:${textColor}; font-weight:700;">${m.teamA}</strong>
+              <strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamA)}</strong>
               <span style="color:${subTextColor}; font-size:11px;">vs</span>
-              <strong style="color:${textColor}; font-weight:700;">${m.teamB}</strong>
+              <strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamB)}</strong>
             </div>
             <div>${statusTag}</div>
           </div>
@@ -2510,13 +2532,13 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
 
   if (!drawnTeams || drawnTeams.length < 2 || !window.TournamentEngine) return;
 
-  // Substitui Azul -> Time A, Branco -> Time B, Preto -> Time C, Laranja -> Time D no array de times
+  // Substitui estritamente se for nome de cor pura antiga (Azul, Branco, Preto, Laranja) sem sobrescrever os nomes do sorteio
   drawnTeams.forEach((t, idx) => {
     const raw = (t.nome || t.name || '').trim().toLowerCase();
-    if (raw === "azul" || raw === "time azul" || idx === 0) { t.nome = "Time A"; t.name = "Time A"; }
-    else if (raw === "branco" || raw === "time branco" || idx === 1) { t.nome = "Time B"; t.name = "Time B"; }
-    else if (raw === "preto" || raw === "time preto" || idx === 2) { t.nome = "Time C"; t.name = "Time C"; }
-    else if (raw === "laranja" || raw === "time laranja" || idx === 3) { t.nome = "Time D"; t.name = "Time D"; }
+    if (raw === "azul" || raw === "time azul") { t.nome = "Time A"; t.name = "Time A"; }
+    else if (raw === "branco" || raw === "time branco") { t.nome = "Time B"; t.name = "Time B"; }
+    else if (raw === "preto" || raw === "time preto") { t.nome = "Time C"; t.name = "Time C"; }
+    else if (raw === "laranja" || raw === "time laranja") { t.nome = "Time D"; t.name = "Time D"; }
   });
 
   window.App.teams = drawnTeams;
