@@ -263,11 +263,13 @@ function handleExecuteSorteio() {
     });
   }
 
+  const modalSelectModo = document.getElementById("modal-select-pelada-modo");
   const selectModo = document.getElementById("select-pelada-modo");
   const selectTurno = document.getElementById("select-pelada-turno");
-  const modoAtual = (selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal');
+  const modoAtual = (modalSelectModo && modalSelectModo.value) ? modalSelectModo.value : ((selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal'));
   const turnoAtual = (selectTurno && selectTurno.value) ? selectTurno.value : ((peladaAtiva && peladaAtiva.turno_torneio) || 'ida');
   
+  if (selectModo) selectModo.value = modoAtual;
   if (peladaAtiva) {
     peladaAtiva.modo = modoAtual;
     peladaAtiva.turno_torneio = turnoAtual;
