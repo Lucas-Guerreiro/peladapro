@@ -2042,9 +2042,9 @@ async function carregarLiveStateDaPelada(peladaId) {
     if (!nameStr) return `Time ${String.fromCharCode(65 + (idx || 0))}`;
     const low = String(nameStr).trim().toLowerCase();
     if (low === "azul" || low === "time azul") return "Time A";
-    if (low === "branco" || low === "time branco") return "Time B";
-    if (low === "preto" || low === "time preto") return "Time C";
-    if (low === "laranja" || low === "time laranja") return "Time D";
+    if (low === "preto" || low === "time preto") return "Time B";
+    if (low === "vermelho" || low === "time vermelho") return "Time C";
+    if (low === "branco" || low === "time branco") return "Time D";
     return nameStr;
   };
 
@@ -2297,13 +2297,13 @@ function renderTournamentUI() {
     if (low === "azul" || low === "time azul" || low === "time a" || low === "time 1" || low === "team 1") {
       return (drawnTeams[0] && (drawnTeams[0].nome || drawnTeams[0].name)) || "Time A";
     }
-    if (low === "branco" || low === "time branco" || low === "time b" || low === "time 2" || low === "team 2") {
+    if (low === "preto" || low === "time preto" || low === "time b" || low === "time 2" || low === "team 2") {
       return (drawnTeams[1] && (drawnTeams[1].nome || drawnTeams[1].name)) || "Time B";
     }
-    if (low === "preto" || low === "time preto" || low === "time c" || low === "time 3" || low === "team 3") {
+    if (low === "vermelho" || low === "time vermelho" || low === "time c" || low === "time 3" || low === "team 3") {
       return (drawnTeams[2] && (drawnTeams[2].nome || drawnTeams[2].name)) || "Time C";
     }
-    if (low === "laranja" || low === "time laranja" || low === "time d" || low === "time 4" || low === "team 4") {
+    if (low === "branco" || low === "time branco" || low === "time d" || low === "time 4" || low === "team 4") {
       return (drawnTeams[3] && (drawnTeams[3].nome || drawnTeams[3].name)) || "Time D";
     }
 
@@ -2568,9 +2568,9 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
   drawnTeams.forEach((t, idx) => {
     const raw = (t.nome || t.name || '').trim().toLowerCase();
     if (raw === "azul" || raw === "time azul") { t.nome = "Time A"; t.name = "Time A"; }
-    else if (raw === "branco" || raw === "time branco") { t.nome = "Time B"; t.name = "Time B"; }
-    else if (raw === "preto" || raw === "time preto") { t.nome = "Time C"; t.name = "Time C"; }
-    else if (raw === "laranja" || raw === "time laranja") { t.nome = "Time D"; t.name = "Time D"; }
+    else if (raw === "preto" || raw === "time preto") { t.nome = "Time B"; t.name = "Time B"; }
+    else if (raw === "vermelho" || raw === "time vermelho") { t.nome = "Time C"; t.name = "Time C"; }
+    else if (raw === "branco" || raw === "time branco") { t.nome = "Time D"; t.name = "Time D"; }
   });
 
   window.App.teams = drawnTeams;
@@ -2582,9 +2582,9 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
     const str = String(nameStr).trim();
     const low = str.toLowerCase();
     if (low === "azul" || low === "time azul" || low === "time a" || low === "time 1" || low === "team 1") return "Time A";
-    if (low === "branco" || low === "time branco" || low === "time b" || low === "time 2" || low === "team 2") return "Time B";
-    if (low === "preto" || low === "time preto" || low === "time c" || low === "time 3" || low === "team 3") return "Time C";
-    if (low === "laranja" || low === "time laranja" || low === "time d" || low === "time 4" || low === "team 4") return "Time D";
+    if (low === "preto" || low === "time preto" || low === "time b" || low === "time 2" || low === "team 2") return "Time B";
+    if (low === "vermelho" || low === "time vermelho" || low === "time c" || low === "time 3" || low === "team 3") return "Time C";
+    if (low === "branco" || low === "time branco" || low === "time d" || low === "time 4" || low === "team 4") return "Time D";
     const found = drawnTeams.find(t => (t.nome || t.name || '').trim().toLowerCase() === low);
     return found ? (found.nome || found.name) : str;
   };

@@ -18,8 +18,10 @@ export const tokens = {
     errorText: '#C0392B',
     infoBg: '#EAF2FB',
     infoText: '#2D7DCC',
-    teamA: '#F5A623',
-    teamB: '#378ADD',
+    teamA: '#378ADD', // Azul
+    teamB: '#1E293B', // Preto
+    teamC: '#E74C3C', // Vermelho
+    teamD: '#FFFFFF', // Branco
     medalGold: '#F5D130',
     medalSilver: '#C0C0C0',
     medalBronze: '#CD7F32',

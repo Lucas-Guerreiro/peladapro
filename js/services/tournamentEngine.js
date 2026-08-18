@@ -143,11 +143,11 @@ window.TournamentEngine = {
       aliasMap[timeLetterAlias] = nameKey;
       aliasMap[numAlias] = nameKey;
 
-      // Se for Time A/B/C/D, mapeia também as cores correspondentes (Azul->Time A, Branco->Time B, Preto->Time C, Laranja->Time D)
+      // Se for Time A/B/C/D, mapeia também as cores correspondentes (Azul->Time A, Preto->Time B, Vermelho->Time C, Branco->Time D)
       if (idx === 0 || letterAlias === 'a') { aliasMap['azul'] = nameKey; aliasMap['time azul'] = nameKey; }
-      if (idx === 1 || letterAlias === 'b') { aliasMap['branco'] = nameKey; aliasMap['time branco'] = nameKey; }
-      if (idx === 2 || letterAlias === 'c') { aliasMap['preto'] = nameKey; aliasMap['time preto'] = nameKey; }
-      if (idx === 3 || letterAlias === 'd') { aliasMap['laranja'] = nameKey; aliasMap['time laranja'] = nameKey; }
+      if (idx === 1 || letterAlias === 'b') { aliasMap['preto'] = nameKey; aliasMap['time preto'] = nameKey; }
+      if (idx === 2 || letterAlias === 'c') { aliasMap['vermelho'] = nameKey; aliasMap['time vermelho'] = nameKey; }
+      if (idx === 3 || letterAlias === 'd') { aliasMap['branco'] = nameKey; aliasMap['time branco'] = nameKey; }
 
       statsMap[nameKey] = {
         nome: officialName,

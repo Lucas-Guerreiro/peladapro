@@ -248,7 +248,7 @@ window.App.getTeamThemeGlobal = function (teamName) {
   }
   if (!teamName) return null;
   var name = teamName.toLowerCase().trim();
-  if (name.includes('flamengo')) return { gradient: 'linear-gradient(135deg, #8B1A1A 0%, #3A050A 50%, #C8102E 100%)', border: '#8B1A1A', badgeBg: '#8B1A1A', accent: '#FFD700' };
+  if (name.includes('flamengo')) return { gradient: 'linear-gradient(135deg, #C8102E 0%, #1A0003 50%, #000000 100%)', border: '#C8102E', badgeBg: '#C8102E', accent: '#FFD700' };
   if (name.includes('vasco') || name.includes('botafogo') || name.includes('corinthians')) return { gradient: 'linear-gradient(135deg, #222222 0%, #0D0D0D 50%, #1A1A1A 100%)', border: '#FFFFFF', badgeBg: '#111111', accent: '#F5D270' };
   if (name.includes('palmeiras') || name.includes('guarani')) return { gradient: 'linear-gradient(135deg, #006437 0%, #04391F 50%, #011E10 100%)', border: '#86EFAC', badgeBg: '#006437', accent: '#F5D270' };
   if (name.includes('cruzeiro')) return { gradient: 'linear-gradient(135deg, #003399 0%, #001F66 50%, #050E2E 100%)', border: '#93C5FD', badgeBg: '#003399', accent: '#FFFFFF' };
@@ -330,13 +330,13 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
     roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%)', 'important');
-      toggle.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#FFFFFF') : 'rgba(255,255,255,0.3)', 'important');
+      toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
+      toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
     });
 
     roleSliders.forEach(slider => {
-      slider.style.setProperty('background', teamTheme ? (teamTheme.badgeBg || teamTheme.border || '#1D9E75') : '#1D9E75', 'important');
-      slider.style.setProperty('box-shadow', '0 2px 8px rgba(0,0,0,0.6)', 'important');
+      slider.style.setProperty('background', '#059669', 'important');
+      slider.style.setProperty('box-shadow', '0 2px 8px rgba(0,0,0,0.3)', 'important');
     });
   } else {
     document.body.classList.remove('modo-noturno-ativo');
@@ -357,12 +357,13 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
     const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
     roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', 'linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%)', 'important');
-      toggle.style.removeProperty('border-color');
+      toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
+      toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
     });
 
     roleSliders.forEach(slider => {
-      slider.style.removeProperty('background');
+      slider.style.setProperty('background', '#059669', 'important');
+      slider.style.removeProperty('box-shadow');
       slider.style.removeProperty('box-shadow');
     });
   }
