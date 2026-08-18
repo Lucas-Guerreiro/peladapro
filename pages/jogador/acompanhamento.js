@@ -969,7 +969,7 @@ var Acompanhamento = {
     var liveMatch = window.App.liveMatch || {};
     var tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem('tournamentState_' + peladaAtiva.id) || 'null') : null);
 
-    var isTorneio = (peladaAtiva.modo === 'torneio') || !!tState;
+    var isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || !!tState;
 
     if (!isTorneio || !tState) {
       tournamentCard.style.display = 'none';
@@ -980,20 +980,22 @@ var Acompanhamento = {
     tournamentCard.style.display = 'block';
     if (queueWrapper) queueWrapper.style.display = 'none';
 
+    var isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
+
     // Badge de Fase
     var badgeEl = document.getElementById('acomp-tournament-phase-badge');
     if (badgeEl) {
       if (tState.fase === 'grupo') {
-        badgeEl.textContent = 'FASE DE GRUPOS (TABELA MISTA)';
+        badgeEl.textContent = isPontosCorridos ? 'CLASSIFICAÇÃO (PONTOS CORRIDOS)' : 'FASE DE GRUPOS (TABELA MISTA)';
         badgeEl.style.background = '#FEF3C7'; badgeEl.style.color = '#B45309';
       } else if (tState.fase === 'mata_mata') {
         badgeEl.textContent = 'SEMIFINAIS (MATA-MATA)';
         badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
       } else if (tState.fase === 'finais') {
-        badgeEl.textContent = 'FINAIS & 3º LUGAR';
+        badgeEl.textContent = 'FINAIS & DISPUTA DE 3º LUGAR';
         badgeEl.style.background = '#FCE7F3'; badgeEl.style.color = '#9D174D';
       } else if (tState.fase === 'finalizado') {
-        badgeEl.textContent = '🏆 TORNEIO FINALIZADO';
+        badgeEl.textContent = isPontosCorridos ? '🏅 PONTOS CORRIDOS FINALIZADO' : '🏆 TORNEIO FINALIZADO';
         badgeEl.style.background = '#D1FAE5'; badgeEl.style.color = '#065F46';
       }
     }

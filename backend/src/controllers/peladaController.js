@@ -242,7 +242,8 @@ exports.atualizarConfigPartida = async (req, res) => {
   }
 
   try {
-    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(50) DEFAULT 'normal'");
+    await db.query("ALTER TABLE peladas ALTER COLUMN modo TYPE VARCHAR(50)");
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
 
     // Validar se a pelada pertence a um grupo do gestor

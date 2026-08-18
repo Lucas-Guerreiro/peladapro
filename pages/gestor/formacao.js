@@ -229,7 +229,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
 
     function updateTurnoVisibility(modoVal) {
       if (containerTurno) {
-        containerTurno.style.display = modoVal === 'torneio' ? 'block' : 'none';
+        const isTorneio = modoVal === 'torneio' || modoVal === 'pontos_corridos' || modoVal === 'torneio_pontos_corridos';
+        containerTurno.style.display = isTorneio ? 'block' : 'none';
       }
     }
 
@@ -252,7 +253,9 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           }
           window.App.activePelada.modo = newModo;
           localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-          const desc = newModo === 'torneio' ? "🏆 Modo Mini Torneio ativado para esta data!" : "⚽ Modo Pelada Normal ativado!";
+          const desc = (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos')
+            ? "🏅 Modo Mini Torneio (Pontos Corridos) ativado para esta data!"
+            : (newModo === 'torneio' ? "🏆 Modo Mini Torneio (Mata-Mata) ativado para esta data!" : "⚽ Modo Pelada Normal ativado!");
           window.App.showToast(desc, "success");
         } catch (err) {
           console.error("[selectModo]", err);

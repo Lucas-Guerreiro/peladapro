@@ -274,11 +274,15 @@ function handleExecuteSorteio() {
     try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
   }
 
-  if (modoAtual === 'torneio' && window.TournamentEngine) {
+  const isTorneio = modoAtual === 'torneio' || modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos';
+  const isPontosCorridos = modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos';
+
+  if (isTorneio && window.TournamentEngine) {
     const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
     const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
     const tState = {
-      modo: 'torneio',
+      modo: modoAtual,
+      formato: isPontosCorridos ? 'pontos_corridos' : 'mata_mata',
       turno: turnoAtual,
       fase: 'grupo',
       teams: drawnTeams,
@@ -345,7 +349,10 @@ function handleExecuteSorteio() {
     window.App.syncDrawnTeamsToCloud(false);
   }
 
-  window.App.showToast(peladaAtiva.modo === 'torneio' ? "🏆 Mini Torneio gerado com sucesso!" : "Equipes geradas!");
+  const toastMsg = isPontosCorridos
+    ? "🏅 Mini Torneio (Pontos Corridos) gerado com sucesso!"
+    : (modoAtual === 'torneio' ? "🏆 Mini Torneio (Mata-Mata) gerado com sucesso!" : "Equipes geradas!");
+  window.App.showToast(toastMsg);
   window.App.renderDrawnTeams();
   window.App.updateAcompanhamentoUI();
 }

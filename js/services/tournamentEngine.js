@@ -377,6 +377,23 @@ window.TournamentEngine = {
   /**
    * Apura o pódio completo (1º, 2º, 3º e 4º colocados) após o término da Final e Disputa de 3º Lugar.
    * @param {Array} finalsMatches Lista de partidas de Finais concluídas
+  /**
+   * Apura o pódio direto por Pontos Corridos (1º ao 4º lugar da tabela de classificação final).
+   * @param {Array} standings Tabela de classificação ordenada
+   * @returns {Object} { primeiro, segundo, terceiro, quarto }
+   */
+  determinePodiumPontosCorridos(standings = []) {
+    return {
+      primeiro: standings[0] ? standings[0].nome : null,
+      segundo:  standings[1] ? standings[1].nome : null,
+      terceiro: standings[2] ? standings[2].nome : null,
+      quarto:   standings[3] ? standings[3].nome : null
+    };
+  },
+
+  /**
+   * Apura o pódio completo (1º, 2º, 3º e 4º colocados) após o término da Final ou por Pontos Corridos.
+   * @param {Array} finalsMatches Lista de partidas de Finais concluídas
    * @param {Array} standings Classificação da fase de grupos para fallback
    * @returns {Object} { primeiro, segundo, terceiro, quarto }
    */
@@ -397,7 +414,13 @@ window.TournamentEngine = {
     if (match3rd && match3rd.vencedor) {
       terceiro = match3rd.vencedor;
       quarto   = match3rd.vencedor === match3rd.teamA ? match3rd.teamB : match3rd.teamA;
-    } else if (standings.length >= 4 && !terceiro) {
+    }
+
+    // Se não houver mata-mata (Pontos Corridos) ou faltarem dados, usa a tabela de classificação
+    if (!primeiro && standings.length > 0) {
+      return this.determinePodiumPontosCorridos(standings);
+    }
+    if (!terceiro && standings.length >= 3) {
       terceiro = standings[2] ? standings[2].nome : null;
       quarto   = standings[3] ? standings[3].nome : null;
     }

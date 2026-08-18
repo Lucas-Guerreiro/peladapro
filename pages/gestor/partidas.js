@@ -513,7 +513,7 @@ function onGestorStorageChange(e) {
 
 function getMatchPhaseInfo(liveMatch, peladaAtiva) {
   const tState = liveMatch ? (liveMatch.tournamentState || null) : null;
-  const isTorneio = (peladaAtiva && peladaAtiva.modo === 'torneio') || !!tState;
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || !!tState;
 
   if (isTorneio && tState) {
     const currentMatchId = liveMatch ? liveMatch.tournamentMatchId : null;
@@ -1506,9 +1506,16 @@ async function handleFinishMatch() {
         // Verifica se TODOS os jogos da fase de grupos terminaram
         const allGroupDone = (tState.matches || []).length > 0 && tState.matches.every(m => m.status === 'encerrado');
         if (allGroupDone) {
-          tState.fase = 'mata_mata';
-          tState.knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
-          window.App.showToast("🏆 Fase de Grupos encerrada! Semifinais geradas!", "success");
+          const isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
+          if (isPontosCorridos) {
+            tState.fase = 'finalizado';
+            tState.podium = window.TournamentEngine.determinePodiumPontosCorridos(tState.standings);
+            window.App.showToast("🏅 MINI TORNEIO (PONTOS CORRIDOS) FINALIZADO! Confira o Campeão na Tabela!", "success");
+          } else {
+            tState.fase = 'mata_mata';
+            tState.knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
+            window.App.showToast("🏆 Fase de Grupos encerrada! Semifinais geradas!", "success");
+          }
         }
       }
 
@@ -2337,7 +2344,7 @@ function renderTournamentUI() {
     }
   }
 
-  const isTorneio = (peladaAtiva.modo === 'torneio') || !!tState;
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || !!tState;
 
   if (!isTorneio || !tState) {
     tournamentCard.style.display = "none";
@@ -2350,12 +2357,13 @@ function renderTournamentUI() {
   if (queueCard) queueCard.style.display = "none";
 
   const isTeamTheme = tournamentCard.classList.contains("has-team-theme");
+  const isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
 
   // Badge da Fase
   const badgeEl = document.getElementById("tournament-phase-badge");
   if (badgeEl) {
     if (tState.fase === 'grupo') {
-      badgeEl.textContent = "FASE DE GRUPOS (TABELA MISTA)";
+      badgeEl.textContent = isPontosCorridos ? "CLASSIFICAÇÃO (PONTOS CORRIDOS)" : "FASE DE GRUPOS (TABELA MISTA)";
       badgeEl.style.background = isTeamTheme ? "rgba(254, 243, 199, 0.25)" : "#FEF3C7";
       badgeEl.style.color = isTeamTheme ? "#FDE68A" : "#B45309";
       badgeEl.style.border = "1px solid #F59E0B";
@@ -2370,7 +2378,7 @@ function renderTournamentUI() {
       badgeEl.style.color = isTeamTheme ? "#FBCFE8" : "#9D174D";
       badgeEl.style.border = "1px solid #EC4899";
     } else if (tState.fase === 'finalizado') {
-      badgeEl.textContent = "🏆 TORNEIO FINALIZADO";
+      badgeEl.textContent = isPontosCorridos ? "🏅 PONTOS CORRIDOS FINALIZADO" : "🏆 TORNEIO FINALIZADO";
       badgeEl.style.background = isTeamTheme ? "rgba(209, 250, 229, 0.25)" : "#D1FAE5";
       badgeEl.style.color = isTeamTheme ? "#A7F3D0" : "#065F46";
       badgeEl.style.border = "1px solid #10B981";
