@@ -43,6 +43,49 @@ function safeLocalStorageGetItem(key, fallback = null) {
   }
 }
 
+function getTournamentActiveMatch(tState, currentMatchId) {
+  if (!tState) return null;
+
+  const fase = tState.fase || 'grupo';
+  let phaseList = [];
+  if (fase === 'grupo') phaseList = tState.matches || [];
+  else if (fase === 'mata_mata') phaseList = tState.knockoutMatches || [];
+  else if (fase === 'finais') phaseList = tState.finalsMatches || [];
+
+  // 1. Busca por ID exato na lista da fase ativa
+  if (currentMatchId) {
+    const match = phaseList.find(m => m.id === currentMatchId);
+    if (match) return match;
+  }
+
+  // 2. Busca a primeira partida não encerrada da fase ativa
+  const activeInPhase = phaseList.find(m => m.status !== 'encerrado');
+  if (activeInPhase) return activeInPhase;
+
+  // 3. Se todas da fase atual estiverem encerradas e a fase precisar transicionar:
+  if (fase === 'grupo') {
+    const allGroupDone = (tState.matches || []).length > 0 && tState.matches.every(m => m.status === 'encerrado');
+    if (allGroupDone) {
+      tState.fase = 'mata_mata';
+      if ((!tState.knockoutMatches || tState.knockoutMatches.length === 0) && window.TournamentEngine && tState.standings) {
+        tState.knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
+      }
+      return (tState.knockoutMatches || []).find(m => m.status !== 'encerrado') || (tState.knockoutMatches || [])[0];
+    }
+  } else if (fase === 'mata_mata') {
+    const allKnockoutDone = (tState.knockoutMatches || []).length > 0 && tState.knockoutMatches.every(m => m.status === 'encerrado');
+    if (allKnockoutDone) {
+      tState.fase = 'finais';
+      if ((!tState.finalsMatches || tState.finalsMatches.length === 0) && window.TournamentEngine && tState.standings) {
+        tState.finalsMatches = window.TournamentEngine.generateFinalsMatches(tState.knockoutMatches, tState.standings);
+      }
+      return (tState.finalsMatches || []).find(m => m.status !== 'encerrado') || (tState.finalsMatches || [])[0];
+    }
+  }
+
+  return null;
+}
+
 function limparCachesAntigos() {
   try {
     const currentPeladaId = (window.App && window.App.activePelada) ? String(window.App.activePelada.id) : null;

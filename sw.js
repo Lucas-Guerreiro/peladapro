@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v186'; // ← Incrementado (v185 → v186)
+const CACHE_NAME = 'peladapro-v187'; // ← Incrementado (v186 → v187)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -52,6 +52,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  // Ignora requisições de esquemas não suportados pelo Cache API (chrome-extension, data, etc.)
+  if (!request.url.startsWith('http')) return;
+
   // 1) API / Supabase: SEMPRE direto, nunca cachear
   if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
     event.respondWith(fetch(request).catch(() => {
@@ -72,7 +75,7 @@ self.addEventListener('fetch', (event) => {
       return cache.match(request).then((cachedResponse) => {
         const fetchPromise = fetch(request)
           .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
+            if (networkResponse && networkResponse.status === 200 && request.url.startsWith('http')) {
               cache.put(request, networkResponse.clone());
             }
             return networkResponse;
