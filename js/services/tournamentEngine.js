@@ -114,11 +114,23 @@ window.TournamentEngine = {
     if (!Array.isArray(teams)) return [];
 
     const statsMap = {};
+    const aliasMap = {};
 
+    // 1. Mapeia cada time oficial e cria aliases (Time A, Time B, Time 1, Time 2...)
     teams.forEach((t, idx) => {
-      const nameKey = (t.nome || t.name || `Time ${idx + 1}`).trim().toLowerCase();
+      const officialName = (t.nome || t.name || `Time ${idx + 1}`).trim();
+      const nameKey = officialName.toLowerCase();
+
+      const letterAlias = String.fromCharCode(65 + idx).toLowerCase(); // 'a', 'b', 'c', 'd'...
+      const timeLetterAlias = `time ${letterAlias}`; // 'time a', 'time b'...
+      const numAlias = `time ${idx + 1}`; // 'time 1', 'time 2'...
+
+      aliasMap[nameKey] = nameKey;
+      aliasMap[timeLetterAlias] = nameKey;
+      aliasMap[numAlias] = nameKey;
+
       statsMap[nameKey] = {
-        nome: t.nome || t.name || `Time ${idx + 1}`,
+        nome: officialName,
         emblema: t.emblema || t.emblema_url || null,
         cor: t.cor || null,
         jogos: 0,
@@ -136,8 +148,12 @@ window.TournamentEngine = {
       if (m.fase !== 'grupo' || m.status !== 'encerrado') return;
       if (m.golsA === null || m.golsB === null) return;
 
-      const keyA = (m.teamA || '').trim().toLowerCase();
-      const keyB = (m.teamB || '').trim().toLowerCase();
+      const rawKeyA = (m.teamA || '').trim().toLowerCase();
+      const rawKeyB = (m.teamB || '').trim().toLowerCase();
+
+      // Resolve alias para a chave do time oficial
+      const keyA = aliasMap[rawKeyA] || rawKeyA;
+      const keyB = aliasMap[rawKeyB] || rawKeyB;
 
       if (!statsMap[keyA]) {
         statsMap[keyA] = { nome: m.teamA, emblema: null, cor: null, jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, saldoGols: 0, pontos: 0 };
