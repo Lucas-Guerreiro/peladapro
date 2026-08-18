@@ -1999,17 +1999,47 @@ async function carregarLiveStateDaPelada(peladaId) {
   const liveMatchKey = `liveMatch_${strPeladaId}`;
   const teamsKey = `teams_${strPeladaId}`;
   const queueKey = `waitingQueue_${strPeladaId}`;
+  const tStateKey = `tournamentState_${strPeladaId}`;
 
   const groupConfigs = window.Api ? (window.Api.getConfigs() || []) : [];
   const currentGrp = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
   const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
   const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
 
+  const sanitizeTeamName = (nameStr, idx) => {
+    if (!nameStr) return `Time ${String.fromCharCode(65 + (idx || 0))}`;
+    const low = String(nameStr).trim().toLowerCase();
+    if (low === "azul" || low === "time azul") return "Time A";
+    if (low === "branco" || low === "time branco") return "Time B";
+    if (low === "preto" || low === "time preto") return "Time C";
+    if (low === "laranja" || low === "time laranja") return "Time D";
+    return nameStr;
+  };
+
+  // 1. CARREGAMENTO INICIAL INSTANTÂNEO DO LOCALSTORAGE (Para resposta visual em 0ms)
+  let localTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams") || window.App.teams || [];
+  let localQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue") || window.App.waitingQueue || [];
+  let localLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch") || window.App.liveMatch;
+
+  if (Array.isArray(localTeams)) {
+    localTeams.forEach((t, i) => {
+      t.nome = sanitizeTeamName(t.nome || t.name, i);
+      t.name = t.nome;
+    });
+  }
+
+  window.App.teams = localTeams;
+  window.App.waitingQueue = localQueue;
+  if (localLiveMatch) window.App.liveMatch = localLiveMatch;
+
+  renderLiveMatchUI();
+  renderWaitingQueue();
+
+  // 2. BUSCA DA FONTE DA VERDADE NO SERVIDOR (POSTGRESQL / API) E SOBRESCRITA DO CACHE LOCAL
   let serverTeams = null;
   let serverLiveMatch = null;
   let serverQueue = null;
 
-  // 1. Tenta buscar no backend como Fonte da Verdade
   if (window.Api && window.Api.obterLiveState) {
     try {
       const res = await window.Api.obterLiveState(peladaId);
@@ -2023,55 +2053,67 @@ async function carregarLiveStateDaPelada(peladaId) {
     }
   }
 
-  // Leitura dos dados guardados no localStorage local (garante resgate do sorteio do gestor)
-  const localTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams");
-  const localQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue");
-  const localLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch");
+  // 3. SOBRESCREVE E PURGA OS DADOS LOCAIS COM OS DADOS FRESCOS DO BANCO DE DADOS
+  let finalTeams = (serverTeams && serverTeams.length > 0) ? serverTeams : localTeams;
+  let finalQueue = (serverQueue && serverQueue.length >= 0) ? serverQueue : localQueue;
+  let finalLiveMatch = serverLiveMatch || localLiveMatch || window.App.liveMatch;
 
-  // Prioriza o sorteio local se ele tiver mais ou o mesmo número de times do servidor (evita que servidor desatualizado apague o sorteio recente)
-  let finalTeams = [];
-  if (localTeams && Array.isArray(localTeams) && localTeams.length > 0) {
-    if (!serverTeams || serverTeams.length <= localTeams.length) {
-      finalTeams = localTeams;
-    } else {
-      finalTeams = serverTeams;
-    }
-  } else if (serverTeams && Array.isArray(serverTeams) && serverTeams.length > 0) {
-    finalTeams = serverTeams;
-  } else {
-    finalTeams = window.App.teams || [];
+  if (Array.isArray(finalTeams) && finalTeams.length > 0) {
+    finalTeams.forEach((t, i) => {
+      t.nome = sanitizeTeamName(t.nome || t.name, i);
+      t.name = t.nome;
+    });
   }
 
-  const finalQueue = (localQueue && Array.isArray(localQueue) && localQueue.length > 0) 
-    ? localQueue 
-    : ((serverQueue && Array.isArray(serverQueue)) ? serverQueue : (window.App.waitingQueue || []));
+  if (Array.isArray(finalQueue)) {
+    finalQueue = finalQueue.map((q, i) => sanitizeTeamName(q, i));
+  }
 
-  const finalLiveMatch = localLiveMatch || serverLiveMatch || window.App.liveMatch;
+  if (finalLiveMatch && typeof finalLiveMatch === 'object') {
+    if (finalLiveMatch.teamA) finalLiveMatch.teamA = sanitizeTeamName(finalLiveMatch.teamA, 0);
+    if (finalLiveMatch.teamB) finalLiveMatch.teamB = sanitizeTeamName(finalLiveMatch.teamB, 1);
+
+    if (finalLiveMatch.tournamentState) {
+      const tSt = finalLiveMatch.tournamentState;
+      if (Array.isArray(tSt.teams)) {
+        tSt.teams.forEach((t, i) => { t.nome = sanitizeTeamName(t.nome || t.name, i); t.name = t.nome; });
+      }
+      if (Array.isArray(tSt.matches)) {
+        tSt.matches.forEach(m => {
+          m.teamA = sanitizeTeamName(m.teamA, 0);
+          m.teamB = sanitizeTeamName(m.teamB, 1);
+        });
+      }
+      safeLocalStorageSetItem(tStateKey, tSt);
+      safeLocalStorageSetItem("tournamentState", tSt);
+    }
+  }
 
   window.App.teams = finalTeams;
   window.App.waitingQueue = finalQueue;
   window.App.liveMatch = finalLiveMatch;
 
-  // Persiste no localStorage do dispositivo preservando os times do sorteio
   if (finalTeams && finalTeams.length > 0) {
     safeLocalStorageSetItem(teamsKey, finalTeams);
     safeLocalStorageSetItem("teams", finalTeams);
   }
 
-  if (finalQueue && finalQueue.length > 0) {
-    safeLocalStorageSetItem(queueKey, finalQueue);
-    safeLocalStorageSetItem("waitingQueue", finalQueue);
+  safeLocalStorageSetItem(queueKey, finalQueue);
+  safeLocalStorageSetItem("waitingQueue", finalQueue);
+
+  if (finalLiveMatch) {
+    safeLocalStorageSetItem(liveMatchKey, finalLiveMatch);
+    safeLocalStorageSetItem("liveMatch", finalLiveMatch);
   }
 
-  // 3. Se houverem pelo menos 2 times no sorteio:
+  // 4. Se houverem pelo menos 2 times no sorteio:
   if (finalTeams && finalTeams.length >= 2) {
     const tStateCheck = (window.App.liveMatch ? window.App.liveMatch.tournamentState : null) || (strPeladaId ? JSON.parse(localStorage.getItem(`tournamentState_${strPeladaId}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
     
-    let tA = finalTeams[0].nome || finalTeams[0].name || "Time 1";
-    let tB = finalTeams[1].nome || finalTeams[1].name || "Time 2";
+    let tA = finalTeams[0].nome || finalTeams[0].name || "Time A";
+    let tB = finalTeams[1].nome || finalTeams[1].name || "Time B";
     let tourneyMatchId = null;
 
-    // Se for modo torneio, resgata o confronto agendado ativo na tabela do torneio
     if (tStateCheck && tStateCheck.fase !== 'finalizado') {
       let currentMatch = getTournamentActiveMatch(tStateCheck, window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null);
       if (currentMatch) {
@@ -2093,23 +2135,18 @@ async function carregarLiveStateDaPelada(peladaId) {
       window.App.liveMatch.goals = window.App.liveMatch.goals || [];
     }
 
-    // Se houverem mais de 2 times e a fila estiver vazia, adiciona os demais times na fila de espera
     if ((!window.App.waitingQueue || window.App.waitingQueue.length === 0) && finalTeams.length > 2) {
       window.App.waitingQueue = finalTeams.slice(2).map(t => t.nome || t.name);
       safeLocalStorageSetItem(queueKey, window.App.waitingQueue);
       safeLocalStorageSetItem("waitingQueue", window.App.waitingQueue);
     }
-
-    safeLocalStorageSetItem(liveMatchKey, window.App.liveMatch);
-    safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
-  } else {
-    // Se o gestor não sorteou os times ainda, limpa estado fictício
-    if (!window.App.liveMatch) {
-      window.App.liveMatch = {
-        teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: durationMin * 60, goals: []
-      };
-    }
   }
+
+  // 5. RE-RENDERIZA A INTERFACE COM OS DADOS FRESCOS DO BANCO DE DADOS
+  renderLiveMatchUI();
+  renderWaitingQueue();
+  renderTournamentUI();
+}
 }
 
 async function initPartidasPeladaSelect() {
