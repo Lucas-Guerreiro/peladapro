@@ -989,6 +989,9 @@ var Acompanhamento = {
       if (tState.fase === 'grupo') {
         badgeEl.textContent = isPontosCorridos ? 'CLASSIFICAÇÃO (PONTOS CORRIDOS)' : 'FASE DE GRUPOS (TABELA MISTA)';
         badgeEl.style.background = '#FEF3C7'; badgeEl.style.color = '#B45309';
+      } else if (tState.fase === 'quartas') {
+        badgeEl.textContent = isMataMataDireto ? 'QUARTAS DE FINAL (MATA-MATA DIRETO)' : 'QUARTAS DE FINAL (ELIMINATÓRIA)';
+        badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
       } else if (tState.fase === 'mata_mata') {
         badgeEl.textContent = isMataMataDireto ? 'SEMIFINAIS (MATA-MATA DIRETO)' : 'SEMIFINAIS (MATA-MATA)';
         badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';

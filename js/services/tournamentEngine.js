@@ -267,71 +267,265 @@ window.TournamentEngine = {
   },
 
   /**
-   * Gera os confrontos do Mata-Mata a partir da classificação final da fase de grupos.
-   * @param {Array} standings Tabela de classificação
-   * @returns {Array} Lista de jogos de Mata-Mata (Semifinais)
+   * Gera os confrontos do Mata-Mata adaptando-se estritamente ao número de times (2, 3, 4, 5, 6, 8+).
+   * @param {Array} standings Classificação da fase de grupos ou lista de times
+   * @returns {Array} Lista de jogos da primeira rodada do Mata-Mata
    */
   generateKnockoutMatches(standings) {
     if (!Array.isArray(standings) || standings.length < 2) return [];
 
+    const list = standings.map((s, idx) => typeof s === 'string' ? { nome: s } : {
+      nome: s.nome || s.name || `Time ${idx + 1}`,
+      emblema: s.emblema || s.emblema_url || null,
+      cor: s.cor || null
+    });
+    const n = list.length;
     const knockoutMatches = [];
 
-    if (standings.length >= 4) {
-      // 4 ou mais times: 1º x 4º e 2º x 3º
+    if (n === 2) {
+      // 2 Times: Vai direto pra Grande Final!
       knockoutMatches.push({
+        id: `torneio_final_${Date.now().toString(36)}`,
+        fase: 'final',
+        faseNome: '🏆 Grande Final (Mata-Mata)',
+        numeroJogo: 1,
+        teamA: list[0].nome,
+        teamB: list[1].nome,
+        teamAObj: list[0],
+        teamBObj: list[1],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 3) {
+      // 3 Times: 1º vai direto pra final, 2º x 3º jogam Semifinal
+      knockoutMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal (2º x 3º)',
+        numeroJogo: 1,
+        teamA: list[1].nome,
+        teamB: list[2].nome,
+        teamAObj: list[1],
+        teamBObj: list[2],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 4) {
+      // 4 Times: Semifinais (1º x 4º e 2º x 3º)
+      knockoutMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 1 (1º x 4º)',
+        numeroJogo: 1,
+        teamA: list[0].nome,
+        teamB: list[3].nome,
+        teamAObj: list[0],
+        teamBObj: list[3],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+      knockoutMatches.push({
+        id: `torneio_sf2_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 2 (2º x 3º)',
+        numeroJogo: 2,
+        teamA: list[1].nome,
+        teamB: list[2].nome,
+        teamAObj: list[1],
+        teamBObj: list[2],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 5) {
+      // 5 Times: Jogo Preliminar de Quartas (4º x 5º); 1º, 2º e 3º avançam direto
+      knockoutMatches.push({
+        id: `torneio_qf1_${Date.now().toString(36)}`,
+        fase: 'quartas',
+        faseNome: 'Jogo Repescagem / Quartas (4º x 5º)',
+        numeroJogo: 1,
+        teamA: list[3].nome,
+        teamB: list[4].nome,
+        teamAObj: list[3],
+        teamBObj: list[4],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 6) {
+      // 6 Times: Quartas de Final (3º x 6º e 4º x 5º); 1º e 2º avançam direto pras Semifinais
+      knockoutMatches.push({
+        id: `torneio_qf1_${Date.now().toString(36)}`,
+        fase: 'quartas',
+        faseNome: 'Quartas de Final 1 (3º x 6º)',
+        numeroJogo: 1,
+        teamA: list[2].nome,
+        teamB: list[5].nome,
+        teamAObj: list[2],
+        teamBObj: list[5],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+      knockoutMatches.push({
+        id: `torneio_qf2_${Date.now().toString(36)}`,
+        fase: 'quartas',
+        faseNome: 'Quartas de Final 2 (4º x 5º)',
+        numeroJogo: 2,
+        teamA: list[3].nome,
+        teamB: list[4].nome,
+        teamAObj: list[3],
+        teamBObj: list[4],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else {
+      // 7 ou 8+ Times: Quartas de Final completas (1º x 8º, 2º x 7º, 3º x 6º, 4º x 5º)
+      const top8 = list.slice(0, 8);
+      const half = Math.floor(top8.length / 2);
+      for (let i = 0; i < half; i++) {
+        const teamA = top8[i];
+        const teamB = top8[top8.length - 1 - i];
+        knockoutMatches.push({
+          id: `torneio_qf_${i + 1}_${Date.now().toString(36)}`,
+          fase: 'quartas',
+          faseNome: `Quartas de Final ${i + 1} (${i + 1}º x ${top8.length - i}º)`,
+          numeroJogo: i + 1,
+          teamA: teamA.nome,
+          teamB: teamB.nome,
+          teamAObj: teamA,
+          teamBObj: teamB,
+          golsA: null,
+          golsB: null,
+          status: 'agendado',
+          vencedor: null,
+          penaltisA: null,
+          penaltisB: null
+        });
+      }
+    }
+
+    return knockoutMatches;
+  },
+
+  /**
+   * Gera as Semifinais a partir dos vencedores das Quartas de Final e times pré-classificados.
+   * @param {Array} qfMatches Partidas de Quartas de Final encerradas
+   * @param {Array} standings Classificação da fase de grupos ou times
+   * @returns {Array} Partidas de Semifinal
+   */
+  generateSemifinalsFromQuartas(qfMatches, standings) {
+    if (!Array.isArray(qfMatches) || qfMatches.length === 0) return [];
+    const list = standings || [];
+    const numTeams = list.length;
+    const sfMatches = [];
+
+    const getWinner = (m) => m ? (m.vencedor === m.teamA ? m.teamA : m.teamB) : null;
+
+    if (numTeams === 5 && qfMatches.length === 1) {
+      const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF';
+      sfMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 1 (1º x Vencedor QF)',
+        numeroJogo: 1,
+        teamA: list[0] ? list[0].nome : '1º Colocado',
+        teamB: winnerQF1,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+      sfMatches.push({
+        id: `torneio_sf2_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 2 (2º x 3º)',
+        numeroJogo: 2,
+        teamA: list[1] ? list[1].nome : '2º Colocado',
+        teamB: list[2] ? list[2].nome : '3º Colocado',
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+    } else if (numTeams === 6 && qfMatches.length === 2) {
+      const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF1';
+      const winnerQF2 = getWinner(qfMatches[1]) || 'Vencedor QF2';
+      sfMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 1 (1º x Vencedor QF2)',
+        numeroJogo: 1,
+        teamA: list[0] ? list[0].nome : '1º Colocado',
+        teamB: winnerQF2,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+      sfMatches.push({
+        id: `torneio_sf2_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 2 (2º x Vencedor QF1)',
+        numeroJogo: 2,
+        teamA: list[1] ? list[1].nome : '2º Colocado',
+        teamB: winnerQF1,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+    } else if (qfMatches.length >= 4) {
+      const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF1';
+      const winnerQF2 = getWinner(qfMatches[1]) || 'Vencedor QF2';
+      const winnerQF3 = getWinner(qfMatches[2]) || 'Vencedor QF3';
+      const winnerQF4 = getWinner(qfMatches[3]) || 'Vencedor QF4';
+      sfMatches.push({
         id: `torneio_sf1_${Date.now().toString(36)}`,
         fase: 'semifinal',
         faseNome: 'Semifinal 1',
         numeroJogo: 1,
-        teamA: standings[0].nome,
-        teamB: standings[3].nome,
-        teamAObj: { nome: standings[0].nome, emblema: standings[0].emblema, cor: standings[0].cor },
-        teamBObj: { nome: standings[3].nome, emblema: standings[3].emblema, cor: standings[3].cor },
-        golsA: null,
-        golsB: null,
-        status: 'agendado',
-        vencedor: null,
-        penaltisA: null,
-        penaltisB: null
+        teamA: winnerQF1,
+        teamB: winnerQF4,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
       });
-
-      knockoutMatches.push({
+      sfMatches.push({
         id: `torneio_sf2_${Date.now().toString(36)}`,
         fase: 'semifinal',
         faseNome: 'Semifinal 2',
         numeroJogo: 2,
-        teamA: standings[1].nome,
-        teamB: standings[2].nome,
-        teamAObj: { nome: standings[1].nome, emblema: standings[1].emblema, cor: standings[1].cor },
-        teamBObj: { nome: standings[2].nome, emblema: standings[2].emblema, cor: standings[2].cor },
-        golsA: null,
-        golsB: null,
-        status: 'agendado',
-        vencedor: null,
-        penaltisA: null,
-        penaltisB: null
+        teamA: winnerQF2,
+        teamB: winnerQF3,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
       });
-    } else if (standings.length === 3) {
-      // 3 times: 1º vai direto pra final, 2º x 3º jogam semifinal
-      knockoutMatches.push({
+    } else {
+      const winner1 = getWinner(qfMatches[0]) || 'Vencedor 1';
+      const winner2 = getWinner(qfMatches[1]) || 'Vencedor 2';
+      sfMatches.push({
         id: `torneio_sf1_${Date.now().toString(36)}`,
         fase: 'semifinal',
         faseNome: 'Semifinal',
         numeroJogo: 1,
-        teamA: standings[1].nome,
-        teamB: standings[2].nome,
-        teamAObj: { nome: standings[1].nome, emblema: standings[1].emblema, cor: standings[1].cor },
-        teamBObj: { nome: standings[2].nome, emblema: standings[2].emblema, cor: standings[2].cor },
-        golsA: null,
-        golsB: null,
-        status: 'agendado',
-        vencedor: null,
-        penaltisA: null,
-        penaltisB: null
+        teamA: winner1,
+        teamB: winner2,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
       });
     }
 
-    return knockoutMatches;
+    return sfMatches;
   },
 
   /**

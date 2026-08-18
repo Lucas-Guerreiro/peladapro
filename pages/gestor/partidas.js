@@ -49,7 +49,7 @@ function getTournamentActiveMatch(tState, currentMatchId) {
   const fase = tState.fase || 'grupo';
   let phaseList = [];
   if (fase === 'grupo') phaseList = tState.matches || [];
-  else if (fase === 'mata_mata') phaseList = tState.knockoutMatches || [];
+  else if (fase === 'quartas' || fase === 'mata_mata') phaseList = tState.knockoutMatches || [];
   else if (fase === 'finais') phaseList = tState.finalsMatches || [];
 
   // 1. Busca por ID exato na lista da fase ativa
@@ -66,9 +66,29 @@ function getTournamentActiveMatch(tState, currentMatchId) {
   if (fase === 'grupo') {
     const allGroupDone = (tState.matches || []).length > 0 && tState.matches.every(m => m.status === 'encerrado');
     if (allGroupDone) {
+      if (window.TournamentEngine && tState.standings) {
+        const knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
+        const firstPhase = (knockoutMatches[0] && knockoutMatches[0].fase) || 'semifinal';
+        if (firstPhase === 'quartas') {
+          tState.fase = 'quartas';
+          tState.knockoutMatches = knockoutMatches;
+        } else if (firstPhase === 'final') {
+          tState.fase = 'finais';
+          tState.finalsMatches = knockoutMatches;
+        } else {
+          tState.fase = 'mata_mata';
+          tState.knockoutMatches = knockoutMatches;
+        }
+      }
+      const targetList = (tState.fase === 'finais' ? tState.finalsMatches : tState.knockoutMatches) || [];
+      return targetList.find(m => m.status !== 'encerrado') || targetList[0];
+    }
+  } else if (fase === 'quartas') {
+    const allQfDone = (tState.knockoutMatches || []).length > 0 && tState.knockoutMatches.every(m => m.status === 'encerrado');
+    if (allQfDone) {
       tState.fase = 'mata_mata';
-      if ((!tState.knockoutMatches || tState.knockoutMatches.length === 0) && window.TournamentEngine && tState.standings) {
-        tState.knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
+      if (window.TournamentEngine) {
+        tState.knockoutMatches = window.TournamentEngine.generateSemifinalsFromQuartas(tState.knockoutMatches, tState.standings || tState.teams);
       }
       return (tState.knockoutMatches || []).find(m => m.status !== 'encerrado') || (tState.knockoutMatches || [])[0];
     }
@@ -76,8 +96,8 @@ function getTournamentActiveMatch(tState, currentMatchId) {
     const allKnockoutDone = (tState.knockoutMatches || []).length > 0 && tState.knockoutMatches.every(m => m.status === 'encerrado');
     if (allKnockoutDone) {
       tState.fase = 'finais';
-      if ((!tState.finalsMatches || tState.finalsMatches.length === 0) && window.TournamentEngine && tState.standings) {
-        tState.finalsMatches = window.TournamentEngine.generateFinalsMatches(tState.knockoutMatches, tState.standings);
+      if ((!tState.finalsMatches || tState.finalsMatches.length === 0) && window.TournamentEngine) {
+        tState.finalsMatches = window.TournamentEngine.generateFinalsMatches(tState.knockoutMatches, tState.standings || tState.teams);
       }
       return (tState.finalsMatches || []).find(m => m.status !== 'encerrado') || (tState.finalsMatches || [])[0];
     }
@@ -1512,10 +1532,31 @@ async function handleFinishMatch() {
             tState.podium = window.TournamentEngine.determinePodiumPontosCorridos(tState.standings);
             window.App.showToast("🏅 MINI TORNEIO (PONTOS CORRIDOS) FINALIZADO! Confira o Campeão na Tabela!", "success");
           } else {
-            tState.fase = 'mata_mata';
-            tState.knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
-            window.App.showToast("🏆 Fase de Grupos encerrada! Semifinais geradas!", "success");
+            const knockoutMatches = window.TournamentEngine.generateKnockoutMatches(tState.standings);
+            const firstPhase = (knockoutMatches[0] && knockoutMatches[0].fase) || 'semifinal';
+            if (firstPhase === 'quartas') {
+              tState.fase = 'quartas';
+              tState.knockoutMatches = knockoutMatches;
+              window.App.showToast("🏆 Fase de Grupos encerrada! Quartas de Final geradas!", "success");
+            } else if (firstPhase === 'final') {
+              tState.fase = 'finais';
+              tState.finalsMatches = knockoutMatches;
+              window.App.showToast("🏆 Fase de Grupos encerrada! Grande Final gerada!", "success");
+            } else {
+              tState.fase = 'mata_mata';
+              tState.knockoutMatches = knockoutMatches;
+              window.App.showToast("🏆 Fase de Grupos encerrada! Semifinais geradas!", "success");
+            }
           }
+        }
+      }
+
+      if (tState.fase === 'quartas') {
+        const allQfDone = (tState.knockoutMatches || []).length > 0 && tState.knockoutMatches.every(m => m.status === 'encerrado');
+        if (allQfDone) {
+          tState.fase = 'mata_mata';
+          tState.knockoutMatches = window.TournamentEngine.generateSemifinalsFromQuartas(tState.knockoutMatches, tState.standings || tState.teams);
+          window.App.showToast("🔥 Quartas de Final encerradas! Semifinais geradas!", "success");
         }
       }
 
@@ -1523,7 +1564,7 @@ async function handleFinishMatch() {
         const allKnockoutDone = (tState.knockoutMatches || []).length > 0 && tState.knockoutMatches.every(m => m.status === 'encerrado');
         if (allKnockoutDone) {
           tState.fase = 'finais';
-          tState.finalsMatches = window.TournamentEngine.generateFinalsMatches(tState.knockoutMatches, tState.standings);
+          tState.finalsMatches = window.TournamentEngine.generateFinalsMatches(tState.knockoutMatches, tState.standings || tState.teams);
           window.App.showToast("🔥 Semifinais encerradas! Disputa de 3º Lugar e Grande Final geradas!", "success");
         }
       }
@@ -2368,6 +2409,11 @@ function renderTournamentUI() {
       badgeEl.style.background = isTeamTheme ? "rgba(254, 243, 199, 0.25)" : "#FEF3C7";
       badgeEl.style.color = isTeamTheme ? "#FDE68A" : "#B45309";
       badgeEl.style.border = "1px solid #F59E0B";
+    } else if (tState.fase === 'quartas') {
+      badgeEl.textContent = isMataMataDireto ? "QUARTAS DE FINAL (MATA-MATA DIRETO)" : "QUARTAS DE FINAL (ELIMINATÓRIA)";
+      badgeEl.style.background = isTeamTheme ? "rgba(224, 242, 254, 0.25)" : "#E0F2FE";
+      badgeEl.style.color = isTeamTheme ? "#BAE6FD" : "#0369A1";
+      badgeEl.style.border = "1px solid #0284C7";
     } else if (tState.fase === 'mata_mata') {
       badgeEl.textContent = isMataMataDireto ? "SEMIFINAIS (MATA-MATA DIRETO)" : "SEMIFINAIS (MATA-MATA)";
       badgeEl.style.background = isTeamTheme ? "rgba(224, 242, 254, 0.25)" : "#E0F2FE";
