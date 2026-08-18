@@ -761,14 +761,11 @@ function renderLiveMatchUI() {
   if (queueCard) queueCard.style.display = "block";
   if (infoCard) infoCard.style.display = "none";
 
-  // Sincronização automática em modo Torneio com a partida agendada na tabela
+  // Sincronização automática em modo Torneio com a partida agendada na tabela respeitando a fase
   const peladaAct = window.App.activePelada || {};
   const tStateSync = (window.App.liveMatch ? window.App.liveMatch.tournamentState : null) || (peladaAct.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAct.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
-  if (tStateSync && Array.isArray(tStateSync.matches) && tStateSync.matches.length > 0) {
-    let currentMatch = tStateSync.matches.find(m => m.id === (window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null) || m.status === 'em_andamento');
-    if (!currentMatch) {
-      currentMatch = tStateSync.matches.find(m => m.status !== 'encerrado') || tStateSync.matches[0];
-    }
+  if (tStateSync && tStateSync.fase !== 'finalizado') {
+    let currentMatch = getTournamentActiveMatch(tStateSync, window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null);
     if (currentMatch && !window.App.liveMatch.isPlaying && (window.App.liveMatch.scoreA || 0) === 0 && (window.App.liveMatch.scoreB || 0) === 0) {
       window.App.liveMatch.teamA = currentMatch.teamA;
       window.App.liveMatch.teamB = currentMatch.teamB;
@@ -1427,26 +1424,14 @@ async function handleFinishMatch() {
         return;
       }
 
-      let currentMatchObj = null;
       const currentMatchId = window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null;
+      let currentMatchObj = getTournamentActiveMatch(tState, currentMatchId);
 
-      let searchList = [];
-      if (tState.fase === 'grupo') searchList = tState.matches || [];
-      else if (tState.fase === 'mata_mata') searchList = tState.knockoutMatches || [];
-      else if (tState.fase === 'finais') searchList = tState.finalsMatches || [];
-
-      if (currentMatchId) {
-        currentMatchObj = searchList.find(m => m.id === currentMatchId);
-      }
-      if (!currentMatchObj) {
-        currentMatchObj = searchList.find(m => m.status !== 'encerrado');
-      }
-
-      if (currentMatchObj) {
+      if (currentMatchObj && currentMatchObj.status !== 'encerrado') {
         currentMatchObj.golsA = scoreA;
         currentMatchObj.golsB = scoreB;
         currentMatchObj.status = 'encerrado';
-        currentMatchObj.vencedor = scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : (currentMatchObj.teamA));
+        currentMatchObj.vencedor = scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : currentMatchObj.teamA);
       }
 
       // 2. Recalcula classificação se estiver na fase de grupos
@@ -1480,17 +1465,10 @@ async function handleFinishMatch() {
         }
       }
 
-      // 3. Define a PRÓXIMA partida a ser jogada no liveMatch
-      let nextMatchObj = null;
-      if (tState.fase === 'grupo') {
-        nextMatchObj = (tState.matches || []).find(m => m.status !== 'encerrado');
-      } else if (tState.fase === 'mata_mata') {
-        nextMatchObj = (tState.knockoutMatches || []).find(m => m.status !== 'encerrado');
-      } else if (tState.fase === 'finais') {
-        nextMatchObj = (tState.finalsMatches || []).find(m => m.status !== 'encerrado');
-      }
+      // 3. Define a PRÓXIMA partida a ser jogada no liveMatch respeitando a fase
+      let nextMatchObj = getTournamentActiveMatch(tState, null);
 
-      if (nextMatchObj) {
+      if (nextMatchObj && tState.fase !== 'finalizado') {
         nextMatchObj.status = 'em_andamento';
         window.App.liveMatch.teamA = nextMatchObj.teamA;
         window.App.liveMatch.teamB = nextMatchObj.teamB;
@@ -1501,9 +1479,9 @@ async function handleFinishMatch() {
       }
 
       window.App.liveMatch.tournamentState = tState;
-      try { localStorage.setItem("tournamentState", JSON.stringify(tState)); } catch (e) { }
+      safeLocalStorageSetItem('tournamentState', tState);
       if (peladaId) {
-        try { localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState)); } catch (e) { }
+        safeLocalStorageSetItem(`tournamentState_${peladaId}`, tState);
       }
     } else {
       // -----------------------------------------------------------------------
@@ -2050,12 +2028,9 @@ async function carregarLiveStateDaPelada(peladaId) {
     let tB = finalTeams[1].nome || finalTeams[1].name || "Time 2";
     let tourneyMatchId = null;
 
-    // Se for modo torneio, resgata o primeiro confronto agendado na tabela do torneio (ex: Time A vs Time D)
-    if (tStateCheck && Array.isArray(tStateCheck.matches) && tStateCheck.matches.length > 0) {
-      let currentMatch = tStateCheck.matches.find(m => m.id === (window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null) || m.status === 'em_andamento');
-      if (!currentMatch) {
-        currentMatch = tStateCheck.matches.find(m => m.status !== 'encerrado') || tStateCheck.matches[0];
-      }
+    // Se for modo torneio, resgata o confronto agendado ativo na tabela do torneio
+    if (tStateCheck && tStateCheck.fase !== 'finalizado') {
+      let currentMatch = getTournamentActiveMatch(tStateCheck, window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null);
       if (currentMatch) {
         tA = currentMatch.teamA;
         tB = currentMatch.teamB;
