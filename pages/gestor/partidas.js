@@ -625,7 +625,7 @@ function applyAthleteTeamStyleToPartidasCards() {
   if (!theme) return;
 
   // Aplica o tema visual do time em todos os cards da tela Partida ao Vivo
-  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card');
+  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card, #gestor-recent-matches-card');
   cards.forEach(card => {
     if (!card) return;
     card.classList.add('has-team-theme');
@@ -635,7 +635,6 @@ function applyAthleteTeamStyleToPartidasCards() {
       card.style.setProperty('box-shadow', `0 8px 24px ${theme.borderGlow}`, 'important');
     }
 
-    // Garante contraste alto dos títulos
     const headers = card.querySelectorAll('h1, h2, h3, h4, h5, .card-title, .title');
     headers.forEach(h => {
       h.style.setProperty('color', '#FFFFFF', 'important');
@@ -1744,6 +1743,9 @@ async function renderRecentMatches() {
       return;
     }
 
+    const recentCard = document.getElementById("gestor-recent-matches-card");
+    const isRecentDark = recentCard ? recentCard.classList.contains("has-team-theme") : false;
+
     displayPartidas.forEach(p => {
       const isOpen = !!window.App.openGoalPanels[p.id];
       const tA = (teams || []).find(t => (t.nome || t.name) === p.time_a_nome) || { nome: p.time_a_nome, emblema: 0 };
@@ -1754,11 +1756,13 @@ async function renderRecentMatches() {
       const item = document.createElement("div");
       item.style.display = "flex";
       item.style.flexDirection = "column";
-      item.style.backgroundColor = "var(--background)";
-      item.style.borderRadius = "8px";
-      item.style.borderLeft = "4px solid var(--success)";
+      item.style.backgroundColor = isRecentDark ? "rgba(255, 255, 255, 0.12)" : "var(--background)";
+      item.style.border = isRecentDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid var(--border-color)";
+      item.style.borderRadius = "10px";
+      item.style.borderLeft = "4px solid #10B981";
       item.style.marginBottom = "8px";
       item.style.padding = "10px 14px";
+      if (isRecentDark) item.style.backdropFilter = "blur(8px)";
 
       const dateObj = new Date(p.created_at);
       const timeStr = dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -1770,31 +1774,35 @@ async function renderRecentMatches() {
         } catch (e) { }
       }
 
+      const textColor = isRecentDark ? "#FFFFFF" : "var(--text-heading)";
+      const subTextColor = isRecentDark ? "rgba(255, 255, 255, 0.8)" : "var(--text-caption)";
+      const scoreColor = isRecentDark ? "#FDE68A" : "var(--secondary)";
+
       item.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <span style="font-size: 11px; background: rgba(0,200,83,0.1); color: var(--success); padding: 2px 8px; border-radius: 6px; font-weight: bold;">FIM</span>
+            <span style="font-size: 11px; background: rgba(16, 185, 129, 0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4);">FIM</span>
             <div style="display:inline-flex; align-items:center; gap:6px;">
               <div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embA}</div>
-              <strong class="text-inter" style="font-size:14px; font-family: 'Inter', sans-serif;">${p.time_a_nome}</strong>
-              <span style="color:var(--secondary); font-size:16px; font-weight:800; margin:0 4px;">${p.gols_time_a}</span>
-              <span style="color:#64748B; font-weight:700;">x</span>
-              <span style="color:var(--accent); font-size:16px; font-weight:800; margin:0 4px;">${p.gols_time_b}</span>
-              <strong class="text-inter" style="font-size:14px; font-family: 'Inter', sans-serif;">${p.time_b_nome}</strong>
+              <strong class="text-inter" style="font-size:14px; color:${textColor}; font-family: 'Inter', sans-serif; font-weight:700;">${p.time_a_nome}</strong>
+              <span style="color:${scoreColor}; font-size:16px; font-weight:800; margin:0 4px;">${p.gols_time_a}</span>
+              <span style="color:${subTextColor}; font-weight:700;">x</span>
+              <span style="color:${scoreColor}; font-size:16px; font-weight:800; margin:0 4px;">${p.gols_time_b}</span>
+              <strong class="text-inter" style="font-size:14px; color:${textColor}; font-family: 'Inter', sans-serif; font-weight:700;">${p.time_b_nome}</strong>
               <div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embB}</div>
             </div>
-            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols da partida" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-heading); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>
+            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols da partida" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.3)' : 'var(--border-color)'}; background: ${isRecentDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.03)'}; color: ${textColor}; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
             <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
-            <span class="text-inter" style="font-size:11px; color:var(--text-caption); margin-left: 4px;">${timeStr}</span>
+            <span class="text-inter" style="font-size:11px; color:${subTextColor}; margin-left: 4px;">${timeStr}</span>
           </div>
         </div>
-        <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-heading);">
+        <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed ${isRecentDark ? 'rgba(255,255,255,0.2)' : 'var(--border-color)'}; font-size: 12px; color: ${textColor};">
           ${goalsList.length > 0
-          ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ${g.autorNome || 'Jogador'}${g.assistNome ? ` <span style="color:#0F172A; font-weight:600;">(Ass: ${g.assistNome} 👟)</span>` : ''} <span style="color:var(--text-caption); font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
-          : `<span style="font-size:11px; color:var(--text-caption);">Placar final: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
+          ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background:rgba(16,185,129,0.2); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; border:1px solid rgba(16,185,129,0.3);">⚽ ${g.autorNome || 'Jogador'}${g.assistNome ? ` <span style="color:${textColor}; font-weight:600;">(Ass: ${g.assistNome} 👟)</span>` : ''} <span style="color:${subTextColor}; font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
+          : `<span style="font-size:11px; color:${subTextColor};">Placar final: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
         }
         </div>
       `;
@@ -1802,6 +1810,7 @@ async function renderRecentMatches() {
     });
 
     setupHistoryActions(); // Vincula cliques nos botões recém-gerados
+    applyAthleteTeamStyleToPartidasCards();
     if (window.feather) feather.replace();
   } catch (err) {
     console.error("[renderRecentMatches]", err);
