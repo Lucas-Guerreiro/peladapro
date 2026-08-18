@@ -533,12 +533,21 @@ function onGestorStorageChange(e) {
 
 function getMatchPhaseInfo(liveMatch, peladaAtiva) {
   const tState = liveMatch ? (liveMatch.tournamentState || null) : null;
-  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto')) || !!tState;
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
 
   if (isTorneio && tState) {
     const currentMatchId = liveMatch ? liveMatch.tournamentMatchId : null;
 
-    if (tState.fase === 'grupo') {
+    if (tState.fase === 'livre' || (peladaAtiva && peladaAtiva.modo === 'torneio_livre')) {
+      const matchCount = (tState.matches || []).length;
+      return {
+        title: `📋 TORNEIO LIVRE — CONFRONTO ${matchCount + 1}`,
+        sub: 'Confrontos Definidos Livremente pelo Gestor',
+        bg: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
+        color: '#0369A1',
+        border: '1px solid #0284C7'
+      };
+    } else if (tState.fase === 'grupo') {
       const matchesList = tState.matches || [];
       let matchIndex = matchesList.findIndex(m => m.id === currentMatchId || m.status === 'em_andamento');
       if (matchIndex < 0) {
@@ -914,6 +923,55 @@ function renderLiveMatchUI() {
     const emblemBEl = document.getElementById("emblem-team-b");
     if (emblemAEl) emblemAEl.innerHTML = window.TeamEmblems.forTeam(tA || { emblema: 0 });
     if (emblemBEl) emblemBEl.innerHTML = window.TeamEmblems.forTeam(tB || { emblema: 1 });
+  }
+
+  // Lógica do Seletor Livre de Confrontos (Modo Torneio Livre)
+  const containerLivre = document.getElementById("container-confronto-livre");
+  const livePelada = window.App.activePelada || {};
+  const liveTState = window.App.liveMatch ? window.App.liveMatch.tournamentState : null;
+  const isModoLivre = (livePelada.modo === 'torneio_livre') || (liveTState && liveTState.modo === 'torneio_livre');
+
+  if (containerLivre) {
+    if (isModoLivre) {
+      containerLivre.style.display = "flex";
+      const selectFreeA = document.getElementById("select-free-team-a");
+      const selectFreeB = document.getElementById("select-free-team-b");
+      
+      let drawnTeams = [];
+      try { drawnTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+      if ((!drawnTeams || drawnTeams.length === 0) && liveTState && liveTState.teams) drawnTeams = liveTState.teams;
+
+      if (selectFreeA && selectFreeB && drawnTeams.length >= 2) {
+        const buildOptions = (currentVal) => {
+          return drawnTeams.map((t, idx) => {
+            const name = t.nome || t.name || `Time ${idx + 1}`;
+            return `<option value="${name}" ${name === currentVal ? 'selected' : ''}>${name}</option>`;
+          }).join('');
+        };
+
+        const currentA = window.App.liveMatch.teamA || drawnTeams[0].nome;
+        const currentB = window.App.liveMatch.teamB || drawnTeams[1].nome;
+
+        selectFreeA.innerHTML = buildOptions(currentA);
+        selectFreeB.innerHTML = buildOptions(currentB);
+
+        selectFreeA.onchange = (e) => {
+          const newA = e.target.value;
+          window.App.liveMatch.teamA = newA;
+          window.App.liveMatch.scoreA = 0;
+          renderLiveMatchUI();
+        };
+
+        selectFreeB.onchange = (e) => {
+          const newB = e.target.value;
+          window.App.liveMatch.teamB = newB;
+          window.App.liveMatch.scoreB = 0;
+          renderLiveMatchUI();
+        };
+      }
+    } else {
+      containerLivre.style.display = "none";
+    }
   }
 
   // Lógica de alerta visual de limite de vitórias seguidas
@@ -1519,8 +1577,29 @@ async function handleFinishMatch() {
         currentMatchObj.vencedor = scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : currentMatchObj.teamA);
       }
 
-      // 2. Recalcula classificação se estiver na fase de grupos
-      if (tState.fase === 'grupo') {
+      // 2. Recalcula classificação se estiver na fase de grupos ou torneio livre
+      if (tState.fase === 'livre' || (peladaAtiva && peladaAtiva.modo === 'torneio_livre')) {
+        const freeMatch = {
+          id: `torneio_l_${Date.now().toString(36)}`,
+          fase: 'livre',
+          faseNome: 'Confronto Livre',
+          teamA: teamAName,
+          teamB: teamBName,
+          golsA: scoreA,
+          golsB: scoreB,
+          status: 'encerrado',
+          vencedor: scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : teamAName)
+        };
+        tState.matches = tState.matches || [];
+        tState.matches.push(freeMatch);
+
+        let drawnTeams = tState.teams || [];
+        if (!drawnTeams || drawnTeams.length === 0) {
+          try { drawnTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+        }
+        tState.standings = window.TournamentEngine.calculateStandings(drawnTeams, tState.matches);
+        window.App.showToast(`📋 Partida registrada no Torneio Livre! ${teamAName} ${scoreA} x ${scoreB} ${teamBName}`, "success");
+      } else if (tState.fase === 'grupo') {
         tState.standings = window.TournamentEngine.calculateStandings(tState.teams, tState.matches);
 
         // Verifica se TODOS os jogos da fase de grupos terminaram
@@ -2385,7 +2464,7 @@ function renderTournamentUI() {
     }
   }
 
-  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto')) || !!tState;
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
 
   if (!isTorneio || !tState) {
     tournamentCard.style.display = "none";
@@ -2400,11 +2479,17 @@ function renderTournamentUI() {
   const isTeamTheme = tournamentCard.classList.contains("has-team-theme");
   const isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
   const isMataMataDireto = (peladaAtiva && peladaAtiva.modo === 'mata_mata_direto') || (tState && (tState.modo === 'mata_mata_direto' || tState.formato === 'mata_mata_direto'));
+  const isTorneioLivre = (peladaAtiva && peladaAtiva.modo === 'torneio_livre') || (tState && (tState.modo === 'torneio_livre' || tState.formato === 'livre'));
 
   // Badge da Fase
   const badgeEl = document.getElementById("tournament-phase-badge");
   if (badgeEl) {
-    if (tState.fase === 'grupo') {
+    if (tState.fase === 'livre' || isTorneioLivre) {
+      badgeEl.textContent = "📋 TORNEIO LIVRE (CONFRONTOS MANUAIS)";
+      badgeEl.style.background = isTeamTheme ? "rgba(224, 242, 254, 0.25)" : "#E0F2FE";
+      badgeEl.style.color = isTeamTheme ? "#BAE6FD" : "#0369A1";
+      badgeEl.style.border = "1px solid #0284C7";
+    } else if (tState.fase === 'grupo') {
       badgeEl.textContent = isPontosCorridos ? "CLASSIFICAÇÃO (PONTOS CORRIDOS)" : "FASE DE GRUPOS (TABELA MISTA)";
       badgeEl.style.background = isTeamTheme ? "rgba(254, 243, 199, 0.25)" : "#FEF3C7";
       badgeEl.style.color = isTeamTheme ? "#FDE68A" : "#B45309";

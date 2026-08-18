@@ -254,7 +254,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           window.App.activePelada.modo = newModo;
           localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
           let desc = "⚽ Modo Pelada Normal ativado!";
-          if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado para esta data!";
+          if (newModo === 'torneio_livre') desc = "📋 Modo Torneio Livre (Confrontos Manuais) ativado para esta data!";
+          else if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado para esta data!";
           else if (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos') desc = "🏅 Modo Mini Torneio (Pontos Corridos) ativado para esta data!";
           else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
           window.App.showToast(desc, "success");

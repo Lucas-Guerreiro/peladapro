@@ -969,7 +969,7 @@ var Acompanhamento = {
     var liveMatch = window.App.liveMatch || {};
     var tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem('tournamentState_' + peladaAtiva.id) || 'null') : null);
 
-    var isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto')) || !!tState;
+    var isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
 
     if (!isTorneio || !tState) {
       tournamentCard.style.display = 'none';
@@ -982,11 +982,15 @@ var Acompanhamento = {
 
     var isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
     var isMataMataDireto = (peladaAtiva && peladaAtiva.modo === 'mata_mata_direto') || (tState && (tState.modo === 'mata_mata_direto' || tState.formato === 'mata_mata_direto'));
+    var isTorneioLivre = (peladaAtiva && peladaAtiva.modo === 'torneio_livre') || (tState && (tState.modo === 'torneio_livre' || tState.formato === 'livre'));
 
     // Badge de Fase
     var badgeEl = document.getElementById('acomp-tournament-phase-badge');
     if (badgeEl) {
-      if (tState.fase === 'grupo') {
+      if (tState.fase === 'livre' || isTorneioLivre) {
+        badgeEl.textContent = '📋 TORNEIO LIVRE (CONFRONTOS MANUAIS)';
+        badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
+      } else if (tState.fase === 'grupo') {
         badgeEl.textContent = isPontosCorridos ? 'CLASSIFICAÇÃO (PONTOS CORRIDOS)' : 'FASE DE GRUPOS (TABELA MISTA)';
         badgeEl.style.background = '#FEF3C7'; badgeEl.style.color = '#B45309';
       } else if (tState.fase === 'quartas') {
