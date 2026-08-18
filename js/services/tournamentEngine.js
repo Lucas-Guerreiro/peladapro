@@ -14,14 +14,28 @@ window.TournamentEngine = {
   generateGroupSchedule(teams, turno = 'ida') {
     if (!Array.isArray(teams) || teams.length < 2) return [];
 
+    const mapColorToTeamLetter = (nameStr) => {
+      if (!nameStr) return nameStr;
+      const low = String(nameStr).trim().toLowerCase();
+      if (low === "azul" || low === "time azul") return "Time A";
+      if (low === "branco" || low === "time branco") return "Time B";
+      if (low === "preto" || low === "time preto") return "Time C";
+      if (low === "laranja" || low === "time laranja") return "Time D";
+      return nameStr;
+    };
+
     const matches = [];
-    const teamList = teams.map((t, idx) => ({
-      id: t.id || `t_${idx + 1}`,
-      nome: t.nome || t.name || `Time ${idx + 1}`,
-      emblema: t.emblema || t.emblema_url || null,
-      cor: t.cor || null,
-      players: t.players || t.jogadores || []
-    }));
+    const teamList = teams.map((t, idx) => {
+      const rawName = t.nome || t.name || `Time ${idx + 1}`;
+      const finalName = mapColorToTeamLetter(rawName);
+      return {
+        id: t.id || `t_${idx + 1}`,
+        nome: finalName,
+        emblema: t.emblema || t.emblema_url || null,
+        cor: t.cor || null,
+        players: t.players || t.jogadores || []
+      };
+    });
 
     // Algoritmo de Circle Method (Round Robin)
     let list = [...teamList];
@@ -128,6 +142,12 @@ window.TournamentEngine = {
       aliasMap[nameKey] = nameKey;
       aliasMap[timeLetterAlias] = nameKey;
       aliasMap[numAlias] = nameKey;
+
+      // Se for Time A/B/C/D, mapeia também as cores correspondentes (Azul->Time A, Branco->Time B, Preto->Time C, Laranja->Time D)
+      if (idx === 0 || letterAlias === 'a') { aliasMap['azul'] = nameKey; aliasMap['time azul'] = nameKey; }
+      if (idx === 1 || letterAlias === 'b') { aliasMap['branco'] = nameKey; aliasMap['time branco'] = nameKey; }
+      if (idx === 2 || letterAlias === 'c') { aliasMap['preto'] = nameKey; aliasMap['time preto'] = nameKey; }
+      if (idx === 3 || letterAlias === 'd') { aliasMap['laranja'] = nameKey; aliasMap['time laranja'] = nameKey; }
 
       statsMap[nameKey] = {
         nome: officialName,
