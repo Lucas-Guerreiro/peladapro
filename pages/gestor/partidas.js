@@ -2147,7 +2147,6 @@ async function carregarLiveStateDaPelada(peladaId) {
   renderWaitingQueue();
   renderTournamentUI();
 }
-}
 
 async function initPartidasPeladaSelect() {
   const select = document.getElementById("partidas-select-pelada-date");
