@@ -513,7 +513,7 @@ function onGestorStorageChange(e) {
 
 function getMatchPhaseInfo(liveMatch, peladaAtiva) {
   const tState = liveMatch ? (liveMatch.tournamentState || null) : null;
-  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || !!tState;
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto')) || !!tState;
 
   if (isTorneio && tState) {
     const currentMatchId = liveMatch ? liveMatch.tournamentMatchId : null;
@@ -2344,7 +2344,7 @@ function renderTournamentUI() {
     }
   }
 
-  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || !!tState;
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto')) || !!tState;
 
   if (!isTorneio || !tState) {
     tournamentCard.style.display = "none";
@@ -2358,6 +2358,7 @@ function renderTournamentUI() {
 
   const isTeamTheme = tournamentCard.classList.contains("has-team-theme");
   const isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
+  const isMataMataDireto = (peladaAtiva && peladaAtiva.modo === 'mata_mata_direto') || (tState && (tState.modo === 'mata_mata_direto' || tState.formato === 'mata_mata_direto'));
 
   // Badge da Fase
   const badgeEl = document.getElementById("tournament-phase-badge");
@@ -2368,7 +2369,7 @@ function renderTournamentUI() {
       badgeEl.style.color = isTeamTheme ? "#FDE68A" : "#B45309";
       badgeEl.style.border = "1px solid #F59E0B";
     } else if (tState.fase === 'mata_mata') {
-      badgeEl.textContent = "SEMIFINAIS (MATA-MATA)";
+      badgeEl.textContent = isMataMataDireto ? "SEMIFINAIS (MATA-MATA DIRETO)" : "SEMIFINAIS (MATA-MATA)";
       badgeEl.style.background = isTeamTheme ? "rgba(224, 242, 254, 0.25)" : "#E0F2FE";
       badgeEl.style.color = isTeamTheme ? "#BAE6FD" : "#0369A1";
       badgeEl.style.border = "1px solid #0284C7";
@@ -2378,7 +2379,7 @@ function renderTournamentUI() {
       badgeEl.style.color = isTeamTheme ? "#FBCFE8" : "#9D174D";
       badgeEl.style.border = "1px solid #EC4899";
     } else if (tState.fase === 'finalizado') {
-      badgeEl.textContent = isPontosCorridos ? "🏅 PONTOS CORRIDOS FINALIZADO" : "🏆 TORNEIO FINALIZADO";
+      badgeEl.textContent = isMataMataDireto ? "⚡ MATA-MATA DIRETO FINALIZADO" : (isPontosCorridos ? "🏅 PONTOS CORRIDOS FINALIZADO" : "🏆 TORNEIO FINALIZADO");
       badgeEl.style.background = isTeamTheme ? "rgba(209, 250, 229, 0.25)" : "#D1FAE5";
       badgeEl.style.color = isTeamTheme ? "#A7F3D0" : "#065F46";
       badgeEl.style.border = "1px solid #10B981";

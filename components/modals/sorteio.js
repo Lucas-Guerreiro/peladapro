@@ -274,39 +274,69 @@ function handleExecuteSorteio() {
     try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
   }
 
-  const isTorneio = modoAtual === 'torneio' || modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos';
+  const isTorneio = modoAtual === 'torneio' || modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos' || modoAtual === 'mata_mata_direto';
   const isPontosCorridos = modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos';
+  const isMataMataDireto = modoAtual === 'mata_mata_direto';
 
   if (isTorneio && window.TournamentEngine) {
-    const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
-    const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
-    const tState = {
-      modo: modoAtual,
-      formato: isPontosCorridos ? 'pontos_corridos' : 'mata_mata',
-      turno: turnoAtual,
-      fase: 'grupo',
-      teams: drawnTeams,
-      matches: matches,
-      currentIndex: 0,
-      standings: standings,
-      knockoutMatches: [],
-      finalsMatches: [],
-      podium: null
-    };
+    let tState;
+    if (isMataMataDireto) {
+      const knockoutMatches = window.TournamentEngine.generateDirectKnockoutMatches(drawnTeams);
+      const isFinalDirect = knockoutMatches.length === 1 && knockoutMatches[0].fase === 'final';
+      tState = {
+        modo: modoAtual,
+        formato: 'mata_mata_direto',
+        turno: 'ida',
+        fase: isFinalDirect ? 'finais' : 'mata_mata',
+        teams: drawnTeams,
+        matches: [],
+        currentIndex: 0,
+        standings: [],
+        knockoutMatches: isFinalDirect ? [] : knockoutMatches,
+        finalsMatches: isFinalDirect ? knockoutMatches : [],
+        podium: null
+      };
+
+      const firstMatch = isFinalDirect ? tState.finalsMatches[0] : tState.knockoutMatches[0];
+      if (firstMatch) {
+        window.App.liveMatch.teamA = firstMatch.teamA;
+        window.App.liveMatch.teamB = firstMatch.teamB;
+        window.App.liveMatch.scoreA = 0;
+        window.App.liveMatch.scoreB = 0;
+        window.App.liveMatch.isPlaying = false;
+        window.App.liveMatch.tournamentMatchId = firstMatch.id;
+      }
+    } else {
+      const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
+      const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
+      tState = {
+        modo: modoAtual,
+        formato: isPontosCorridos ? 'pontos_corridos' : 'mata_mata',
+        turno: turnoAtual,
+        fase: 'grupo',
+        teams: drawnTeams,
+        matches: matches,
+        currentIndex: 0,
+        standings: standings,
+        knockoutMatches: [],
+        finalsMatches: [],
+        podium: null
+      };
+
+      if (matches.length > 0) {
+        window.App.liveMatch.teamA = matches[0].teamA;
+        window.App.liveMatch.teamB = matches[0].teamB;
+        window.App.liveMatch.scoreA = 0;
+        window.App.liveMatch.scoreB = 0;
+        window.App.liveMatch.isPlaying = false;
+        window.App.liveMatch.tournamentMatchId = matches[0].id;
+      }
+    }
 
     window.App.liveMatch.tournamentState = tState;
     try { localStorage.setItem("tournamentState", JSON.stringify(tState)); } catch(e) {}
     if (peladaId) {
       try { localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState)); } catch(e) {}
-    }
-
-    if (matches.length > 0) {
-      window.App.liveMatch.teamA = matches[0].teamA;
-      window.App.liveMatch.teamB = matches[0].teamB;
-      window.App.liveMatch.scoreA = 0;
-      window.App.liveMatch.scoreB = 0;
-      window.App.liveMatch.isPlaying = false;
-      window.App.liveMatch.tournamentMatchId = matches[0].id;
     }
   } else {
     // Modo Pelada Normal
@@ -349,9 +379,10 @@ function handleExecuteSorteio() {
     window.App.syncDrawnTeamsToCloud(false);
   }
 
-  const toastMsg = isPontosCorridos
-    ? "🏅 Mini Torneio (Pontos Corridos) gerado com sucesso!"
-    : (modoAtual === 'torneio' ? "🏆 Mini Torneio (Mata-Mata) gerado com sucesso!" : "Equipes geradas!");
+  let toastMsg = "Equipes geradas!";
+  if (isMataMataDireto) toastMsg = "⚡ Mini Torneio (Mata-Mata Direto) gerado com sucesso!";
+  else if (isPontosCorridos) toastMsg = "🏅 Mini Torneio (Pontos Corridos) gerado com sucesso!";
+  else if (modoAtual === 'torneio') toastMsg = "🏆 Mini Torneio (Misto) gerado com sucesso!";
   window.App.showToast(toastMsg);
   window.App.renderDrawnTeams();
   window.App.updateAcompanhamentoUI();

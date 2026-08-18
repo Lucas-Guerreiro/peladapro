@@ -229,8 +229,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
 
     function updateTurnoVisibility(modoVal) {
       if (containerTurno) {
-        const isTorneio = modoVal === 'torneio' || modoVal === 'pontos_corridos' || modoVal === 'torneio_pontos_corridos';
-        containerTurno.style.display = isTorneio ? 'block' : 'none';
+        const hasTurno = modoVal === 'torneio' || modoVal === 'pontos_corridos' || modoVal === 'torneio_pontos_corridos';
+        containerTurno.style.display = hasTurno ? 'block' : 'none';
       }
     }
 
@@ -253,9 +253,10 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           }
           window.App.activePelada.modo = newModo;
           localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-          const desc = (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos')
-            ? "🏅 Modo Mini Torneio (Pontos Corridos) ativado para esta data!"
-            : (newModo === 'torneio' ? "🏆 Modo Mini Torneio (Mata-Mata) ativado para esta data!" : "⚽ Modo Pelada Normal ativado!");
+          let desc = "⚽ Modo Pelada Normal ativado!";
+          if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado para esta data!";
+          else if (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos') desc = "🏅 Modo Mini Torneio (Pontos Corridos) ativado para esta data!";
+          else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
           window.App.showToast(desc, "success");
         } catch (err) {
           console.error("[selectModo]", err);

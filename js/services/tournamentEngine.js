@@ -231,6 +231,42 @@ window.TournamentEngine = {
   },
 
   /**
+   * Gera os confrontos diretos de Mata-Mata (sem fase de grupos prévia).
+   * @param {Array} teams Lista de times sorteados
+   * @returns {Array} Lista de jogos eliminatórios
+   */
+  generateDirectKnockoutMatches(teams) {
+    if (!Array.isArray(teams) || teams.length < 2) return [];
+
+    const formattedTeams = teams.map((t, idx) => ({
+      nome: (t.nome || t.name || `Time ${idx + 1}`).trim(),
+      emblema: t.emblema || t.emblema_url || null,
+      cor: t.cor || null
+    }));
+
+    if (formattedTeams.length === 2) {
+      return [{
+        id: `torneio_final_direta_${Date.now().toString(36)}`,
+        fase: 'final',
+        faseNome: '🏆 Grande Final (Mata-Mata Direto)',
+        numeroJogo: 1,
+        teamA: formattedTeams[0].nome,
+        teamB: formattedTeams[1].nome,
+        teamAObj: formattedTeams[0],
+        teamBObj: formattedTeams[1],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      }];
+    }
+
+    return this.generateKnockoutMatches(formattedTeams);
+  },
+
+  /**
    * Gera os confrontos do Mata-Mata a partir da classificação final da fase de grupos.
    * @param {Array} standings Tabela de classificação
    * @returns {Array} Lista de jogos de Mata-Mata (Semifinais)
