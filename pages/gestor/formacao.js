@@ -34,6 +34,47 @@ window.App.initFormacao = async function () {
   if (btnNomesTimes) {
     btnNomesTimes.onclick = () => window.App.abrirModalNomesTimes();
   }
+  const btnSeedTest = document.getElementById("btn-seed-test-athletes");
+  if (btnSeedTest) {
+    btnSeedTest.onclick = async () => {
+      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+      if (!peladaId) {
+        window.App.showToast("Selecione uma pelada de referência primeiro.", "warning");
+        return;
+      }
+      const testAthletes = [
+        { id: 101, nome: "Erivan", apelido: "Erivan", goleiro: false, autoavaliacao: 4 },
+        { id: 102, nome: "Leda", apelido: "Leda", goleiro: false, autoavaliacao: 4 },
+        { id: 103, nome: "Levy", apelido: "Levy", goleiro: true, autoavaliacao: 4 },
+        { id: 104, nome: "David Araújo", apelido: "David", goleiro: false, autoavaliacao: 5 },
+        { id: 105, nome: "Sangar", apelido: "Sangar", goleiro: false, autoavaliacao: 3 },
+        { id: 106, nome: "Netto", apelido: "Netto", goleiro: false, autoavaliacao: 4 },
+        { id: 107, nome: "Ewerton", apelido: "Ewerton", goleiro: false, autoavaliacao: 3 },
+        { id: 108, nome: "Andrew", apelido: "Andrew", goleiro: false, autoavaliacao: 4 },
+        { id: 109, nome: "Josimar", apelido: "Josimar", goleiro: false, autoavaliacao: 4 },
+        { id: 110, nome: "Linconl", apelido: "Linconl", goleiro: false, autoavaliacao: 4 },
+        { id: 111, nome: "Madson", apelido: "Madson", goleiro: false, autoavaliacao: 4 },
+        { id: 112, nome: "Darlan", apelido: "Darlan", goleiro: false, autoavaliacao: 4 },
+        { id: 113, nome: "Lobo", apelido: "Lobo", goleiro: false, autoavaliacao: 5 },
+        { id: 114, nome: "Elia", apelido: "Elia", goleiro: false, autoavaliacao: 4 },
+        { id: 115, nome: "Dhárcio", apelido: "Dhárcio", goleiro: false, autoavaliacao: 4 },
+        { id: 116, nome: "Arthur", apelido: "Arthur", goleiro: true, autoavaliacao: 4 },
+        { id: 117, nome: "Kaio", apelido: "Kaio", goleiro: false, autoavaliacao: 4 },
+        { id: 118, nome: "Cleber Bindá", apelido: "Cleber", goleiro: false, autoavaliacao: 4 },
+        { id: 119, nome: "Victor Silva", apelido: "Victor", goleiro: false, autoavaliacao: 4 },
+        { id: 120, nome: "Weslley", apelido: "Weslley", goleiro: false, autoavaliacao: 4 },
+        { id: 121, nome: "F Abbade", apelido: "Abbade", goleiro: false, autoavaliacao: 4 },
+        { id: 122, nome: "Ícaro", apelido: "Ícaro", goleiro: false, autoavaliacao: 4 }
+      ];
+
+      localStorage.setItem(`checkins_${peladaId}`, JSON.stringify(testAthletes.map(a => ({ usuario_id: a.id, status: 'confirmado', usuario: a }))));
+      localStorage.setItem("checkins", JSON.stringify(testAthletes.map(a => ({ usuario_id: a.id, status: 'confirmado', usuario: a }))));
+
+      window.App.showToast("🧪 22 Atletas de teste confirmados na pelada!", "success");
+      await renderManagerCheckin(peladaId);
+    };
+  }
+
   const btnSyncCloud = document.getElementById("btn-sync-teams-cloud");
   if (btnSyncCloud) {
     btnSyncCloud.onclick = async () => {
