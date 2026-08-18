@@ -927,44 +927,45 @@
 .role-toggle-switch {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   border-radius: 20px;
   padding: 3px;
   position: relative;
   cursor: pointer;
   user-select: none;
-  border: 1.5px solid rgba(212, 175, 55, 0.6) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.7) !important;
   transition: all 0.2s ease;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .role-toggle-switch:hover {
-  border-color: rgba(212, 175, 55, 0.9) !important;
+  border-color: rgba(212, 175, 55, 1) !important;
   transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
 }
 
 .role-toggle-option {
-  font-family: var(--font-display);
+  font-family: var(--font-display, 'Inter', sans-serif);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   z-index: 2;
   transition: color 0.2s ease;
-  color: #000000 !important;
+  color: #1E293B !important;
   white-space: nowrap;
 }
 
 .role-toggle-switch.is-jogador .role-opt-jogador {
-  color: #000000 !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
-  text-shadow: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .role-toggle-switch.is-gestor .role-opt-gestor {
-  color: #000000 !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
-  text-shadow: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .role-toggle-slider {
@@ -976,7 +977,7 @@
   border-radius: 16px;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
   z-index: 1;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
 .role-toggle-switch.is-jogador .role-toggle-slider {
@@ -991,24 +992,24 @@
 
 /* Estilos do Role Toggle Switch no Modo Noturno do Time */
 body.modo-noturno-ativo .role-toggle-switch {
-  background: rgba(255, 255, 255, 0.25) !important;
-  border-color: rgba(212, 175, 55, 0.6) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(212, 175, 55, 0.7) !important;
 }
 
 body.modo-noturno-ativo .role-toggle-option {
-  color: #000000 !important;
+  color: #FFFFFF !important;
 }
 
 body.modo-noturno-ativo .role-toggle-switch.is-jogador .role-opt-jogador,
 body.modo-noturno-ativo .role-toggle-switch.is-gestor .role-opt-gestor {
-  color: #000000 !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
-  text-shadow: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 body.modo-noturno-ativo .role-toggle-slider {
   background-color: #059669 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* ── MODO NOTURNO GLOBAL NO TEMA DO TIME DE FUTEBOL ───────── */
