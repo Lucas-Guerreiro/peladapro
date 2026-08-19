@@ -84,7 +84,7 @@ exports.listarGrupos = async (req, res) => {
 
 // --- Agendar nova data/horário para a pelada (com notificação) ----------
 exports.agendarData = async (req, res) => {
-  const { grupo_id, data, horario, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome } = req.body;
+  const { grupo_id, data, horario, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome, modo, turno_torneio } = req.body;
 
   if (!grupo_id || !data || !horario || !local) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes (grupo, data, horário, local)' });
@@ -96,11 +96,15 @@ exports.agendarData = async (req, res) => {
     client = await db.pool.connect();
     await client.query('BEGIN');
 
+    await client.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(50) DEFAULT 'normal'");
+    await client.query("ALTER TABLE peladas ALTER COLUMN modo TYPE VARCHAR(50)");
+    await client.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
+
     // 1. Inserir a partida na tabela 'peladas'
     const queryPelada = `
-      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, limite_atletas, valor_convocacao, chave_pix, chave_pix_nome)
-      VALUES ($1, $2, $3, 'agendada', $4, $5, $5, $6, $7, $8) RETURNING id, data, horario, local, chave_pix, chave_pix_nome`;
-    const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00, chave_pix || null, chave_pix_nome || null]);
+      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, limite_atletas, valor_convocacao, chave_pix, chave_pix_nome, modo, turno_torneio)
+      VALUES ($1, $2, $3, 'agendada', $4, $5, $5, $6, $7, $8, $9, $10) RETURNING id, data, horario, local, chave_pix, chave_pix_nome, modo, turno_torneio`;
+    const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00, chave_pix || null, chave_pix_nome || null, modo || 'normal', turno_torneio || 'ida']);
     const pelada = peladaRes.rows[0];
 
     // 2. Buscar todos os atletas ativos no sistema (jogadores, gestores e tipo ambos)

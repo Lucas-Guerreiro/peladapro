@@ -279,6 +279,28 @@ const Api = {
     return responseData;
   },
 
+  async atualizarConfigPartida(peladaId, configObj) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return { error: 'Sessão expirada ou inválida.' };
+    }
+    try {
+      const res = await fetch(`/api/peladas/${peladaId}/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(configObj)
+      });
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error('[Api.atualizarConfigPartida]', err);
+      return { error: 'Erro de conexão com o servidor.' };
+    }
+  },
+
   async getGruposDoGestor() {
     const token = localStorage.getItem('token');
     if (!token) return [];
