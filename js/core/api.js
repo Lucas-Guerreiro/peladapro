@@ -1126,9 +1126,10 @@ const Api = {
 
   async getCatalogoTimes(groupId) {
     const token = localStorage.getItem('token');
-    const targetGroup = groupId || (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null);
+    const activeGroup = (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null) || (window.App && window.App.currentGroup ? window.App.currentGroup.id : null);
+    const targetGroup = groupId || activeGroup || 7;
     try {
-      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup || 1}`, {
+      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (res.ok) return await res.json();

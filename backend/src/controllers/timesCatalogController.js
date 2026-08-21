@@ -4,18 +4,14 @@ const db = require('../config/database');
 exports.getCatalogo = async (req, res) => {
   let { groupId } = req.params;
   try {
-    if (!groupId || groupId === 'null' || groupId === 'undefined') {
+    if (!groupId || groupId === 'null' || groupId === 'undefined' || groupId === '0') {
       const gRes = await db.query('SELECT id FROM grupos ORDER BY id ASC LIMIT 1');
       if (gRes.rows.length > 0) groupId = gRes.rows[0].id;
     }
 
-    if (!groupId) {
-      return res.json([]);
-    }
-
     const { rows } = await db.query(
-      'SELECT id, grupo_id, nome, cor, created_at FROM nomes_times_grupo WHERE grupo_id = $1 ORDER BY id ASC',
-      [groupId]
+      'SELECT id, grupo_id, nome, cor, created_at FROM nomes_times_grupo WHERE grupo_id = $1 OR $1 IS NULL ORDER BY id ASC',
+      [groupId || null]
     );
 
     res.json(rows);
