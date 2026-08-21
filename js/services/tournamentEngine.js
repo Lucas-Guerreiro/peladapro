@@ -115,7 +115,78 @@ window.TournamentEngine = {
       }
     }
 
-    return matches;
+    return this.optimizeMatchSequence(matches);
+  },
+
+  /**
+   * Reordena e otimiza a sequência de partidas da fase de grupos para equilibrar o descanso das equipes.
+   * Evita jogos seguidos do mesmo time e impede que equipes fiquem muito tempo sem jogar.
+   */
+  optimizeMatchSequence(matches) {
+    if (!Array.isArray(matches) || matches.length <= 2) return matches;
+
+    const playedMatches = matches.filter(m => m.status === 'encerrado' || m.status === 'em_andamento');
+    const unplayedMatches = matches.filter(m => m.status !== 'encerrado' && m.status !== 'em_andamento');
+
+    if (unplayedMatches.length <= 1) return matches;
+
+    const pool = [...unplayedMatches];
+    const ordered = [...playedMatches];
+    const lastPlayed = {};
+
+    playedMatches.forEach((m, idx) => {
+      lastPlayed[m.teamA] = idx;
+      lastPlayed[m.teamB] = idx;
+    });
+
+    while (pool.length > 0) {
+      const currentIndex = ordered.length;
+      let bestIdx = 0;
+      let bestScore = -Infinity;
+
+      for (let i = 0; i < pool.length; i++) {
+        const candidate = pool[i];
+        const tA = candidate.teamA;
+        const tB = candidate.teamB;
+
+        const restA = (tA in lastPlayed) ? (currentIndex - lastPlayed[tA]) : 999;
+        const restB = (tB in lastPlayed) ? (currentIndex - lastPlayed[tB]) : 999;
+
+        let score = 0;
+
+        if (restA === 999 && restB === 999) score += 2500;
+
+        // Penalidade gravíssima para jogos seguidos (rest == 1)
+        if (restA === 1) score -= 10000;
+        if (restB === 1) score -= 10000;
+
+        // Penalidade para descanso curto (rest == 2)
+        if (restA === 2) score -= 1200;
+        if (restB === 2) score -= 1200;
+
+        // Bônus proporcional para times esperando há mais tempo
+        score += (restA * 200) + (restB * 200);
+
+        // Penalidade se a diferença de descanso entre os 2 times for alta
+        score -= Math.abs(restA - restB) * 100;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      const chosen = pool.splice(bestIdx, 1)[0];
+      lastPlayed[chosen.teamA] = currentIndex;
+      lastPlayed[chosen.teamB] = currentIndex;
+      ordered.push(chosen);
+    }
+
+    ordered.forEach((m, idx) => {
+      m.numeroJogo = idx + 1;
+    });
+
+    return ordered;
   },
 
   /**

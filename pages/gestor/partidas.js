@@ -2621,7 +2621,12 @@ function renderTournamentUI() {
   const matchesList = document.getElementById("tournament-matches-list");
   if (matchesList) {
     let allMatches = [];
-    if (Array.isArray(tState.matches)) allMatches.push(...tState.matches);
+    if (Array.isArray(tState.matches)) {
+      const optGroup = (window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence)
+        ? window.TournamentEngine.optimizeMatchSequence(tState.matches)
+        : tState.matches;
+      allMatches.push(...optGroup);
+    }
     if (Array.isArray(tState.knockoutMatches)) allMatches.push(...tState.knockoutMatches);
     if (Array.isArray(tState.finalsMatches)) allMatches.push(...tState.finalsMatches);
 

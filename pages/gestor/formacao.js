@@ -1423,7 +1423,10 @@ function renderFormacaoTournamentUI() {
   }
 
   if (matchesList) {
-    const matches = tState.matches || [];
+    let matches = tState.matches || [];
+    if (window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence) {
+      matches = window.TournamentEngine.optimizeMatchSequence(matches);
+    }
     if (matches.length === 0) {
       matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:#64748B; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
     } else {
