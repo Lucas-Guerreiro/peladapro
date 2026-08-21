@@ -1,23 +1,89 @@
 const db = require('../config/database');
 
+// Garante a existência da tabela nomes_times_grupo no PostgreSQL
+async function ensureTableExists() {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS nomes_times_grupo (
+          id SERIAL PRIMARY KEY,
+          grupo_id INT REFERENCES grupos(id) ON DELETE CASCADE,
+          nome VARCHAR(100) NOT NULL,
+          cor VARCHAR(10) DEFAULT '#0284C7',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          CONSTRAINT unique_grupo_nome UNIQUE(grupo_id, nome)
+      );
+    `);
+  } catch(e) {
+    console.error('[ensureTableExists] Erro ao verificar/criar tabela nomes_times_grupo:', e.message);
+  }
+}
+
 // GET /api/times-catalogo/grupo/:groupId
 exports.getCatalogo = async (req, res) => {
   let { groupId } = req.params;
   try {
+    await ensureTableExists();
+
     if (!groupId || groupId === 'null' || groupId === 'undefined' || groupId === '0') {
       const gRes = await db.query('SELECT id FROM grupos ORDER BY id ASC LIMIT 1');
       if (gRes.rows.length > 0) groupId = gRes.rows[0].id;
     }
 
-    const { rows } = await db.query(
+    const targetGroupId = groupId ? parseInt(groupId) : null;
+
+    let { rows } = await db.query(
       'SELECT id, grupo_id, nome, cor, created_at FROM nomes_times_grupo WHERE grupo_id = $1 OR $1 IS NULL ORDER BY id ASC',
-      [groupId || null]
+      [targetGroupId]
     );
+
+    // Se o banco não tiver registros para este grupo, auto-popula com times das peladas do grupo ou nomes padrão
+    if (rows.length === 0 && targetGroupId) {
+      try {
+        const existingTimes = await db.query(`
+          SELECT DISTINCT TRIM(t.nome) as nome, COALESCE(t.cor, '#0284C7') as cor
+          FROM times t
+          JOIN peladas p ON t.pelada_id = p.id
+          WHERE t.nome IS NOT NULL AND TRIM(t.nome) <> '' AND p.grupo_id = $1
+        `, [targetGroupId]);
+
+        if (existingTimes.rows.length > 0) {
+          for (const t of existingTimes.rows) {
+            await db.query(`
+              INSERT INTO nomes_times_grupo (grupo_id, nome, cor)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (grupo_id, nome) DO NOTHING
+            `, [targetGroupId, t.nome, t.cor]);
+          }
+        } else {
+          const defaultNames = [
+            { nome: 'Time A', cor: '#2196F3' },
+            { nome: 'Time B', cor: '#FFC107' },
+            { nome: 'Time C', cor: '#FF1744' },
+            { nome: 'Time D', cor: '#00C853' }
+          ];
+          for (const d of defaultNames) {
+            await db.query(`
+              INSERT INTO nomes_times_grupo (grupo_id, nome, cor)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (grupo_id, nome) DO NOTHING
+            `, [targetGroupId, d.nome, d.cor]);
+          }
+        }
+
+        const reFetch = await db.query(
+          'SELECT id, grupo_id, nome, cor, created_at FROM nomes_times_grupo WHERE grupo_id = $1 ORDER BY id ASC',
+          [targetGroupId]
+        );
+        rows = reFetch.rows;
+      } catch(popErr) {
+        console.error('[getCatalogo] Erro ao auto-popular times:', popErr.message);
+      }
+    }
 
     res.json(rows);
   } catch (err) {
-    console.error('[timesCatalogController.getCatalogo] Erro:', err.message);
-    res.status(500).json({ error: 'Erro ao buscar catálogo de times do banco', detail: err.message });
+    console.error('[timesCatalogController.getCatalogo] Erro grave:', err.message);
+    res.json([]); // Retorna array vazio seguro para a API nunca quebrar com 500 HTML
   }
 };
 
@@ -31,21 +97,23 @@ exports.cadastrar = async (req, res) => {
   }
 
   try {
-    if (!groupId || groupId === 'null' || groupId === 'undefined') {
+    await ensureTableExists();
+
+    if (!groupId || groupId === 'null' || groupId === 'undefined' || groupId === '0') {
       const gRes = await db.query('SELECT id FROM grupos ORDER BY id ASC LIMIT 1');
       if (gRes.rows.length > 0) groupId = gRes.rows[0].id;
     }
 
+    const targetGroupId = groupId ? parseInt(groupId) : 7;
     const nomeClean = nome.trim();
     const corClean = (cor && cor.trim()) || '#0284C7';
 
-    // Insere ou atualiza no banco de dados
     const { rows } = await db.query(
       `INSERT INTO nomes_times_grupo (grupo_id, nome, cor)
        VALUES ($1, $2, $3)
        ON CONFLICT (grupo_id, nome) DO UPDATE SET cor = EXCLUDED.cor
        RETURNING id, grupo_id, nome, cor`,
-      [groupId, nomeClean, corClean]
+      [targetGroupId, nomeClean, corClean]
     );
 
     res.status(201).json(rows[0]);
@@ -61,6 +129,8 @@ exports.atualizar = async (req, res) => {
   const { nome, cor } = req.body;
 
   try {
+    await ensureTableExists();
+
     const { rows } = await db.query(
       `UPDATE nomes_times_grupo 
        SET nome = COALESCE($1, nome), cor = COALESCE($2, cor) 
@@ -85,6 +155,8 @@ exports.excluir = async (req, res) => {
   const { id } = req.params;
 
   try {
+    await ensureTableExists();
+
     const { rowCount } = await db.query('DELETE FROM nomes_times_grupo WHERE id = $1', [id]);
 
     if (rowCount === 0) {

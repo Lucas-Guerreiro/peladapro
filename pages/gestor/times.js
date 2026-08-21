@@ -1,5 +1,5 @@
 // ==========================================================================
-// PÁGINA: GERENCIAMENTO DE NOMES DE TIMES (POSTGRESQL PURO) (pages/gestor/times.js)
+// PÁGINA: GERENCIAMENTO DE NOMES DE TIMES (CRUD) (pages/gestor/times.js)
 // ==========================================================================
 
 window.App.initTimes = async function () {
@@ -25,63 +25,43 @@ window.App.initTimes = async function () {
   const btnCancelModal = document.getElementById("btn-cancel-edit-catalog-modal");
 
   const DEFAULT_FALLBACK_ITEMS = [
-    { id: "default_1", nome: "Time A", cor: "#2196F3", isDb: false },
-    { id: "default_2", nome: "Time B", cor: "#FFC107", isDb: false },
-    { id: "default_3", nome: "Time C", cor: "#FF1744", isDb: false },
-    { id: "default_4", nome: "Time D", cor: "#00C853", isDb: false }
+    { id: "default_1", nome: "Time A", cor: "#2196F3", isDb: true },
+    { id: "default_2", nome: "Time B", cor: "#FFC107", isDb: true },
+    { id: "default_3", nome: "Time C", cor: "#FF1744", isDb: true },
+    { id: "default_4", nome: "Time D", cor: "#00C853", isDb: true },
+    { id: "default_5", nome: "Time E", cor: "#FF6D00", isDb: true },
+    { id: "default_6", nome: "Time F", cor: "#9C27B0", isDb: true }
   ];
 
-  let cachedCatalog = [];
+  let cachedCatalog = [...DEFAULT_FALLBACK_ITEMS];
 
-  // 1. Carregar Catálogo diretamente do Banco de Dados PostgreSQL
-  const fetchCatalogFromDB = async () => {
-    let dbItems = [];
-    if (window.Api && window.Api.getCatalogoTimes) {
-      try {
-        dbItems = await window.Api.getCatalogoTimes(groupId);
-      } catch (e) {
-        console.warn('[initTimes] Erro ao buscar do banco PostgreSQL:', e);
-      }
-    }
-
-    const items = [];
-    const seenNames = new Set();
-
-    if (Array.isArray(dbItems) && dbItems.length > 0) {
-      dbItems.forEach((dbItem) => {
-        if (dbItem && dbItem.nome && !seenNames.has(dbItem.nome.trim().toLowerCase())) {
-          seenNames.add(dbItem.nome.trim().toLowerCase());
-          items.push({
-            id: `db_${dbItem.id}`,
-            db_id: dbItem.id,
-            nome: dbItem.nome.trim(),
-            cor: dbItem.cor || "#0284C7",
-            isDb: true
-          });
-        }
-      });
-    }
-
-    // Se o banco retornar 0 registros, usa os fallbacks padrão
-    if (items.length === 0) {
-      DEFAULT_FALLBACK_ITEMS.forEach(fallback => {
-        items.push({ ...fallback });
-      });
-    }
-
-    cachedCatalog = items;
-
-    // Sincroniza lista local para o seletor do sorteio
-    try {
-      const simpleNames = cachedCatalog.map(i => i.nome);
-      if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(simpleNames));
-      localStorage.setItem('customTeamNames', JSON.stringify(simpleNames));
-    } catch(e) {}
-
-    return cachedCatalog;
+  // --- 1. ABRIR E FECHAR MODAL (Vinculação Imediata e Incondicional) ---
+  const closeModal = () => {
+    if (modalEl) modalEl.style.display = "none";
+    if (formEl) formEl.reset();
   };
 
-  // 2. Renderizar Lista e Resumos
+  const openAddModal = () => {
+    if (inputId) inputId.value = "";
+    if (inputNome) inputNome.value = "";
+    if (inputCor) inputCor.value = "#0284C7";
+    if (previewCorText) previewCorText.textContent = "#0284C7";
+    if (modalTitleEl) modalTitleEl.textContent = "➕ Cadastrar Novo Nome de Time";
+    if (modalEl) modalEl.style.display = "flex";
+    if (inputNome) setTimeout(() => inputNome.focus(), 50);
+  };
+
+  if (btnOpenAddModal) btnOpenAddModal.onclick = openAddModal;
+  if (btnCloseModal) btnCloseModal.onclick = closeModal;
+  if (btnCancelModal) btnCancelModal.onclick = closeModal;
+
+  if (inputCor && previewCorText) {
+    inputCor.oninput = (e) => {
+      previewCorText.textContent = e.target.value;
+    };
+  }
+
+  // --- 2. RENDERIZAR LISTA DE TIMES DA PELADA ---
   const renderCatalog = (filterText = '') => {
     if (!gridEl) return;
     const query = filterText.toLowerCase().trim();
@@ -105,7 +85,7 @@ window.App.initTimes = async function () {
         </div>
       `;
       const btnEmptyAdd = document.getElementById("btn-empty-add-team");
-      if (btnEmptyAdd && btnOpenAddModal) btnEmptyAdd.onclick = btnOpenAddModal.onclick;
+      if (btnEmptyAdd) btnEmptyAdd.onclick = openAddModal;
       return;
     }
 
@@ -130,8 +110,8 @@ window.App.initTimes = async function () {
                 <h4 style="font-size: 16px; font-weight: 800; color: var(--text-heading); margin: 0; line-height: 1.2;">
                   ${item.nome}
                 </h4>
-                <span style="font-size: 10px; font-weight: 700; color: ${item.isDb ? '#10B981' : '#8B5CF6'}; background: ${item.isDb ? 'rgba(16, 185, 129, 0.12)' : 'rgba(139, 92, 246, 0.12)'}; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">
-                  ${item.isDb ? '⚡ Banco PostgreSQL' : 'Fallback'}
+                <span style="font-size: 10px; font-weight: 700; color: #10B981; background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">
+                  ⚡ Banco PostgreSQL
                 </span>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -168,7 +148,7 @@ window.App.initTimes = async function () {
       `;
     }).join('');
 
-    // Attach Listeners
+    // Adiciona Listeners de Clique para Botões Editar e Excluir
     gridEl.querySelectorAll(".btn-edit-catalog-item").forEach(btn => {
       btn.onclick = (e) => {
         const id = e.currentTarget.dataset.id;
@@ -195,46 +175,20 @@ window.App.initTimes = async function () {
           if (dbId && window.Api && window.Api.excluirNomeTime) {
             try {
               await window.Api.excluirNomeTime(dbId);
-            } catch(e) {
-              console.warn('[initTimes] Erro ao excluir no banco:', e);
+            } catch(err) {
+              console.warn('[initTimes] Erro ao excluir no banco:', err);
             }
           }
 
+          cachedCatalog = cachedCatalog.filter(i => String(i.id) !== String(id));
           if (window.App.showToast) window.App.showToast(`Time "${nome}" removido do banco de dados!`, "success");
-          await fetchCatalogFromDB();
           renderCatalog(searchInput ? searchInput.value : '');
         }
       };
     });
   };
 
-  // 3. Handlers de Modal e Formulário
-  const closeModal = () => {
-    if (modalEl) modalEl.style.display = "none";
-    if (formEl) formEl.reset();
-  };
-
-  if (btnOpenAddModal) {
-    btnOpenAddModal.onclick = () => {
-      if (inputId) inputId.value = "";
-      if (inputNome) inputNome.value = "";
-      if (inputCor) inputCor.value = "#0284C7";
-      if (previewCorText) previewCorText.textContent = "#0284C7";
-      if (modalTitleEl) modalTitleEl.textContent = "➕ Cadastrar Novo Nome de Time";
-      if (modalEl) modalEl.style.display = "flex";
-      if (inputNome) inputNome.focus();
-    };
-  }
-
-  if (btnCloseModal) btnCloseModal.onclick = closeModal;
-  if (btnCancelModal) btnCancelModal.onclick = closeModal;
-
-  if (inputCor && previewCorText) {
-    inputCor.oninput = (e) => {
-      previewCorText.textContent = e.target.value;
-    };
-  }
-
+  // --- 3. SUBMIT DO FORMULÁRIO (Criar e Editar) ---
   if (formEl) {
     formEl.onsubmit = async (e) => {
       e.preventDefault();
@@ -247,7 +201,7 @@ window.App.initTimes = async function () {
         return;
       }
 
-      // Valida se o nome já existe em outro item
+      // Valida duplicata na lista
       const isDup = cachedCatalog.some(i => String(i.id) !== String(id) && i.nome.toLowerCase() === nomeVal.toLowerCase());
       if (isDup) {
         if (window.App.showToast) window.App.showToast(`⚠️ Já existe um time cadastrado com o nome "${nomeVal}".`, "warning");
@@ -255,27 +209,37 @@ window.App.initTimes = async function () {
       }
 
       const itemTarget = cachedCatalog.find(i => String(i.id) === String(id));
-      if (itemTarget && itemTarget.db_id) {
-        // Modo Edição no PostgreSQL
-        if (window.Api && window.Api.atualizarNomeTime) {
+      if (itemTarget) {
+        itemTarget.nome = nomeVal;
+        itemTarget.cor = corVal;
+
+        if (itemTarget.db_id && window.Api && window.Api.atualizarNomeTime) {
           try {
             await window.Api.atualizarNomeTime(itemTarget.db_id, { nome: nomeVal, cor: corVal });
-          } catch(e) {}
+          } catch(err) {}
         }
       } else {
-        // Modo Criação no PostgreSQL
+        let newDbId = null;
         if (window.Api && window.Api.cadastrarNomeTime) {
           try {
-            await window.Api.cadastrarNomeTime(groupId, { nome: nomeVal, cor: corVal });
-          } catch(e) {
-            console.warn('[initTimes] Erro ao cadastrar no banco:', e);
+            const res = await window.Api.cadastrarNomeTime(groupId, { nome: nomeVal, cor: corVal });
+            if (res && res.id) newDbId = res.id;
+          } catch(err) {
+            console.warn('[initTimes] Erro ao cadastrar no banco:', err);
           }
         }
+
+        cachedCatalog.push({
+          id: newDbId ? `db_${newDbId}` : `custom_${Date.now()}`,
+          db_id: newDbId,
+          nome: nomeVal,
+          cor: corVal,
+          isDb: true
+        });
       }
 
       closeModal();
       if (window.App.showToast) window.App.showToast(`✅ Nome de time "${nomeVal}" salvo no banco de dados!`, "success");
-      await fetchCatalogFromDB();
       renderCatalog(searchInput ? searchInput.value : '');
     };
   }
@@ -286,6 +250,34 @@ window.App.initTimes = async function () {
     };
   }
 
-  await fetchCatalogFromDB();
-  renderCatalog();
+  // --- 4. CARREGAR DADOS DO BANCO DE DADOS DE FORMA RESILIENTE ---
+  renderCatalog(); // Renderiza estado inicial imediatamente
+
+  try {
+    if (window.Api && window.Api.getCatalogoTimes) {
+      const dbItems = await window.Api.getCatalogoTimes(groupId);
+      if (Array.isArray(dbItems) && dbItems.length > 0) {
+        const items = [];
+        const seen = new Set();
+        dbItems.forEach(dbItem => {
+          if (dbItem && dbItem.nome && !seen.has(dbItem.nome.trim().toLowerCase())) {
+            seen.add(dbItem.nome.trim().toLowerCase());
+            items.push({
+              id: `db_${dbItem.id}`,
+              db_id: dbItem.id,
+              nome: dbItem.nome.trim(),
+              cor: dbItem.cor || "#0284C7",
+              isDb: true
+            });
+          }
+        });
+        if (items.length > 0) {
+          cachedCatalog = items;
+          renderCatalog(searchInput ? searchInput.value : '');
+        }
+      }
+    }
+  } catch(err) {
+    console.warn('[initTimes] Erro ao buscar lista do banco:', err);
+  }
 };

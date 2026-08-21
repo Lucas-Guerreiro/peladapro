@@ -1132,8 +1132,14 @@ const Api = {
       const res = await fetch(`/api/times-catalogo/grupo/${targetGroup}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      if (res.ok) return await res.json();
-      return [];
+      if (!res.ok) return [];
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        return Array.isArray(data) ? data : [];
+      } catch(parseErr) {
+        return [];
+      }
     } catch(e) {
       console.warn('[Api.getCatalogoTimes] Erro de rede:', e);
       return [];
@@ -1142,9 +1148,10 @@ const Api = {
 
   async cadastrarNomeTime(groupId, data) {
     const token = localStorage.getItem('token');
-    const targetGroup = groupId || (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null);
+    const activeGroup = (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null) || (window.App && window.App.currentGroup ? window.App.currentGroup.id : null);
+    const targetGroup = groupId || activeGroup || 7;
     try {
-      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup || 1}`, {
+      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1152,7 +1159,12 @@ const Api = {
         },
         body: JSON.stringify(data)
       });
-      return await res.json();
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        return { error: 'Resposta inválida do servidor' };
+      }
     } catch(e) {
       return { error: 'Erro de conexão ao salvar time' };
     }
@@ -1169,7 +1181,12 @@ const Api = {
         },
         body: JSON.stringify(data)
       });
-      return await res.json();
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        return { error: 'Resposta inválida do servidor' };
+      }
     } catch(e) {
       return { error: 'Erro de conexão ao atualizar time' };
     }
@@ -1182,7 +1199,12 @@ const Api = {
         method: 'DELETE',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      return await res.json();
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        return { error: 'Resposta inválida do servidor' };
+      }
     } catch(e) {
       return { error: 'Erro de conexão ao excluir time' };
     }
