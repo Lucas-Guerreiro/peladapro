@@ -79,7 +79,7 @@ window.App.initTimes = async function () {
     } catch(e) {}
   };
 
-  // 2. Renderizar Grid e Resumos
+  // 2. Renderizar Lista e Resumos
   const renderCatalog = (filterText = '') => {
     if (!gridEl) return;
     const catalog = getCatalog();
@@ -96,7 +96,7 @@ window.App.initTimes = async function () {
 
     if (filtered.length === 0) {
       gridEl.innerHTML = `
-        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px;">
+        <div class="card" style="text-align: center; padding: 40px 20px;">
           <div style="font-size: 40px; margin-bottom: 12px;">🔍</div>
           <h4 style="font-weight: 800; color: var(--text-heading); font-size: 16px; margin-bottom: 4px;">Nenhum time encontrado</h4>
           <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">Tente pesquisar por outro nome ou cadastre um novo time.</p>
@@ -118,41 +118,35 @@ window.App.initTimes = async function () {
       }
 
       return `
-        <div class="card" style="border-top: 4px solid ${itemCor}; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
-          <div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 36px; height: 38px; display: flex; align-items: center; justify-content: center;">
-                  ${emblemSvg}
-                </div>
-                <div>
-                  <h4 style="font-size: 16px; font-weight: 800; color: var(--text-heading); margin: 0; line-height: 1.2;">
-                    ${item.nome}
-                  </h4>
-                  <span style="font-size: 10px; font-weight: 700; color: ${item.isDefault ? '#8B5CF6' : '#10B981'}; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; margin-top: 2px;">
-                    ${item.isDefault ? '• Padrão do Sistema' : '• Customizado do Grupo'}
-                  </span>
-                </div>
-              </div>
+        <div class="card" style="padding: 14px 18px; border-left: 5px solid ${itemCor}; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <!-- Lado Esquerdo: Ícone/Emblema + Nome + Cor + Badge -->
+          <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 220px;">
+            <div style="width: 36px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+              ${emblemSvg}
             </div>
-
-            <!-- Preview da Cor -->
-            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-body, #F8FAFC); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);">
-              <span style="font-size: 11px; font-weight: 700; color: var(--text-caption);">Cor Principal:</span>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="width: 14px; height: 14px; border-radius: 50%; background: ${itemCor}; display: inline-block; border: 1px solid rgba(0,0,0,0.2);"></span>
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-heading);">${itemCor}</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--text-heading); margin: 0; line-height: 1.2;">
+                  ${item.nome}
+                </h4>
+                <span style="font-size: 10px; font-weight: 700; color: ${item.isDefault ? '#8B5CF6' : '#10B981'}; background: ${item.isDefault ? 'rgba(139, 92, 246, 0.12)' : 'rgba(16, 185, 129, 0.12)'}; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">
+                  ${item.isDefault ? 'Padrão' : 'Customizado'}
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${itemCor}; display: inline-block; border: 1px solid rgba(0,0,0,0.15);"></span>
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-caption);">${itemCor}</span>
               </div>
             </div>
           </div>
 
-          <!-- Ações do Card -->
-          <div style="display: flex; gap: 8px; border-top: 1px solid var(--border-color, #E2E8F0); padding-top: 10px;">
+          <!-- Lado Direito: Botões de Ação ao Lado -->
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
             <button 
               type="button" 
               class="btn btn-sm btn-outline btn-edit-catalog-item" 
               data-id="${item.id}"
-              style="flex: 1; font-weight: 700; font-size: 12px; border-color: #0284C7; color: #0284C7;"
+              style="font-weight: 700; font-size: 12px; border-color: #0284C7; color: #0284C7; padding: 6px 14px; border-width: 1.5px;"
             >
               ✏️ Editar
             </button>
@@ -163,10 +157,10 @@ window.App.initTimes = async function () {
                 class="btn btn-sm btn-danger btn-delete-catalog-item" 
                 data-id="${item.id}"
                 data-nome="${item.nome}"
-                style="font-weight: 700; font-size: 12px; padding: 6px 10px;"
+                style="font-weight: 700; font-size: 12px; padding: 6px 12px;"
                 title="Excluir do Catálogo"
               >
-                🗑️
+                🗑️ Excluir
               </button>
             ` : ''}
           </div>
