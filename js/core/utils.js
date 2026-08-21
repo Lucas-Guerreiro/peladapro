@@ -257,14 +257,17 @@ window.App.getTeamThemeGlobal = function (teamName) {
   return null;
 };
 
+// Flag de desativação temporária para testes futuros
+window.App.MODO_NOTURNO_DESATIVADO_TEMPORARIAMENTE = true;
+
 window.App.toggleModoNoturnoGlobal = function () {
-  if (window.App.isVipPlan && !window.App.isVipPlan()) {
+  if (window.App.MODO_NOTURNO_DESATIVADO_TEMPORARIAMENTE) {
     if (window.App && window.App.showToast) {
-      window.App.showToast('⭐ O Modo Noturno no estilo do seu time é exclusivo para membros VIP ou Premium!', 'warning');
+      window.App.showToast('ℹ️ O Modo Noturno está temporariamente desativado no momento.', 'info');
+    } else if (window.Utils && window.Utils.toast) {
+      window.Utils.toast('ℹ️ O Modo Noturno está temporariamente desativado no momento.', 'info');
     }
-    if (window.Dashboard && window.Dashboard.openModalPremium) {
-      window.Dashboard.openModalPremium();
-    }
+    localStorage.setItem('peladapro_modo_noturno', 'false');
     window.App.applyModoNoturnoGlobal(false);
     return;
   }
@@ -327,94 +330,51 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
   window.App._isApplyingModoNoturno = true;
 
   try {
-    if (window.App.isVipPlan && !window.App.isVipPlan()) {
+    if (window.App.MODO_NOTURNO_DESATIVADO_TEMPORARIAMENTE) {
+      isNight = false;
+      localStorage.setItem('peladapro_modo_noturno', 'false');
+    } else if (window.App.isVipPlan && !window.App.isVipPlan()) {
       isNight = false;
     } else if (isNight === undefined) {
       isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
     }
 
-    const user = window.Auth ? window.Auth.currentUser : null;
-    let teamName = user ? user.time_coracao : null;
-    if (!teamName) {
-      try {
-        const stored = JSON.parse(localStorage.getItem('currentUser'));
-        if (stored && stored.time_coracao) teamName = stored.time_coracao;
-      } catch (e) { }
-    }
-    const teamTheme = window.App.getTeamThemeGlobal(teamName);
-
     const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon');
     const labels = document.querySelectorAll('.lbl-modo-noturno-txt');
 
-    if (isNight) {
-      document.body.classList.add('modo-noturno-ativo');
-      labels.forEach(lbl => lbl.textContent = 'Modo Noturno (Ativo)');
-      buttons.forEach(btn => {
-        btn.style.setProperty('background', teamTheme ? (teamTheme.badgeBg || '#0F172A') : '#0F172A', 'important');
-        btn.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#1D9E75') : '#1D9E75', 'important');
-        btn.style.setProperty('color', '#FFFFFF', 'important');
-        btn.style.setProperty('box-shadow', '0 4px 12px rgba(0,0,0,0.3)', 'important');
-      });
+    document.body.classList.remove('modo-noturno-ativo');
+    document.documentElement.style.removeProperty('--bg-modo-noturno');
+    document.documentElement.style.removeProperty('--border-modo-noturno');
+    document.documentElement.style.removeProperty('--accent-modo-noturno');
+    document.documentElement.style.removeProperty('--badge-modo-noturno');
 
-      if (teamTheme) {
-        document.documentElement.style.setProperty('--bg-modo-noturno', teamTheme.gradient);
-        document.documentElement.style.setProperty('--border-modo-noturno', teamTheme.border);
-        document.documentElement.style.setProperty('--accent-modo-noturno', teamTheme.accent || '#F5D270');
-        document.documentElement.style.setProperty('--badge-modo-noturno', teamTheme.badgeBg || '#111111');
-      } else {
-        document.documentElement.style.setProperty('--bg-modo-noturno', 'linear-gradient(135deg, #0F172A 0%, #020617 100%)');
-        document.documentElement.style.setProperty('--border-modo-noturno', '#1D9E75');
-        document.documentElement.style.setProperty('--accent-modo-noturno', '#1D9E75');
-        document.documentElement.style.setProperty('--badge-modo-noturno', '#0F172A');
-      }
+    labels.forEach(lbl => lbl.textContent = 'Modo Noturno (Desativado)');
+    buttons.forEach(btn => {
+      btn.style.removeProperty('background');
+      btn.style.removeProperty('border-color');
+      btn.style.removeProperty('color');
+      btn.style.removeProperty('box-shadow');
+    });
 
-      const roleToggles = document.querySelectorAll('.role-toggle-switch');
-      const roleSliders = document.querySelectorAll('.role-toggle-slider');
+    const roleToggles = document.querySelectorAll('.role-toggle-switch');
+    const roleSliders = document.querySelectorAll('.role-toggle-slider');
 
-      roleToggles.forEach(toggle => {
-        toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
-        toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
-      });
+    roleToggles.forEach(toggle => {
+      toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
+      toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
+    });
 
-      roleSliders.forEach(slider => {
-        slider.style.setProperty('background', '#059669', 'important');
-        slider.style.setProperty('box-shadow', '0 2px 8px rgba(0,0,0,0.3)', 'important');
-      });
-    } else {
-      document.body.classList.remove('modo-noturno-ativo');
-      document.documentElement.style.removeProperty('--bg-modo-noturno');
-      document.documentElement.style.removeProperty('--border-modo-noturno');
-      document.documentElement.style.removeProperty('--accent-modo-noturno');
-      document.documentElement.style.removeProperty('--badge-modo-noturno');
+    roleSliders.forEach(slider => {
+      slider.style.setProperty('background', '#059669', 'important');
+      slider.style.removeProperty('box-shadow');
+    });
 
-      labels.forEach(lbl => lbl.textContent = 'Modo Noturno');
-      buttons.forEach(btn => {
-        btn.style.removeProperty('background');
-        btn.style.removeProperty('border-color');
-        btn.style.removeProperty('color');
-        btn.style.removeProperty('box-shadow');
-      });
-
-      const roleToggles = document.querySelectorAll('.role-toggle-switch');
-      const roleSliders = document.querySelectorAll('.role-toggle-slider');
-
-      roleToggles.forEach(toggle => {
-        toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
-        toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
-      });
-
-      roleSliders.forEach(slider => {
-        slider.style.setProperty('background', '#059669', 'important');
-        slider.style.removeProperty('box-shadow');
-      });
-
-      if (window.App && window.App.cleanInlineThemeStyles) {
-        window.App.cleanInlineThemeStyles();
-      }
+    if (window.App && window.App.cleanInlineThemeStyles) {
+      window.App.cleanInlineThemeStyles();
     }
 
     if (window.Dashboard && window.Dashboard.applyModoNoturno) {
-      window.Dashboard.applyModoNoturno(isNight);
+      window.Dashboard.applyModoNoturno(false);
     }
     if (window.App && window.App.applyAthleteTeamStyleToPartidasCards) {
       window.App.applyAthleteTeamStyleToPartidasCards();
