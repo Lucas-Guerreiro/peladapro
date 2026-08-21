@@ -1,5 +1,5 @@
 // ==========================================================================
-// PÁGINA: GERENCIAMENTO DE NOMES DE TIMES (CRUD) (pages/gestor/times.js)
+// PÁGINA: GERENCIAMENTO DE NOMES DE TIMES (CRUD & POSTGRES) (pages/gestor/times.js)
 // ==========================================================================
 
 window.App.initTimes = async function () {
@@ -8,7 +8,7 @@ window.App.initTimes = async function () {
   const catalogKey = groupId ? `customTeamCatalog_${groupId}` : 'customTeamCatalog';
   const selectedNamesKey = groupId ? `customTeamNames_${groupId}` : 'customTeamNames';
 
-  const gridEl = document.getElementById("manager-team-catalog-grid");
+  const gridEl = document.getElementById("manager-team-catalog-list") || document.getElementById("manager-team-catalog-grid");
   const summaryTotalEl = document.getElementById("summary-catalog-total");
   const summaryCustomEl = document.getElementById("summary-catalog-custom");
   const summaryDefaultEl = document.getElementById("summary-catalog-default");
@@ -26,7 +26,7 @@ window.App.initTimes = async function () {
   const btnCloseModal = document.getElementById("btn-close-edit-catalog-modal");
   const btnCancelModal = document.getElementById("btn-cancel-edit-catalog-modal");
 
-  // Catálogo Padrão Inicial
+  // Catálogo Padrão do Sistema
   const DEFAULT_ITEMS = [
     { id: "default_1", nome: "Time A", cor: "#2196F3", isDefault: true },
     { id: "default_2", nome: "Time B", cor: "#FFC107", isDefault: true },
@@ -36,59 +36,91 @@ window.App.initTimes = async function () {
     { id: "default_6", nome: "Time F", cor: "#9C27B0", isDefault: true }
   ];
 
-  // 1. Carregar Catálogo
-  const getCatalog = () => {
-    let raw = [];
-    try {
-      raw = JSON.parse(localStorage.getItem(catalogKey)) || JSON.parse(localStorage.getItem('customTeamCatalog')) || [];
-    } catch(e) {}
+  let cachedCatalog = [];
 
-    const catalog = [...DEFAULT_ITEMS];
+  // 1. Carregar Catálogo do Banco de Dados PostgreSQL (com fallback de localStorage)
+  const fetchCatalogFromDB = async () => {
+    let dbItems = [];
+    if (window.Api && window.Api.getCatalogoTimes) {
+      try {
+        dbItems = await window.Api.getCatalogoTimes(groupId);
+      } catch (e) {
+        console.warn('[initTimes] Falha ao carregar do banco:', e);
+      }
+    }
+
+    let localRaw = [];
+    try {
+      localRaw = JSON.parse(localStorage.getItem(catalogKey)) || JSON.parse(localStorage.getItem('customTeamCatalog')) || [];
+    } catch (e) { }
+
+    const combined = [...DEFAULT_ITEMS];
     const seenNames = new Set(DEFAULT_ITEMS.map(i => i.nome.toLowerCase()));
 
-    raw.forEach((item, idx) => {
-      let obj = typeof item === 'string' 
-        ? { id: `custom_${idx}_${Date.now()}`, nome: item.trim(), cor: "#0284C7", isDefault: false }
-        : item;
+    // Processa itens do Banco de Dados
+    if (Array.isArray(dbItems) && dbItems.length > 0) {
+      dbItems.forEach((dbItem) => {
+        if (dbItem && dbItem.nome && !seenNames.has(dbItem.nome.trim().toLowerCase())) {
+          seenNames.add(dbItem.nome.trim().toLowerCase());
+          combined.push({
+            id: `db_${dbItem.id}`,
+            db_id: dbItem.id,
+            nome: dbItem.nome.trim(),
+            cor: dbItem.cor || "#0284C7",
+            isDefault: false
+          });
+        }
+      });
+    }
 
-      if (obj && obj.nome && !seenNames.has(obj.nome.trim().toLowerCase())) {
-        seenNames.add(obj.nome.trim().toLowerCase());
-        catalog.push({
-          id: obj.id || `custom_${idx}_${Date.now()}`,
-          nome: obj.nome.trim(),
-          cor: obj.cor || "#0284C7",
-          isDefault: !!obj.isDefault
-        });
-      }
-    });
+    // Processa itens do localStorage
+    if (Array.isArray(localRaw)) {
+      localRaw.forEach((localItem, idx) => {
+        let obj = typeof localItem === 'string'
+          ? { id: `custom_${idx}_${Date.now()}`, nome: localItem.trim(), cor: "#0284C7", isDefault: false }
+          : localItem;
 
-    return catalog;
+        if (obj && obj.nome && !seenNames.has(obj.nome.trim().toLowerCase())) {
+          seenNames.add(obj.nome.trim().toLowerCase());
+          combined.push({
+            id: obj.id || `custom_${idx}_${Date.now()}`,
+            db_id: obj.db_id || null,
+            nome: obj.nome.trim(),
+            cor: obj.cor || "#0284C7",
+            isDefault: !!obj.isDefault
+          });
+        }
+      });
+    }
+
+    cachedCatalog = combined;
+    return cachedCatalog;
   };
 
-  const saveCustomCatalog = (catalog) => {
-    // Salva apenas os itens que não são os defaults estáticos
+  const saveCatalogState = async (catalog) => {
+    cachedCatalog = catalog;
+
+    // Atualiza o localStorage local
     const customItems = catalog.filter(i => !i.isDefault);
     try {
       if (groupId) localStorage.setItem(`customTeamCatalog_${groupId}`, JSON.stringify(customItems));
       localStorage.setItem('customTeamCatalog', JSON.stringify(customItems));
 
-      // Também atualiza lista simples de nomes para o sorteio
       const simpleNames = catalog.map(i => i.nome);
       if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(simpleNames));
       localStorage.setItem('customTeamNames', JSON.stringify(simpleNames));
-    } catch(e) {}
+    } catch (e) { }
   };
 
   // 2. Renderizar Lista e Resumos
   const renderCatalog = (filterText = '') => {
     if (!gridEl) return;
-    const catalog = getCatalog();
     const query = filterText.toLowerCase().trim();
 
-    const filtered = catalog.filter(item => item.nome.toLowerCase().includes(query));
-    const totalCount = catalog.length;
-    const customCount = catalog.filter(i => !i.isDefault).length;
-    const defaultCount = catalog.filter(i => i.isDefault).length;
+    const filtered = cachedCatalog.filter(item => item.nome.toLowerCase().includes(query));
+    const totalCount = cachedCatalog.length;
+    const customCount = cachedCatalog.filter(i => !i.isDefault).length;
+    const defaultCount = cachedCatalog.filter(i => i.isDefault).length;
 
     if (summaryTotalEl) summaryTotalEl.textContent = totalCount;
     if (summaryCustomEl) summaryCustomEl.textContent = customCount;
@@ -130,7 +162,7 @@ window.App.initTimes = async function () {
                   ${item.nome}
                 </h4>
                 <span style="font-size: 10px; font-weight: 700; color: ${item.isDefault ? '#8B5CF6' : '#10B981'}; background: ${item.isDefault ? 'rgba(139, 92, 246, 0.12)' : 'rgba(16, 185, 129, 0.12)'}; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">
-                  ${item.isDefault ? 'Padrão' : 'Customizado'}
+                  ${item.isDefault ? 'Padrão' : 'Cadastrado no Banco'}
                 </span>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -156,9 +188,10 @@ window.App.initTimes = async function () {
                 type="button" 
                 class="btn btn-sm btn-danger btn-delete-catalog-item" 
                 data-id="${item.id}"
+                data-db-id="${item.db_id || ''}"
                 data-nome="${item.nome}"
                 style="font-weight: 700; font-size: 12px; padding: 6px 12px;"
-                title="Excluir do Catálogo"
+                title="Excluir do Banco de Dados"
               >
                 🗑️ Excluir
               </button>
@@ -172,8 +205,7 @@ window.App.initTimes = async function () {
     gridEl.querySelectorAll(".btn-edit-catalog-item").forEach(btn => {
       btn.onclick = (e) => {
         const id = e.currentTarget.dataset.id;
-        const catalog = getCatalog();
-        const target = catalog.find(i => String(i.id) === String(id));
+        const target = cachedCatalog.find(i => String(i.id) === String(id));
         if (!target) return;
 
         if (inputId) inputId.value = target.id;
@@ -187,16 +219,25 @@ window.App.initTimes = async function () {
     });
 
     gridEl.querySelectorAll(".btn-delete-catalog-item").forEach(btn => {
-      btn.onclick = (e) => {
+      btn.onclick = async (e) => {
         const id = e.currentTarget.dataset.id;
+        const dbId = e.currentTarget.dataset.dbId;
         const nome = e.currentTarget.dataset.nome;
 
-        if (confirm(`Tem certeza que deseja excluir o nome "${nome}" do catálogo?`)) {
-          let catalog = getCatalog();
-          catalog = catalog.filter(i => String(i.id) !== String(id));
-          saveCustomCatalog(catalog);
+        if (confirm(`Tem certeza que deseja excluir o nome "${nome}" do banco de dados?`)) {
+          // Deleta no PostgreSQL se tiver db_id
+          if (dbId && window.Api && window.Api.excluirNomeTime) {
+            try {
+              await window.Api.excluirNomeTime(dbId);
+            } catch(e) {
+              console.warn('[initTimes] Erro ao excluir do banco:', e);
+            }
+          }
 
-          if (window.App.showToast) window.App.showToast(`Time "${nome}" removido do catálogo!`, "success");
+          cachedCatalog = cachedCatalog.filter(i => String(i.id) !== String(id));
+          saveCatalogState(cachedCatalog);
+
+          if (window.App.showToast) window.App.showToast(`Time "${nome}" removido do banco de dados!`, "success");
           renderCatalog(searchInput ? searchInput.value : '');
         }
       };
@@ -231,7 +272,7 @@ window.App.initTimes = async function () {
   }
 
   if (formEl) {
-    formEl.onsubmit = (e) => {
+    formEl.onsubmit = async (e) => {
       e.preventDefault();
       const id = inputId ? inputId.value : "";
       const nomeVal = inputNome ? (inputNome.value || "").trim() : "";
@@ -242,10 +283,8 @@ window.App.initTimes = async function () {
         return;
       }
 
-      let catalog = getCatalog();
-
       // Valida se o nome já existe em outro item
-      const isDup = catalog.some(i => String(i.id) !== String(id) && i.nome.toLowerCase() === nomeVal.toLowerCase());
+      const isDup = cachedCatalog.some(i => String(i.id) !== String(id) && i.nome.toLowerCase() === nomeVal.toLowerCase());
       if (isDup) {
         if (window.App.showToast) window.App.showToast(`⚠️ Já existe um time cadastrado com o nome "${nomeVal}".`, "warning");
         return;
@@ -253,24 +292,41 @@ window.App.initTimes = async function () {
 
       if (id) {
         // Modo Edição
-        const item = catalog.find(i => String(i.id) === String(id));
+        const item = cachedCatalog.find(i => String(i.id) === String(id));
         if (item) {
           item.nome = nomeVal;
           item.cor = corVal;
+
+          if (item.db_id && window.Api && window.Api.atualizarNomeTime) {
+            try {
+              await window.Api.atualizarNomeTime(item.db_id, { nome: nomeVal, cor: corVal });
+            } catch(e) {}
+          }
         }
       } else {
-        // Modo Criação
-        catalog.push({
-          id: `custom_${Date.now()}`,
+        // Modo Criação — Cadastra no PostgreSQL
+        let dbId = null;
+        if (window.Api && window.Api.cadastrarNomeTime) {
+          try {
+            const res = await window.Api.cadastrarNomeTime(groupId, { nome: nomeVal, cor: corVal });
+            if (res && res.id) dbId = res.id;
+          } catch(e) {
+            console.warn('[initTimes] Erro ao cadastrar no banco:', e);
+          }
+        }
+
+        cachedCatalog.push({
+          id: dbId ? `db_${dbId}` : `custom_${Date.now()}`,
+          db_id: dbId,
           nome: nomeVal,
           cor: corVal,
           isDefault: false
         });
       }
 
-      saveCustomCatalog(catalog);
+      saveCatalogState(cachedCatalog);
       closeModal();
-      if (window.App.showToast) window.App.showToast(`✅ Nome de time "${nomeVal}" salvo no catálogo!`, "success");
+      if (window.App.showToast) window.App.showToast(`✅ Nome de time "${nomeVal}" salvo no banco de dados!`, "success");
       renderCatalog(searchInput ? searchInput.value : '');
     };
   }
@@ -281,5 +337,6 @@ window.App.initTimes = async function () {
     };
   }
 
+  await fetchCatalogFromDB();
   renderCatalog();
 };

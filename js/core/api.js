@@ -1122,6 +1122,69 @@ const Api = {
     } catch(e) {
       return { error: 'Erro ao conectar ao servidor.' };
     }
+  },
+
+  async getCatalogoTimes(groupId) {
+    const token = localStorage.getItem('token');
+    const targetGroup = groupId || (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null);
+    try {
+      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup || 1}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (res.ok) return await res.json();
+      return [];
+    } catch(e) {
+      console.warn('[Api.getCatalogoTimes] Erro de rede:', e);
+      return [];
+    }
+  },
+
+  async cadastrarNomeTime(groupId, data) {
+    const token = localStorage.getItem('token');
+    const targetGroup = groupId || (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null);
+    try {
+      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup || 1}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro de conexão ao salvar time' };
+    }
+  },
+
+  async atualizarNomeTime(id, data) {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/times-catalogo/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro de conexão ao atualizar time' };
+    }
+  },
+
+  async excluirNomeTime(id) {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/times-catalogo/${id}`, {
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      return await res.json();
+    } catch(e) {
+      return { error: 'Erro de conexão ao excluir time' };
+    }
   }
 };
 
