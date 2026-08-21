@@ -1053,8 +1053,12 @@ var Acompanhamento = {
           var isCurrent = m.id === (liveMatch.tournamentMatchId) || (m.status === 'em_andamento');
           var isDone = m.status === 'encerrado';
 
+          var penTxt = (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined)
+            ? ' <small style="font-size:9px; opacity:0.9;">(' + m.penaltisA + 'x' + m.penaltisB + ' 🎯)</small>'
+            : '';
+
           var statusTag = isDone
-            ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5') + '; color:' + (isNight ? '#A7F3D0' : '#065F46') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid rgba(16, 185, 129, 0.4)' : 'none') + ';">✅ ' + m.golsA + ' x ' + m.golsB + '</span>'
+            ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5') + '; color:' + (isNight ? '#A7F3D0' : '#065F46') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid rgba(16, 185, 129, 0.4)' : 'none') + ';">✅ ' + m.golsA + ' x ' + m.golsB + penTxt + '</span>'
             : (isCurrent
               ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7') + '; color:' + (isNight ? '#FFFFFF' : '#B45309') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid #F59E0B' : '1px solid #FCD34D') + ';">⚽ EM ANDAMENTO</span>'
               : '<span style="font-size:10px; background:' + (isNight ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9') + '; color:' + (isNight ? '#E2E8F0' : '#64748B') + '; padding:2px 6px; border-radius:4px; font-weight:600; border:' + (isNight ? '1px solid rgba(255, 255, 255, 0.2)' : 'none') + ';">⏳ A JOGAR</span>');

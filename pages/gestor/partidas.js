@@ -1662,11 +1662,36 @@ async function handleFinishMatch() {
       const currentMatchId = window.App.liveMatch ? window.App.liveMatch.tournamentMatchId : null;
       let currentMatchObj = getTournamentActiveMatch(tState, currentMatchId);
 
+      const isKnockoutMatch = tState.fase === 'quartas' || tState.fase === 'mata_mata' || tState.fase === 'finais' ||
+        (currentMatchObj && (currentMatchObj.fase === 'quartas' || currentMatchObj.fase === 'semifinal' || currentMatchObj.fase === 'terceiro_lugar' || currentMatchObj.fase === 'final'));
+
+      if (isKnockoutMatch && scoreA === scoreB && currentMatchObj && currentMatchObj.status !== 'encerrado' && (currentMatchObj.penaltisA === undefined || currentMatchObj.penaltisA === null)) {
+        window.App.isFinishingMatch = false;
+        window.App.openModal('penaltis', {
+          teamA: teamAName,
+          teamB: teamBName,
+          scoreA: scoreA,
+          scoreB: scoreB,
+          onConfirm: (penA, penB, penWinner) => {
+            currentMatchObj.golsA = scoreA;
+            currentMatchObj.golsB = scoreB;
+            currentMatchObj.penaltisA = penA;
+            currentMatchObj.penaltisB = penB;
+            currentMatchObj.status = 'encerrado';
+            currentMatchObj.vencedor = penWinner;
+            finishMatch();
+          }
+        });
+        return;
+      }
+
       if (currentMatchObj && currentMatchObj.status !== 'encerrado') {
         currentMatchObj.golsA = scoreA;
         currentMatchObj.golsB = scoreB;
         currentMatchObj.status = 'encerrado';
-        currentMatchObj.vencedor = scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : currentMatchObj.teamA);
+        currentMatchObj.vencedor = (currentMatchObj.penaltisA !== undefined && currentMatchObj.penaltisA !== null)
+          ? (currentMatchObj.penaltisA > currentMatchObj.penaltisB ? teamAName : teamBName)
+          : (scoreA > scoreB ? teamAName : (scoreB > scoreA ? teamBName : currentMatchObj.teamA));
       }
 
       // 2. Recalcula classificação se estiver na fase de grupos ou torneio livre
@@ -2714,8 +2739,12 @@ function renderTournamentUI() {
         const isCurrent = m.id === (liveMatch.tournamentMatchId) || (m.status === 'em_andamento');
         const isDone = m.status === 'encerrado';
 
+        const penText = (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined)
+          ? ` <small style="font-size: 9px; opacity: 0.9;">(${m.penaltisA} x ${m.penaltisB} 🎯)</small>`
+          : '';
+
         const statusTag = isDone
-          ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5'}; color:${isTeamTheme ? '#A7F3D0' : '#065F46'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid rgba(16, 185, 129, 0.4)' : 'none'};">✅ ${m.golsA} x ${m.golsB}</span>`
+          ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5'}; color:${isTeamTheme ? '#A7F3D0' : '#065F46'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid rgba(16, 185, 129, 0.4)' : 'none'};">✅ ${m.golsA} x ${m.golsB}${penText}</span>`
           : (isCurrent
             ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7'}; color:${isTeamTheme ? '#FFFFFF' : '#B45309'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid #F59E0B' : '1px solid #FCD34D'};">⚽ EM ANDAMENTO</span>`
             : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9'}; color:${isTeamTheme ? '#E2E8F0' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};">⏳ A JOGAR</span>`);

@@ -498,7 +498,16 @@ window.TournamentEngine = {
     const numTeams = list.length;
     const sfMatches = [];
 
-    const getWinner = (m) => m ? (m.vencedor === m.teamA ? m.teamA : m.teamB) : null;
+    const getWinner = (m) => {
+      if (!m) return null;
+      if (m.vencedor) return m.vencedor;
+      if (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined) {
+        return m.penaltisA > m.penaltisB ? m.teamA : m.teamB;
+      }
+      if (m.golsA > m.golsB) return m.teamA;
+      if (m.golsB > m.golsA) return m.teamB;
+      return m.teamA;
+    };
 
     if (numTeams === 5 && qfMatches.length === 1) {
       const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF';
@@ -592,15 +601,31 @@ window.TournamentEngine = {
 
     const finalMatches = [];
 
+    const getWinner = (m) => {
+      if (!m) return null;
+      if (m.vencedor) return m.vencedor;
+      if (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined) {
+        return m.penaltisA > m.penaltisB ? m.teamA : m.teamB;
+      }
+      if (m.golsA > m.golsB) return m.teamA;
+      if (m.golsB > m.golsA) return m.teamB;
+      return m.teamA;
+    };
+    const getLoser = (m) => {
+      if (!m) return null;
+      const w = getWinner(m);
+      return w === m.teamA ? m.teamB : m.teamA;
+    };
+
     if (sfMatches.length === 2) {
       const sf1 = sfMatches[0];
       const sf2 = sfMatches[1];
 
-      const winnerSF1 = sf1.vencedor === sf1.teamA ? sf1.teamA : sf1.teamB;
-      const loserSF1  = sf1.vencedor === sf1.teamA ? sf1.teamB : sf1.teamA;
+      const winnerSF1 = getWinner(sf1);
+      const loserSF1  = getLoser(sf1);
 
-      const winnerSF2 = sf2.vencedor === sf2.teamA ? sf2.teamA : sf2.teamB;
-      const loserSF2  = sf2.vencedor === sf2.teamA ? sf2.teamB : sf2.teamA;
+      const winnerSF2 = getWinner(sf2);
+      const loserSF2  = getLoser(sf2);
 
       // Disputa de 3º lugar
       finalMatches.push({
