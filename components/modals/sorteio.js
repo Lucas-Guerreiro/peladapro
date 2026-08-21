@@ -277,6 +277,7 @@ function handleExecuteSorteio() {
 
   // Cópia genérica (fallback para outras telas): melhor esforço, NÃO bloqueia o sorteio se falhar
   try { localStorage.setItem("teams", JSON.stringify(teamsParaSalvar)); } catch (e) { }
+  window.App.teams = teamsParaSalvar;
 
   // Reset e alimentação da fila de espera global
   window.App.waitingQueue.length = 0;

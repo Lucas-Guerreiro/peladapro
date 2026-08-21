@@ -10,6 +10,17 @@ function getTeamsKey() {
 
 window.App.initFormacao = async function () {
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (peladaId && window.Api && window.Api.obterLiveState) {
+    try {
+      const res = await window.Api.obterLiveState(peladaId);
+      if (res && res.state && res.state.teams && Array.isArray(res.state.teams) && res.state.teams.length > 0) {
+        window.App.teams = res.state.teams;
+        const teamsKey = `teams_${peladaId}`;
+        localStorage.setItem(teamsKey, JSON.stringify(res.state.teams));
+        localStorage.setItem("teams", JSON.stringify(res.state.teams));
+      }
+    } catch(e) {}
+  }
   await renderManagerCheckin(peladaId);
   const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   const groupId = group ? group.id : null;
@@ -24,7 +35,8 @@ window.App.initFormacao = async function () {
       }
     }).catch(e => { });
   }
-  window.App.renderDrawnTeams();
+  await window.App.renderDrawnTeams();
+
   // Escutas
   const btnDraw = document.getElementById("btn-draw-teams");
   if (btnDraw) {
@@ -58,6 +70,8 @@ window.App.initFormacao = async function () {
         const teamsKey = getTeamsKey();
         localStorage.removeItem(teamsKey);
         localStorage.removeItem(`teams_${peladaId}`);
+        localStorage.removeItem("teams");
+        window.App.teams = [];
         // Salva estado vazio na nuvem
         if (window.Api && window.Api.atualizarLiveState) {
           await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, []);
@@ -79,10 +93,10 @@ window.App.initFormacao = async function () {
     btnOpenAddPresence.onclick = () => {
       const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
       if (!peladaId) {
-        window.App.showToast("Selecione uma pelada primeiro.", "warning");
+        window.App.showToast("Selecione uma data para adicionar presença.", "warning");
         return;
       }
-      window.App.openModal("adicionar_presenca", { peladaId: peladaId });
+      window.App.openModal("add_presence", { peladaId: peladaId });
     };
   }
   const btnExportExcel = document.getElementById("btn-export-presence-excel");
