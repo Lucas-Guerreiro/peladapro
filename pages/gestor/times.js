@@ -253,6 +253,12 @@ window.App.initTimes = async function () {
       const nomeVal = ((document.getElementById("edit-catalog-team-nome") || {}).value || "").trim();
       const corVal = (document.getElementById("edit-catalog-team-cor") || {}).value || "#0284C7";
 
+      // groupId resolvido no momento do submit (mais seguro)
+      const activeGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+      const activeGroupId = (activeGroup ? activeGroup.id : null) || groupId;
+
+      console.log('[initTimes] Submit — id:', id, '| nome:', nomeVal, '| groupId:', activeGroupId);
+
       if (!nomeVal) {
         if (window.App.showToast) window.App.showToast("Informe o nome do time!", "warning");
         return;
@@ -265,39 +271,82 @@ window.App.initTimes = async function () {
         return;
       }
 
+      // Botão de salvar: mostra loading
+      const btnSave = document.getElementById("btn-save-edit-catalog-team");
+      const originalBtnText = btnSave ? btnSave.textContent : '';
+      if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Salvando...'; }
+
       const itemTarget = cachedCatalog.find(i => String(i.id) === String(id));
+
       if (itemTarget) {
+        // EDITAR
         itemTarget.nome = nomeVal;
         itemTarget.cor = corVal;
 
         if (itemTarget.db_id && window.Api && window.Api.atualizarNomeTime) {
           try {
-            await window.Api.atualizarNomeTime(itemTarget.db_id, { nome: nomeVal, cor: corVal });
-          } catch(err) {}
-        }
-      } else {
-        let newDbId = null;
-        if (window.Api && window.Api.cadastrarNomeTime) {
-          try {
-            const res = await window.Api.cadastrarNomeTime(groupId, { nome: nomeVal, cor: corVal });
-            if (res && res.id) newDbId = res.id;
+            const res = await window.Api.atualizarNomeTime(itemTarget.db_id, { nome: nomeVal, cor: corVal });
+            console.log('[initTimes] Resultado atualizar:', res);
+            if (res && res.error) {
+              if (window.App.showToast) window.App.showToast(`❌ Erro ao salvar: ${res.error}`, "error");
+              if (btnSave) { btnSave.disabled = false; btnSave.textContent = originalBtnText; }
+              return;
+            }
           } catch(err) {
-            console.warn('[initTimes] Erro ao cadastrar no banco:', err);
+            console.error('[initTimes] Erro ao atualizar no banco:', err);
+            if (window.App.showToast) window.App.showToast(`❌ Falha de conexão ao atualizar: ${err.message}`, "error");
+            if (btnSave) { btnSave.disabled = false; btnSave.textContent = originalBtnText; }
+            return;
           }
         }
 
+        closeModal();
+        if (window.App.showToast) window.App.showToast(`✅ Nome "${nomeVal}" atualizado!`, "success");
+        renderCatalog(searchInput ? searchInput.value : '');
+
+      } else {
+        // CADASTRAR NOVO
+        let newDbId = null;
+        if (window.Api && window.Api.cadastrarNomeTime) {
+          try {
+            const res = await window.Api.cadastrarNomeTime(activeGroupId, { nome: nomeVal, cor: corVal });
+            console.log('[initTimes] Resultado cadastrar:', res);
+            if (res && res.error) {
+              if (window.App.showToast) window.App.showToast(`❌ Erro ao cadastrar: ${res.error}`, "error");
+              if (btnSave) { btnSave.disabled = false; btnSave.textContent = originalBtnText; }
+              return;
+            }
+            if (res && res.id) newDbId = res.id;
+          } catch(err) {
+            console.error('[initTimes] Erro ao cadastrar no banco:', err);
+            if (window.App.showToast) window.App.showToast(`❌ Falha de conexão: ${err.message}`, "error");
+            if (btnSave) { btnSave.disabled = false; btnSave.textContent = originalBtnText; }
+            return;
+          }
+        } else {
+          console.warn('[initTimes] window.Api.cadastrarNomeTime não encontrado!');
+        }
+
+        if (!newDbId) {
+          if (window.App.showToast) window.App.showToast(`❌ Não foi possível salvar no banco. Verifique o console.`, "error");
+          if (btnSave) { btnSave.disabled = false; btnSave.textContent = originalBtnText; }
+          return;
+        }
+
         cachedCatalog.push({
-          id: newDbId ? `db_${newDbId}` : `custom_${Date.now()}`,
+          id: `db_${newDbId}`,
           db_id: newDbId,
           nome: nomeVal,
           cor: corVal,
           isDb: true
         });
+
+        closeModal();
+        if (window.App.showToast) window.App.showToast(`✅ Time "${nomeVal}" cadastrado no banco!`, "success");
+        renderCatalog(searchInput ? searchInput.value : '');
       }
 
-      closeModal();
-      if (window.App.showToast) window.App.showToast(`✅ Nome de time "${nomeVal}" salvo no banco de dados!`, "success");
-      renderCatalog(searchInput ? searchInput.value : '');
+      if (btnSave) { btnSave.disabled = false; btnSave.textContent = originalBtnText; }
     };
   }
 
