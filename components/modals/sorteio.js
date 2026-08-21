@@ -9,8 +9,17 @@ window.App.initModalSorteio = function () {
   // Sincroniza o modo de torneio ativo da pelada com o seletor do modal
   const modalSelectModo = document.getElementById("modal-select-pelada-modo");
   const activePelada = window.App.activePelada || {};
-  if (modalSelectModo && activePelada.modo) {
-    modalSelectModo.value = activePelada.modo;
+  if (modalSelectModo) {
+    modalSelectModo.innerHTML = `
+      <option value="normal">Pelada Normal (Reina Campo)</option>
+      <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
+      <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
+      <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
+      <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
+    `;
+    if (activePelada.modo) {
+      modalSelectModo.value = activePelada.modo;
+    }
   }
 
   // Carrega nomes cadastrados de times no input do modal
