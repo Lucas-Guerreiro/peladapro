@@ -1,327 +1,291 @@
 // ==========================================================================
-// PÁGINA: GERENCIAMENTO DE TIMES (pages/gestor/times.js)
+// PÁGINA: GERENCIAMENTO DE NOMES DE TIMES (CRUD) (pages/gestor/times.js)
 // ==========================================================================
 
 window.App.initTimes = async function () {
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-  const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = currentGroup ? currentGroup.id : null;
+  const catalogKey = groupId ? `customTeamCatalog_${groupId}` : 'customTeamCatalog';
+  const selectedNamesKey = groupId ? `customTeamNames_${groupId}` : 'customTeamNames';
 
-  const gridEl = document.getElementById("manager-teams-grid");
-  const summaryTotalEl = document.getElementById("summary-teams-total");
-  const summaryAthletesEl = document.getElementById("summary-teams-athletes");
-  const summaryAvgEl = document.getElementById("summary-teams-avg");
+  const gridEl = document.getElementById("manager-team-catalog-grid");
+  const summaryTotalEl = document.getElementById("summary-catalog-total");
+  const summaryCustomEl = document.getElementById("summary-catalog-custom");
+  const summaryDefaultEl = document.getElementById("summary-catalog-default");
+  const searchInput = document.getElementById("team-catalog-search-input");
 
-  const btnAddTeam = document.getElementById("btn-add-new-team-page");
-  const btnSort = document.getElementById("btn-open-sorteio-from-times");
+  const modalEl = document.getElementById("modal-edit-catalog-team");
+  const modalTitleEl = document.getElementById("modal-catalog-title");
+  const formEl = document.getElementById("form-edit-catalog-team");
+  const inputId = document.getElementById("edit-catalog-team-id");
+  const inputNome = document.getElementById("edit-catalog-team-nome");
+  const inputCor = document.getElementById("edit-catalog-team-cor");
+  const previewCorText = document.getElementById("edit-catalog-color-preview-text");
 
-  if (btnSort) {
-    btnSort.onclick = () => window.App.openModal("sorteio");
-  }
+  const btnOpenAddModal = document.getElementById("btn-open-create-team-name-modal");
+  const btnCloseModal = document.getElementById("btn-close-edit-catalog-modal");
+  const btnCancelModal = document.getElementById("btn-cancel-edit-catalog-modal");
 
-  // 1. Carregar times locais com fallback resiliente
-  let teams = [];
-  try { teams = JSON.parse(localStorage.getItem(teamsKey)) || []; } catch (e) { }
-  if (!teams || teams.length === 0) {
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
-  }
-  if (!teams || teams.length === 0) {
-    teams = window.App.teams || [];
-  }
+  // Catálogo Padrão Inicial
+  const DEFAULT_ITEMS = [
+    { id: "default_1", nome: "Time A", cor: "#2196F3", isDefault: true },
+    { id: "default_2", nome: "Time B", cor: "#FFC107", isDefault: true },
+    { id: "default_3", nome: "Time C", cor: "#FF1744", isDefault: true },
+    { id: "default_4", nome: "Time D", cor: "#00C853", isDefault: true },
+    { id: "default_5", nome: "Time E", cor: "#FF6D00", isDefault: true },
+    { id: "default_6", nome: "Time F", cor: "#9C27B0", isDefault: true }
+  ];
 
-  // Se ainda não houver times e houver pelada ativa, busca no backend liveState
-  if ((!teams || teams.length === 0) && peladaId && window.Api && window.Api.obterLiveState) {
+  // 1. Carregar Catálogo
+  const getCatalog = () => {
+    let raw = [];
     try {
-      const serverState = await window.Api.obterLiveState(peladaId);
-      if (serverState && Array.isArray(serverState.teams) && serverState.teams.length > 0) {
-        teams = serverState.teams;
-        localStorage.setItem(teamsKey, JSON.stringify(teams));
-        localStorage.setItem("teams", JSON.stringify(teams));
+      raw = JSON.parse(localStorage.getItem(catalogKey)) || JSON.parse(localStorage.getItem('customTeamCatalog')) || [];
+    } catch(e) {}
+
+    const catalog = [...DEFAULT_ITEMS];
+    const seenNames = new Set(DEFAULT_ITEMS.map(i => i.nome.toLowerCase()));
+
+    raw.forEach((item, idx) => {
+      let obj = typeof item === 'string' 
+        ? { id: `custom_${idx}_${Date.now()}`, nome: item.trim(), cor: "#0284C7", isDefault: false }
+        : item;
+
+      if (obj && obj.nome && !seenNames.has(obj.nome.trim().toLowerCase())) {
+        seenNames.add(obj.nome.trim().toLowerCase());
+        catalog.push({
+          id: obj.id || `custom_${idx}_${Date.now()}`,
+          nome: obj.nome.trim(),
+          cor: obj.cor || "#0284C7",
+          isDefault: !!obj.isDefault
+        });
       }
-    } catch (e) {
-      console.warn("[Gerenciar Times] Erro ao carregar liveState do servidor:", e);
-    }
-  }
+    });
 
-  // 2. Renderizar Resumos
-  const totalTeams = teams.length;
-  let totalAthletes = 0;
-  teams.forEach(t => {
-    totalAthletes += Array.isArray(t.players) ? t.players.length : (Array.isArray(t.jogadores) ? t.jogadores.length : 0);
-  });
-  const avgAthletes = totalTeams > 0 ? (totalAthletes / totalTeams).toFixed(1) : "0";
-
-  if (summaryTotalEl) summaryTotalEl.textContent = totalTeams;
-  if (summaryAthletesEl) summaryAthletesEl.textContent = totalAthletes;
-  if (summaryAvgEl) summaryAvgEl.textContent = avgAthletes;
-
-  // Function to Save & Sync
-  const saveTeamsAndSync = (showToast = true, toastMsg = "Times atualizados!") => {
-    localStorage.setItem(teamsKey, JSON.stringify(teams));
-    localStorage.setItem("teams", JSON.stringify(teams));
-    window.App.teams = teams;
-
-    // Se houver activePelada e Api, sincroniza no servidor
-    if (peladaId && window.Api && window.Api.atualizarLiveState) {
-      window.Api.atualizarLiveState(peladaId, window.App.liveMatch || {}, window.App.waitingQueue || [], teams);
-    }
-
-    if (showToast && window.App.showToast) {
-      window.App.showToast(toastMsg, "success");
-    }
-    window.App.initTimes();
+    return catalog;
   };
 
-  // 3. Botão Criar Novo Time
-  if (btnAddTeam) {
-    btnAddTeam.onclick = () => {
-      const CORES_PALETA = ["#00E676", "#FFD600", "#FF1744", "#2979FF", "#AA00FF", "#00E5FF", "#FF9100", "#F50057"];
-      const novaCor = CORES_PALETA[teams.length % CORES_PALETA.length];
+  const saveCustomCatalog = (catalog) => {
+    // Salva apenas os itens que não são os defaults estáticos
+    const customItems = catalog.filter(i => !i.isDefault);
+    try {
+      if (groupId) localStorage.setItem(`customTeamCatalog_${groupId}`, JSON.stringify(customItems));
+      localStorage.setItem('customTeamCatalog', JSON.stringify(customItems));
 
-      // Garante nome estritamente único
-      const existingNames = new Set(teams.map(t => (t.nome || t.name || '').trim().toLowerCase()));
-      let idx = 0;
-      let nomePadrao = `Time ${String.fromCharCode(65 + idx)}`;
-      while (existingNames.has(nomePadrao.toLowerCase())) {
-        idx++;
-        nomePadrao = `Time ${String.fromCharCode(65 + idx)}`;
+      // Também atualiza lista simples de nomes para o sorteio
+      const simpleNames = catalog.map(i => i.nome);
+      if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(simpleNames));
+      localStorage.setItem('customTeamNames', JSON.stringify(simpleNames));
+    } catch(e) {}
+  };
+
+  // 2. Renderizar Grid e Resumos
+  const renderCatalog = (filterText = '') => {
+    if (!gridEl) return;
+    const catalog = getCatalog();
+    const query = filterText.toLowerCase().trim();
+
+    const filtered = catalog.filter(item => item.nome.toLowerCase().includes(query));
+    const totalCount = catalog.length;
+    const customCount = catalog.filter(i => !i.isDefault).length;
+    const defaultCount = catalog.filter(i => i.isDefault).length;
+
+    if (summaryTotalEl) summaryTotalEl.textContent = totalCount;
+    if (summaryCustomEl) summaryCustomEl.textContent = customCount;
+    if (summaryDefaultEl) summaryDefaultEl.textContent = defaultCount;
+
+    if (filtered.length === 0) {
+      gridEl.innerHTML = `
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px;">
+          <div style="font-size: 40px; margin-bottom: 12px;">🔍</div>
+          <h4 style="font-weight: 800; color: var(--text-heading); font-size: 16px; margin-bottom: 4px;">Nenhum time encontrado</h4>
+          <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">Tente pesquisar por outro nome ou cadastre um novo time.</p>
+          <button id="btn-empty-add-team" class="btn btn-primary" style="font-weight: 800;">➕ Cadastrar Nome</button>
+        </div>
+      `;
+      const btnEmptyAdd = document.getElementById("btn-empty-add-team");
+      if (btnEmptyAdd && btnOpenAddModal) btnEmptyAdd.onclick = btnOpenAddModal.onclick;
+      return;
+    }
+
+    gridEl.innerHTML = filtered.map(item => {
+      const itemCor = item.cor || "#0284C7";
+      let emblemSvg = '';
+      if (window.TeamEmblems) {
+        emblemSvg = window.TeamEmblems.forTeam({ nome: item.nome, cor: itemCor });
+      } else {
+        emblemSvg = `<div style="width: 36px; height: 36px; border-radius: 50%; background: ${itemCor}; color: #FFF; font-weight: 800; display: flex; align-items: center; justify-content: center;">${item.nome.charAt(0)}</div>`;
       }
 
-      const novoTime = {
-        id: Date.now(),
-        nome: nomePadrao,
-        cor: novaCor,
-        emblema: teams.length % 10,
-        players: []
-      };
+      return `
+        <div class="card" style="border-top: 4px solid ${itemCor}; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 36px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                  ${emblemSvg}
+                </div>
+                <div>
+                  <h4 style="font-size: 16px; font-weight: 800; color: var(--text-heading); margin: 0; line-height: 1.2;">
+                    ${item.nome}
+                  </h4>
+                  <span style="font-size: 10px; font-weight: 700; color: ${item.isDefault ? '#8B5CF6' : '#10B981'}; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; margin-top: 2px;">
+                    ${item.isDefault ? '• Padrão do Sistema' : '• Customizado do Grupo'}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-      teams.push(novoTime);
-      saveTeamsAndSync(true, `Time ${novoTime.nome} criado com sucesso!`);
+            <!-- Preview da Cor -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-body, #F8FAFC); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-caption);">Cor Principal:</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 14px; height: 14px; border-radius: 50%; background: ${itemCor}; display: inline-block; border: 1px solid rgba(0,0,0,0.2);"></span>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-heading);">${itemCor}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações do Card -->
+          <div style="display: flex; gap: 8px; border-top: 1px solid var(--border-color, #E2E8F0); padding-top: 10px;">
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline btn-edit-catalog-item" 
+              data-id="${item.id}"
+              style="flex: 1; font-weight: 700; font-size: 12px; border-color: #0284C7; color: #0284C7;"
+            >
+              ✏️ Editar
+            </button>
+            
+            ${!item.isDefault ? `
+              <button 
+                type="button" 
+                class="btn btn-sm btn-danger btn-delete-catalog-item" 
+                data-id="${item.id}"
+                data-nome="${item.nome}"
+                style="font-weight: 700; font-size: 12px; padding: 6px 10px;"
+                title="Excluir do Catálogo"
+              >
+                🗑️
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach Listeners
+    gridEl.querySelectorAll(".btn-edit-catalog-item").forEach(btn => {
+      btn.onclick = (e) => {
+        const id = e.currentTarget.dataset.id;
+        const catalog = getCatalog();
+        const target = catalog.find(i => String(i.id) === String(id));
+        if (!target) return;
+
+        if (inputId) inputId.value = target.id;
+        if (inputNome) inputNome.value = target.nome;
+        if (inputCor) inputCor.value = target.cor || "#0284C7";
+        if (previewCorText) previewCorText.textContent = target.cor || "#0284C7";
+        if (modalTitleEl) modalTitleEl.textContent = `✏️ Editar Nome de Time: ${target.nome}`;
+
+        if (modalEl) modalEl.style.display = "flex";
+      };
+    });
+
+    gridEl.querySelectorAll(".btn-delete-catalog-item").forEach(btn => {
+      btn.onclick = (e) => {
+        const id = e.currentTarget.dataset.id;
+        const nome = e.currentTarget.dataset.nome;
+
+        if (confirm(`Tem certeza que deseja excluir o nome "${nome}" do catálogo?`)) {
+          let catalog = getCatalog();
+          catalog = catalog.filter(i => String(i.id) !== String(id));
+          saveCustomCatalog(catalog);
+
+          if (window.App.showToast) window.App.showToast(`Time "${nome}" removido do catálogo!`, "success");
+          renderCatalog(searchInput ? searchInput.value : '');
+        }
+      };
+    });
+  };
+
+  // 3. Handlers de Modal e Formulário
+  const closeModal = () => {
+    if (modalEl) modalEl.style.display = "none";
+    if (formEl) formEl.reset();
+  };
+
+  if (btnOpenAddModal) {
+    btnOpenAddModal.onclick = () => {
+      if (inputId) inputId.value = "";
+      if (inputNome) inputNome.value = "";
+      if (inputCor) inputCor.value = "#0284C7";
+      if (previewCorText) previewCorText.textContent = "#0284C7";
+      if (modalTitleEl) modalTitleEl.textContent = "➕ Cadastrar Novo Nome de Time";
+      if (modalEl) modalEl.style.display = "flex";
+      if (inputNome) inputNome.focus();
     };
   }
 
-  // 4. Renderizar Cards de Times
-  if (!gridEl) return;
+  if (btnCloseModal) btnCloseModal.onclick = closeModal;
+  if (btnCancelModal) btnCancelModal.onclick = closeModal;
 
-  if (teams.length === 0) {
-    gridEl.innerHTML = `
-      <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px;">
-        <div style="font-size: 48px; margin-bottom: 12px;">🛡️</div>
-        <h4 style="font-weight: 800; color: var(--text-heading); font-size: 18px; margin-bottom: 8px;">Nenhum time cadastrado</h4>
-        <p style="font-size: 14px; color: var(--text-caption); margin-bottom: 20px; max-width: 420px; margin-left: auto; margin-right: auto;">
-          Realize o sorteio do elenco ou crie os times manualmente para iniciar as partidas da pelada.
-        </p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-          <button onclick="window.App.openModal('sorteio')" class="btn btn-primary" style="font-weight: 800;">⚡ Realizar Sorteio</button>
-          <button id="btn-create-first-team" class="btn btn-outline" style="font-weight: 700;">➕ Criar 1º Time</button>
-        </div>
-      </div>
-    `;
-    const btnFirst = document.getElementById("btn-create-first-team");
-    if (btnFirst && btnAddTeam) btnFirst.onclick = btnAddTeam.onclick;
-    return;
+  if (inputCor && previewCorText) {
+    inputCor.oninput = (e) => {
+      previewCorText.textContent = e.target.value;
+    };
   }
 
-  gridEl.innerHTML = teams.map((team, idx) => {
-    const playersList = Array.isArray(team.players) ? team.players : (Array.isArray(team.jogadores) ? team.jogadores : []);
-    const teamCor = team.cor || "#0284C7";
-    const teamNome = team.nome || team.name || `Time ${idx + 1}`;
+  if (formEl) {
+    formEl.onsubmit = (e) => {
+      e.preventDefault();
+      const id = inputId ? inputId.value : "";
+      const nomeVal = inputNome ? (inputNome.value || "").trim() : "";
+      const corVal = inputCor ? inputCor.value : "#0284C7";
 
-    let emblemSvg = '';
-    if (window.TeamEmblems) {
-      emblemSvg = window.TeamEmblems.forTeam(team);
-    } else {
-      emblemSvg = `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${teamCor}; color: #FFF; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px;">${teamNome.charAt(0)}</div>`;
-    }
-
-    return `
-      <div class="card" style="border-top: 5px solid ${teamCor}; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
-        <div>
-          <!-- Header do Time -->
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-              <div style="width: 40px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                ${emblemSvg}
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <label style="font-size: 10px; font-weight: 700; color: var(--text-caption); text-transform: uppercase; display: block; margin-bottom: 2px;">Nome do Time</label>
-                <input 
-                  type="text" 
-                  class="form-control team-name-input-field" 
-                  data-team-id="${team.id}"
-                  value="${teamNome}" 
-                  style="font-weight: 800; font-size: 15px; color: var(--text-heading); padding: 6px 10px; border-radius: 8px; width: 100%;"
-                >
-              </div>
-            </div>
-            
-            <button 
-              type="button" 
-              class="btn btn-sm btn-outline btn-change-emblem" 
-              data-team-id="${team.id}" 
-              data-emblem-idx="${team.emblema || idx}"
-              title="Alterar Emblema Oficial"
-              style="padding: 6px 8px; border-radius: 8px; border-color: #E2E8F0;"
-            >
-              🎨 Emblema
-            </button>
-          </div>
-
-          <!-- Seletor de Cor do Time -->
-          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-body, #F8FAFC); padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border-color, #E2E8F0);">
-            <span style="font-size: 12px; font-weight: 700; color: var(--text-caption);">Cor da Camisa / Card:</span>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="width: 14px; height: 14px; border-radius: 50%; background: ${teamCor}; display: inline-block; border: 1px solid rgba(0,0,0,0.2);"></span>
-              <input 
-                type="color" 
-                class="team-color-picker-input" 
-                data-team-id="${team.id}" 
-                value="${teamCor}" 
-                style="width: 32px; height: 28px; border: none; cursor: pointer; background: transparent;"
-              >
-            </div>
-          </div>
-
-          <!-- Elenco de Atletas -->
-          <div style="margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-size: 12px; font-weight: 800; color: var(--text-heading);">
-                👥 Atletas Escalados (${playersList.length})
-              </span>
-              <button 
-                type="button" 
-                class="btn-view-team-modal" 
-                data-team-id="${team.id}" 
-                style="background: none; border: none; font-size: 11px; font-weight: 700; color: #0284C7; cursor: pointer; padding: 0;"
-              >
-                Ver Detalhes ➔
-              </button>
-            </div>
-
-            ${playersList.length === 0 ? `
-              <div style="font-size: 12px; color: var(--text-caption); font-style: italic; background: #F1F5F9; padding: 10px; border-radius: 8px; text-align: center;">
-                Nenhum atleta escalado neste time ainda.
-              </div>
-            ` : `
-              <div style="display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; padding-right: 4px;">
-                ${playersList.map(p => `
-                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; background: var(--bg-body, #F8FAFC); padding: 6px 10px; border-radius: 6px;">
-                    <span style="font-weight: 600; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">
-                      ${p.nome || p.name || 'Atleta'} ${p.goleiro ? '🧤' : ''}
-                    </span>
-                    <span style="font-size: 10px; color: #F59E0B; font-weight: 700;">
-                      ${"★".repeat(parseInt(p.autoavaliacao) || 3)}
-                    </span>
-                  </div>
-                `).join('')}
-              </div>
-            `}
-          </div>
-        </div>
-
-        <!-- Ações do Card -->
-        <div style="display: flex; gap: 8px; border-top: 1px solid var(--border-color, #E2E8F0); padding-top: 12px; margin-top: 4px;">
-          <button 
-            type="button" 
-            class="btn btn-sm btn-outline btn-view-team-modal" 
-            data-team-id="${team.id}"
-            style="flex: 1; font-weight: 700; font-size: 12px; border-color: #0284C7; color: #0284C7;"
-          >
-            👁️ Ver Time
-          </button>
-          
-          ${teams.length > 2 ? `
-            <button 
-              type="button" 
-              class="btn btn-sm btn-danger btn-delete-team" 
-              data-team-id="${team.id}"
-              style="font-weight: 700; font-size: 12px; padding: 6px 12px;"
-              title="Excluir Time"
-            >
-              🗑️ Excluir
-            </button>
-          ` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // 5. Event Listeners dos Cards
-  gridEl.querySelectorAll(".team-name-input-field").forEach(input => {
-    input.onblur = (e) => {
-      const tId = e.target.dataset.teamId;
-      const targetTeam = teams.find(t => String(t.id) === String(tId));
-      const newName = (e.target.value || '').trim();
-
-      if (!targetTeam || !newName) return;
-      if (targetTeam.nome === newName) return;
-
-      // Valida unicidade de nome
-      const isDup = teams.some(t => String(t.id) !== String(tId) && (t.nome || t.name || '').trim().toLowerCase() === newName.toLowerCase());
-      if (isDup) {
-        if (window.App.showToast) window.App.showToast(`⚠️ Já existe um time chamado "${newName}". Nomes devem ser únicos!`, "warning");
-        e.target.value = targetTeam.nome;
+      if (!nomeVal) {
+        if (window.App.showToast) window.App.showToast("Informe o nome do time!", "warning");
         return;
       }
 
-      const oldName = targetTeam.nome;
-      targetTeam.nome = newName;
-      targetTeam.name = newName;
+      let catalog = getCatalog();
 
-      // Atualiza fila e liveMatch se necessário
-      if (window.App.waitingQueue && window.App.waitingQueue.includes(oldName)) {
-        window.App.waitingQueue[window.App.waitingQueue.indexOf(oldName)] = newName;
+      // Valida se o nome já existe em outro item
+      const isDup = catalog.some(i => String(i.id) !== String(id) && i.nome.toLowerCase() === nomeVal.toLowerCase());
+      if (isDup) {
+        if (window.App.showToast) window.App.showToast(`⚠️ Já existe um time cadastrado com o nome "${nomeVal}".`, "warning");
+        return;
       }
-      if (window.App.liveMatch && window.App.liveMatch.teamA === oldName) window.App.liveMatch.teamA = newName;
-      if (window.App.liveMatch && window.App.liveMatch.teamB === oldName) window.App.liveMatch.teamB = newName;
 
-      saveTeamsAndSync(true, `Time renomeado para ${newName}`);
-    };
-  });
-
-  gridEl.querySelectorAll(".team-color-picker-input").forEach(input => {
-    input.onchange = (e) => {
-      const tId = e.target.dataset.teamId;
-      const targetTeam = teams.find(t => String(t.id) === String(tId));
-      if (targetTeam) {
-        targetTeam.cor = e.target.value;
-        saveTeamsAndSync(true, `Cor do ${targetTeam.nome} atualizada!`);
-      }
-    };
-  });
-
-  gridEl.querySelectorAll(".btn-change-emblem").forEach(btn => {
-    btn.onclick = (e) => {
-      const tId = e.currentTarget.dataset.teamId;
-      const idx = e.currentTarget.dataset.emblemIdx;
-      if (typeof window.openEmblemSelector === 'function') {
-        window.openEmblemSelector(tId, parseInt(idx) || 0);
+      if (id) {
+        // Modo Edição
+        const item = catalog.find(i => String(i.id) === String(id));
+        if (item) {
+          item.nome = nomeVal;
+          item.cor = corVal;
+        }
       } else {
-        if (window.App.showToast) window.App.showToast("Seletor de emblemas indisponível no momento.", "warning");
+        // Modo Criação
+        catalog.push({
+          id: `custom_${Date.now()}`,
+          nome: nomeVal,
+          cor: corVal,
+          isDefault: false
+        });
       }
-    };
-  });
 
-  gridEl.querySelectorAll(".btn-view-team-modal").forEach(btn => {
-    btn.onclick = (e) => {
-      const tId = e.currentTarget.dataset.teamId;
-      const targetTeam = teams.find(t => String(t.id) === String(tId));
-      if (targetTeam) {
-        const playersList = Array.isArray(targetTeam.players) ? targetTeam.players : (Array.isArray(targetTeam.jogadores) ? targetTeam.jogadores : []);
-        window.App.openModal("ver_time", { teamName: targetTeam.nome, players: playersList });
-      }
+      saveCustomCatalog(catalog);
+      closeModal();
+      if (window.App.showToast) window.App.showToast(`✅ Nome de time "${nomeVal}" salvo no catálogo!`, "success");
+      renderCatalog(searchInput ? searchInput.value : '');
     };
-  });
+  }
 
-  gridEl.querySelectorAll(".btn-delete-team").forEach(btn => {
-    btn.onclick = (e) => {
-      const tId = e.currentTarget.dataset.teamId;
-      const targetTeam = teams.find(t => String(t.id) === String(tId));
-      if (!targetTeam) return;
-
-      if (confirm(`Tem certeza que deseja excluir o ${targetTeam.nome}?`)) {
-        teams = teams.filter(t => String(t.id) !== String(tId));
-        saveTeamsAndSync(true, `Time ${targetTeam.nome} removido!`);
-      }
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      renderCatalog(e.target.value);
     };
-  });
+  }
+
+  renderCatalog();
 };
