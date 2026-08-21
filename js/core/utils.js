@@ -371,6 +371,9 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
   if (window.Dashboard && window.Dashboard.applyModoNoturno) {
     window.Dashboard.applyModoNoturno(isNight);
   }
+  if (window.App && window.App.applyAthleteTeamStyleToPartidasCards) {
+    window.App.applyAthleteTeamStyleToPartidasCards();
+  }
   } finally {
     window.App._isApplyingModoNoturno = false;
   }

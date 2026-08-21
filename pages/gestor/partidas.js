@@ -612,6 +612,98 @@ function getMatchPhaseInfo(liveMatch, peladaAtiva) {
 }
 
 function applyAthleteTeamStyleToPartidasCards() {
+  const isNight = document.body.classList.contains('modo-noturno-ativo') || localStorage.getItem('peladapro_modo_noturno') === 'true';
+
+  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card, #gestor-recent-matches-card, .gestor-header-unified-card, .gestor-header-mobile-unified');
+
+  if (!isNight) {
+    // Quando o Modo Noturno está INATIVO, limpa os estilos inline de tema dos cards para usar o ESTILO GRÁTIS
+    cards.forEach(card => {
+      if (!card) return;
+      card.classList.remove('has-team-theme');
+      card.style.removeProperty('background');
+      card.style.removeProperty('border');
+      card.style.removeProperty('box-shadow');
+
+      const headers = card.querySelectorAll('h1, h2, h3, h4, h5, .card-title, .title');
+      headers.forEach(h => {
+        h.style.removeProperty('color');
+        h.style.removeProperty('text-shadow');
+      });
+
+      const subtitles = card.querySelectorAll('p, span, label, .sub, .text-muted, .text-slate');
+      subtitles.forEach(p => {
+        if (!p.classList.contains('badge') && !p.classList.contains('btn') && !p.id.includes('score') && !p.classList.contains('btn-adjust-score') && !p.classList.contains('gestor-badge-role')) {
+          p.style.removeProperty('color');
+        }
+      });
+    });
+
+    const webBody = document.querySelector('.gestor-web-body');
+    if (webBody) {
+      webBody.style.removeProperty('background');
+    }
+
+    const roleBadges = document.querySelectorAll('.gestor-badge-role');
+    roleBadges.forEach(b => {
+      b.style.removeProperty('background');
+      b.style.removeProperty('color');
+      b.style.removeProperty('border');
+    });
+
+    const logos = document.querySelectorAll('.gestor-logo-clear');
+    logos.forEach(l => {
+      l.style.removeProperty('color');
+    });
+
+    const userNames = document.querySelectorAll('.gestor-user-name-clear');
+    userNames.forEach(n => {
+      n.style.removeProperty('color');
+    });
+
+    const cardA = document.getElementById("acomp-team-a");
+    const cardB = document.getElementById("acomp-team-b");
+    if (cardA) {
+      cardA.style.removeProperty('background');
+      cardA.style.removeProperty('border');
+      cardA.style.removeProperty('border-radius');
+      cardA.style.removeProperty('padding');
+    }
+    if (cardB) {
+      cardB.style.removeProperty('background');
+      cardB.style.removeProperty('border');
+      cardB.style.removeProperty('border-radius');
+      cardB.style.removeProperty('padding');
+    }
+
+    const phaseBanner = document.getElementById("gestor-phase-header-banner");
+    const phaseTitle = document.getElementById("gestor-phase-header-title");
+    const phaseSub = document.getElementById("gestor-phase-header-sub");
+    if (phaseBanner) {
+      phaseBanner.style.removeProperty('background');
+      phaseBanner.style.removeProperty('border');
+      phaseBanner.style.removeProperty('backdrop-filter');
+      phaseBanner.style.removeProperty('box-shadow');
+    }
+    if (phaseTitle) {
+      phaseTitle.style.removeProperty('color');
+      phaseTitle.style.removeProperty('text-shadow');
+    }
+    if (phaseSub) {
+      phaseSub.style.removeProperty('color');
+      phaseSub.style.removeProperty('text-shadow');
+    }
+
+    const badgeEl = document.getElementById("match-live-status-badge");
+    if (badgeEl) {
+      badgeEl.style.removeProperty('background');
+      badgeEl.style.removeProperty('color');
+      badgeEl.style.removeProperty('border');
+      badgeEl.style.removeProperty('font-weight');
+    }
+    return;
+  }
+
   const user = (window.Auth && window.Auth.currentUser) || JSON.parse(localStorage.getItem('currentUser') || 'null');
   let teamName = user ? user.time_coracao : null;
   if (!teamName) {
@@ -654,7 +746,6 @@ function applyAthleteTeamStyleToPartidasCards() {
   if (!theme) return;
 
   // Aplica o tema visual do time em todos os cards da tela Partida ao Vivo e no Cabeçalho
-  const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card, #gestor-recent-matches-card, .gestor-header-unified-card, .gestor-header-mobile-unified');
   cards.forEach(card => {
     if (!card) return;
     card.classList.add('has-team-theme');
@@ -759,6 +850,8 @@ function applyAthleteTeamStyleToPartidasCards() {
     badgeEl.style.setProperty('font-weight', '600', 'important');
   }
 }
+window.App = window.App || {};
+window.App.applyAthleteTeamStyleToPartidasCards = applyAthleteTeamStyleToPartidasCards;
 
 function renderLiveMatchUI() {
   // Se a pelada ativa estiver finalizada, não renderiza o confronto ao vivo
