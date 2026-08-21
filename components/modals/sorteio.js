@@ -28,26 +28,12 @@ window.App.initModalSorteio = function () {
     modalSelectQtd.value = String(qtdAtual);
   }
 
-  // --- Lógica do Seletor e Cadastro de Nomes de Times ---
+  // --- Lógica do Seletor e Cadastro de Nomes de Times (INTEGRADO AO POSTGRESQL) ---
   const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   const groupId = currentGroup ? currentGroup.id : null;
-  const catalogKey = groupId ? `customTeamCatalog_${groupId}` : 'customTeamCatalog';
   const selectedNamesKey = groupId ? `customTeamNames_${groupId}` : 'customTeamNames';
 
-  const DEFAULT_CATALOG = [
-    "Time A", "Time B", "Time C", "Time D", "Time E", "Time F",
-    "Flamengo", "Vasco", "Corinthians", "Palmeiras", "São Paulo", "Santos",
-    "Real Madrid", "Barcelona", "Colete Verde", "Colete Amarelo", "Colete Azul", "Colete Vermelho"
-  ];
-
-  const getTeamCatalog = () => {
-    let savedCatalog = [];
-    try {
-      savedCatalog = JSON.parse(localStorage.getItem(catalogKey)) || JSON.parse(localStorage.getItem('customTeamCatalog')) || [];
-    } catch(e) {}
-    const catalogSet = new Set([...DEFAULT_CATALOG, ...savedCatalog]);
-    return Array.from(catalogSet);
-  };
+  let dbTeamCatalog = [];
 
   const getSavedSelectedNames = () => {
     try {
@@ -57,13 +43,40 @@ window.App.initModalSorteio = function () {
     }
   };
 
+  const getMergedCatalog = () => {
+    const list = [];
+    const seen = new Set();
+
+    // 1. Nomes do banco PostgreSQL
+    if (Array.isArray(dbTeamCatalog) && dbTeamCatalog.length > 0) {
+      dbTeamCatalog.forEach(item => {
+        const n = (typeof item === 'object' ? item.nome : item || '').trim();
+        if (n && !seen.has(n.toLowerCase())) {
+          seen.add(n.toLowerCase());
+          list.push(n);
+        }
+      });
+    }
+
+    // 2. Nomes padrões caso vazio
+    const DEFAULT_CATALOG = ["Time A", "Time B", "Time C", "Time D", "Time E", "Time F"];
+    DEFAULT_CATALOG.forEach(n => {
+      if (!seen.has(n.toLowerCase())) {
+        seen.add(n.toLowerCase());
+        list.push(n);
+      }
+    });
+
+    return list;
+  };
+
   const renderTeamSelects = () => {
     const listContainer = document.getElementById("sorteio-teams-select-list");
     const modalSelectQtd = document.getElementById("modal-select-qtd-times");
     if (!listContainer || !modalSelectQtd) return;
 
     const qtyTeams = parseInt(modalSelectQtd.value) || 4;
-    const catalog = getTeamCatalog();
+    const catalog = getMergedCatalog();
     const savedSelected = getSavedSelectedNames();
 
     let html = '';
@@ -92,31 +105,45 @@ window.App.initModalSorteio = function () {
 
   renderTeamSelects();
 
+  // Busca do banco assincronamente e atualiza selects
+  if (window.Api && window.Api.getCatalogoTimes) {
+    window.Api.getCatalogoTimes(groupId).then(dbItems => {
+      if (Array.isArray(dbItems) && dbItems.length > 0) {
+        dbTeamCatalog = dbItems;
+        renderTeamSelects();
+      }
+    }).catch(() => {});
+  }
+
   if (modalSelectQtd) {
     modalSelectQtd.onchange = renderTeamSelects;
   }
 
-  // Listener para Cadastrar Novo Nome de Time na Lista
+  // Listener para Cadastrar Novo Nome de Time na Lista E NO BANCO DE DADOS
   const btnAddName = document.getElementById("btn-add-registered-team-name");
   const inputNewName = document.getElementById("input-new-registered-team-name");
 
   if (btnAddName && inputNewName) {
-    const handleAddNewTeamName = () => {
+    const handleAddNewTeamName = async () => {
       const newName = (inputNewName.value || '').trim();
       if (!newName) return;
 
-      const catalog = getTeamCatalog();
-      if (!catalog.includes(newName)) {
-        catalog.push(newName);
-        try {
-          if (groupId) localStorage.setItem(`customTeamCatalog_${groupId}`, JSON.stringify(catalog));
-          localStorage.setItem('customTeamCatalog', JSON.stringify(catalog));
-        } catch(e) {}
+      const currentCatalog = getMergedCatalog();
+      if (!currentCatalog.some(n => n.toLowerCase() === newName.toLowerCase())) {
+        dbTeamCatalog.push({ nome: newName, cor: '#0284C7' });
+
+        // PERSISTE NO BANCO DE DADOS POSTGRESQL
+        if (window.Api && window.Api.cadastrarNomeTime) {
+          try {
+            await window.Api.cadastrarNomeTime(groupId, { nome: newName, cor: '#0284C7' });
+          } catch(e) {
+            console.warn('[ModalSorteio] Erro ao cadastrar no banco:', e);
+          }
+        }
       }
 
       const selectElements = document.querySelectorAll('.sorteio-team-name-select');
       const currentSelected = Array.from(selectElements).map(s => s.value);
-      // Preenche o novo nome no próximo elemento sem nome customizado
       if (currentSelected.length > 0) {
         currentSelected[currentSelected.length - 1] = newName;
       } else {
@@ -129,7 +156,7 @@ window.App.initModalSorteio = function () {
       } catch(e) {}
 
       inputNewName.value = '';
-      if (window.App.showToast) window.App.showToast(`✅ Novo nome "${newName}" cadastrado na lista!`, "success");
+      if (window.App.showToast) window.App.showToast(`✅ Nome "${newName}" salvo no banco de dados!`, "success");
       renderTeamSelects();
     };
 
