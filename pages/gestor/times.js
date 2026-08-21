@@ -11,18 +11,52 @@ window.App.initTimes = async function () {
   const summaryCustomEl = document.getElementById("summary-catalog-custom");
   const summaryDefaultEl = document.getElementById("summary-catalog-default");
   const searchInput = document.getElementById("team-catalog-search-input");
-
-  const modalEl = document.getElementById("modal-edit-catalog-team");
-  const modalTitleEl = document.getElementById("modal-catalog-title");
-  const formEl = document.getElementById("form-edit-catalog-team");
-  const inputId = document.getElementById("edit-catalog-team-id");
-  const inputNome = document.getElementById("edit-catalog-team-nome");
-  const inputCor = document.getElementById("edit-catalog-team-cor");
-  const previewCorText = document.getElementById("edit-catalog-color-preview-text");
-
   const btnOpenAddModal = document.getElementById("btn-open-create-team-name-modal");
-  const btnCloseModal = document.getElementById("btn-close-edit-catalog-modal");
-  const btnCancelModal = document.getElementById("btn-cancel-edit-catalog-modal");
+
+  // --- INJETA O MODAL NO BODY (para garantir posicionamento correto com position:fixed) ---
+  let modalEl = document.getElementById("modal-edit-catalog-team");
+  if (!modalEl) {
+    modalEl = document.createElement('div');
+    modalEl.id = "modal-edit-catalog-team";
+    modalEl.className = "modal-backdrop";
+    modalEl.innerHTML = `
+      <div class="modal-sheet" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3 id="modal-catalog-title" class="modal-title" style="font-size: 18px; font-weight: 800; color: #0F172A;">
+            ➕ Cadastrar Nome de Time
+          </h3>
+          <button class="modal-close-btn" id="btn-close-edit-catalog-modal">✕</button>
+        </div>
+        <form id="form-edit-catalog-team" onsubmit="return false;" style="padding: 16px 20px;">
+          <input type="hidden" id="edit-catalog-team-id">
+          <div style="margin-bottom: 16px;">
+            <label for="edit-catalog-team-nome" class="form-label" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">
+              Nome do Time <span style="color: #EF4444;">*</span>
+            </label>
+            <input type="text" id="edit-catalog-team-nome" class="form-control" placeholder="Ex: Flamengo, Colete Verde, Real Madrid..." required style="font-weight: 700; font-size: 14px;">
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label for="edit-catalog-team-cor" class="form-label" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">
+              Cor Principal do Time
+            </label>
+            <div style="display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+              <input type="color" id="edit-catalog-team-cor" value="#0284C7" style="width: 40px; height: 32px; border: none; cursor: pointer; background: transparent;">
+              <span id="edit-catalog-color-preview-text" style="font-size: 13px; font-weight: 700; color: #0F172A;">#0284C7</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 24px;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-edit-catalog-modal" style="flex: 1;">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-edit-catalog-team" style="flex: 1.5; font-weight: 800; background: linear-gradient(135deg, #0284C7, #0369A1); border: none;">
+              Salvar Nome 💾
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modalEl);
+  }
+
+  // Os elementos do modal são lidos dinamicamente após o appendChild (ver uso abaixo)
 
   const DEFAULT_FALLBACK_ITEMS = [
     { id: "default_1", nome: "Time A", cor: "#2196F3", isDb: true },
@@ -35,29 +69,46 @@ window.App.initTimes = async function () {
 
   let cachedCatalog = [...DEFAULT_FALLBACK_ITEMS];
 
-  // --- 1. ABRIR E FECHAR MODAL (Vinculação Imediata e Incondicional) ---
+  // --- 1. ABRIR E FECHAR MODAL ---
   const closeModal = () => {
-    if (modalEl) modalEl.style.display = "none";
-    if (formEl) formEl.reset();
+    if (modalEl) modalEl.classList.remove("active");
+    const fEl = document.getElementById("form-edit-catalog-team");
+    if (fEl) fEl.reset();
   };
 
   const openAddModal = () => {
-    if (inputId) inputId.value = "";
-    if (inputNome) inputNome.value = "";
-    if (inputCor) inputCor.value = "#0284C7";
-    if (previewCorText) previewCorText.textContent = "#0284C7";
-    if (modalTitleEl) modalTitleEl.textContent = "➕ Cadastrar Novo Nome de Time";
-    if (modalEl) modalEl.style.display = "flex";
-    if (inputNome) setTimeout(() => inputNome.focus(), 50);
+    const titleEl = document.getElementById("modal-catalog-title");
+    const idEl = document.getElementById("edit-catalog-team-id");
+    const nomeEl = document.getElementById("edit-catalog-team-nome");
+    const corEl = document.getElementById("edit-catalog-team-cor");
+    const corTextEl = document.getElementById("edit-catalog-color-preview-text");
+    if (idEl) idEl.value = "";
+    if (nomeEl) nomeEl.value = "";
+    if (corEl) corEl.value = "#0284C7";
+    if (corTextEl) corTextEl.textContent = "#0284C7";
+    if (titleEl) titleEl.textContent = "➕ Cadastrar Novo Nome de Time";
+    if (modalEl) modalEl.classList.add("active");
+    setTimeout(() => {
+      const focusEl = document.getElementById("edit-catalog-team-nome");
+      if (focusEl) focusEl.focus();
+    }, 50);
   };
 
   if (btnOpenAddModal) btnOpenAddModal.onclick = openAddModal;
+  if (modalEl) modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+
+  // Fecha pelo X e pelo Cancelar (vinculados após o modal estar no DOM)
+  const btnCloseModal = document.getElementById("btn-close-edit-catalog-modal");
+  const btnCancelModal = document.getElementById("btn-cancel-edit-catalog-modal");
   if (btnCloseModal) btnCloseModal.onclick = closeModal;
   if (btnCancelModal) btnCancelModal.onclick = closeModal;
 
-  if (inputCor && previewCorText) {
-    inputCor.oninput = (e) => {
-      previewCorText.textContent = e.target.value;
+  // Atualiza preview de cor ao selecionar
+  const inputCorEl = document.getElementById("edit-catalog-team-cor");
+  const previewCorTextEl = document.getElementById("edit-catalog-color-preview-text");
+  if (inputCorEl && previewCorTextEl) {
+    inputCorEl.oninput = (e) => {
+      previewCorTextEl.textContent = e.target.value;
     };
   }
 
@@ -155,13 +206,18 @@ window.App.initTimes = async function () {
         const target = cachedCatalog.find(i => String(i.id) === String(id));
         if (!target) return;
 
-        if (inputId) inputId.value = target.id;
-        if (inputNome) inputNome.value = target.nome;
-        if (inputCor) inputCor.value = target.cor || "#0284C7";
-        if (previewCorText) previewCorText.textContent = target.cor || "#0284C7";
-        if (modalTitleEl) modalTitleEl.textContent = `✏️ Editar Nome de Time: ${target.nome}`;
-
-        if (modalEl) modalEl.style.display = "flex";
+        const idEl = document.getElementById("edit-catalog-team-id");
+        const nomeEl = document.getElementById("edit-catalog-team-nome");
+        const corEl = document.getElementById("edit-catalog-team-cor");
+        const corTextEl = document.getElementById("edit-catalog-color-preview-text");
+        const titleEl = document.getElementById("modal-catalog-title");
+        if (idEl) idEl.value = target.id;
+        if (nomeEl) nomeEl.value = target.nome;
+        if (corEl) corEl.value = target.cor || "#0284C7";
+        if (corTextEl) corTextEl.textContent = target.cor || "#0284C7";
+        if (titleEl) titleEl.textContent = `✏️ Editar Nome de Time: ${target.nome}`;
+        if (modalEl) modalEl.classList.add("active");
+        setTimeout(() => { if (nomeEl) nomeEl.focus(); }, 50);
       };
     });
 
@@ -189,12 +245,13 @@ window.App.initTimes = async function () {
   };
 
   // --- 3. SUBMIT DO FORMULÁRIO (Criar e Editar) ---
-  if (formEl) {
-    formEl.onsubmit = async (e) => {
+  const formElRef = document.getElementById("form-edit-catalog-team");
+  if (formElRef) {
+    formElRef.onsubmit = async (e) => {
       e.preventDefault();
-      const id = inputId ? inputId.value : "";
-      const nomeVal = inputNome ? (inputNome.value || "").trim() : "";
-      const corVal = inputCor ? inputCor.value : "#0284C7";
+      const id = (document.getElementById("edit-catalog-team-id") || {}).value || "";
+      const nomeVal = ((document.getElementById("edit-catalog-team-nome") || {}).value || "").trim();
+      const corVal = (document.getElementById("edit-catalog-team-cor") || {}).value || "#0284C7";
 
       if (!nomeVal) {
         if (window.App.showToast) window.App.showToast("Informe o nome do time!", "warning");
