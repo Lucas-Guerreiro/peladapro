@@ -83,7 +83,7 @@ exports.getCatalogo = async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[timesCatalogController.getCatalogo] Erro grave:', err.message);
-    res.json([]); // Retorna array vazio seguro para a API nunca quebrar com 500 HTML
+    res.json([]);
   }
 };
 
@@ -108,6 +108,7 @@ exports.cadastrar = async (req, res) => {
     const nomeClean = nome.trim();
     const corClean = (cor && cor.trim()) || '#0284C7';
 
+    // 1. Grava no catálogo permanente do grupo (nomes_times_grupo)
     const { rows } = await db.query(
       `INSERT INTO nomes_times_grupo (grupo_id, nome, cor)
        VALUES ($1, $2, $3)
@@ -116,7 +117,28 @@ exports.cadastrar = async (req, res) => {
       [targetGroupId, nomeClean, corClean]
     );
 
-    res.status(201).json(rows[0]);
+    const savedCatalogItem = rows[0];
+
+    // 2. Replicar/sincronizar também nas tabelas times de todas as peladas do grupo
+    try {
+      const peladasRes = await db.query('SELECT id FROM peladas WHERE grupo_id = $1', [targetGroupId]);
+      for (const p of peladasRes.rows) {
+        const timeExists = await db.query(
+          'SELECT id FROM times WHERE pelada_id = $1 AND LOWER(TRIM(nome)) = LOWER(TRIM($2))',
+          [p.id, nomeClean]
+        );
+        if (timeExists.rows.length === 0) {
+          await db.query(
+            'INSERT INTO times (pelada_id, nome, cor) VALUES ($1, $2, $3)',
+            [p.id, nomeClean, corClean]
+          );
+        }
+      }
+    } catch(syncErr) {
+      console.warn('[timesCatalogController.cadastrar] Aviso ao sincronizar com tabela times:', syncErr.message);
+    }
+
+    res.status(201).json(savedCatalogItem);
   } catch (err) {
     console.error('[timesCatalogController.cadastrar] Erro:', err.message);
     res.status(500).json({ error: 'Erro ao cadastrar time no banco de dados', detail: err.message });
@@ -143,7 +165,21 @@ exports.atualizar = async (req, res) => {
       return res.status(404).json({ error: 'Time não encontrado no banco de dados' });
     }
 
-    res.json(rows[0]);
+    const updatedItem = rows[0];
+
+    // Atualiza também nas tabelas times vinculadas ao grupo
+    if (updatedItem.grupo_id && updatedItem.nome) {
+      try {
+        await db.query(`
+          UPDATE times 
+          SET cor = COALESCE($1, cor)
+          WHERE pelada_id IN (SELECT id FROM peladas WHERE grupo_id = $2)
+            AND LOWER(TRIM(nome)) = LOWER(TRIM($3))
+        `, [updatedItem.cor, updatedItem.grupo_id, updatedItem.nome]);
+      } catch(e) {}
+    }
+
+    res.json(updatedItem);
   } catch (err) {
     console.error('[timesCatalogController.atualizar] Erro:', err.message);
     res.status(500).json({ error: 'Erro ao atualizar time no banco de dados', detail: err.message });
@@ -157,10 +193,25 @@ exports.excluir = async (req, res) => {
   try {
     await ensureTableExists();
 
+    const itemRes = await db.query('SELECT nome, grupo_id FROM nomes_times_grupo WHERE id = $1', [id]);
+    const item = itemRes.rows[0];
+
     const { rowCount } = await db.query('DELETE FROM nomes_times_grupo WHERE id = $1', [id]);
 
     if (rowCount === 0) {
       return res.status(404).json({ error: 'Time não encontrado para exclusão' });
+    }
+
+    // Opcional: remove da tabela times se não houver partidas vinculadas
+    if (item && item.grupo_id && item.nome) {
+      try {
+        await db.query(`
+          DELETE FROM times 
+          WHERE pelada_id IN (SELECT id FROM peladas WHERE grupo_id = $1)
+            AND LOWER(TRIM(nome)) = LOWER(TRIM($2))
+            AND id NOT IN (SELECT time_1_id FROM partidas WHERE time_1_id IS NOT NULL UNION SELECT time_2_id FROM partidas WHERE time_2_id IS NOT NULL)
+        `, [item.grupo_id, item.nome]);
+      } catch(e) {}
     }
 
     res.json({ message: 'Time removido com sucesso do banco de dados' });
