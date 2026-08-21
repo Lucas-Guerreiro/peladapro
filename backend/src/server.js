@@ -14,6 +14,7 @@ const localRoutes = require('./routes/locais');
 const partidaRoutes = require('./routes/partidas');
 const vendasRoutes = require('./routes/vendas');
 const pixRoutes = require('./routes/pix');
+const pushRoutes = require('./routes/push');
 const timesCatalogRoutes = require('./routes/timesCatalogRoutes');
 
 const app = express();
