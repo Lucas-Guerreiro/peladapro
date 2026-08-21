@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v202'; // ← Seletor explícito de quantidade de equipes no modal de sorteio
+const CACHE_NAME = 'peladapro-v203'; // ← Preservação integral dos nomes exatos dos 4 times na tabela e nos confrontos do torneio
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

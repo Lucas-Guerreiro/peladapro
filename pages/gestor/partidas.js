@@ -2456,25 +2456,10 @@ function renderTournamentUI() {
   const drawnTeams = window.App.teams || [];
   
   const resolveOfficialTeamName = (nameStr) => {
-    if (!nameStr) return nameStr;
-    const str = String(nameStr).trim();
-    const low = str.toLowerCase();
-
-    if (low === "azul" || low === "time azul" || low === "time a" || low === "time 1" || low === "team 1") {
-      return (drawnTeams[0] && (drawnTeams[0].nome || drawnTeams[0].name)) || "Time A";
+    if (window.App && window.App.resolveOfficialTeamName) {
+      return window.App.resolveOfficialTeamName(nameStr, drawnTeams);
     }
-    if (low === "preto" || low === "time preto" || low === "time b" || low === "time 2" || low === "team 2") {
-      return (drawnTeams[1] && (drawnTeams[1].nome || drawnTeams[1].name)) || "Time B";
-    }
-    if (low === "vermelho" || low === "time vermelho" || low === "time c" || low === "time 3" || low === "team 3") {
-      return (drawnTeams[2] && (drawnTeams[2].nome || drawnTeams[2].name)) || "Time C";
-    }
-    if (low === "branco" || low === "time branco" || low === "time d" || low === "time 4" || low === "team 4") {
-      return (drawnTeams[3] && (drawnTeams[3].nome || drawnTeams[3].name)) || "Time D";
-    }
-
-    const found = drawnTeams.find(t => (t.nome || t.name || '').trim().toLowerCase() === low);
-    return found ? (found.nome || found.name) : str;
+    return nameStr;
   };
   
   // Se existirem times sorteados e tState tiver número diferente de times, sincroniza/recalcula tState com TODOS OS TIMES!

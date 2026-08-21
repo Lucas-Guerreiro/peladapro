@@ -14,26 +14,15 @@ window.TournamentEngine = {
   generateGroupSchedule(teams, turno = 'ida') {
     if (!Array.isArray(teams) || teams.length < 2) return [];
 
-    const mapColorToTeamLetter = (nameStr) => {
-      if (!nameStr) return nameStr;
-      const low = String(nameStr).trim().toLowerCase();
-      if (low === "azul" || low === "time azul") return "Time A";
-      if (low === "branco" || low === "time branco") return "Time B";
-      if (low === "preto" || low === "time preto") return "Time C";
-      if (low === "laranja" || low === "time laranja") return "Time D";
-      return nameStr;
-    };
-
     const matches = [];
     const teamList = teams.map((t, idx) => {
-      const rawName = t.nome || t.name || `Time ${idx + 1}`;
-      const finalName = mapColorToTeamLetter(rawName);
+      const name = (t && (t.nome || t.name)) ? String(t.nome || t.name).trim() : `Time ${String.fromCharCode(65 + idx)}`;
       return {
-        id: t.id || `t_${idx + 1}`,
-        nome: finalName,
-        emblema: t.emblema || t.emblema_url || null,
-        cor: t.cor || null,
-        players: t.players || t.jogadores || []
+        id: (t && t.id) || `t_${idx + 1}`,
+        nome: name,
+        emblema: (t && (t.emblema || t.emblema_url)) || null,
+        cor: (t && t.cor) || null,
+        players: (t && (t.players || t.jogadores)) || []
       };
     });
 
