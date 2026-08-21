@@ -2259,11 +2259,6 @@ async function carregarLiveStateDaPelada(peladaId) {
 
   const sanitizeTeamName = (nameStr, idx) => {
     if (!nameStr) return `Time ${String.fromCharCode(65 + (idx || 0))}`;
-    const low = String(nameStr).trim().toLowerCase();
-    if (low === "azul" || low === "time azul") return "Time A";
-    if (low === "preto" || low === "time preto") return "Time B";
-    if (low === "vermelho" || low === "time vermelho") return "Time C";
-    if (low === "branco" || low === "time branco") return "Time D";
     return nameStr;
   };
 
@@ -2863,13 +2858,11 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
 
   if (!drawnTeams || drawnTeams.length < 2 || !window.TournamentEngine) return;
 
-  // Substitui estritamente se for nome de cor pura antiga (Azul, Branco, Preto, Laranja) sem sobrescrever os nomes do sorteio
   drawnTeams.forEach((t, idx) => {
-    const raw = (t.nome || t.name || '').trim().toLowerCase();
-    if (raw === "azul" || raw === "time azul") { t.nome = "Time A"; t.name = "Time A"; }
-    else if (raw === "preto" || raw === "time preto") { t.nome = "Time B"; t.name = "Time B"; }
-    else if (raw === "vermelho" || raw === "time vermelho") { t.nome = "Time C"; t.name = "Time C"; }
-    else if (raw === "branco" || raw === "time branco") { t.nome = "Time D"; t.name = "Time D"; }
+    if (!t.nome && !t.name) {
+      t.nome = `Time ${String.fromCharCode(65 + idx)}`;
+      t.name = t.nome;
+    }
   });
 
   window.App.teams = drawnTeams;
@@ -2880,10 +2873,6 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
     if (!nameStr) return nameStr;
     const str = String(nameStr).trim();
     const low = str.toLowerCase();
-    if (low === "azul" || low === "time azul" || low === "time a" || low === "time 1" || low === "team 1") return "Time A";
-    if (low === "preto" || low === "time preto" || low === "time b" || low === "time 2" || low === "team 2") return "Time B";
-    if (low === "vermelho" || low === "time vermelho" || low === "time c" || low === "time 3" || low === "team 3") return "Time C";
-    if (low === "branco" || low === "time branco" || low === "time d" || low === "time 4" || low === "team 4") return "Time D";
     const found = drawnTeams.find(t => (t.nome || t.name || '').trim().toLowerCase() === low);
     return found ? (found.nome || found.name) : str;
   };
