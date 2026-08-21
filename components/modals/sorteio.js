@@ -28,16 +28,118 @@ window.App.initModalSorteio = function () {
     modalSelectQtd.value = String(qtdAtual);
   }
 
-  // Carrega nomes cadastrados de times no input do modal
-  const inputNomes = document.getElementById("input-sorteio-custom-team-names");
-  if (inputNomes) {
-    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-    const groupId = currentGroup ? currentGroup.id : null;
-    let customNames = [];
+  // --- Lógica do Seletor e Cadastro de Nomes de Times ---
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = currentGroup ? currentGroup.id : null;
+  const catalogKey = groupId ? `customTeamCatalog_${groupId}` : 'customTeamCatalog';
+  const selectedNamesKey = groupId ? `customTeamNames_${groupId}` : 'customTeamNames';
+
+  const DEFAULT_CATALOG = [
+    "Time A", "Time B", "Time C", "Time D", "Time E", "Time F",
+    "Flamengo", "Vasco", "Corinthians", "Palmeiras", "São Paulo", "Santos",
+    "Real Madrid", "Barcelona", "Colete Verde", "Colete Amarelo", "Colete Azul", "Colete Vermelho"
+  ];
+
+  const getTeamCatalog = () => {
+    let savedCatalog = [];
     try {
-      customNames = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+      savedCatalog = JSON.parse(localStorage.getItem(catalogKey)) || JSON.parse(localStorage.getItem('customTeamCatalog')) || [];
     } catch(e) {}
-    inputNomes.value = Array.isArray(customNames) ? customNames.join(', ') : '';
+    const catalogSet = new Set([...DEFAULT_CATALOG, ...savedCatalog]);
+    return Array.from(catalogSet);
+  };
+
+  const getSavedSelectedNames = () => {
+    try {
+      return JSON.parse(localStorage.getItem(selectedNamesKey)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+    } catch(e) {
+      return [];
+    }
+  };
+
+  const renderTeamSelects = () => {
+    const listContainer = document.getElementById("sorteio-teams-select-list");
+    const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+    if (!listContainer || !modalSelectQtd) return;
+
+    const qtyTeams = parseInt(modalSelectQtd.value) || 4;
+    const catalog = getTeamCatalog();
+    const savedSelected = getSavedSelectedNames();
+
+    let html = '';
+    for (let i = 0; i < qtyTeams; i++) {
+      const defaultVal = savedSelected[i] || catalog[i] || `Time ${String.fromCharCode(65 + i)}`;
+      if (!catalog.includes(defaultVal)) {
+        catalog.push(defaultVal);
+      }
+
+      const optionsHtml = catalog.map(name => {
+        const isSelected = name === defaultVal ? 'selected' : '';
+        return `<option value="${name}" ${isSelected}>${name}</option>`;
+      }).join('');
+
+      html += `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 12px; font-weight: 700; color: #334155; min-width: 65px;">Equipe ${i + 1}:</span>
+          <select class="form-control sorteio-team-name-select" data-team-index="${i}" style="font-size: 13px; font-weight: 700; height: 36px; color: #0F172A; background: #FFFFFF; border-radius: 8px;">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }
+    listContainer.innerHTML = html;
+  };
+
+  renderTeamSelects();
+
+  if (modalSelectQtd) {
+    modalSelectQtd.onchange = renderTeamSelects;
+  }
+
+  // Listener para Cadastrar Novo Nome de Time na Lista
+  const btnAddName = document.getElementById("btn-add-registered-team-name");
+  const inputNewName = document.getElementById("input-new-registered-team-name");
+
+  if (btnAddName && inputNewName) {
+    const handleAddNewTeamName = () => {
+      const newName = (inputNewName.value || '').trim();
+      if (!newName) return;
+
+      const catalog = getTeamCatalog();
+      if (!catalog.includes(newName)) {
+        catalog.push(newName);
+        try {
+          if (groupId) localStorage.setItem(`customTeamCatalog_${groupId}`, JSON.stringify(catalog));
+          localStorage.setItem('customTeamCatalog', JSON.stringify(catalog));
+        } catch(e) {}
+      }
+
+      const selectElements = document.querySelectorAll('.sorteio-team-name-select');
+      const currentSelected = Array.from(selectElements).map(s => s.value);
+      // Preenche o novo nome no próximo elemento sem nome customizado
+      if (currentSelected.length > 0) {
+        currentSelected[currentSelected.length - 1] = newName;
+      } else {
+        currentSelected.push(newName);
+      }
+
+      try {
+        if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(currentSelected));
+        localStorage.setItem('customTeamNames', JSON.stringify(currentSelected));
+      } catch(e) {}
+
+      inputNewName.value = '';
+      if (window.App.showToast) window.App.showToast(`✅ Novo nome "${newName}" cadastrado na lista!`, "success");
+      renderTeamSelects();
+    };
+
+    btnAddName.onclick = handleAddNewTeamName;
+    inputNewName.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAddNewTeamName();
+      }
+    };
   }
 };
 
@@ -45,16 +147,15 @@ function handleExecuteSorteio() {
   const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
   const type = checkedRadio ? checkedRadio.value : "todos";
 
-  // Salva novos nomes digitados no modal de sorteio antes de rodar o draft
-  const inputNomes = document.getElementById("input-sorteio-custom-team-names");
-  if (inputNomes) {
-    const rawVal = inputNomes.value || '';
-    const newNames = rawVal.split(',').map(s => s.trim()).filter(Boolean);
+  // Salva os nomes de times selecionados dos selects do modal antes de rodar o draft
+  const selectElements = document.querySelectorAll('.sorteio-team-name-select');
+  if (selectElements && selectElements.length > 0) {
+    const selectedNames = Array.from(selectElements).map(s => s.value.trim()).filter(Boolean);
     const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
     const groupId = currentGroup ? currentGroup.id : null;
     try {
-      if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(newNames));
-      localStorage.setItem('customTeamNames', JSON.stringify(newNames));
+      if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(selectedNames));
+      localStorage.setItem('customTeamNames', JSON.stringify(selectedNames));
     } catch(e) {}
   }
 
