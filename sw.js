@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v203'; // ← Preservação integral dos nomes exatos dos 4 times na tabela e nos confrontos do torneio
+const CACHE_NAME = 'peladapro-v204'; // ← Algoritmo exato de rodadas (circulo/fixo com mando invertido na volta) fornecido pelo gestor
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
