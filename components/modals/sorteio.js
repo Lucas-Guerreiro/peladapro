@@ -22,6 +22,12 @@ window.App.initModalSorteio = function () {
     }
   }
 
+  const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+  if (modalSelectQtd) {
+    const qtdAtual = activePelada.quantidade_times || (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.quantidade_times : null) || 4;
+    modalSelectQtd.value = String(qtdAtual);
+  }
+
   // Carrega nomes cadastrados de times no input do modal
   const inputNomes = document.getElementById("input-sorteio-custom-team-names");
   if (inputNomes) {
@@ -63,8 +69,15 @@ function handleExecuteSorteio() {
   let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
   if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 6;
 
-  let maxTeams = parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
+  const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+  let maxTeams = modalSelectQtd ? parseInt(modalSelectQtd.value) : parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
   if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
+
+  window.App.activePelada.quantidade_times = maxTeams;
+  localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+  if (peladaAtiva.id && window.Api && window.Api.atualizarConfigPartida) {
+    window.Api.atualizarConfigPartida(peladaAtiva.id, { quantidade_times: maxTeams });
+  }
 
   // Filtra apenas jogadores que o gestor marcou manualmente como presentes (check-in ativo)
   const activePresent = players.filter(p => {
