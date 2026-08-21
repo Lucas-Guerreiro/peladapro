@@ -1447,24 +1447,44 @@ function renderFormacaoTournamentUI() {
     if (window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence) {
       matches = window.TournamentEngine.optimizeMatchSequence(matches);
     }
+
+    const isNight = document.body.classList.contains('modo-noturno-ativo') || localStorage.getItem('peladapro_modo_noturno') === 'true';
+    let teamsList = [];
+    try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch(e){}
+
     if (matches.length === 0) {
-      matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:#64748B; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
+      matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:${isNight ? '#CBD5E1' : '#64748B'}; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
     } else {
       matchesList.innerHTML = matches.map((m, idx) => {
         const isEncerrado = m.status === 'encerrado';
         const scoreText = isEncerrado ? `${m.golsA} x ${m.golsB}` : 'vs';
-        const badgeBg = isEncerrado ? '#D1FAE5' : '#F1F5F9';
-        const badgeColor = isEncerrado ? '#065F46' : '#475569';
+        const badgeBg = isNight
+          ? (isEncerrado ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.18)')
+          : (isEncerrado ? '#D1FAE5' : '#F1F5F9');
+        const badgeColor = isNight
+          ? (isEncerrado ? '#A7F3D0' : '#E2E8F0')
+          : (isEncerrado ? '#065F46' : '#475569');
+        const itemBg = isNight ? 'rgba(255, 255, 255, 0.12)' : 'var(--background)';
+        const itemBorder = isNight ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-color)';
+        const textColor = isNight ? '#FFFFFF' : 'var(--text-heading)';
 
         const resolveName = window.App.resolveOfficialTeamName || ((s) => s);
         const nameA = resolveName(m.teamA);
         const nameB = resolveName(m.teamB);
 
+        let embA = '', embB = '';
+        if (window.TeamEmblems && teamsList.length > 0) {
+          const tA = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim());
+          const tB = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim());
+          if (tA) embA = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">${window.TeamEmblems.forTeam(tA)}</span>`;
+          if (tB) embB = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">${window.TeamEmblems.forTeam(tB)}</span>`;
+        }
+
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--background); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;">
-            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nameA}</span>
-            <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 8px;">${scoreText}</span>
-            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nameB}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: ${itemBg}; border: ${itemBorder}; border-radius: 8px; font-size: 12px; margin-bottom: 4px; backdrop-filter: blur(8px);">
+            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-end;">${embA}${nameA}</span>
+            <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 8px; ${isNight ? 'border: 1px solid rgba(255, 255, 255, 0.2);' : ''}">${scoreText}</span>
+            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-start;">${nameB}${embB}</span>
           </div>
         `;
       }).join('');

@@ -1043,8 +1043,10 @@ var Acompanhamento = {
       if (Array.isArray(tState.knockoutMatches)) allMatches.push.apply(allMatches, tState.knockoutMatches);
       if (Array.isArray(tState.finalsMatches)) allMatches.push.apply(allMatches, tState.finalsMatches);
 
+      var isNight = document.body.classList.contains('modo-noturno-ativo') || localStorage.getItem('peladapro_modo_noturno') === 'true';
+
       if (allMatches.length === 0) {
-        matchesList.innerHTML = '<div style="text-align:center; padding:12px; color:#64748B;">Nenhum jogo gerado.</div>';
+        matchesList.innerHTML = '<div style="text-align:center; padding:12px; color:' + (isNight ? '#CBD5E1' : '#64748B') + ';">Nenhum jogo gerado.</div>';
       } else {
         var mHtml = '';
         allMatches.forEach(function (m, idx) {
@@ -1052,17 +1054,36 @@ var Acompanhamento = {
           var isDone = m.status === 'encerrado';
 
           var statusTag = isDone
-            ? '<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ' + m.golsA + ' x ' + m.golsB + '</span>'
+            ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5') + '; color:' + (isNight ? '#A7F3D0' : '#065F46') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid rgba(16, 185, 129, 0.4)' : 'none') + ';">✅ ' + m.golsA + ' x ' + m.golsB + '</span>'
             : (isCurrent
-              ? '<span style="font-size:10px; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px; font-weight:700;">⚽ EM ANDAMENTO</span>'
-              : '<span style="font-size:10px; background:#F1F5F9; color:#64748B; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>');
+              ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7') + '; color:' + (isNight ? '#FFFFFF' : '#B45309') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid #F59E0B' : '1px solid #FCD34D') + ';">⚽ EM ANDAMENTO</span>'
+              : '<span style="font-size:10px; background:' + (isNight ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9') + '; color:' + (isNight ? '#E2E8F0' : '#64748B') + '; padding:2px 6px; border-radius:4px; font-weight:600; border:' + (isNight ? '1px solid rgba(255, 255, 255, 0.2)' : 'none') + ';">⏳ A JOGAR</span>');
 
-          mHtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:' + (isCurrent ? '#FFFBEB' : '#F8FAFC') + '; border:1px solid ' + (isCurrent ? '#FCD34D' : '#E2E8F0') + '; border-radius:8px; font-size:12px;">' +
-            '<div style="display:flex; align-items:center; gap:8px;">' +
-            '<span style="font-weight:700; color:#64748B; font-size:11px;">' + (m.faseNome || 'Jogo ' + (idx + 1)) + ':</span>' +
-            '<strong style="color:#0F172A;">' + m.teamA + '</strong>' +
-            '<span style="color:#94A3B8; font-size:11px;">vs</span>' +
-            '<strong style="color:#0F172A;">' + m.teamB + '</strong>' +
+          var rowBg = isNight
+            ? (isCurrent ? 'linear-gradient(135deg, rgba(245, 210, 112, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)' : 'rgba(255, 255, 255, 0.12)')
+            : (isCurrent ? '#FFFBEB' : '#F8FAFC');
+
+          var rowBorder = isNight
+            ? (isCurrent ? '#FCD34D' : 'rgba(255, 255, 255, 0.2)')
+            : (isCurrent ? '#FCD34D' : '#E2E8F0');
+
+          var textColor = isNight ? '#FFFFFF' : '#0F172A';
+          var subTextColor = isNight ? 'rgba(255, 255, 255, 0.85)' : '#64748B';
+
+          var embA = '', embB = '';
+          if (window.TeamEmblems && teams.length > 0) {
+            var tA = teams.find(function (t) { return (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim(); });
+            var tB = teams.find(function (t) { return (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim(); });
+            if (tA) embA = '<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">' + window.TeamEmblems.forTeam(tA) + '</span>';
+            if (tB) embB = '<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">' + window.TeamEmblems.forTeam(tB) + '</span>';
+          }
+
+          mHtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:' + rowBg + '; border:1px solid ' + rowBorder + '; border-radius:10px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
+            '<div style="display:flex; align-items:center; gap:6px;">' +
+            '<span style="font-weight:700; color:' + subTextColor + '; font-size:11px;">' + (m.faseNome || 'Jogo ' + (idx + 1)) + ':</span>' +
+            '<span style="display:inline-flex; align-items:center;">' + embA + '<strong style="color:' + textColor + '; font-weight:700;">' + m.teamA + '</strong></span>' +
+            '<span style="color:' + subTextColor + '; font-size:11px; margin: 0 2px;">vs</span>' +
+            '<span style="display:inline-flex; align-items:center;"><strong style="color:' + textColor + '; font-weight:700;">' + m.teamB + '</strong>' + embB + '</span>' +
             '</div>' +
             '<div>' + statusTag + '</div>' +
             '</div>';

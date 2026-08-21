@@ -2708,6 +2708,9 @@ function renderTournamentUI() {
     if (Array.isArray(tState.knockoutMatches)) allMatches.push(...tState.knockoutMatches);
     if (Array.isArray(tState.finalsMatches)) allMatches.push(...tState.finalsMatches);
 
+    let teamsList = [];
+    try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch(e){}
+
     if (allMatches.length === 0) {
       matchesList.innerHTML = `<div style="text-align:center; padding:12px; color:${isTeamTheme ? '#CBD5E1' : '#64748B'};">Nenhum jogo gerado.</div>`;
     } else {
@@ -2717,13 +2720,13 @@ function renderTournamentUI() {
         const isDone = m.status === 'encerrado';
 
         const statusTag = isDone
-          ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5'}; color:${isTeamTheme ? '#A7F3D0' : '#065F46'}; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ${m.golsA} x ${m.golsB}</span>`
+          ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5'}; color:${isTeamTheme ? '#A7F3D0' : '#065F46'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid rgba(16, 185, 129, 0.4)' : 'none'};">✅ ${m.golsA} x ${m.golsB}</span>`
           : (isCurrent
-            ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.2)' : '#F1F5F9'}; color:${isTeamTheme ? '#FFFFFF' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.3)' : 'none'};">⚽ EM ANDAMENTO</span>`
-            : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.2)' : '#F1F5F9'}; color:${isTeamTheme ? '#FFFFFF' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.3)' : 'none'};">⏳ A JOGAR</span>`);
+            ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7'}; color:${isTeamTheme ? '#FFFFFF' : '#B45309'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid #F59E0B' : '1px solid #FCD34D'};">⚽ EM ANDAMENTO</span>`
+            : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9'}; color:${isTeamTheme ? '#E2E8F0' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};">⏳ A JOGAR</span>`);
 
         const rowBg = isTeamTheme 
-          ? (isCurrent ? 'rgba(254, 243, 199, 0.25)' : 'rgba(255, 255, 255, 0.12)')
+          ? (isCurrent ? 'linear-gradient(135deg, rgba(245, 210, 112, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)' : 'rgba(255, 255, 255, 0.12)')
           : (isCurrent ? '#FFFBEB' : '#F8FAFC');
 
         const rowBorder = isTeamTheme
@@ -2733,13 +2736,21 @@ function renderTournamentUI() {
         const textColor = isTeamTheme ? '#FFFFFF' : '#0F172A';
         const subTextColor = isTeamTheme ? 'rgba(255, 255, 255, 0.85)' : '#64748B';
 
+        let embA = '', embB = '';
+        if (window.TeamEmblems && teamsList.length > 0) {
+          const tA = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim());
+          const tB = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim());
+          if (tA) embA = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">${window.TeamEmblems.forTeam(tA)}</span>`;
+          if (tB) embB = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">${window.TeamEmblems.forTeam(tB)}</span>`;
+        }
+
         html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:${rowBg}; border:1px solid ${rowBorder}; border-radius:10px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px);">
-            <div style="display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:${rowBg}; border:1px solid ${rowBorder}; border-radius:10px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px); ${isCurrent && isTeamTheme ? 'box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : ''}">
+            <div style="display:flex; align-items:center; gap:6px;">
               <span style="font-weight:700; color:${subTextColor}; font-size:11px;">${m.faseNome || 'Jogo ' + (idx + 1)}:</span>
-              <strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamA)}</strong>
-              <span style="color:${subTextColor}; font-size:11px;">vs</span>
-              <strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamB)}</strong>
+              <span style="display:inline-flex; align-items:center;">${embA}<strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamA)}</strong></span>
+              <span style="color:${subTextColor}; font-size:11px; margin: 0 2px;">vs</span>
+              <span style="display:inline-flex; align-items:center;"><strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamB)}</strong>${embB}</span>
             </div>
             <div>${statusTag}</div>
           </div>
