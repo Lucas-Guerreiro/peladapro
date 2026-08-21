@@ -29,8 +29,8 @@ exports.seed = async (req, res) => {
 
     const insertedUsers = [];
     const queryUser = `
-      INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, nome`;
+      INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, verificado, ativo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, true) RETURNING id, nome`;
     
     for (let u of usuarios) {
       const res = await client.query(queryUser, [

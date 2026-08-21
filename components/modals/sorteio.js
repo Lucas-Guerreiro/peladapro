@@ -6,6 +6,13 @@ window.App.initModalSorteio = function () {
   document.getElementById("btn-close-sorteio-modal").onclick = window.App.closeModal;
   document.getElementById("btn-execute-sorteio").onclick = handleExecuteSorteio;
 
+  // Sincroniza o modo de torneio ativo da pelada com o seletor do modal
+  const modalSelectModo = document.getElementById("modal-select-pelada-modo");
+  const activePelada = window.App.activePelada || {};
+  if (modalSelectModo && activePelada.modo) {
+    modalSelectModo.value = activePelada.modo;
+  }
+
   // Carrega nomes cadastrados de times no input do modal
   const inputNomes = document.getElementById("input-sorteio-custom-team-names");
   if (inputNomes) {

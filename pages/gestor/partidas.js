@@ -793,8 +793,6 @@ function renderLiveMatchUI() {
     if (timerCont) timerCont.style.display = "none";
     if (scoreCont) scoreCont.style.display = "none";
     if (finishCont) finishCont.style.display = "none";
-    if (queueCard) queueCard.style.display = "none";
-
     const badgeEl = document.getElementById("match-live-status-badge");
     if (badgeEl) {
       badgeEl.textContent = "AGUARDANDO SORTEIO";
@@ -845,6 +843,7 @@ function renderLiveMatchUI() {
     } else {
       infoCard.style.display = "flex";
     }
+    renderTournamentUI();
     return;
   }
 
@@ -2365,6 +2364,46 @@ async function initPartidasPeladaSelect() {
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
 
+    // Sincroniza seletor de modo/formato de torneio
+    const selectModo = document.getElementById("partidas-select-pelada-modo");
+    if (selectModo && activePelada) {
+      selectModo.innerHTML = `
+        <option value="normal">Pelada Normal (Reina Campo)</option>
+        <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
+        <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
+        <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
+        <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
+      `;
+      selectModo.value = activePelada.modo || "normal";
+      selectModo.onchange = async (e) => {
+        const newModo = e.target.value;
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) return;
+        try {
+          const res = await Api.atualizarConfigPartida(peladaId, { modo: newModo });
+          if (res && res.error) {
+            window.App.showToast(res.error, "error");
+            selectModo.value = window.App.activePelada.modo || "normal";
+            return;
+          }
+          window.App.activePelada.modo = newModo;
+          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          
+          let desc = "⚽ Modo Pelada Normal ativado!";
+          if (newModo === 'torneio_livre') desc = "📋 Modo Torneio Livre (Confrontos Manuais) ativado!";
+          else if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado!";
+          else if (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos') desc = "🏅 Modo Mini Torneio (Pontos Corridos) ativado!";
+          else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
+          
+          window.App.showToast(desc, "success");
+          renderTournamentUI();
+        } catch (err) {
+          console.error("[partidasSelectModo]", err);
+          window.App.showToast("Erro ao atualizar formato da pelada.", "error");
+        }
+      };
+    }
+
     await carregarLiveStateDaPelada(activePelada.id);
     await renderRecentMatches();
 
@@ -2466,13 +2505,39 @@ function renderTournamentUI() {
 
   const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
 
-  if (!isTorneio || !tState) {
+  if (!isTorneio) {
     tournamentCard.style.display = "none";
     if (queueCard) queueCard.style.display = "block";
     return;
   }
 
-  // Se for torneio: exibe card de torneio e oculta a fila simples
+  // Se o modo torneio estiver ativo mas tState ainda não existe (sem sorteio realizado)
+  if (!tState) {
+    tournamentCard.style.display = "block";
+    if (queueCard) queueCard.style.display = "none";
+
+    let modoDesc = "Mini Torneio";
+    if (peladaAtiva.modo === 'pontos_corridos') modoDesc = "Mini Torneio (Pontos Corridos)";
+    else if (peladaAtiva.modo === 'mata_mata_direto') modoDesc = "Mini Torneio (Mata-Mata Direto)";
+    else if (peladaAtiva.modo === 'torneio_livre') modoDesc = "Torneio Livre (Confrontos Manuais)";
+    else if (peladaAtiva.modo === 'torneio') modoDesc = "Mini Torneio (Misto: Tabela + Mata-Mata)";
+
+    const standingsBody = document.getElementById("tournament-standings-body");
+    const matchesList = document.getElementById("tournament-matches-list");
+    if (standingsBody) {
+      standingsBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 18px; color: #64748B;">🏆 <strong>Formato Ativo: ${modoDesc}</strong><br><span style="font-size:12px;">Realize o sorteio das equipes para gerar a tabela de jogos e classificação!</span></td></tr>`;
+    }
+    if (matchesList) {
+      matchesList.innerHTML = `<div style="text-align:center; padding: 14px;"><button id="btn-quick-open-sorteio" class="btn btn-sm btn-accent" style="font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">🎲 Realizar Sorteio do Torneio</button></div>`;
+      setTimeout(() => {
+        const btnS = document.getElementById("btn-quick-open-sorteio");
+        if (btnS) btnS.onclick = () => window.App.openModal("sorteio");
+      }, 50);
+    }
+    return;
+  }
+
+  // Se for torneio com tState: exibe card de torneio e oculta a fila simples
   tournamentCard.style.display = "block";
   if (queueCard) queueCard.style.display = "none";
 

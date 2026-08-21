@@ -34,46 +34,7 @@ window.App.initFormacao = async function () {
   if (btnNomesTimes) {
     btnNomesTimes.onclick = () => window.App.abrirModalNomesTimes();
   }
-  const btnSeedTest = document.getElementById("btn-seed-test-athletes");
-  if (btnSeedTest) {
-    btnSeedTest.onclick = async () => {
-      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-      if (!peladaId) {
-        window.App.showToast("Selecione uma pelada de referência primeiro.", "warning");
-        return;
-      }
-      const testAthletes = [
-        { id: 101, nome: "Erivan", apelido: "Erivan", goleiro: false, autoavaliacao: 4 },
-        { id: 102, nome: "Leda", apelido: "Leda", goleiro: false, autoavaliacao: 4 },
-        { id: 103, nome: "Levy", apelido: "Levy", goleiro: true, autoavaliacao: 4 },
-        { id: 104, nome: "David Araújo", apelido: "David", goleiro: false, autoavaliacao: 5 },
-        { id: 105, nome: "Sangar", apelido: "Sangar", goleiro: false, autoavaliacao: 3 },
-        { id: 106, nome: "Netto", apelido: "Netto", goleiro: false, autoavaliacao: 4 },
-        { id: 107, nome: "Ewerton", apelido: "Ewerton", goleiro: false, autoavaliacao: 3 },
-        { id: 108, nome: "Andrew", apelido: "Andrew", goleiro: false, autoavaliacao: 4 },
-        { id: 109, nome: "Josimar", apelido: "Josimar", goleiro: false, autoavaliacao: 4 },
-        { id: 110, nome: "Linconl", apelido: "Linconl", goleiro: false, autoavaliacao: 4 },
-        { id: 111, nome: "Madson", apelido: "Madson", goleiro: false, autoavaliacao: 4 },
-        { id: 112, nome: "Darlan", apelido: "Darlan", goleiro: false, autoavaliacao: 4 },
-        { id: 113, nome: "Lobo", apelido: "Lobo", goleiro: false, autoavaliacao: 5 },
-        { id: 114, nome: "Elia", apelido: "Elia", goleiro: false, autoavaliacao: 4 },
-        { id: 115, nome: "Dhárcio", apelido: "Dhárcio", goleiro: false, autoavaliacao: 4 },
-        { id: 116, nome: "Arthur", apelido: "Arthur", goleiro: true, autoavaliacao: 4 },
-        { id: 117, nome: "Kaio", apelido: "Kaio", goleiro: false, autoavaliacao: 4 },
-        { id: 118, nome: "Cleber Bindá", apelido: "Cleber", goleiro: false, autoavaliacao: 4 },
-        { id: 119, nome: "Victor Silva", apelido: "Victor", goleiro: false, autoavaliacao: 4 },
-        { id: 120, nome: "Weslley", apelido: "Weslley", goleiro: false, autoavaliacao: 4 },
-        { id: 121, nome: "F Abbade", apelido: "Abbade", goleiro: false, autoavaliacao: 4 },
-        { id: 122, nome: "Ícaro", apelido: "Ícaro", goleiro: false, autoavaliacao: 4 }
-      ];
 
-      localStorage.setItem(`checkins_${peladaId}`, JSON.stringify(testAthletes.map(a => ({ usuario_id: a.id, status: 'confirmado', usuario: a }))));
-      localStorage.setItem("checkins", JSON.stringify(testAthletes.map(a => ({ usuario_id: a.id, status: 'confirmado', usuario: a }))));
-
-      window.App.showToast("🧪 22 Atletas de teste confirmados na pelada!", "success");
-      await renderManagerCheckin(peladaId);
-    };
-  }
 
   const btnSyncCloud = document.getElementById("btn-sync-teams-cloud");
   if (btnSyncCloud) {
@@ -276,7 +237,15 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     }
 
     if (selectModo) {
+      selectModo.innerHTML = `
+        <option value="normal">Pelada Normal (Reina Campo)</option>
+        <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
+        <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
+        <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
+        <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
+      `;
       selectModo.value = activePelada.modo || "normal";
+      console.log("🏆 [DIAGNÓSTICO FORMATO DO DIA] Opções carregadas no select:", selectModo.options.length, Array.from(selectModo.options).map(o => o.value));
       updateTurnoVisibility(selectModo.value);
 
       selectModo.onchange = async (e) => {
@@ -300,6 +269,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           else if (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos') desc = "🏅 Modo Mini Torneio (Pontos Corridos) ativado para esta data!";
           else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
           window.App.showToast(desc, "success");
+          renderFormacaoTournamentUI();
         } catch (err) {
           console.error("[selectModo]", err);
           window.App.showToast("Erro ao atualizar formato da pelada.", "error");
@@ -377,6 +347,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     await updateCheckinPlayersList(activePelada.id);
     // Carrega os times salvos na nuvem (sincroniza entre dispositivos)
     window.App.carregarTimesDoServidor(activePelada.id);
+    renderFormacaoTournamentUI();
     select.onchange = async (e) => {
       if (e.target.value) {
         const sel = peladas.find(p => String(p.id) === String(e.target.value));
@@ -386,7 +357,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         // Limpa o cache local de times da data anterior para atualizar os cards
         localStorage.removeItem("teams");
         await updateCheckinPlayersList(e.target.value);
-        window.App.carregarTimesDoServidor(e.target.value);
+        await window.App.carregarTimesDoServidor(e.target.value);
+        renderFormacaoTournamentUI();
         window.App.renderDrawnTeams();
         window.App.updateAcompanhamentoUI();
       }
@@ -1390,3 +1362,87 @@ window.App.abrirModalNomesTimes = function() {
 window.desconvocarAtleta = desconvocarAtleta;
 window.removerDaFilaGestor = removerDaFilaGestor;
 window.exportConvocadosExcel = exportConvocadosExcel;
+
+function renderFormacaoTournamentUI() {
+  const card = document.getElementById("formacao-tournament-card");
+  if (!card) return;
+
+  const peladaAtiva = window.App.activePelada || {};
+  const liveMatch = window.App.liveMatch || {};
+  let tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
+
+  if (!isTorneio) {
+    card.style.display = "none";
+    return;
+  }
+
+  card.style.display = "block";
+
+  let modoDesc = "Mini Torneio";
+  if (peladaAtiva.modo === 'pontos_corridos') modoDesc = "Mini Torneio (Pontos Corridos)";
+  else if (peladaAtiva.modo === 'mata_mata_direto') modoDesc = "Mini Torneio (Mata-Mata Direto)";
+  else if (peladaAtiva.modo === 'torneio_livre') modoDesc = "Torneio Livre (Confrontos Manuais)";
+  else if (peladaAtiva.modo === 'torneio') modoDesc = "Mini Torneio (Misto: Tabela + Mata-Mata)";
+
+  const badgeEl = document.getElementById("formacao-tournament-phase-badge");
+  if (badgeEl) badgeEl.textContent = modoDesc.toUpperCase();
+
+  const standingsBody = document.getElementById("formacao-tournament-standings-body");
+  const matchesList = document.getElementById("formacao-tournament-matches-list");
+
+  if (!tState || !tState.standings || tState.standings.length === 0) {
+    if (standingsBody) {
+      standingsBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 18px; color: #64748B;">🏆 <strong>Formato Ativo: ${modoDesc}</strong><br><span style="font-size:12px;">Clique no botão 'Sorteio Inteligente' para gerar a tabela de jogos e classificação!</span></td></tr>`;
+    }
+    if (matchesList) {
+      matchesList.innerHTML = `<div style="text-align:center; padding: 14px; color: #64748B; font-size: 13px;">Aguardando sorteio das equipes...</div>`;
+    }
+    return;
+  }
+
+  if (standingsBody) {
+    standingsBody.innerHTML = tState.standings.map((s, idx) => {
+      const teamName = s.nome || s.name || `Time ${idx + 1}`;
+      return `
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="text-align: center; font-weight: bold;">${idx + 1}º</td>
+          <td style="font-weight: 700; color: var(--text-heading);">${teamName}</td>
+          <td style="text-align: center;">${s.j || 0}</td>
+          <td style="text-align: center; color: #10B981; font-weight: bold;">${s.v || 0}</td>
+          <td style="text-align: center;">${s.e || 0}</td>
+          <td style="text-align: center; color: #EF4444;">${s.d || 0}</td>
+          <td style="text-align: center;">${s.gp || 0}</td>
+          <td style="text-align: center;">${s.gc || 0}</td>
+          <td style="text-align: center; font-weight: bold;">${(s.sg > 0 ? '+' : '') + (s.sg || 0)}</td>
+          <td style="text-align: center; font-weight: 800; color: #D97706; font-size: 14px;">${s.pts || 0}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  if (matchesList) {
+    const matches = tState.matches || [];
+    if (matches.length === 0) {
+      matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:#64748B; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
+    } else {
+      matchesList.innerHTML = matches.map((m, idx) => {
+        const isEncerrado = m.status === 'encerrado';
+        const scoreText = isEncerrado ? `${m.golsA} x ${m.golsB}` : 'vs';
+        const badgeBg = isEncerrado ? '#D1FAE5' : '#F1F5F9';
+        const badgeColor = isEncerrado ? '#065F46' : '#475569';
+
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--background); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;">
+            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.teamA}</span>
+            <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 8px;">${scoreText}</span>
+            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.teamB}</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+window.App.renderFormacaoTournamentUI = renderFormacaoTournamentUI;

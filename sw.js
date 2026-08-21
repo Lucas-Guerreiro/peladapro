@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v195'; // ← Incrementado para recarga de novos modos de torneio
+const CACHE_NAME = 'peladapro-v199'; // ← Proteção contra interferência de extensões de navegador e log de diagnóstico do selectModo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

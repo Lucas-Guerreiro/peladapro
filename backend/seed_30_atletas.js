@@ -47,8 +47,8 @@ async function seedAtletas() {
       }
 
       const query = `
-        INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, ativo)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, $9, $10, true)`;
+        INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, verificado, ativo)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, $9, $10, true, true)`;
 
       const result = await client.query(query, [
         nome, email, cpf, dob, whatsapp, senhaHash, autoavaliacao, goleiro, saldo, apelido

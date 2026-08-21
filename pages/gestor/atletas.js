@@ -45,11 +45,11 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
   if (!container) return;
   container.innerHTML = "";
 
-  // 1. Filtrar pendentes (verificado === false) e cadastrados/aprovados (verificado === true)
-  // Inclui tipo 'jogador', 'gestor' e 'ambos'
-  const isAthlete = (p) => !p.tipo || p.tipo === 'jogador' || p.tipo === 'gestor' || p.tipo === 'ambos';
-  const pendingPlayers = players.filter(p => p.verificado === false && isAthlete(p));
-  const approvedPlayers = players.filter(p => p.verificado === true && isAthlete(p));
+  // 1. Filtrar pendentes (cadastro pendente: não verificado E não ativo) e cadastrados/aprovados (verificado === true OU ativo === true)
+  // Inclui tipo 'jogador', 'gestor' e 'ambos', excluindo 'incorporado'
+  const isAthlete = (p) => (!p.tipo || p.tipo === 'jogador' || p.tipo === 'gestor' || p.tipo === 'ambos') && p.tipo !== 'incorporado';
+  const pendingPlayers = players.filter(p => p.verificado === false && p.ativo === false && isAthlete(p));
+  const approvedPlayers = players.filter(p => (p.verificado === true || p.ativo === true) && isAthlete(p));
 
   // 2. Renderizar as solicitações pendentes no topo
   const pendingCard = document.getElementById("pending-requests-card");
@@ -140,13 +140,11 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
     const balanceColor = saldoVal >= 0 ? "var(--success)" : "var(--danger)";
     const estrelasText = p.autoavaliacao !== null && p.autoavaliacao !== undefined ? `${p.autoavaliacao} estrelas` : 'N/A';
 
-    const avatarHTML = p.foto 
-      ? `<img src="${p.foto}" class="athlete-avatar btn-download-avatar" alt="${p.nome}" title="Clique para baixar foto do perfil" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1; cursor: pointer; transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" />`
-      : `<div class="athlete-avatar-placeholder" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; background-color: var(--primary); color: #FFF; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 24px; flex-shrink: 0; aspect-ratio: 1/1;">${initials}</div>`;
+    const fotoUrl = p.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome)}&background=0F172A&color=38BDF8&size=256&bold=true`;
 
-    const downloadBtnHTML = p.foto 
-      ? `<button class="btn btn-sm btn-outline btn-download-athlete-photo" data-id="${p.id}" title="Baixar foto do perfil">📷 Baixar</button>` 
-      : ``;
+    const avatarHTML = `<img src="${fotoUrl}" class="athlete-avatar btn-download-avatar" alt="${p.nome}" title="Clique para baixar foto do perfil" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1; cursor: pointer; transition: transform 0.15s; border: 2px solid var(--primary);" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" />`;
+
+    const downloadBtnHTML = `<button class="btn btn-sm btn-outline btn-download-athlete-photo" data-id="${p.id}" title="Baixar foto do perfil">📷 Baixar</button>`;
 
     card.innerHTML = `
       <div class="athlete-info">
