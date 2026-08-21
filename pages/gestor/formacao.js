@@ -1462,7 +1462,7 @@ function renderFormacaoTournamentUI() {
       matches = window.TournamentEngine.optimizeMatchSequence(matches);
     }
 
-    const isNight = document.body.classList.contains('modo-noturno-ativo') || localStorage.getItem('peladapro_modo_noturno') === 'true';
+    const isNight = document.body.classList.contains('modo-noturno-ativo');
     let teamsList = [];
     try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch(e){}
 

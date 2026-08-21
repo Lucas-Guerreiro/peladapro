@@ -280,6 +280,48 @@ window.App.toggleModoNoturnoGlobal = function () {
   }
 };
 
+window.App.cleanInlineThemeStyles = function () {
+  const elements = document.querySelectorAll(
+    '.card, .card-fifa, .card-athlete, .acomp-card, .stat-card, .queue-container, ' +
+    '.team-draft-card, .match-card, .gestor-score-card, .gestor-card-clear, ' +
+    '.gestor-timer-wrapper, .gestor-queue-wrapper-clear, #gestor-queue-card, ' +
+    '#acomp-history-card, .modal-sheet, .modal-content, .acomp-header-unified-card, ' +
+    '.acomp-header-mobile-unified, .gestor-header-unified-card, .gestor-header-mobile-unified, ' +
+    '#next-matches-list, #next-matches-list > div, .acomp-mobile-dropdown, ' +
+    '.gestor-mobile-dropdown, .table-responsive, .table-custom, .card-fifa-balance, ' +
+    '.acomp-card-clear, .acomp-score-card-clear, .acomp-team-box-clear, .acomp-queue-item-clear, ' +
+    '#acomp-tournament-card, #formacao-tournament-card, #gestor-tournament-card, ' +
+    '#tournament-matches-list, #formacao-tournament-matches-list, #acomp-tournament-matches-list, ' +
+    '#gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, ' +
+    '#gestor-recent-matches-card, .gestor-web-body, .acomp-web-body'
+  );
+
+  elements.forEach(el => {
+    if (!el) return;
+    el.classList.remove('has-team-theme');
+    el.style.removeProperty('background');
+    el.style.removeProperty('border');
+    el.style.removeProperty('border-color');
+    el.style.removeProperty('box-shadow');
+    el.style.removeProperty('backdrop-filter');
+    el.style.removeProperty('-webkit-backdrop-filter');
+    el.style.removeProperty('color');
+
+    const headings = el.querySelectorAll('h1, h2, h3, h4, h5, .card-title, .title, strong');
+    headings.forEach(h => {
+      h.style.removeProperty('color');
+      h.style.removeProperty('text-shadow');
+    });
+
+    const texts = el.querySelectorAll('p, span, label');
+    texts.forEach(t => {
+      if (!t.classList.contains('badge') && !t.classList.contains('btn') && !t.classList.contains('gestor-badge-role')) {
+        t.style.removeProperty('color');
+      }
+    });
+  });
+};
+
 window.App.applyModoNoturnoGlobal = function (isNight) {
   if (window.App._isApplyingModoNoturno) return;
   window.App._isApplyingModoNoturno = true;
@@ -291,89 +333,92 @@ window.App.applyModoNoturnoGlobal = function (isNight) {
       isNight = localStorage.getItem('peladapro_modo_noturno') === 'true';
     }
 
-  const user = window.Auth ? window.Auth.currentUser : null;
-  let teamName = user ? user.time_coracao : null;
-  if (!teamName) {
-    try {
-      const stored = JSON.parse(localStorage.getItem('currentUser'));
-      if (stored && stored.time_coracao) teamName = stored.time_coracao;
-    } catch (e) { }
-  }
-  const teamTheme = window.App.getTeamThemeGlobal(teamName);
+    const user = window.Auth ? window.Auth.currentUser : null;
+    let teamName = user ? user.time_coracao : null;
+    if (!teamName) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('currentUser'));
+        if (stored && stored.time_coracao) teamName = stored.time_coracao;
+      } catch (e) { }
+    }
+    const teamTheme = window.App.getTeamThemeGlobal(teamName);
 
-  const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon');
-  const labels = document.querySelectorAll('.lbl-modo-noturno-txt');
+    const buttons = document.querySelectorAll('.btn-global-modo-noturno, .btn-global-modo-noturno-icon');
+    const labels = document.querySelectorAll('.lbl-modo-noturno-txt');
 
-  if (isNight) {
-    document.body.classList.add('modo-noturno-ativo');
-    labels.forEach(lbl => lbl.textContent = 'Modo Noturno (Ativo)');
-    buttons.forEach(btn => {
-      btn.style.setProperty('background', teamTheme ? (teamTheme.badgeBg || '#0F172A') : '#0F172A', 'important');
-      btn.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#1D9E75') : '#1D9E75', 'important');
-      btn.style.setProperty('color', '#FFFFFF', 'important');
-      btn.style.setProperty('box-shadow', '0 4px 12px rgba(0,0,0,0.3)', 'important');
-    });
+    if (isNight) {
+      document.body.classList.add('modo-noturno-ativo');
+      labels.forEach(lbl => lbl.textContent = 'Modo Noturno (Ativo)');
+      buttons.forEach(btn => {
+        btn.style.setProperty('background', teamTheme ? (teamTheme.badgeBg || '#0F172A') : '#0F172A', 'important');
+        btn.style.setProperty('border-color', teamTheme ? (teamTheme.border || '#1D9E75') : '#1D9E75', 'important');
+        btn.style.setProperty('color', '#FFFFFF', 'important');
+        btn.style.setProperty('box-shadow', '0 4px 12px rgba(0,0,0,0.3)', 'important');
+      });
 
-    if (teamTheme) {
-      document.documentElement.style.setProperty('--bg-modo-noturno', teamTheme.gradient);
-      document.documentElement.style.setProperty('--border-modo-noturno', teamTheme.border);
-      document.documentElement.style.setProperty('--accent-modo-noturno', teamTheme.accent || '#F5D270');
-      document.documentElement.style.setProperty('--badge-modo-noturno', teamTheme.badgeBg || '#111111');
+      if (teamTheme) {
+        document.documentElement.style.setProperty('--bg-modo-noturno', teamTheme.gradient);
+        document.documentElement.style.setProperty('--border-modo-noturno', teamTheme.border);
+        document.documentElement.style.setProperty('--accent-modo-noturno', teamTheme.accent || '#F5D270');
+        document.documentElement.style.setProperty('--badge-modo-noturno', teamTheme.badgeBg || '#111111');
+      } else {
+        document.documentElement.style.setProperty('--bg-modo-noturno', 'linear-gradient(135deg, #0F172A 0%, #020617 100%)');
+        document.documentElement.style.setProperty('--border-modo-noturno', '#1D9E75');
+        document.documentElement.style.setProperty('--accent-modo-noturno', '#1D9E75');
+        document.documentElement.style.setProperty('--badge-modo-noturno', '#0F172A');
+      }
+
+      const roleToggles = document.querySelectorAll('.role-toggle-switch');
+      const roleSliders = document.querySelectorAll('.role-toggle-slider');
+
+      roleToggles.forEach(toggle => {
+        toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
+        toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
+      });
+
+      roleSliders.forEach(slider => {
+        slider.style.setProperty('background', '#059669', 'important');
+        slider.style.setProperty('box-shadow', '0 2px 8px rgba(0,0,0,0.3)', 'important');
+      });
     } else {
-      document.documentElement.style.setProperty('--bg-modo-noturno', 'linear-gradient(135deg, #0F172A 0%, #020617 100%)');
-      document.documentElement.style.setProperty('--border-modo-noturno', '#1D9E75');
-      document.documentElement.style.setProperty('--accent-modo-noturno', '#1D9E75');
-      document.documentElement.style.setProperty('--badge-modo-noturno', '#0F172A');
+      document.body.classList.remove('modo-noturno-ativo');
+      document.documentElement.style.removeProperty('--bg-modo-noturno');
+      document.documentElement.style.removeProperty('--border-modo-noturno');
+      document.documentElement.style.removeProperty('--accent-modo-noturno');
+      document.documentElement.style.removeProperty('--badge-modo-noturno');
+
+      labels.forEach(lbl => lbl.textContent = 'Modo Noturno');
+      buttons.forEach(btn => {
+        btn.style.removeProperty('background');
+        btn.style.removeProperty('border-color');
+        btn.style.removeProperty('color');
+        btn.style.removeProperty('box-shadow');
+      });
+
+      const roleToggles = document.querySelectorAll('.role-toggle-switch');
+      const roleSliders = document.querySelectorAll('.role-toggle-slider');
+
+      roleToggles.forEach(toggle => {
+        toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
+        toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
+      });
+
+      roleSliders.forEach(slider => {
+        slider.style.setProperty('background', '#059669', 'important');
+        slider.style.removeProperty('box-shadow');
+      });
+
+      if (window.App && window.App.cleanInlineThemeStyles) {
+        window.App.cleanInlineThemeStyles();
+      }
     }
 
-    const roleToggles = document.querySelectorAll('.role-toggle-switch');
-    const roleSliders = document.querySelectorAll('.role-toggle-slider');
-
-    roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
-      toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
-    });
-
-    roleSliders.forEach(slider => {
-      slider.style.setProperty('background', '#059669', 'important');
-      slider.style.setProperty('box-shadow', '0 2px 8px rgba(0,0,0,0.3)', 'important');
-    });
-  } else {
-    document.body.classList.remove('modo-noturno-ativo');
-    document.documentElement.style.removeProperty('--bg-modo-noturno');
-    document.documentElement.style.removeProperty('--border-modo-noturno');
-    document.documentElement.style.removeProperty('--accent-modo-noturno');
-    document.documentElement.style.removeProperty('--badge-modo-noturno');
-
-    labels.forEach(lbl => lbl.textContent = 'Modo Noturno');
-    buttons.forEach(btn => {
-      btn.style.removeProperty('background');
-      btn.style.removeProperty('border-color');
-      btn.style.removeProperty('color');
-      btn.style.removeProperty('box-shadow');
-    });
-
-    const roleToggles = document.querySelectorAll('.role-toggle-switch');
-    const roleSliders = document.querySelectorAll('.role-toggle-slider');
-
-    roleToggles.forEach(toggle => {
-      toggle.style.setProperty('background', 'rgba(255, 255, 255, 0.25)', 'important');
-      toggle.style.setProperty('border-color', 'rgba(212, 175, 55, 0.6)', 'important');
-    });
-
-    roleSliders.forEach(slider => {
-      slider.style.setProperty('background', '#059669', 'important');
-      slider.style.removeProperty('box-shadow');
-      slider.style.removeProperty('box-shadow');
-    });
-  }
-
-  if (window.Dashboard && window.Dashboard.applyModoNoturno) {
-    window.Dashboard.applyModoNoturno(isNight);
-  }
-  if (window.App && window.App.applyAthleteTeamStyleToPartidasCards) {
-    window.App.applyAthleteTeamStyleToPartidasCards();
-  }
+    if (window.Dashboard && window.Dashboard.applyModoNoturno) {
+      window.Dashboard.applyModoNoturno(isNight);
+    }
+    if (window.App && window.App.applyAthleteTeamStyleToPartidasCards) {
+      window.App.applyAthleteTeamStyleToPartidasCards();
+    }
   } finally {
     window.App._isApplyingModoNoturno = false;
   }

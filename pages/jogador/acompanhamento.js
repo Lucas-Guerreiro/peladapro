@@ -1043,7 +1043,7 @@ var Acompanhamento = {
       if (Array.isArray(tState.knockoutMatches)) allMatches.push.apply(allMatches, tState.knockoutMatches);
       if (Array.isArray(tState.finalsMatches)) allMatches.push.apply(allMatches, tState.finalsMatches);
 
-      var isNight = document.body.classList.contains('modo-noturno-ativo') || localStorage.getItem('peladapro_modo_noturno') === 'true';
+      var isNight = document.body.classList.contains('modo-noturno-ativo');
 
       if (allMatches.length === 0) {
         matchesList.innerHTML = '<div style="text-align:center; padding:12px; color:' + (isNight ? '#CBD5E1' : '#64748B') + ';">Nenhum jogo gerado.</div>';

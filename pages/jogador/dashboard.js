@@ -1178,10 +1178,16 @@ var Dashboard = {
   applyModoNoturno: function (isNight) {
     var card = document.getElementById('player-fifa-card');
     var user = Auth.currentUser;
-    if (card && isNight && user && user.time_coracao) {
-      var style = localStorage.getItem('peladapro_card_style') || 'free';
-      if (style !== 'free') {
-        this.applyTeamCardTheme(card, user.time_coracao);
+    if (card) {
+      if (isNight && user && user.time_coracao) {
+        var style = localStorage.getItem('peladapro_card_style') || 'free';
+        if (style !== 'free') {
+          this.applyTeamCardTheme(card, user.time_coracao);
+        } else {
+          this.applyTeamCardTheme(card, null);
+        }
+      } else {
+        this.applyTeamCardTheme(card, null);
       }
     }
   },

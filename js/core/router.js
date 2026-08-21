@@ -232,10 +232,15 @@ const Router = {
 
     // Carrega o JS correspondente
     const jsPath = `pages/${route.page}.js`;
-    this._loadScript(jsPath, () => {
+    this._loadScript(jsPath, async () => {
       this.activeTabId = tabName;
       const initFn = `init${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`;
-      if (window.App && window.App[initFn]) window.App[initFn]();
+      if (window.App && window.App[initFn]) {
+        try { await window.App[initFn](); } catch(e) { console.error(e); }
+      }
+      if (window.App && window.App.applyModoNoturnoGlobal) {
+        window.App.applyModoNoturnoGlobal();
+      }
     });
 
     // Atualiza estado visual das abas

@@ -612,7 +612,7 @@ function getMatchPhaseInfo(liveMatch, peladaAtiva) {
 }
 
 function applyAthleteTeamStyleToPartidasCards() {
-  const isNight = document.body.classList.contains('modo-noturno-ativo') || localStorage.getItem('peladapro_modo_noturno') === 'true';
+  const isNight = document.body.classList.contains('modo-noturno-ativo');
 
   const cards = document.querySelectorAll('.gestor-score-card, .gestor-card-clear, #gestor-queue-card, #gestor-no-teams-card, #gestor-timer-container, #gestor-scoreboard-container, #gestor-finish-container, #gestor-tournament-card, #gestor-recent-matches-card, .gestor-header-unified-card, .gestor-header-mobile-unified');
 
