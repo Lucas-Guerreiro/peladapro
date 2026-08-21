@@ -1340,6 +1340,7 @@ window.App.abrirModalNomesTimes = function() {
     drawnTeams.forEach((t, idx) => {
       if (newNames[idx]) {
         t.nome = newNames[idx];
+        t.name = newNames[idx];
       }
     });
     const teamsKey = getTeamsKey();
@@ -1347,7 +1348,26 @@ window.App.abrirModalNomesTimes = function() {
       localStorage.setItem(teamsKey, JSON.stringify(drawnTeams));
       localStorage.setItem('teams', JSON.stringify(drawnTeams));
     } catch(e) {}
+
+    // Sincroniza tState do torneio ativo com os novos nomes
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    let tState = (window.App.liveMatch ? window.App.liveMatch.tournamentState : null) || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+    if (tState && window.TournamentEngine) {
+      tState.teams = drawnTeams;
+      if (Array.isArray(tState.matches)) {
+        tState.matches.forEach(m => {
+          m.teamA = window.App.resolveOfficialTeamName(m.teamA, drawnTeams);
+          m.teamB = window.App.resolveOfficialTeamName(m.teamB, drawnTeams);
+        });
+      }
+      tState.standings = window.TournamentEngine.calculateStandings(drawnTeams, tState.matches);
+      if (peladaId) localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
+      localStorage.setItem('tournamentState', JSON.stringify(tState));
+      if (window.App.liveMatch) window.App.liveMatch.tournamentState = tState;
+    }
+
     if (window.App.renderDrawnTeams) window.App.renderDrawnTeams();
+    renderFormacaoTournamentUI();
   }
 
   if (window.App.showToast) {
@@ -1436,11 +1456,15 @@ function renderFormacaoTournamentUI() {
         const badgeBg = isEncerrado ? '#D1FAE5' : '#F1F5F9';
         const badgeColor = isEncerrado ? '#065F46' : '#475569';
 
+        const resolveName = window.App.resolveOfficialTeamName || ((s) => s);
+        const nameA = resolveName(m.teamA);
+        const nameB = resolveName(m.teamB);
+
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--background); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;">
-            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.teamA}</span>
+            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nameA}</span>
             <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 8px;">${scoreText}</span>
-            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.teamB}</span>
+            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nameB}</span>
           </div>
         `;
       }).join('');

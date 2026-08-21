@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v200'; // ← Algoritmo de sequenciamento de partidas com rest-balance de descanso das equipes
+const CACHE_NAME = 'peladapro-v201'; // ← Mapeamento e resolução universal dos nomes personalizados das 4 equipes na agenda do torneio
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

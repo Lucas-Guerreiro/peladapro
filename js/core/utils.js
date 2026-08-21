@@ -636,3 +636,46 @@ window.App.calcPlayerDesempenho = async function(usuarioId, usuarioNome) {
   }
   return { pontos: 0, jogos: 0, gols: 0 };
 };
+
+window.App.resolveOfficialTeamName = function (nameStr, drawnTeamsParam) {
+  if (!nameStr) return nameStr;
+  const str = String(nameStr).trim();
+  const low = str.toLowerCase();
+
+  let drawnTeams = drawnTeamsParam;
+  if (!Array.isArray(drawnTeams) || drawnTeams.length === 0) {
+    drawnTeams = window.App.teams || [];
+  }
+  if (!Array.isArray(drawnTeams) || drawnTeams.length === 0) {
+    try { drawnTeams = JSON.parse(localStorage.getItem('teams')) || []; } catch(e) {}
+  }
+
+  if (!Array.isArray(drawnTeams) || drawnTeams.length === 0) return str;
+
+  if (low === "azul" || low === "time azul" || low === "time a" || low === "time 1" || low === "team 1" || low === "team a") {
+    return (drawnTeams[0] && (drawnTeams[0].nome || drawnTeams[0].name)) || str;
+  }
+  if (low === "preto" || low === "time preto" || low === "time b" || low === "time 2" || low === "team 2" || low === "team b") {
+    return (drawnTeams[1] && (drawnTeams[1].nome || drawnTeams[1].name)) || str;
+  }
+  if (low === "vermelho" || low === "time vermelho" || low === "time c" || low === "time 3" || low === "team 3" || low === "team c") {
+    return (drawnTeams[2] && (drawnTeams[2].nome || drawnTeams[2].name)) || str;
+  }
+  if (low === "branco" || low === "time branco" || low === "time d" || low === "time 4" || low === "team 4" || low === "team d" || low === "laranja" || low === "time laranja") {
+    return (drawnTeams[3] && (drawnTeams[3].nome || drawnTeams[3].name)) || str;
+  }
+  if (low === "time e" || low === "time 5" || low === "team 5" || low === "team e") {
+    return (drawnTeams[4] && (drawnTeams[4].nome || drawnTeams[4].name)) || str;
+  }
+  if (low === "time f" || low === "time 6" || low === "team 6" || low === "team f") {
+    return (drawnTeams[5] && (drawnTeams[5].nome || drawnTeams[5].name)) || str;
+  }
+
+  const found = drawnTeams.find(t => {
+    const tName = (t.nome || t.name || '').trim().toLowerCase();
+    const tId = (t.id || '').trim().toLowerCase();
+    return tName === low || tId === low;
+  });
+
+  return found ? (found.nome || found.name) : str;
+};
