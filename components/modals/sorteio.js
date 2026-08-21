@@ -152,8 +152,17 @@ function handleExecuteSorteio() {
     customNames = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
   } catch(e) {}
 
+  const usedNames = new Set();
   for (let i = 0; i < qtyTeams; i++) {
-    const customName = (customNames && customNames[i] && String(customNames[i]).trim()) ? String(customNames[i]).trim() : `Time ${getColoName(i)}`;
+    let customName = (customNames && customNames[i] && String(customNames[i]).trim()) ? String(customNames[i]).trim() : `Time ${getColoName(i)}`;
+    let baseName = customName;
+    let counter = 2;
+    while (usedNames.has(customName.toLowerCase())) {
+      customName = `${baseName} ${counter}`;
+      counter++;
+    }
+    usedNames.add(customName.toLowerCase());
+
     const teamObj = {
       id: `team_${i + 1}`,
       nome: customName,

@@ -915,12 +915,21 @@ function renameTeam(teamId, newName) {
   // ===== CORREÇÃO: usa a chave com ID da pelada =====
   const teamsKey = getTeamsKey();
   const teams = JSON.parse(localStorage.getItem(teamsKey)) || [];
-  const team = teams.find(t => t.id === teamId);
-  if (team && newName.trim()) {
+  const team = teams.find(t => String(t.id) === String(teamId));
+  const trimmed = (newName || '').trim();
+  if (team && trimmed) {
+    const isDuplicate = teams.some(t => String(t.id) !== String(teamId) && (t.nome || t.name || '').trim().toLowerCase() === trimmed.toLowerCase());
+    if (isDuplicate) {
+      window.App.showToast(`⚠️ Já existe um time com o nome "${trimmed}". Os nomes dos times devem ser únicos!`, "warning");
+      window.App.renderDrawnTeams();
+      return;
+    }
     const oldName = team.nome;
-    team.nome = newName.trim();
+    team.nome = trimmed;
+    team.name = trimmed;
     // ===== CORREÇÃO: salva na chave com ID da pelada =====
     localStorage.setItem(teamsKey, JSON.stringify(teams));
+    localStorage.setItem("teams", JSON.stringify(teams));
     if (window.App.waitingQueue.includes(oldName)) {
       window.App.waitingQueue[window.App.waitingQueue.indexOf(oldName)] = team.nome;
     }
@@ -946,9 +955,16 @@ function criarTimeManual() {
   // Cores premium da paleta
   const CORES_PALETA = ["#00E676", "#FFD600", "#FF1744", "#2979FF", "#AA00FF", "#00E5FF", "#FF9100", "#F50057"];
   const novaCor = CORES_PALETA[teams.length % CORES_PALETA.length];
-  // Gera uma letra para o time (A, B, C, D, E, F...)
-  const letraTime = String.fromCharCode(65 + teams.length);
-  const nomePadrao = `Time ${letraTime}`;
+
+  // Garante que o nome gerado seja único (sem repetir nomes já existentes)
+  const existingNames = new Set(teams.map(t => (t.nome || t.name || '').trim().toLowerCase()));
+  let idx = 0;
+  let nomePadrao = `Time ${String.fromCharCode(65 + idx)}`;
+  while (existingNames.has(nomePadrao.toLowerCase())) {
+    idx++;
+    nomePadrao = `Time ${String.fromCharCode(65 + idx)}`;
+  }
+
   const novoTime = {
     id: Date.now(), // ID numérico único baseado no tempo
     nome: nomePadrao,
@@ -959,6 +975,7 @@ function criarTimeManual() {
   teams.push(novoTime);
   // ===== CORREÇÃO: salva na chave com ID da pelada =====
   localStorage.setItem(teamsKey, JSON.stringify(teams));
+  localStorage.setItem("teams", JSON.stringify(teams));
   // 2. Adiciona o time à fila de espera das partidas do dia
   // Se já temos pelo menos 2 times na partida ao vivo, os novos times criados entram na fila de espera!
   // Se não temos times ativos no liveMatch, alimentamos a partida ativa primeiro!

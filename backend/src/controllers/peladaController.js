@@ -417,6 +417,25 @@ exports.atualizarLiveState = async (req, res) => {
     // Nunca derruba o live_state (erro só é logado).
     try {
       if (Array.isArray(currentTeams) && currentTeams.length > 0) {
+        // Garantia de unicidade de nomes de times para a pelada
+        const seenTeamNames = new Set();
+        const uniqueCurrentTeams = [];
+
+        for (let i = 0; i < currentTeams.length; i++) {
+          const t = currentTeams[i];
+          let baseName = (t.nome || t.name || `Time ${String.fromCharCode(65 + i)}`).trim();
+          let name = baseName;
+          let counter = 2;
+          while (seenTeamNames.has(name.toLowerCase())) {
+            name = `${baseName} ${counter}`;
+            counter++;
+          }
+          seenTeamNames.add(name.toLowerCase());
+          t.nome = name;
+          t.name = name;
+          uniqueCurrentTeams.push(t);
+        }
+
         // 1. Remove registros anteriores da pelada (evita duplicação)
         await db.query(
           'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
@@ -424,20 +443,24 @@ exports.atualizarLiveState = async (req, res) => {
         );
         await db.query('DELETE FROM times WHERE pelada_id = $1', [id]);
 
-        // 2. Insere cada time e seus jogadores
-        for (const [i, t] of currentTeams.entries()) {
+        // 2. Insere cada time único e seus jogadores
+        for (const [i, t] of uniqueCurrentTeams.entries()) {
           const timeRes = await db.query(
             `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
              VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
+             ON CONFLICT (pelada_id, LOWER(TRIM(nome))) DO UPDATE SET 
+               cor = EXCLUDED.cor, 
+               emblema = EXCLUDED.emblema, 
+               emblema_url = EXCLUDED.emblema_url
              RETURNING id`,
-            [id, t.nome || ('Time ' + (i + 1)), t.cor || null, t.emblema ?? null, t.emblema_url || null]
+            [id, t.nome, t.cor || null, t.emblema ?? null, t.emblema_url || null]
           );
           const timeId = timeRes.rows[0].id;
 
           for (const p of (t.players || [])) {
             if (p.id == null) continue;
             await db.query(
-              'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2)',
+              'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
               [timeId, p.id]
             );
           }
