@@ -86,9 +86,9 @@ window.App.initModalSorteio = function () {
       }).join('');
 
       html += `
-        <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; padding: 6px 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
-          <span style="font-size: 12px; font-weight: 800; color: #1E293B; min-width: 70px;">Equipe ${i + 1}:</span>
-          <select class="form-control sorteio-team-name-select" data-team-index="${i}" style="font-size: 13px; font-weight: 700; height: 36px; color: #0F172A; background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 6px; flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #E2E8F0;">
+          <span style="font-size: 13px; font-weight: 800; color: #1E293B; min-width: 75px; flex-shrink: 0;">Equipe ${i + 1}:</span>
+          <select class="sorteio-team-name-select" data-team-index="${i}" style="width: 100%; height: 40px; line-height: 1.4; padding: 6px 12px; font-size: 14px; font-weight: 700; color: #0F172A; background-color: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 6px; box-sizing: border-box; outline: none; cursor: pointer;">
             ${optionsHtml}
           </select>
         </div>
