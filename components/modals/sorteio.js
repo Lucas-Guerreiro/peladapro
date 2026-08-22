@@ -252,82 +252,167 @@ function handleExecuteSorteio() {
     drawnTeams.push(teamObj);
   }
 
-  // 1. Distribuir goleiros de forma embaralhada respeitando a vaga de cada time
-  const shuffledGks = shuffleArray([...gkList]);
-  shuffledGks.forEach((gk) => {
-    // Encontra o primeiro time com vaga para goleiro e vaga geral disponível
-    const timeDisponivel = drawnTeams.find((t, idx) => {
-      const hasGk = t.players.some(p => p.goleiro);
-      return !hasGk && t.players.length < vagasPorTime[idx];
+  // =========================================================================
+  // NOVO ALGORITMO: SIMULAÇÃO COM 20 CANDIDATOS + SNAKE DRAFT + PENALIDADE DE HISTÓRICO
+  // =========================================================================
+  const pesoEquilibrio = 3;
+  const pesoRepeticao = 1;
+
+  // Carrega histórico de pares de sorteios anteriores deste grupo para evitar repetições
+  const historyKey = groupId ? `teamPairsHistory_${groupId}` : 'teamPairsHistory';
+  let pairHistory = {};
+  try {
+    pairHistory = JSON.parse(localStorage.getItem(historyKey)) || {};
+  } catch (e) {
+    pairHistory = {};
+  }
+
+  // Função auxiliar para calcular repetições de pares entre atletas no mesmo time
+  const calcularRepeticaoPares = (teamsList) => {
+    let score = 0;
+    teamsList.forEach(t => {
+      const pIds = t.players.map(p => String(p.id));
+      for (let a = 0; a < pIds.length; a++) {
+        for (let b = a + 1; b < pIds.length; b++) {
+          const pairKey = pIds[a] < pIds[b] ? `${pIds[a]}_${pIds[b]}` : `${pIds[b]}_${pIds[a]}`;
+          if (pairHistory[pairKey]) {
+            score += pairHistory[pairKey];
+          }
+        }
+      }
+    });
+    return score;
+  };
+
+  // Função auxiliar para calcular a diferença máxima de força (soma de autoavaliação) entre os times
+  const calcularForcaTotal = (t) => {
+    return t.players.reduce((sum, p) => sum + (parseInt(p.autoavaliacao) || 3), 0);
+  };
+
+  const calcularScoreEquilibrio = (teamsList) => {
+    if (teamsList.length <= 1) return 0;
+    const forcas = teamsList.map(calcularForcaTotal);
+    const maxF = Math.max(...forcas);
+    const minF = Math.min(...forcas);
+    return maxF - minF;
+  };
+
+  // Função para executar UMA simulação de sorteio
+  const gerarCandidatoSorteio = () => {
+    // Clona a estrutura básica de times
+    const simTeams = drawnTeams.map(t => ({
+      ...t,
+      players: []
+    }));
+
+    // 1. Restrição de Goleiros: um por time, embaralhados
+    const shuffledGks = shuffleArray([...gkList]);
+    shuffledGks.forEach((gk) => {
+      const timeDisponivel = simTeams.find((t, idx) => {
+        const hasGk = t.players.some(p => p.goleiro);
+        return !hasGk && t.players.length < vagasPorTime[idx];
+      });
+      if (timeDisponivel) {
+        timeDisponivel.players.push(gk);
+      } else {
+        const timeQualquer = simTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
+        if (timeQualquer) {
+          timeQualquer.players.push(gk);
+        }
+      }
     });
 
-    if (timeDisponivel) {
-      timeDisponivel.players.push(gk);
-    } else {
-      // Se não houver time sem goleiro com vaga, coloca no primeiro time que tiver vaga geral
-      const timeQualquer = drawnTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
-      if (timeQualquer) {
-        timeQualquer.players.push(gk);
-      } else {
-        // Goleiros adicionais sem vaga viram jogadores de linha (fallback)
-        fieldList.push(gk);
+    // 2. Ordena jogadores de linha por habilidade (5★ → 1★)
+    let ordenados = [...fieldList].sort((a, b) => {
+      const notaA = parseInt(a.autoavaliacao) || 3;
+      const notaB = parseInt(b.autoavaliacao) || 3;
+      if (notaB === notaA) return Math.random() - 0.5;
+      return notaB - notaA;
+    });
+
+    // 3. Snake Draft com Aleatoriedade Controlada (Pool de força similar: próximos 2 a 3)
+    let serpenteDirection = 1;
+    let currentTeamIdx = 0;
+
+    while (ordenados.length > 0) {
+      // Pega pool dos próximos 2 a 3 de força similar
+      const poolSize = Math.min(ordenados.length, Math.max(2, Math.min(3, qtyTeams)));
+      const poolIdx = Math.floor(Math.random() * poolSize);
+      const escolhido = ordenados.splice(poolIdx, 1)[0];
+
+      let found = false;
+      let startIdx = currentTeamIdx;
+
+      while (!found) {
+        const team = simTeams[currentTeamIdx];
+        const maxVagas = vagasPorTime[currentTeamIdx];
+
+        if (team.players.length < maxVagas) {
+          team.players.push(escolhido);
+          found = true;
+        }
+
+        // Alterna ordem na serpentina
+        currentTeamIdx += serpenteDirection;
+        if (currentTeamIdx >= qtyTeams) {
+          currentTeamIdx = qtyTeams - 1;
+          serpenteDirection = -1;
+        } else if (currentTeamIdx < 0) {
+          currentTeamIdx = 0;
+          serpenteDirection = 1;
+        }
+
+        // Fallback de segurança contra time cheio
+        if (!found && currentTeamIdx === startIdx) {
+          const timeLivre = simTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
+          if (timeLivre) timeLivre.players.push(escolhido);
+          found = true;
+        }
+      }
+    }
+
+    // Refinamento fino por trocas de menor impacto
+    balanceDrawnTeams(simTeams);
+
+    const diffForca = calcularScoreEquilibrio(simTeams);
+    const repeticoes = calcularRepeticaoPares(simTeams);
+    const totalScore = (pesoEquilibrio * diffForca) + (pesoRepeticao * repeticoes);
+
+    return {
+      teams: simTeams,
+      score: totalScore,
+      diffForca,
+      repeticoes
+    };
+  };
+
+  // Executa 20 simulações e escolhe a melhor combinação (menor score)
+  let melhoresCandidatos = [];
+  for (let tentativa = 1; tentativa <= 20; tentativa++) {
+    melhoresCandidatos.push(gerarCandidatoSorteio());
+  }
+
+  // Ordena pelo menor score ponderado
+  melhoresCandidatos.sort((a, b) => a.score - b.score);
+  const melhorCandidato = melhoresCandidatos[0];
+  drawnTeams = melhorCandidato.teams;
+
+  // 4. Registra no histórico os pares sorteados para evitar repetições em futuros sorteios
+  drawnTeams.forEach(t => {
+    const pIds = t.players.map(p => String(p.id));
+    for (let a = 0; a < pIds.length; a++) {
+      for (let b = a + 1; b < pIds.length; b++) {
+        const pairKey = pIds[a] < pIds[b] ? `${pIds[a]}_${pIds[b]}` : `${pIds[b]}_${pIds[a]}`;
+        pairHistory[pairKey] = (pairHistory[pairKey] || 0) + 1;
       }
     }
   });
 
-  // 2. Ordenar jogadores de linha por habilidade
-  let sortedField = [...fieldList].sort((a, b) => b.autoavaliacao - a.autoavaliacao);
+  try {
+    localStorage.setItem(historyKey, JSON.stringify(pairHistory));
+  } catch (e) {}
 
-  // 3. Montar potes com tamanho igual a qtyTeams para balancear o Snake Draft de forma randômica
-  let potes = [];
-  for (let i = 0; i < sortedField.length; i += qtyTeams) {
-    let pote = sortedField.slice(i, i + qtyTeams);
-    // Embaralha o pote de forma totalmente randômica para evitar panelinhas
-    potes.push(shuffleArray(pote));
-  }
-
-  // 4. Distribuir os jogadores dos potes nos times usando Serpentina (Snake Draft) com controle de vagas
-  let direction = 1;
-  let teamIdx = 0;
-
-  potes.forEach((pote) => {
-    pote.forEach((player) => {
-      let foundTeam = false;
-      let startIdx = teamIdx;
-
-      while (!foundTeam) {
-        const team = drawnTeams[teamIdx];
-        const maxVagas = vagasPorTime[teamIdx];
-
-        if (team.players.length < maxVagas) {
-          team.players.push(player);
-          foundTeam = true;
-        }
-
-        // Avança a serpentina
-        teamIdx += direction;
-        if (teamIdx >= qtyTeams) {
-          teamIdx = qtyTeams - 1;
-          direction = -1;
-        } else if (teamIdx < 0) {
-          teamIdx = 0;
-          direction = 1;
-        }
-
-        // Evita loop infinito se o time estiver cheio
-        if (!foundTeam && teamIdx === startIdx) {
-          const timeLivre = drawnTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
-          if (timeLivre) {
-            timeLivre.players.push(player);
-          }
-          foundTeam = true;
-        }
-      }
-    });
-  });
-
-  // 5. Ajustar médias de autoavaliação (refinamento fino de balanceamento)
-  balanceDrawnTeams(drawnTeams);
+  console.log(`[Sorteio Inteligente] Melhor de 20 simulações escolhido! Diferença de força: ${melhorCandidato.diffForca}★ | Repetições históricas: ${melhorCandidato.repeticoes}`);
 
   // Salvar no localStorage local de forma segura usando a chave específica por data/pelada e a genérica
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
