@@ -136,6 +136,14 @@
   color: var(--text-heading);
   transition: var(--transition);
   outline: none;
+  box-sizing: border-box;
+}
+
+select.form-control, select.form-input {
+  padding: 8px 14px;
+  line-height: 1.4;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .form-control:focus, .form-input:focus {
