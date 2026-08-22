@@ -460,7 +460,6 @@ async function updateCheckinPlayersList(peladaId) {
           ${avatarHtml}
           <div style="display:flex; flex-direction:column;">
             <span style="font-size:15px; font-weight:700; color:var(--text-heading);">${nameStr} ${c.goleiro ? '🧤' : ''}</span>
-            <span style="color:var(--warning); font-size:12px;">${'★'.repeat(parseInt(c.autoavaliacao) || 3)}</span>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
@@ -732,7 +731,6 @@ window.App.renderDrawnTeams = async function () {
       <div class="team-draft-header" style="border-top: 4px solid ${team.cor || '#777'}; flex-direction: column; gap: 6px; padding-bottom: 10px;">
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <input type="text" class="team-draft-title-input" value="${team.nome}" onchange="renameTeam('${team.id}', this.value)">
-          <span style="font-size:11px; font-weight:bold; color:var(--text-caption);">⭐${avg}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <div 
@@ -773,7 +771,6 @@ window.App.renderDrawnTeams = async function () {
             ${nameStr} ${p.goleiro ? '🧤' : ''}
           </span>
         </div>
-        <span class="player-draft-stars">${"★".repeat(parseInt(p.autoavaliacao) || 3)}</span>
       `;
       playersList.appendChild(pDiv);
     });
