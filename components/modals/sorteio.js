@@ -22,10 +22,95 @@ window.App.initModalSorteio = function () {
     }
   }
 
-  const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+  // --- Lógica do Seletor de Nomes Cadastrados para a Pelada (Vindo do Banco PostgreSQL) ---
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = currentGroup ? currentGroup.id : null;
+  const selectedNamesKey = groupId ? `customTeamNames_${groupId}` : 'customTeamNames';
+
+  let dbTeamCatalog = [];
+
+  const getSavedSelectedNames = () => {
+    try {
+      return JSON.parse(localStorage.getItem(selectedNamesKey)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+    } catch(e) {
+      return [];
+    }
+  };
+
+  const getMergedCatalog = () => {
+    const list = [];
+    const seen = new Set();
+
+    // 1. Nomes vindos do banco de dados (nomes_times_grupo)
+    if (Array.isArray(dbTeamCatalog) && dbTeamCatalog.length > 0) {
+      dbTeamCatalog.forEach(item => {
+        const n = (typeof item === 'object' ? item.nome : item || '').trim();
+        if (n && !seen.has(n.toLowerCase())) {
+          seen.add(n.toLowerCase());
+          list.push(n);
+        }
+      });
+    }
+
+    // 2. Fallbacks padrão caso não haja registros
+    const DEFAULT_CATALOG = ["Time A", "Time B", "Time C", "Time D", "Time E", "Time F", "Laranja", "Azul", "Branco", "Preto"];
+    DEFAULT_CATALOG.forEach(n => {
+      if (!seen.has(n.toLowerCase())) {
+        seen.add(n.toLowerCase());
+        list.push(n);
+      }
+    });
+
+    return list;
+  };
+
+  const renderTeamSelects = () => {
+    const listContainer = document.getElementById("sorteio-teams-select-list");
+    const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+    if (!listContainer || !modalSelectQtd) return;
+
+    const qtyTeams = parseInt(modalSelectQtd.value) || 4;
+    const catalog = getMergedCatalog();
+    const savedSelected = getSavedSelectedNames();
+
+    let html = '';
+    for (let i = 0; i < qtyTeams; i++) {
+      const defaultVal = savedSelected[i] || catalog[i] || `Time ${String.fromCharCode(65 + i)}`;
+      if (!catalog.includes(defaultVal)) {
+        catalog.push(defaultVal);
+      }
+
+      const optionsHtml = catalog.map(name => {
+        const isSelected = name === defaultVal ? 'selected' : '';
+        return `<option value="${name}" ${isSelected}>${name}</option>`;
+      }).join('');
+
+      html += `
+        <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; padding: 6px 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+          <span style="font-size: 12px; font-weight: 800; color: #1E293B; min-width: 70px;">Equipe ${i + 1}:</span>
+          <select class="form-control sorteio-team-name-select" data-team-index="${i}" style="font-size: 13px; font-weight: 700; height: 36px; color: #0F172A; background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 6px; flex: 1;">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }
+    listContainer.innerHTML = html;
+  };
+
+  renderTeamSelects();
+
+  // Carrega assincronamente os nomes do banco PostgreSQL
+  if (window.Api && window.Api.getCatalogoTimes) {
+    window.Api.getCatalogoTimes(groupId).then(dbItems => {
+      if (Array.isArray(dbItems) && dbItems.length > 0) {
+        dbTeamCatalog = dbItems;
+        renderTeamSelects();
+      }
+    }).catch(() => {});
+  }
+
   if (modalSelectQtd) {
-    const qtdAtual = activePelada.quantidade_times || (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.quantidade_times : null) || 4;
-    modalSelectQtd.value = String(qtdAtual);
+    modalSelectQtd.onchange = renderTeamSelects;
   }
 };
 

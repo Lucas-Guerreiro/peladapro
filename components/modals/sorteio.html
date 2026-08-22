@@ -55,7 +55,20 @@
       </label>
     </div>
 
+    <!-- SELEÇÃO DOS NOMES DOS TIMES CADASTRADOS PARA ESTA PELADA -->
+    <div style="margin-bottom: 24px; background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 12px; padding: 16px;">
+      <label class="form-label" style="font-size: 13px; font-weight: 800; color: #0F172A; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+        🏷️ Nomes das Equipes Participantes
+      </label>
+      <p style="font-size: 11px; color: #64748B; margin-top: 0; margin-bottom: 12px;">
+        Escolha qual nome de time cadastrado no banco jogará em cada equipe:
+      </p>
 
+      <!-- Lista de selects dinâmicos correspondente à quantidade de times -->
+      <div id="sorteio-teams-select-list" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Preenchido dinamicamente via JS com os nomes do banco de dados -->
+      </div>
+    </div>
 
     <button id="btn-execute-sorteio" class="btn btn-md btn-accent" style="width: 100%;">
       Executar Sorteio Snake Draft
