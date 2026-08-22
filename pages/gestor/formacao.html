@@ -101,51 +101,11 @@
         </button>
       </div>
     </div>
-    
-  <!-- CARD EXCLUSIVO DE MINI TORNEIO (Classificação, Agenda de Jogos e Pódio) NA FORMAÇÃO -->
-  <div id="formacao-tournament-card" class="card" style="grid-column: span 3; display: none; border-left: 4px solid #F59E0B; padding: 20px; margin-top: 16px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #D97706; display: flex; align-items: center; gap: 8px;">
-        🏆 Mini Torneio Rápido — Tabela & Jogos
-      </h3>
-      <span id="formacao-tournament-phase-badge" style="font-size: 11px; background: #FEF3C7; color: #B45309; font-weight: 700; padding: 4px 12px; border-radius: 20px;">
-        FASE DE GRUPOS
-      </span>
-    </div>
-
-    <!-- Tabela de Classificação -->
-    <div style="margin-bottom: 20px;">
-      <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: var(--text-heading);">📊 Tabela de Classificação</h4>
-      <div class="table-responsive" style="overflow-x: auto;">
-        <table class="table-custom" style="font-size: 12px; width: 100%;">
-          <thead>
-            <tr>
-              <th style="text-align: center; width: 36px;">#</th>
-              <th>Time</th>
-              <th style="text-align: center;">J</th>
-              <th style="text-align: center;">V</th>
-              <th style="text-align: center;">E</th>
-              <th style="text-align: center;">D</th>
-              <th style="text-align: center;">GP</th>
-              <th style="text-align: center;">GC</th>
-              <th style="text-align: center;">SG</th>
-              <th style="text-align: center; font-weight: 800; color: #D97706;">PTS</th>
-            </tr>
-          </thead>
-          <tbody id="formacao-tournament-standings-body">
-            <!-- Preenchido via JS -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Agenda de Jogos do Torneio -->
-    <div>
-      <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: var(--text-heading);">🗓️ Agenda de Jogos do Torneio</h4>
-      <div id="formacao-tournament-matches-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto;">
-        <!-- Preenchido via JS -->
-      </div>
+    <!-- Grid onde os times sorteados e seus respectivos atletas são renderizados -->
+    <div id="drawn-teams-container" class="teams-draft-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; min-height: 200px;">
+      <!-- Preenchido dinamicamente via JS pelo renderDrawnTeams() -->
     </div>
   </div>
 
 </div>
+
