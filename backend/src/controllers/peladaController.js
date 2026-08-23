@@ -533,7 +533,7 @@ exports.listarTransacoesDoGrupo = async (req, res) => {
        FROM transacoes t
        LEFT JOIN usuarios u ON t.usuario_id = u.id
        WHERE t.grupo_id = $1
-       ORDER BY t.data DESC`,
+       ORDER BY t.data DESC, t.id DESC`,
       [grupoId]
     );
 

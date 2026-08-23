@@ -149,7 +149,9 @@ window.App.renderFinanceiroData = async function() {
     if (!transactions || transactions.length === 0) {
       transBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhum lançamento registrado.</td></tr>`;
     } else {
-      [...transactions].reverse().forEach(t => {
+      // Ordena explicitamente por data decrescente (mais recente no topo)
+      const sortedTransactions = [...transactions].sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
+      sortedTransactions.forEach(t => {
         const tr = document.createElement("tr");
         const dateFormatted = window.Utils ? window.Utils.formatDate(t.data) : (t.data ? new Date(t.data).toLocaleDateString("pt-BR") : '—');
         let valColor = "var(--text-caption)";
