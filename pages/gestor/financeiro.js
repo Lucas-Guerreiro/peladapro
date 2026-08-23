@@ -237,12 +237,150 @@ window.App.renderFinanceiroData = async function() {
   const countBadge = document.getElementById("finances-count-badge");
   if (!groupedContainer) return;
 
-  if (filteredTx.length === 0) {
+  // =========================================================================
+  // NÍVEL 2: SEPARAÇÃO ENTRE CAIXA GERAL / VAQUINHAS E DEMONSTRATIVO DE PELADAS
+  // =========================================================================
+  const geralContainer = document.getElementById("finances-geral-card-container");
+  const groupedContainer = document.getElementById("finances-peladas-grouped-container");
+  const countBadge = document.getElementById("finances-count-badge");
+
+  // 1. Separar transações em dois universos:
+  // - Transações de Pelada: pagamentos Pix de convocação ("Presença de", "Pagamento Pix Convocação") ou despesas/verbas com "(Pelada DD/MM...)"
+  // - Transações Gerais/Vaquinha: Arrecadações ("Arrecadação:"), Verbas avulsas sem vínculo e Despesas avulsas sem vínculo
+  const txPeladas = [];
+  const txGerais = [];
+
+  filteredTx.forEach(t => {
+    const desc = t.descricao || "";
+    const isVaquinha = desc.startsWith("Arrecadação:") || desc.toLowerCase().includes("vaquinha");
+    const hasPeladaVinculada = desc.match(/dia\s+\d{2}\/\d{2}/i) || desc.match(/pelada\s+\d{2}\/\d{2}/i) || desc.includes("Convocação");
+
+    if (isVaquinha) {
+      txGerais.push({ ...t, subTipo: 'vaquinha' });
+    } else if (hasPeladaVinculada) {
+      txPeladas.push(t);
+    } else {
+      txGerais.push({ ...t, subTipo: 'avulso' });
+    }
+  });
+
+  // --- RENDERIZAR CARD DE CAIXA GERAL & VAQUINHAS (NÃO VINCULADOS A PELADAS) ---
+  if (geralContainer) {
+    const totalGeraisEntradas = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
+    const totalGeraisDespesas = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
+    const saldoGerais = totalGeraisEntradas - totalGeraisDespesas;
+
+    let entradasGeraisHtml = "";
+    const entradasGeraisList = txGerais.filter(t => t.isEntrada);
+    if (entradasGeraisList.length === 0) {
+      entradasGeraisHtml = `<div style="font-size: 12px; color: var(--text-caption); padding: 8px 0;">Nenhuma entrada de vaquinha ou aporte no período.</div>`;
+    } else {
+      entradasGeraisHtml = entradasGeraisList.map(e => {
+        const horaFmt = e.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        const dataFmt = e.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
+        const badgeIcon = e.subTipo === 'vaquinha' ? '🏆' : '💵';
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #E2E8F0; font-size: 13px;">
+            <div style="min-width: 0; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${badgeIcon} <strong>${e.descricao}</strong></span>
+              <span style="font-size: 10px; color: #64748B;">${e.categoria} · ${dataFmt} às ${horaFmt}</span>
+            </div>
+            <span style="font-weight: 700; color: #0284C7; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    let despesasGeraisHtml = "";
+    const despesasGeraisList = txGerais.filter(t => !t.isEntrada);
+    if (despesasGeraisList.length === 0) {
+      despesasGeraisHtml = `<div style="font-size: 12px; color: var(--text-caption); padding: 8px 0;">Nenhuma saída ou compra avulsa no período.</div>`;
+    } else {
+      despesasGeraisHtml = despesasGeraisList.map(d => {
+        const horaFmt = d.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        const dataFmt = d.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #FEE2E2; font-size: 13px;">
+            <div style="min-width: 0; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🛍️ <strong>${d.descricao}</strong></span>
+              <span style="font-size: 10px; color: #64748B;">${d.categoria} · ${dataFmt} às ${horaFmt}</span>
+            </div>
+            <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    geralContainer.innerHTML = `
+      <div class="card" style="padding: 18px 20px; border-left: 4px solid #0284C7; background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        
+        <!-- CABEÇALHO DO CARD GERAL -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px; margin-bottom: 14px;">
+          <div>
+            <span style="font-size: 11px; font-weight: 800; color: #0284C7; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Caixa Fixo & Arrecadações Extras</span>
+            <h4 style="margin: 2px 0 0 0; font-size: 16px; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+              🏆 Vaquinhas, Materiais & Entradas/Saídas Avulsas
+            </h4>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <span style="font-size: 12px; color: #475569;">
+              Arrecadado: <strong style="color: #0284C7;">${formatCurrencyBRL(totalGeraisEntradas)}</strong>
+            </span>
+            <span style="font-size: 12px; color: #475569;">
+              Despesas: <strong style="color: #DC2626;">${formatCurrencyBRL(totalGeraisDespesas)}</strong>
+            </span>
+            <span style="font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: #EFF6FF; color: #1D4ED8;">
+              Saldo: ${(saldoGerais >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGerais))}
+            </span>
+          </div>
+        </div>
+
+        <!-- CORPO: ENTRADAS DA VAQUINHA X COMPRAS DE MATERIAIS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+          <!-- Coluna 1: Entradas da Vaquinha / Aportes -->
+          <div style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px; padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 800; color: #0284C7; text-transform: uppercase;">
+                📥 Entradas / Apoios (${entradasGeraisList.length})
+              </span>
+              <span style="font-size: 12px; font-weight: 800; color: #0284C7;">
+                ${formatCurrencyBRL(totalGeraisEntradas)}
+              </span>
+            </div>
+            <div style="max-height: 220px; overflow-y: auto;">
+              ${entradasGeraisHtml}
+            </div>
+          </div>
+
+          <!-- Coluna 2: Despesas e Compras com a Vaquinha -->
+          <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 800; color: #DC2626; text-transform: uppercase;">
+                📤 Saídas / Compras (${despesasGeraisList.length})
+              </span>
+              <span style="font-size: 12px; font-weight: 800; color: #DC2626;">
+                ${formatCurrencyBRL(totalGeraisDespesas)}
+              </span>
+            </div>
+            <div style="max-height: 220px; overflow-y: auto;">
+              ${despesasGeraisHtml}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  // --- RENDERIZAR DEMONSTRATIVO EXCLUSIVO DE PELADAS / JOGOS ---
+  if (!groupedContainer) return;
+
+  if (txPeladas.length === 0 && (!peladasList || peladasList.length === 0)) {
     groupedContainer.innerHTML = `
       <div class="card" style="padding: 36px 20px; text-align: center; background: #FFFFFF; border-radius: 8px;">
         <i data-feather="inbox" style="width: 40px; height: 40px; color: var(--text-caption); display: block; margin: 0 auto 12px auto;"></i>
-        <h4 style="margin: 0 0 6px 0; font-size: 15px; color: var(--text-heading);">Nenhum lançamento no período</h4>
-        <p style="margin: 0; font-size: 13px; color: var(--text-caption);">Utilize os botões acima para injetar verba ou registrar despesas, ou selecione outro período.</p>
+        <h4 style="margin: 0 0 6px 0; font-size: 15px; color: var(--text-heading);">Nenhum lançamento de pelada no período</h4>
       </div>
     `;
     if (countBadge) countBadge.textContent = "0 lançamentos";
@@ -250,26 +388,9 @@ window.App.renderFinanceiroData = async function() {
     return;
   }
 
-  if (countBadge) {
-    countBadge.textContent = `${filteredTx.length} lançamento(s) exibido(s)`;
-  }
+  // Agrupar transações vinculadas estritamente à data de cada Pelada
+  const groupsMap = {};
 
-  // Mapa de peladas cadastradas (data formatada DD/MM/YYYY e DD/MM)
-  const peladasCadastradasMap = {};
-  (peladasList || []).forEach(p => {
-    const rawDate = p.data ? String(p.data).split("T")[0] : "";
-    if (rawDate) {
-      const parts = rawDate.split("-");
-      if (parts.length === 3) {
-        const diaMes = `${parts[2]}/${parts[1]}`;
-        const diaMesAno = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        peladasCadastradasMap[diaMes] = { id: p.id, dataFull: diaMesAno, horario: p.horario || "" };
-        peladasCadastradasMap[diaMesAno] = { id: p.id, dataFull: diaMesAno, horario: p.horario || "" };
-      }
-    }
-  });
-
-  // Pelada padrão mais recente para vincular caso não tenha data explícita no texto
   const ultimaPeladaCadastrada = peladasList && peladasList.length > 0 ? peladasList[0] : null;
   let defaultDataPelada = "24/08/2026";
   if (ultimaPeladaCadastrada && ultimaPeladaCadastrada.data) {
@@ -277,23 +398,15 @@ window.App.renderFinanceiroData = async function() {
     if (pD.length === 3) defaultDataPelada = `${pD[2]}/${pD[1]}/${pD[0]}`;
   }
 
-  // Agrupar transações vinculadas estritamente à data da Pelada
-  const groupsMap = {};
-
-  filteredTx.forEach(t => {
+  txPeladas.forEach(t => {
     let peladaDataIdentificada = null;
 
-    // 1. Tenta extrair a data da pelada da descrição (ex: "dia 24/08" ou "Pelada 24/08/2026")
     const matchDia = t.descricao.match(/dia\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i) || t.descricao.match(/pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i);
     if (matchDia && matchDia[1]) {
       const encontrada = matchDia[1];
-      if (encontrada.length === 5) {
-        peladaDataIdentificada = `${encontrada}/2026`;
-      } else {
-        peladaDataIdentificada = encontrada;
-      }
+      if (encontrada.length === 5) peladaDataIdentificada = `${encontrada}/2026`;
+      else peladaDataIdentificada = encontrada;
     } else {
-      // 2. Se for pagamento de atleta ou despesa de jogo, vincula à data da pelada ativa
       peladaDataIdentificada = defaultDataPelada;
     }
 
@@ -326,7 +439,7 @@ window.App.renderFinanceiroData = async function() {
     }
   });
 
-  // Também garante que peladas cadastradas sem movimentação ainda apareçam no select se desejado
+  // Também garante que peladas cadastradas sem movimentação ainda apareçam no select
   (peladasList || []).forEach(p => {
     const rawDate = p.data ? String(p.data).split("T")[0] : "";
     if (rawDate) {
@@ -356,7 +469,7 @@ window.App.renderFinanceiroData = async function() {
     const currentVal = window.App._financeiroPeladaFilter || "todas";
     const availableKeys = Object.keys(groupsMap);
     
-    let selectOpts = `<option value="todas">📋 Todas as Datas (${availableKeys.length})</option>`;
+    let selectOpts = `<option value="todas">📋 Todas as Peladas (${availableKeys.length})</option>`;
     availableKeys.forEach(k => {
       const isSelected = (k === currentVal) ? "selected" : "";
       const labelData = groupsMap[k].dataPelada ? `📅 ${groupsMap[k].dataPelada}` : `📅 ${groupsMap[k].title}`;
