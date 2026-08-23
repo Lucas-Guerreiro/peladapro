@@ -105,19 +105,18 @@
 
   .acomp-nav-desktop-clear {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     border-top: 1px solid rgba(0, 0, 0, 0.04);
     padding-top: 14px;
     justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    overflow: hidden;
   }
 
   .acomp-nav-item-clear {
     background: transparent;
     border: none;
-    padding: 9px 12px;
+    padding: 8px 11px;
     color: #475569;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 13px;
@@ -131,7 +130,6 @@
     align-items: center;
     gap: 6px;
     line-height: 1.2;
-    flex-shrink: 0;
   }
 
   .acomp-nav-item-clear svg {
