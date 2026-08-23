@@ -90,36 +90,32 @@ window.App.renderFinanceiroData = async function() {
     console.error("[Financeiro] Erro geral ao sincronizar:", err);
   }
 
-  // Normaliza transações
+  // Normaliza transações considerando estritamente créditos como Entradas e débitos como Despesas
   let normalizedTx = rawTransactions.map(t => {
     const rawVal = parseFloat(t.valor || 0);
     const atletaNome = t.usuario_apelido || t.usuario_nome || "";
     const desc = t.descricao || "";
     
     let categoriaExibicao = "Entrada";
-    let isEntrada = false; // true = crédito no caixa, false = débito no caixa
+    let isEntrada = (t.tipo === "credito");
 
-    if (!t.usuario_id) {
-      // Transação manual criada pelo gestor
-      if (t.tipo === "credito") {
-        isEntrada = true;
+    if (t.tipo === "credito") {
+      isEntrada = true;
+      if (!t.usuario_id) {
         categoriaExibicao = "Verba / Receita";
+      } else if (desc.startsWith("Pagamento Pix")) {
+        categoriaExibicao = "Pix Atleta";
       } else {
-        isEntrada = false;
-        categoriaExibicao = "Despesa Geral";
+        categoriaExibicao = "Crédito Carteira";
       }
     } else {
-      // Transação de atleta: o débito do atleta representa entrada no caixa da pelada
-      if (t.tipo === "debito") {
-        isEntrada = true;
-        categoriaExibicao = "Pix Atleta";
-      } else if (t.tipo === "credito" && desc.startsWith("Estorno")) {
-        isEntrada = false;
-        categoriaExibicao = "Estorno Atleta";
+      isEntrada = false;
+      if (!t.usuario_id) {
+        categoriaExibicao = "Despesa";
+      } else if (desc.startsWith("Presença de")) {
+        categoriaExibicao = "Débito Presença";
       } else {
-        // Crédito normal de recarga de carteira
-        isEntrada = true;
-        categoriaExibicao = "Entrada Pix";
+        categoriaExibicao = "Saída";
       }
     }
 
@@ -137,11 +133,22 @@ window.App.renderFinanceiroData = async function() {
     };
   });
 
+  // Para o painel financeiro do gestor:
+  // As entradas são os créditos reais (Pix pago, verbas injetadas)
+  // As despesas são os débitos manuais lançados pelo gestor (quadra, coletes, etc.)
+  const gestorTx = normalizedTx.filter(t => {
+    // Se for crédito: exibe todos (Pix dos atletas + verbas do gestor)
+    if (t.isEntrada) return true;
+    // Se for débito: exibe apenas despesas do grupo (usuario_id null ou estorno de presença)
+    if (!t.usuario_id || t.descricao.startsWith("Estorno")) return true;
+    return false;
+  });
+
   // Filtra por período selecionado
   const agora = new Date();
   const filtro = window.App._financeiroFilter || "este_mes";
 
-  let filteredTx = normalizedTx.filter(t => {
+  let filteredTx = gestorTx.filter(t => {
     if (filtro === "tudo") return true;
     const txDate = t.data;
     if (filtro === "este_mes") {
@@ -167,7 +174,7 @@ window.App.renderFinanceiroData = async function() {
 
   // Saldo geral acumulado de todas as transações da história (Caixa Atual)
   let caixaAtualTotal = 0;
-  normalizedTx.forEach(t => {
+  gestorTx.forEach(t => {
     if (t.isEntrada) caixaAtualTotal += t.valor;
     else caixaAtualTotal -= t.valor;
   });
