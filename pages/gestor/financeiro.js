@@ -249,32 +249,57 @@ window.App.renderFinanceiroData = async function() {
     countBadge.textContent = `${filteredTx.length} lançamento(s) exibido(s)`;
   }
 
-  // Agrupar transações por chave de pelada/data
+  // Mapa de peladas cadastradas (data formatada DD/MM/YYYY e DD/MM)
+  const peladasCadastradasMap = {};
+  (peladasList || []).forEach(p => {
+    const rawDate = p.data ? String(p.data).split("T")[0] : "";
+    if (rawDate) {
+      const parts = rawDate.split("-");
+      if (parts.length === 3) {
+        const diaMes = `${parts[2]}/${parts[1]}`;
+        const diaMesAno = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        peladasCadastradasMap[diaMes] = { id: p.id, dataFull: diaMesAno, horario: p.horario || "" };
+        peladasCadastradasMap[diaMesAno] = { id: p.id, dataFull: diaMesAno, horario: p.horario || "" };
+      }
+    }
+  });
+
+  // Pelada padrão mais recente para vincular caso não tenha data explícita no texto
+  const ultimaPeladaCadastrada = peladasList && peladasList.length > 0 ? peladasList[0] : null;
+  let defaultDataPelada = "24/08/2026";
+  if (ultimaPeladaCadastrada && ultimaPeladaCadastrada.data) {
+    const pD = String(ultimaPeladaCadastrada.data).split("T")[0].split("-");
+    if (pD.length === 3) defaultDataPelada = `${pD[2]}/${pD[1]}/${pD[0]}`;
+  }
+
+  // Agrupar transações vinculadas estritamente à data da Pelada
   const groupsMap = {};
 
   filteredTx.forEach(t => {
-    let groupKey = "Geral";
-    let groupTitle = "Lançamentos Gerais / Caixa Avulso";
-    let peladaDataRef = null;
+    let peladaDataIdentificada = null;
 
-    // 1. Tenta extrair data da pelada da descrição (ex: "dia 24/08" ou "Pelada 24/08/2026")
-    const matchDia = t.descricao.match(/dia\s+(\d{2}\/\d{2})/i) || t.descricao.match(/pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i);
+    // 1. Tenta extrair a data da pelada da descrição (ex: "dia 24/08" ou "Pelada 24/08/2026")
+    const matchDia = t.descricao.match(/dia\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i) || t.descricao.match(/pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i);
     if (matchDia && matchDia[1]) {
-      groupKey = `Pelada_${matchDia[1]}`;
-      groupTitle = `Pelada do dia ${matchDia[1]}`;
-      peladaDataRef = matchDia[1];
+      const encontrada = matchDia[1];
+      if (encontrada.length === 5) {
+        peladaDataIdentificada = `${encontrada}/2026`;
+      } else {
+        peladaDataIdentificada = encontrada;
+      }
     } else {
-      // 2. Se não houver data no texto, associa à data da própria transação
-      const txDataFmt = t.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' });
-      groupKey = `Data_${txDataFmt}`;
-      groupTitle = `Movimentações do dia ${txDataFmt}`;
+      // 2. Se for pagamento de atleta ou despesa de jogo, vincula à data da pelada ativa
+      peladaDataIdentificada = defaultDataPelada;
     }
+
+    const groupKey = `Pelada_${peladaDataIdentificada.replace(/\//g, '-')}`;
+    const groupTitle = `Pelada do dia ${peladaDataIdentificada}`;
 
     if (!groupsMap[groupKey]) {
       groupsMap[groupKey] = {
         key: groupKey,
         title: groupTitle,
-        dataRef: peladaDataRef,
+        dataPelada: peladaDataIdentificada,
         entradas: [],
         despesas: [],
         totalEntradas: 0,
@@ -296,16 +321,41 @@ window.App.renderFinanceiroData = async function() {
     }
   });
 
-  // Popula o Select de Peladas com as opções disponíveis nos dados
+  // Também garante que peladas cadastradas sem movimentação ainda apareçam no select se desejado
+  (peladasList || []).forEach(p => {
+    const rawDate = p.data ? String(p.data).split("T")[0] : "";
+    if (rawDate) {
+      const parts = rawDate.split("-");
+      if (parts.length === 3) {
+        const diaMesAno = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        const gKey = `Pelada_${diaMesAno.replace(/\//g, '-')}`;
+        if (!groupsMap[gKey]) {
+          groupsMap[gKey] = {
+            key: gKey,
+            title: `Pelada do dia ${diaMesAno}`,
+            dataPelada: diaMesAno,
+            entradas: [],
+            despesas: [],
+            totalEntradas: 0,
+            totalDespesas: 0,
+            dataMaisRecente: new Date(p.data)
+          };
+        }
+      }
+    }
+  });
+
+  // Popula o Select de Peladas exibindo apenas as Datas das Peladas
   const selectPeladaEl = document.getElementById("finances-select-pelada");
   if (selectPeladaEl) {
     const currentVal = window.App._financeiroPeladaFilter || "todas";
     const availableKeys = Object.keys(groupsMap);
     
-    let selectOpts = `<option value="todas">📋 Todas as Peladas (${availableKeys.length})</option>`;
+    let selectOpts = `<option value="todas">📋 Todas as Datas (${availableKeys.length})</option>`;
     availableKeys.forEach(k => {
       const isSelected = (k === currentVal) ? "selected" : "";
-      selectOpts += `<option value="${k}" ${isSelected}>📅 ${groupsMap[k].title}</option>`;
+      const labelData = groupsMap[k].dataPelada ? `📅 ${groupsMap[k].dataPelada}` : `📅 ${groupsMap[k].title}`;
+      selectOpts += `<option value="${k}" ${isSelected}>${labelData}</option>`;
     });
     selectPeladaEl.innerHTML = selectOpts;
   }
@@ -317,7 +367,7 @@ window.App.renderFinanceiroData = async function() {
     displayGroups = displayGroups.filter(g => g.key === selectedPeladaKey);
   }
 
-  // Ordena os grupos por data mais recente
+  // Ordena os grupos por data da pelada (mais recente primeiro)
   const sortedGroups = displayGroups.sort((a, b) => b.dataMaisRecente - a.dataMaisRecente);
 
   let htmlCards = "";
