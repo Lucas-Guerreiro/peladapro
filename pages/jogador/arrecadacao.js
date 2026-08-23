@@ -82,13 +82,16 @@ async function renderCampanhasArrecadacao() {
                 const nomeDisplay = a.apelido || a.nome || "Atleta";
                 const inicial = nomeDisplay.charAt(0).toUpperCase();
                 const valorFormatado = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+                const temFoto = a.foto && a.foto.trim().length > 0;
                 
+                const avatarHtml = temFoto 
+                  ? `<img src="${a.foto}" alt="${nomeDisplay}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid #0284C7;">`
+                  : `<div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #0284C7, #0369A1); color: #FFFFFF; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${inicial}</div>`;
+
                 return `
                   <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: all 0.2s ease;">
                     <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                      <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #0284C7, #0369A1); color: #FFFFFF; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        ${inicial}
-                      </div>
+                      ${avatarHtml}
                       <span style="font-size: 12px; font-weight: 700; color: #1E293B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${nomeDisplay}">
                         ${nomeDisplay}
                       </span>
