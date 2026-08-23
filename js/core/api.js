@@ -1278,6 +1278,39 @@ const Api = {
     } catch(e) {
       return { error: 'Erro de conexão ao excluir time' };
     }
+  },
+
+  async criarRecargaPix(valor, grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('/api/pix/recarga', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ valor, grupo_id: grupoId })
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[Api.criarRecargaPix]', e);
+      return { error: 'Erro de conexão com o servidor.' };
+    }
+  },
+
+  async obterStatusRecarga(paymentId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch(`/api/pix/status-recarga/${paymentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[Api.obterStatusRecarga]', e);
+      return { error: 'Erro ao consultar status da recarga.' };
+    }
   }
 };
 

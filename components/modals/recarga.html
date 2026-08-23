@@ -1,0 +1,75 @@
+<!-- Modal: Recarga de Saldo Pessoal via Pix Automático -->
+<div class="modal-backdrop" id="modal-recarga-backdrop">
+  <div class="modal-content" style="max-width: 440px; padding: 24px; border-radius: 16px; background: #ffffff; box-shadow: var(--shadow-lg); color: #0F172A;">
+    
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="plus-circle" style="color: #0284C7; width: 20px; height: 20px;"></i>
+        Adicionar Saldo via Pix
+      </h3>
+      <button class="modal-close" id="btn-close-recarga-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-caption);">&times;</button>
+    </div>
+    
+    <!-- ETAPA 1: DIGITAÇÃO DO VALOR OU ESCOLHA DE VALOR RÁPIDO -->
+    <div id="recarga-input-step">
+      <p class="text-inter" style="font-size: 13px; color: #64748B; margin-bottom: 16px; line-height: 1.4;">
+        Informe o valor que deseja creditar em sua conta. O saldo será liberado <strong>instantaneamente</strong> assim que você realizar o pagamento via Pix.
+      </p>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" style="font-weight: 700; font-size: 13px; color: #334155;">Valor da Recarga (R$):</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 11px; font-weight: 800; color: #64748B; font-size: 16px;">R$</span>
+          <input type="number" step="0.50" min="1.00" id="recarga-custom-amount" class="form-control" placeholder="20,00" value="20.00" style="padding-left: 42px; font-size: 18px; font-weight: 800; color: #0284C7;">
+        </div>
+      </div>
+
+      <!-- Chips de Valores Rápidos -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button type="button" class="btn btn-sm btn-quick-recarga" data-val="10.00" style="flex: 1; padding: 8px 4px; border: 1px solid #CBD5E1; background: #F8FAFC; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; color: #334155;">+ R$ 10</button>
+        <button type="button" class="btn btn-sm btn-quick-recarga" data-val="20.00" style="flex: 1; padding: 8px 4px; border: 1px solid #0284C7; background: rgba(2, 132, 199, 0.08); border-radius: 8px; font-weight: 800; font-size: 13px; cursor: pointer; color: #0284C7;">+ R$ 20</button>
+        <button type="button" class="btn btn-sm btn-quick-recarga" data-val="30.00" style="flex: 1; padding: 8px 4px; border: 1px solid #CBD5E1; background: #F8FAFC; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; color: #334155;">+ R$ 30</button>
+        <button type="button" class="btn btn-sm btn-quick-recarga" data-val="50.00" style="flex: 1; padding: 8px 4px; border: 1px solid #CBD5E1; background: #F8FAFC; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; color: #334155;">+ R$ 50</button>
+      </div>
+
+      <button id="btn-generate-recarga-pix" class="btn btn-primary btn-md" style="width: 100%; height: 46px; font-weight: 800; font-size: 15px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #0284C7;">
+        <i data-feather="qr-code" style="width: 18px; height: 18px;"></i>
+        Gerar Chave Pix para Recarga
+      </button>
+    </div>
+
+    <!-- ETAPA 2: EXIBIÇÃO DO QR CODE E COPIA E COLA DO PIX -->
+    <div id="recarga-pix-step" style="display: none; flex-direction: column; align-items: center; gap: 14px; animation: fadeIn 0.25s ease-out;">
+      <p class="text-inter" style="font-size: 13px; color: #64748B; text-align: center; line-height: 1.5; margin: 0;">
+        Pague o valor de <strong id="recarga-pix-val-display" style="color: #0284C7; font-size: 15px;">R$ 20,00</strong> pelo app do seu banco para o saldo ser creditado imediatamente!
+      </p>
+
+      <!-- Container do QR Code -->
+      <div id="recarga-qrcode-container" style="background: #ffffff; padding: 12px; border-radius: 12px; border: 1px solid #E2E8F0; display: flex; justify-content: center; align-items: center; min-width: 180px; min-height: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <!-- Injetado dinamicamente -->
+      </div>
+
+      <!-- Caixa Copia e Cola -->
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 12px; font-weight: 700; color: #64748B;">Código Pix Copia e Cola:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="recarga-copia-cola-input" readonly class="form-control" style="font-size: 12px; font-family: monospace; background: #F8FAFC; color: #334155;">
+          <button id="btn-copy-recarga-pix" class="btn btn-sm" style="background: #0284C7; color: #FFFFFF; font-weight: 700; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+            <i data-feather="copy" style="width: 14px; height: 14px;"></i> Copiar
+          </button>
+        </div>
+      </div>
+
+      <!-- Status de Espera / Polling -->
+      <div id="recarga-polling-status" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 8px; color: #92400E; font-size: 12px; font-weight: 700;">
+        <span class="spinner-inline" style="width: 14px; height: 14px; border: 2px solid #92400E; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></span>
+        Aguardando pagamento no banco...
+      </div>
+
+      <button id="btn-cancel-recarga-flow" class="btn btn-outline-secondary btn-sm" style="width: 100%; margin-top: 4px; border-radius: 8px; font-weight: 600;">
+        Voltar
+      </button>
+    </div>
+
+  </div>
+</div>

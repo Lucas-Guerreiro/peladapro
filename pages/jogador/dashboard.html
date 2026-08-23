@@ -806,10 +806,16 @@
       </div>
     </div>
 
-    <!-- Saldo -->
-    <div id="player-card-balance" class="card-fifa-balance" style="width: 100%;">
-      <div><span class="label">Meu Saldo</span></div>
-      <span id="player-balance-value" class="value">R$ 0,00</span>
+    <!-- Saldo com Botão de Recarga Automática via Pix -->
+    <div id="player-card-balance" class="card-fifa-balance" style="width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <div>
+        <span class="label" style="display: block; margin-bottom: 2px;">Meu Saldo</span>
+        <span id="player-balance-value" class="value">R$ 0,00</span>
+      </div>
+      <button type="button" class="btn btn-sm" onclick="Router.openModal('recarga')" style="background: #0284C7; color: #FFFFFF; font-weight: 700; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; box-shadow: 0 2px 6px rgba(2,132,199,0.3);" title="Recarregar saldo via Pix automático">
+        <i data-feather="plus-circle" style="width: 14px; height: 14px;"></i>
+        <span>Adicionar Saldo</span>
+      </button>
     </div>
 
     <!-- Botões de Ação -->

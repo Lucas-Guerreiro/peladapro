@@ -10,9 +10,15 @@ db.query(`
     status VARCHAR(50) NOT NULL,
     qr_code TEXT NOT NULL,
     qr_code_base64 TEXT NOT NULL,
+    tipo VARCHAR(50) DEFAULT 'convocacao',
     created_at TIMESTAMPTZ DEFAULT NOW()
   )
 `).catch(err => console.error('[PixController] Erro ao inicializar tabela pagamentos_mercado_pago:', err));
+
+// Adiciona coluna tipo caso ainda não exista
+db.query(`
+  ALTER TABLE pagamentos_mercado_pago ADD COLUMN IF NOT EXISTS tipo VARCHAR(50) DEFAULT 'convocacao'
+`).catch(() => {});
 
 function formatarDataDDMM(dataInput) {
   if (!dataInput) return '';
@@ -814,6 +820,261 @@ exports.simularAprovacao = async (req, res) => {
     if (client) await client.query('ROLLBACK');
     console.error('[simularAprovacao]', err);
     res.status(500).json({ error: 'Erro ao processar simulação.', detail: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+// =========================================================================
+// RECARGA DE SALDO PESSOAL DO ATLETA VIA PIX AUTOMÁTICO
+// =========================================================================
+
+exports.criarRecargaSaldoPix = async (req, res) => {
+  const { valor, grupo_id } = req.body;
+  const usuario_id = req.usuarioId;
+
+  const valorNum = parseFloat(valor);
+  if (isNaN(valorNum) || valorNum < 1.00) {
+    return res.status(400).json({ error: 'O valor mínimo para recarga é de R$ 1,00.' });
+  }
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    const userRes = await client.query('SELECT id, nome, apelido, email, cpf, saldo FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userRes.rows.length === 0) {
+      throw new Error('Usuário não encontrado.');
+    }
+    const user = userRes.rows[0];
+
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+    // Se não há token do Mercado Pago, gera mock para testes
+    if (!accessToken || accessToken === 'SEU_ACCESS_TOKEN_DO_MERCADO_PAGO') {
+      const mockPaymentId = `recarga_mock_${usuario_id}_${Date.now()}`;
+      const mockQr = `00020126580014BR.GOV.BCB.PIX0136${mockPaymentId}520400005303986540${valorNum.toFixed(2)}5802BR5913PeladaProRecarga6009Sao Paulo62070503***6304`;
+
+      await client.query(`
+        INSERT INTO pagamentos_mercado_pago (id, usuario_id, pelada_id, valor, status, qr_code, qr_code_base64, tipo)
+        VALUES ($1, $2, NULL, $3, 'pending', $4, '', 'recarga')
+      `, [mockPaymentId, usuario_id, valorNum, mockQr]);
+
+      await client.query('COMMIT');
+      return res.json({
+        id: mockPaymentId,
+        valor: valorNum,
+        status: 'pending',
+        qr_code: mockQr,
+        qr_code_base64: ''
+      });
+    }
+
+    // Gerar cobrança Pix oficial no Mercado Pago
+    const payerEmail = (user.email && user.email.includes('@') && !user.email.endsWith('@peladapro.local'))
+      ? user.email.trim().toLowerCase()
+      : `atleta_${usuario_id}@gmail.com`;
+
+    const payerName = (user.nome && user.nome.trim()) || user.apelido || 'Atleta Pelada';
+    const nameParts = payerName.split(' ');
+    const firstName = nameParts[0] || 'Atleta';
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'PeladaPro';
+
+    const cleanCpf = (user.cpf || '').replace(/\D/g, '');
+    const hasValidCpf = validarCPF(cleanCpf);
+
+    const payerObj = {
+      email: payerEmail,
+      first_name: firstName,
+      last_name: lastName
+    };
+
+    if (hasValidCpf) {
+      payerObj.identification = {
+        type: 'CPF',
+        number: cleanCpf
+      };
+    }
+
+    const payload = {
+      transaction_amount: valorNum,
+      description: `Recarga de Saldo - ${user.apelido || user.nome} (Pelada Pro)`,
+      payment_method_id: 'pix',
+      payer: payerObj
+    };
+
+    const webhookUrl = process.env.MERCADO_PAGO_WEBHOOK_URL;
+    if (webhookUrl && webhookUrl.startsWith('http')) {
+      payload.notification_url = webhookUrl;
+    }
+
+    const idempotencyKey = `recarga_${usuario_id}_${valorNum}_${Date.now()}`;
+
+    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Idempotency-Key': idempotencyKey
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const mpData = await response.json();
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(mpData.message || mpData.description || 'Erro ao gerar Pix no Mercado Pago.');
+    }
+
+    const paymentId = String(mpData.id);
+    const qrCode = mpData.point_of_interaction.transaction_data.qr_code;
+    const qrCodeBase64 = mpData.point_of_interaction.transaction_data.qr_code_base64;
+
+    await client.query(`
+      INSERT INTO pagamentos_mercado_pago (id, usuario_id, pelada_id, valor, status, qr_code, qr_code_base64, tipo)
+      VALUES ($1, $2, NULL, $3, 'pending', $4, $5, 'recarga')
+    `, [paymentId, usuario_id, valorNum, qrCode, qrCodeBase64]);
+
+    await client.query('COMMIT');
+    res.json({
+      id: paymentId,
+      valor: valorNum,
+      status: 'pending',
+      qr_code: qrCode,
+      qr_code_base64: qrCodeBase64
+    });
+
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[criarRecargaSaldoPix]', err);
+    res.status(400).json({ error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+exports.consultarStatusRecarga = async (req, res) => {
+  const { paymentId } = req.params;
+  const usuario_id = req.usuarioId;
+
+  let client;
+  try {
+    const payRes = await db.query(
+      `SELECT id, usuario_id, valor, status, created_at, tipo FROM pagamentos_mercado_pago WHERE id = $1 AND usuario_id = $2`,
+      [paymentId, usuario_id]
+    );
+
+    if (payRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Pagamento não encontrado.' });
+    }
+
+    const pagamento = payRes.rows[0];
+
+    // Se já está aprovado localmente, retorna
+    if (pagamento.status === 'approved') {
+      const uRes = await db.query('SELECT saldo FROM usuarios WHERE id = $1', [usuario_id]);
+      return res.json({ status: 'approved', novoSaldo: uRes.rows[0]?.saldo });
+    }
+
+    // Se ainda está pending e temos token do MP, consulta a API do Mercado Pago
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    if (accessToken && !String(paymentId).startsWith('recarga_mock_')) {
+      try {
+        const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        if (mpRes.ok) {
+          const mpData = await mpRes.json();
+          if (mpData.status === 'approved') {
+            client = await db.pool.connect();
+            await client.query('BEGIN');
+
+            const updPay = await client.query(
+              `UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1 AND status = 'pending' RETURNING id`,
+              [paymentId]
+            );
+
+            if (updPay.rows.length > 0) {
+              const valorNum = parseFloat(pagamento.valor);
+              
+              // 1. Creditar no saldo do atleta
+              const updUser = await client.query(
+                `UPDATE usuarios SET saldo = saldo + $1 WHERE id = $2 RETURNING saldo, nome, apelido`,
+                [valorNum, usuario_id]
+              );
+
+              // 2. Registrar no fluxo financeiro do grupo
+              const atletaNome = updUser.rows[0].apelido || updUser.rows[0].nome || 'Atleta';
+              const grupoPadrao = 7;
+              await client.query(`
+                INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao, data)
+                VALUES ($1, $2, $3, 'credito', $4, NOW())
+              `, [usuario_id, grupoPadrao, valorNum, `Recarga de Saldo Pix (${atletaNome})`]);
+
+              await client.query('COMMIT');
+              return res.json({ status: 'approved', novoSaldo: updUser.rows[0].saldo });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Polling Recarga MP]', e.message);
+      }
+    }
+
+    res.json({ status: pagamento.status });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[consultarStatusRecarga]', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+exports.simularAprovacaoRecarga = async (req, res) => {
+  const { payment_id } = req.body;
+  if (!payment_id) return res.status(400).json({ error: 'payment_id é obrigatório' });
+
+  let client;
+  try {
+    client = await db.pool.connect();
+    await client.query('BEGIN');
+
+    const payRes = await client.query(
+      `SELECT usuario_id, valor, status FROM pagamentos_mercado_pago WHERE id = $1`,
+      [payment_id]
+    );
+
+    if (payRes.rows.length === 0) throw new Error('Pagamento não encontrado');
+    const { usuario_id, valor, status } = payRes.rows[0];
+
+    if (status !== 'pending') {
+      await client.query('ROLLBACK');
+      return res.json({ message: 'Já processado anteriormente.' });
+    }
+
+    await client.query(`UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1`, [payment_id]);
+
+    const valorNum = parseFloat(valor);
+    const updUser = await client.query(
+      `UPDATE usuarios SET saldo = saldo + $1 WHERE id = $2 RETURNING saldo, nome, apelido`,
+      [valorNum, usuario_id]
+    );
+
+    const atletaNome = updUser.rows[0].apelido || updUser.rows[0].nome || 'Atleta';
+    await client.query(`
+      INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao, data)
+      VALUES ($1, 7, $2, 'credito', $3, NOW())
+    `, [usuario_id, valorNum, `Recarga de Saldo Pix (${atletaNome})`]);
+
+    await client.query('COMMIT');
+    res.json({
+      message: 'Recarga aprovada com sucesso!',
+      novoSaldo: updUser.rows[0].saldo
+    });
+  } catch (e) {
+    if (client) await client.query('ROLLBACK');
+    res.status(400).json({ error: e.message });
   } finally {
     if (client) client.release();
   }
