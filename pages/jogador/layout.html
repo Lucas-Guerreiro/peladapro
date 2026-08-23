@@ -16,7 +16,7 @@
   }
 
   .acomp-center-container {
-    max-width: 980px; /* Largura perfeita para cartões e tabelas */
+    max-width: 1080px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -105,18 +105,18 @@
 
   .acomp-nav-desktop-clear {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     border-top: 1px solid rgba(0, 0, 0, 0.04);
     padding-top: 14px;
     justify-content: flex-start;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     overflow: hidden;
   }
 
   .acomp-nav-item-clear {
     background: transparent;
     border: none;
-    padding: 8px 11px;
+    padding: 8px 10px;
     color: #475569;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 13px;
@@ -128,13 +128,14 @@
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     line-height: 1.2;
+    flex-shrink: 0;
   }
 
   .acomp-nav-item-clear svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     stroke-width: 2;
     color: #64748B;
     transition: color 0.2s ease;
@@ -188,6 +189,35 @@
       align-items: center;
       width: 100%;
     }
+  }
+
+  .acomp-hamburger-btn {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    color: #0F172A;
+    cursor: pointer;
+    padding: 6px 10px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .acomp-hamburger-btn svg {
+    width: 18px;
+    height: 18px;
+    color: #0F172A;
+  }
+
+  .acomp-hamburger-btn:hover {
+    background: #E2E8F0;
+    color: #0284C7;
+  }
+
+  .acomp-hamburger-btn:hover svg {
+    color: #0284C7;
   }
 
   .acomp-mobile-dropdown {
@@ -314,7 +344,9 @@
           <button class="btn-global-modo-noturno-icon" onclick="window.App.toggleModoNoturnoGlobal()" title="Alternar Modo Noturno" style="display: inline-flex; align-items: center; justify-content: center; background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 8px; padding: 6px; cursor: pointer;">
             <i data-feather="moon" style="width: 16px; height: 16px; color: #0F172A;"></i>
           </button>
-          <button class="acomp-hamburger-btn" onclick="AcompanhamentoGlobal.toggleMobileMenu()">☰</button>
+          <button class="acomp-hamburger-btn" onclick="AcompanhamentoGlobal.toggleMobileMenu()">
+            <i data-feather="menu" style="width: 18px; height: 18px;"></i>
+          </button>
         </div>
       </div>
       
