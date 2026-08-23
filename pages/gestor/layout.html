@@ -16,7 +16,7 @@
   }
 
   .gestor-center-container {
-    max-width: 1080px; /* Largura otimizada para tabelas e cards da gestão */
+    max-width: 1100px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -116,37 +116,61 @@
 
   .gestor-nav-desktop-clear {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     border-top: 1px solid rgba(0, 0, 0, 0.04);
     padding-top: 14px;
     justify-content: flex-start;
     overflow-x: auto;
+    scrollbar-width: thin;
+    white-space: nowrap;
   }
 
   .gestor-nav-item-clear {
     background: transparent;
     border: none;
-    padding: 10px 16px;
-    color: #334155;
+    padding: 9px 13px;
+    color: #475569;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 8px;
     transition: all 0.2s ease;
     text-align: center;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+
+  .gestor-nav-item-clear svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    color: #64748B;
+    transition: color 0.2s ease;
   }
 
   .gestor-nav-item-clear:hover {
     color: #0284C7;
-    background: rgba(2, 132, 199, 0.04);
+    background: rgba(2, 132, 199, 0.05);
+  }
+
+  .gestor-nav-item-clear:hover svg {
+    color: #0284C7;
   }
 
   .gestor-nav-item-clear.active {
-    background: rgba(2, 132, 199, 0.08);
+    background: rgba(2, 132, 199, 0.09);
     color: #0284C7;
     font-weight: 700;
+  }
+
+  .gestor-nav-item-clear.active svg {
+    color: #0284C7;
+    stroke-width: 2.2;
   }
 
   /* --- Cabeçalho Unificado Mobile --- */
@@ -215,7 +239,7 @@
     background: transparent;
     border: none;
     text-align: left;
-    padding: 10px 8px;
+    padding: 10px 10px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 14px;
     font-weight: 600;
@@ -223,6 +247,16 @@
     cursor: pointer;
     border-radius: 8px;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gestor-mobile-dropdown button svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    color: #64748B;
   }
 
   .gestor-mobile-dropdown button:hover {
@@ -230,10 +264,18 @@
     color: #0284C7;
   }
 
+  .gestor-mobile-dropdown button:hover svg {
+    color: #0284C7;
+  }
+
   .gestor-mobile-dropdown button.active {
     color: #0284C7;
     background: rgba(2, 132, 199, 0.08);
     font-weight: 700;
+  }
+
+  .gestor-mobile-dropdown button.active svg {
+    color: #0284C7;
   }
 </style>
 
@@ -264,12 +306,30 @@
       
       <!-- ABAS DE NAVEGAÇÃO DO GESTOR -->
       <nav class="gestor-nav-desktop-clear tabs-navigation">
-        <button class="gestor-nav-item-clear tab-btn" data-name="atletas" onclick="Router.navigate('#/gestor/atletas')">👥 Elenco Atletas</button>
-        <button class="gestor-nav-item-clear tab-btn" data-name="times" onclick="Router.navigate('#/gestor/times')">🛡️ Gerenciar Times</button>
-        <button class="gestor-nav-item-clear tab-btn" data-name="config" onclick="Router.navigate('#/gestor/config')">⚙️ Configurações</button>
-        <button class="gestor-nav-item-clear tab-btn" data-name="formacao" onclick="Router.navigate('#/gestor/formacao')">⚡ Formação / Sorteio</button>
-        <button class="gestor-nav-item-clear tab-btn" data-name="partidas" onclick="Router.navigate('#/gestor/partidas')">⚽ Partida ao Vivo</button>
-        <button class="gestor-nav-item-clear tab-btn" data-name="financeiro" onclick="Router.navigate('#/gestor/financeiro')">💵 Financeiro</button>
+        <button class="gestor-nav-item-clear tab-btn" data-name="atletas" onclick="Router.navigate('#/gestor/atletas')">
+          <i data-feather="users"></i>
+          <span>Elenco Atletas</span>
+        </button>
+        <button class="gestor-nav-item-clear tab-btn" data-name="times" onclick="Router.navigate('#/gestor/times')">
+          <i data-feather="shield"></i>
+          <span>Gerenciar Times</span>
+        </button>
+        <button class="gestor-nav-item-clear tab-btn" data-name="config" onclick="Router.navigate('#/gestor/config')">
+          <i data-feather="settings"></i>
+          <span>Configurações</span>
+        </button>
+        <button class="gestor-nav-item-clear tab-btn" data-name="formacao" onclick="Router.navigate('#/gestor/formacao')">
+          <i data-feather="shuffle"></i>
+          <span>Formação / Sorteio</span>
+        </button>
+        <button class="gestor-nav-item-clear tab-btn" data-name="partidas" onclick="Router.navigate('#/gestor/partidas')">
+          <i data-feather="play-circle"></i>
+          <span>Partida ao Vivo</span>
+        </button>
+        <button class="gestor-nav-item-clear tab-btn" data-name="financeiro" onclick="Router.navigate('#/gestor/financeiro')">
+          <i data-feather="dollar-sign"></i>
+          <span>Financeiro</span>
+        </button>
       </nav>
     </header>
 
@@ -294,15 +354,33 @@
           <span class="gestor-badge-role">Gestor</span>
         </div>
 
-        <button class="tab-btn" data-name="atletas" onclick="Router.navigate('#/gestor/atletas'); GestorGlobal.closeMobileMenu();">👥 Elenco Atletas</button>
-        <button class="tab-btn" data-name="times" onclick="Router.navigate('#/gestor/times'); GestorGlobal.closeMobileMenu();">🛡️ Gerenciar Times</button>
-        <button class="tab-btn" data-name="config" onclick="Router.navigate('#/gestor/config'); GestorGlobal.closeMobileMenu();">⚙️ Configurações</button>
-        <button class="tab-btn" data-name="formacao" onclick="Router.navigate('#/gestor/formacao'); GestorGlobal.closeMobileMenu();">⚡ Formação / Sorteio</button>
-        <button class="tab-btn" data-name="partidas" onclick="Router.navigate('#/gestor/partidas'); GestorGlobal.closeMobileMenu();">⚽ Partida ao Vivo</button>
-        <button class="tab-btn" data-name="financeiro" onclick="Router.navigate('#/gestor/financeiro'); GestorGlobal.closeMobileMenu();">💵 Financeiro</button>
-        <button class="tab-btn" onclick="window.PWAInstaller.triggerInstall(); GestorGlobal.closeMobileMenu();" style="color: #0284C7; font-weight: 700;">📲 Instalar App</button>
-        <button class="tab-btn" onclick="window.App.toggleModoNoturnoGlobal(); GestorGlobal.closeMobileMenu();" style="font-weight: 700;">🌙 <span class="lbl-modo-noturno-txt">Modo Noturno</span></button>
-        <button class="tab-btn" onclick="Auth.logout()" style="color: #EF4444; font-weight: 700;">🚪 Sair do App</button>
+        <button class="tab-btn" data-name="atletas" onclick="Router.navigate('#/gestor/atletas'); GestorGlobal.closeMobileMenu();">
+          <i data-feather="users"></i> Elenco Atletas
+        </button>
+        <button class="tab-btn" data-name="times" onclick="Router.navigate('#/gestor/times'); GestorGlobal.closeMobileMenu();">
+          <i data-feather="shield"></i> Gerenciar Times
+        </button>
+        <button class="tab-btn" data-name="config" onclick="Router.navigate('#/gestor/config'); GestorGlobal.closeMobileMenu();">
+          <i data-feather="settings"></i> Configurações
+        </button>
+        <button class="tab-btn" data-name="formacao" onclick="Router.navigate('#/gestor/formacao'); GestorGlobal.closeMobileMenu();">
+          <i data-feather="shuffle"></i> Formação / Sorteio
+        </button>
+        <button class="tab-btn" data-name="partidas" onclick="Router.navigate('#/gestor/partidas'); GestorGlobal.closeMobileMenu();">
+          <i data-feather="play-circle"></i> Partida ao Vivo
+        </button>
+        <button class="tab-btn" data-name="financeiro" onclick="Router.navigate('#/gestor/financeiro'); GestorGlobal.closeMobileMenu();">
+          <i data-feather="dollar-sign"></i> Financeiro
+        </button>
+        <button class="tab-btn" onclick="window.PWAInstaller.triggerInstall(); GestorGlobal.closeMobileMenu();" style="color: #0284C7; font-weight: 700;">
+          <i data-feather="download"></i> Instalar App
+        </button>
+        <button class="tab-btn" onclick="window.App.toggleModoNoturnoGlobal(); GestorGlobal.closeMobileMenu();" style="font-weight: 700;">
+          🌙 <span class="lbl-modo-noturno-txt">Modo Noturno</span>
+        </button>
+        <button class="tab-btn" onclick="Auth.logout()" style="color: #EF4444; font-weight: 700;">
+          <i data-feather="log-out"></i> Sair do App
+        </button>
       </div>
     </header>
 

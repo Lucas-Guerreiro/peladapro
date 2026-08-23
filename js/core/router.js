@@ -250,6 +250,10 @@ const Router = {
       btn.classList.toggle('active', btn.dataset.name === tabName);
     });
 
+    if (window.feather) {
+      try { window.feather.replace(); } catch(e) {}
+    }
+
     this._afterPageLoad(route);
   },
 

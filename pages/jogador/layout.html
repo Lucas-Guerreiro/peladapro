@@ -1,6 +1,6 @@
 <!-- pages/jogador/layout.html — Layout Unificado do Jogador -->
 <style>
-  /* Ocultar o cabeçalho global antigo do router */
+  /* Ocultar o cabeçalho global antigo caso esteja no DOM */
   #main-header, .main-header {
     display: none !important;
   }
@@ -11,12 +11,12 @@
     min-height: 100vh;
     font-family: 'Inter', -apple-system, sans-serif;
     color: #1E293B;
-    padding: 40px 20px;
+    padding: 30px 20px;
     margin: 0;
   }
 
   .acomp-center-container {
-    max-width: 720px; /* Largura expandida para acomodar todas as abas do menu no card sem estouro */
+    max-width: 980px; /* Largura perfeita para cartões e tabelas */
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -38,19 +38,16 @@
     }
   }
 
-  /* --- Cabeçalho Unificado Desktop (Card Único) --- */
+  /* --- Cabeçalho Unificado Desktop (Card Único Claro) --- */
   .acomp-header-unified-card {
     background: #FFFFFF;
     border-radius: 16px;
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);
-    padding: 20px;
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    width: 100%;
-    box-sizing: border-box;
-    overflow: hidden;
   }
 
   .acomp-header-row1 {
@@ -63,16 +60,17 @@
 
   .acomp-logo-clear {
     font-family: 'Inter', sans-serif;
-    font-size: 26px;
+    font-size: 24px;
+    font-weight: 800;
     letter-spacing: 1px;
     color: #0F172A;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .acomp-logo-clear span {
-    color: #0284C7; /* Azul sofisticado */
+    color: #0284C7; /* Azul padrão */
   }
 
   .acomp-user-info-clear {
@@ -109,47 +107,59 @@
     display: flex;
     gap: 4px;
     border-top: 1px solid rgba(0, 0, 0, 0.04);
-    padding-top: 12px;
-    justify-content: space-between;
-    width: 100%;
-    box-sizing: border-box;
+    padding-top: 14px;
+    justify-content: flex-start;
     overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    white-space: nowrap;
   }
 
-  .acomp-nav-desktop-clear::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Ajuste no estilo dos botões das abas */
   .acomp-nav-item-clear {
-    flex: 1 1 auto;
-    min-width: max-content;
     background: transparent;
     border: none;
-    padding: 8px 8px;
-    color: #334155; /* Contraste aumentado para acessibilidade */
+    padding: 9px 12px;
+    color: #475569;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-    font-size: 12.5px; /* Tamanho ajustado para caber confortavelmente dentro do card */
+    font-size: 13px;
     font-weight: 600;
-    text-transform: none; /* Sentenças normais facilitam a leitura visual de palavras */
-    letter-spacing: 0px; /* Espaçamento natural entre as letras */
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 8px;
     transition: all 0.2s ease;
     text-align: center;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+
+  .acomp-nav-item-clear svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    color: #64748B;
+    transition: color 0.2s ease;
   }
 
   .acomp-nav-item-clear:hover {
     color: #0284C7;
-    background: rgba(2, 132, 199, 0.04);
+    background: rgba(2, 132, 199, 0.05);
+  }
+
+  .acomp-nav-item-clear:hover svg {
+    color: #0284C7;
   }
 
   .acomp-nav-item-clear.active {
-    background: rgba(2, 132, 199, 0.08);
+    background: rgba(2, 132, 199, 0.09);
     color: #0284C7;
+    font-weight: 700;
+  }
+
+  .acomp-nav-item-clear.active svg {
+    color: #0284C7;
+    stroke-width: 2.2;
   }
 
   /* --- Cabeçalho Unificado Mobile --- */
@@ -182,27 +192,6 @@
     }
   }
 
-  .acomp-hamburger-btn {
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    border-radius: 8px;
-    font-size: 18px;
-    color: #0F172A;
-    cursor: pointer;
-    padding: 4px 10px;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .acomp-hamburger-btn:hover {
-    background: #E2E8F0;
-    color: #0284C7;
-  }
-
-  /* --- Menu Dropdown Mobile --- */
   .acomp-mobile-dropdown {
     display: none;
     flex-direction: column;
@@ -217,25 +206,43 @@
     background: transparent;
     border: none;
     text-align: left;
-    padding: 10px 4px;
+    padding: 10px 10px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 14px;
     font-weight: 600;
     color: #334155;
     cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .acomp-mobile-dropdown button svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    color: #64748B;
+  }
+
+  .acomp-mobile-dropdown button:hover {
+    background: rgba(2, 132, 199, 0.04);
+    color: #0284C7;
+  }
+
+  .acomp-mobile-dropdown button:hover svg {
+    color: #0284C7;
   }
 
   .acomp-mobile-dropdown button.active {
     color: #0284C7;
+    background: rgba(2, 132, 199, 0.08);
     font-weight: 700;
   }
 
-  .acomp-dropdown-user {
-    font-size: 13px;
-    font-weight: 700;
-    color: #0F172A;
-    margin-bottom: 4px;
-    padding: 0 4px;
+  .acomp-mobile-dropdown button.active svg {
+    color: #0284C7;
   }
 </style>
 
@@ -246,7 +253,7 @@
     <header class="acomp-header-unified-card">
       <div class="acomp-header-row1">
         <div class="acomp-logo-clear">
-          <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 22px; height: 22px;"></i>
+          <i data-feather="target" style="stroke-width: 2.5; color: #0284C7; width: 24px; height: 24px;"></i>
           PELADA<span>PRO</span>
         </div>
         <div class="acomp-user-info-clear">
@@ -263,13 +270,34 @@
       </div>
       
       <nav class="acomp-nav-desktop-clear">
-        <button class="acomp-nav-item-clear tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard')">Dashboard</button>
-        <button class="acomp-nav-item-clear tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao')">Convocação</button>
-        <button class="acomp-nav-item-clear tab-btn" data-name="arrecadacao" onclick="Router.navigate('#/jogador/arrecadacao')">Vaquinha / Pix</button>
-        <button class="acomp-nav-item-clear tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento')">Acompanhamento</button>
-        <button class="acomp-nav-item-clear tab-btn" data-name="ranking" onclick="Router.navigate('#/jogador/ranking')">Ranking</button>
-        <button class="acomp-nav-item-clear tab-btn" data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho')">Desempenho</button>
-        <button class="acomp-nav-item-clear tab-btn" data-name="financeiro" onclick="Router.navigate('#/jogador/financeiro')">Financeiro</button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard')">
+          <i data-feather="home"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao')">
+          <i data-feather="check-circle"></i>
+          <span>Convocação</span>
+        </button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="arrecadacao" onclick="Router.navigate('#/jogador/arrecadacao')">
+          <i data-feather="heart"></i>
+          <span>Vaquinha / Pix</span>
+        </button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento')">
+          <i data-feather="activity"></i>
+          <span>Acompanhamento</span>
+        </button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="ranking" onclick="Router.navigate('#/jogador/ranking')">
+          <i data-feather="award"></i>
+          <span>Ranking</span>
+        </button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho')">
+          <i data-feather="trending-up"></i>
+          <span>Desempenho</span>
+        </button>
+        <button class="acomp-nav-item-clear tab-btn" data-name="financeiro" onclick="Router.navigate('#/jogador/financeiro')">
+          <i data-feather="dollar-sign"></i>
+          <span>Financeiro</span>
+        </button>
       </nav>
     </header>
 
@@ -289,17 +317,38 @@
       {{ROLE_TOGGLE_HEADER_MOBILE}}
       
       <div class="acomp-mobile-dropdown" id="acomp-mobile-dropdown">
-        <div class="acomp-dropdown-user" id="layout-user-name-mobile">{{USER_NAME}}</div>
-        <button class="tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard'); AcompanhamentoGlobal.closeMobileMenu();">Dashboard</button>
-        <button class="tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao'); AcompanhamentoGlobal.closeMobileMenu();">Convocação</button>
-        <button class="tab-btn" data-name="arrecadacao" onclick="Router.navigate('#/jogador/arrecadacao'); AcompanhamentoGlobal.closeMobileMenu();">Vaquinha / Pix</button>
-        <button class="tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento'); AcompanhamentoGlobal.closeMobileMenu();">Acompanhamento</button>
-        <button class="tab-btn" data-name="ranking" onclick="Router.navigate('#/jogador/ranking'); AcompanhamentoGlobal.closeMobileMenu();">Ranking</button>
-        <button class="tab-btn" data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho'); AcompanhamentoGlobal.closeMobileMenu();">Desempenho</button>
-        <button class="tab-btn" data-name="financeiro" onclick="Router.navigate('#/jogador/financeiro'); AcompanhamentoGlobal.closeMobileMenu();">Financeiro</button>
-        <button class="tab-btn" onclick="window.PWAInstaller.triggerInstall(); AcompanhamentoGlobal.closeMobileMenu();" style="color: #0284C7; font-weight: 700;">📲 Instalar App</button>
-        <button class="tab-btn" onclick="window.App.toggleModoNoturnoGlobal(); AcompanhamentoGlobal.closeMobileMenu();" style="font-weight: 700;">🌙 <span class="lbl-modo-noturno-txt">Modo Noturno</span></button>
-        <button class="tab-btn" onclick="Auth.logout()" style="color: #EF4444; font-weight: 700;">🚪 Sair do App</button>
+        <div class="acomp-dropdown-user" id="layout-user-name-mobile" style="font-size: 13px; font-weight: 700; color: #0F172A; padding: 4px 8px; margin-bottom: 4px;">{{USER_NAME}}</div>
+        
+        <button class="tab-btn" data-name="dashboard" onclick="Router.navigate('#/jogador/dashboard'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="home"></i> Dashboard
+        </button>
+        <button class="tab-btn" data-name="convocacao" onclick="Router.navigate('#/jogador/convocacao'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="check-circle"></i> Convocação
+        </button>
+        <button class="tab-btn" data-name="arrecadacao" onclick="Router.navigate('#/jogador/arrecadacao'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="heart"></i> Vaquinha / Pix
+        </button>
+        <button class="tab-btn" data-name="acompanhamento" onclick="Router.navigate('#/jogador/acompanhamento'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="activity"></i> Acompanhamento
+        </button>
+        <button class="tab-btn" data-name="ranking" onclick="Router.navigate('#/jogador/ranking'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="award"></i> Ranking
+        </button>
+        <button class="tab-btn" data-name="desempenho" onclick="Router.navigate('#/jogador/desempenho'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="trending-up"></i> Desempenho
+        </button>
+        <button class="tab-btn" data-name="financeiro" onclick="Router.navigate('#/jogador/financeiro'); AcompanhamentoGlobal.closeMobileMenu();">
+          <i data-feather="dollar-sign"></i> Financeiro
+        </button>
+        <button class="tab-btn" onclick="window.PWAInstaller.triggerInstall(); AcompanhamentoGlobal.closeMobileMenu();" style="color: #0284C7; font-weight: 700;">
+          <i data-feather="download"></i> Instalar App
+        </button>
+        <button class="tab-btn" onclick="window.App.toggleModoNoturnoGlobal(); AcompanhamentoGlobal.closeMobileMenu();" style="font-weight: 700;">
+          🌙 <span class="lbl-modo-noturno-txt">Modo Noturno</span>
+        </button>
+        <button class="tab-btn" onclick="Auth.logout()" style="color: #EF4444; font-weight: 700;">
+          <i data-feather="log-out"></i> Sair do App
+        </button>
       </div>
     </header>
 
