@@ -2,18 +2,53 @@
 // MODAL: REGISTRAR DESPESA (despesa.js)
 // ==========================================================================
 
-window.App.initModalDespesa = function() {
-  document.getElementById("btn-close-expense-modal").onclick = window.App.closeModal;
-  document.getElementById("btn-save-expense").onclick = handleSaveExpense;
+window.App.initModalDespesa = async function() {
+  const btnClose = document.getElementById("btn-close-expense-modal");
+  if (btnClose) btnClose.onclick = window.App.closeModal;
+
+  const btnSave = document.getElementById("btn-save-expense");
+  if (btnSave) btnSave.onclick = handleSaveExpense;
+
+  // Carrega opções de peladas para vínculo opcional
+  const selectPelada = document.getElementById("expense-pelada-select");
+  if (selectPelada) {
+    selectPelada.innerHTML = `<option value="">Nenhuma (Despesa Geral)</option>`;
+    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
+      try {
+        const peladas = await window.Api.listarDatasDoGrupo(group.id);
+        if (Array.isArray(peladas) && peladas.length > 0) {
+          peladas.forEach(p => {
+            const rawDate = p.data ? String(p.data).split("T")[0] : "";
+            const dataFmt = window.Utils ? window.Utils.formatDate(rawDate || p.data) : (rawDate || "Data");
+            const opt = document.createElement("option");
+            opt.value = dataFmt;
+            opt.textContent = `📅 Pelada ${dataFmt} (${p.horario || ""})`;
+            selectPelada.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.warn("[ModalDespesa] Erro ao carregar peladas:", e);
+      }
+    }
+  }
 };
 
 async function handleSaveExpense() {
-  const desc = document.getElementById("expense-description").value.trim();
   const val = parseFloat(document.getElementById("expense-value").value);
+  const cat = document.getElementById("expense-category") ? document.getElementById("expense-category").value : "Outros";
+  const desc = document.getElementById("expense-description").value.trim();
+  const peladaVinculada = document.getElementById("expense-pelada-select") ? document.getElementById("expense-pelada-select").value : "";
 
-  if (!desc || isNaN(val) || val <= 0) {
-    window.App.showToast("Preencha a descrição e um valor válido para a despesa.", "warning");
+  if (isNaN(val) || val <= 0 || !desc) {
+    window.App.showToast("Informe o valor e a descrição da despesa.", "warning");
     return;
+  }
+
+  // Formata a descrição no padrão: "[categoria] - [descrição]" ou "[categoria] - [descrição] (Pelada DD/MM/AAAA)"
+  let descricaoFinal = `[${cat}] - ${desc}`;
+  if (peladaVinculada) {
+    descricaoFinal += ` (Pelada ${peladaVinculada})`;
   }
 
   let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
@@ -29,8 +64,8 @@ async function handleSaveExpense() {
   }
 
   try {
-    window.App.showToast("Registrando despesa no banco remoto...", "info");
-    const res = await window.Api.criarTransacaoManual(group.id, val, 'debito', desc);
+    window.App.showToast("Registrando despesa no caixa...", "info");
+    const res = await window.Api.criarTransacaoManual(group.id, val, 'debito', descricaoFinal);
     if (res.error) {
       window.App.showToast(res.error, "error");
       return;
@@ -43,6 +78,6 @@ async function handleSaveExpense() {
     }
   } catch (err) {
     console.error('[handleSaveExpense]', err);
-    window.App.showToast("Erro ao conectar ao servidor para salvar a despesa.", "error");
+    window.App.showToast("Erro ao salvar a despesa.", "error");
   }
 }

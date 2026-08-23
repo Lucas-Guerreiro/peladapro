@@ -1,5 +1,5 @@
 // ==========================================================================
-// MODAL: REGISTRAR RECEITA / VERBA (receita.js)
+// MODAL: REGISTRAR RECEITA / INJETAR VERBA (receita.js)
 // ==========================================================================
 
 window.App.initModalReceita = function() {
@@ -11,13 +11,16 @@ window.App.initModalReceita = function() {
 };
 
 async function handleSaveIncome() {
-  const desc = document.getElementById("income-description").value.trim();
+  const motivo = document.getElementById("income-description").value.trim();
   const val = parseFloat(document.getElementById("income-value").value);
+  const categoria = document.getElementById("income-category") ? document.getElementById("income-category").value : "Aporte";
 
-  if (!desc || isNaN(val) || val <= 0) {
-    window.App.showToast("Preencha a descrição e um valor válido para a entrada.", "warning");
+  if (!motivo || isNaN(val) || val <= 0) {
+    window.App.showToast("Informe o valor e o motivo da entrada de verba.", "warning");
     return;
   }
+
+  const descricaoFinal = `Verba injetada - ${motivo}`;
 
   let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   if (!group || !group.id) {
@@ -32,13 +35,13 @@ async function handleSaveIncome() {
   }
 
   try {
-    window.App.showToast("Registrando verba no banco remoto...", "info");
-    const res = await window.Api.criarTransacaoManual(group.id, val, 'credito', desc);
+    window.App.showToast("Injetando verba no caixa...", "info");
+    const res = await window.Api.criarTransacaoManual(group.id, val, 'credito', descricaoFinal);
     if (res.error) {
       window.App.showToast(res.error, "error");
       return;
     }
-    window.App.showToast("Verba/Receita registrada no caixa com sucesso!", "success");
+    window.App.showToast("Verba injetada no caixa com sucesso!", "success");
     
     window.App.closeModal();
     if (window.App.renderFinanceiroData) {
@@ -46,6 +49,6 @@ async function handleSaveIncome() {
     }
   } catch (err) {
     console.error('[handleSaveIncome]', err);
-    window.App.showToast("Erro ao conectar ao servidor para salvar a receita.", "error");
+    window.App.showToast("Erro ao salvar entrada de verba.", "error");
   }
 }

@@ -1,10 +1,14 @@
 // ==========================================================================
 // PÁGINA: GESTOR - FINANCEIRO (financeiro.js)
+// Reestruturação em 3 Níveis: KPIs, Demonstrativo Agrupado por Pelada e Ações/Filtros
 // ==========================================================================
+
+window.App._financeiroFilter = "este_mes"; // "este_mes" | "ultimos_30" | "tudo"
 
 window.App.initFinanceiro = async function() {
   await window.App.renderFinanceiroData();
 
+  // 1. Botões de Ação do Nível 3
   const btnExpense = document.getElementById("btn-open-expense-modal");
   if (btnExpense) {
     btnExpense.onclick = () => window.App.openModal("despesa");
@@ -14,222 +18,400 @@ window.App.initFinanceiro = async function() {
   if (btnIncome) {
     btnIncome.onclick = () => window.App.openModal("receita");
   }
-  
+
+  const btnSaldos = document.getElementById("btn-open-saldos-modal");
+  if (btnSaldos) {
+    btnSaldos.onclick = () => window.App.openModal("saldos");
+  }
+
+  // 2. Chips de Filtro de Período
+  document.querySelectorAll(".finance-filter-chip").forEach(btn => {
+    btn.onclick = (e) => {
+      document.querySelectorAll(".finance-filter-chip").forEach(b => {
+        b.classList.remove("active");
+        b.style.background = "#F8FAFC";
+        b.style.color = "#475569";
+        b.style.border = "1.5px solid #CBD5E1";
+      });
+      const target = e.currentTarget;
+      target.classList.add("active");
+      target.style.background = "var(--primary)";
+      target.style.color = "#FFF";
+      target.style.border = "1.5px solid var(--primary)";
+
+      window.App._financeiroFilter = target.getAttribute("data-filter") || "este_mes";
+      window.App.renderFinanceiroData();
+    };
+  });
+
   window.manualFinanceSettlement = manualFinanceSettlement;
 };
 
+// --- RENDERIZAÇÃO COMPLETA DO PAINEL FINANCEIRO REESTRUTURADO ---
 window.App.renderFinanceiroData = async function() {
-  let transactions = [];
-  let players = [];
+  let rawTransactions = [];
+  let peladasList = [];
+  let playersList = [];
 
   try {
     let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
     if (!group || !group.id) {
-      try {
-        group = JSON.parse(localStorage.getItem("currentGroup"));
-      } catch (e) {}
+      try { group = JSON.parse(localStorage.getItem("currentGroup")); } catch (e) {}
     }
-    let rawTx = [];
 
-    if (group && group.id && window.Api && window.Api.listarTransacoesDoGrupo) {
-      try {
-        const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
-        if (Array.isArray(dbTx)) {
-          const dbTxFiltrado = dbTx.filter(t => {
-            // Se usuario_id for nulo, exibe sempre (receitas e despesas manuais do gestor)
-            if (!t.usuario_id) return true;
-
-            // Se usuario_id estiver preenchido, exibimos apenas:
-            // 1. Débitos de atletas correspondentes ao pagamento da convocação (descrição começa com "Presença de")
-            // 2. Créditos de atletas correspondentes ao estorno da presença (descrição começa com "Estorno de presença")
-            const desc = t.descricao || "";
-            if (t.tipo === 'debito' && desc.startsWith("Presença de")) return true;
-            if (t.tipo === 'credito' && desc.startsWith("Estorno de presença")) return true;
-
-            return false;
-          });
-
-          rawTx = dbTxFiltrado.map(t => {
-            let sinal = 'neutro';
-            let tipo = 'Geral';
-            
-            if (!t.usuario_id) {
-              if (t.tipo === 'credito') {
-                sinal = 'credito';
-                tipo = 'Receita';
-              } else if (t.tipo === 'debito') {
-                sinal = 'debito';
-                tipo = 'Despesa';
-              }
-            } else {
-              // Transações de atletas: invertemos o sinal para representar o caixa da pelada
-              if (t.tipo === 'debito') {
-                sinal = 'credito'; // O débito do atleta vira crédito/receita para a pelada
-                tipo = 'Presença';
-              } else if (t.tipo === 'credito') {
-                sinal = 'debito'; // O crédito/estorno para o atleta vira débito/saída para a pelada
-                tipo = 'Estorno Presença';
-              }
-            }
-
-            return {
-              id: t.id,
-              pelada_id: t.pelada_id,
-              valor: parseFloat(t.valor),
-              value: parseFloat(t.valor),
-              jogador_id: t.usuario_id,
-              tipo: tipo,
-              descricao: t.descricao || `Lançamento: ${tipo}`,
-              sinal: sinal,
-              data: t.data
-            };
-          });
+    if (group && group.id && window.Api) {
+      // 1. Busca transações do grupo
+      if (window.Api.listarTransacoesDoGrupo) {
+        try {
+          const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
+          if (Array.isArray(dbTx)) rawTransactions = dbTx;
+        } catch (e) {
+          console.error("[Financeiro] Erro ao carregar transações:", e);
         }
-      } catch (err) {
-        console.error('[renderFinanceiroData] Erro ao carregar transações da API:', err);
+      }
+
+      // 2. Busca datas/peladas cadastradas do grupo
+      if (window.Api.listarDatasDoGrupo) {
+        try {
+          const peladas = await window.Api.listarDatasDoGrupo(group.id);
+          if (Array.isArray(peladas)) peladasList = peladas;
+        } catch (e) {}
+      }
+
+      // 3. Busca atletas para saldo
+      if (window.Api.getPlayers) {
+        try {
+          const players = await window.Api.getPlayers();
+          if (Array.isArray(players)) playersList = players;
+        } catch (e) {}
+      }
+    }
+  } catch (err) {
+    console.error("[Financeiro] Erro geral ao sincronizar:", err);
+  }
+
+  // Normaliza transações
+  let normalizedTx = rawTransactions.map(t => {
+    const rawVal = parseFloat(t.valor || 0);
+    const atletaNome = t.usuario_apelido || t.usuario_nome || "";
+    const desc = t.descricao || "";
+    
+    let categoriaExibicao = "Entrada";
+    let isEntrada = false; // true = crédito no caixa, false = débito no caixa
+
+    if (!t.usuario_id) {
+      // Transação manual criada pelo gestor
+      if (t.tipo === "credito") {
+        isEntrada = true;
+        categoriaExibicao = "Verba / Receita";
+      } else {
+        isEntrada = false;
+        categoriaExibicao = "Despesa Geral";
+      }
+    } else {
+      // Transação de atleta: o débito do atleta representa entrada no caixa da pelada
+      if (t.tipo === "debito") {
+        isEntrada = true;
+        categoriaExibicao = "Pix Atleta";
+      } else if (t.tipo === "credito" && desc.startsWith("Estorno")) {
+        isEntrada = false;
+        categoriaExibicao = "Estorno Atleta";
+      } else {
+        // Crédito normal de recarga de carteira
+        isEntrada = true;
+        categoriaExibicao = "Entrada Pix";
       }
     }
 
-    const localTx = JSON.parse(localStorage.getItem("transactions")) || [];
-    const localManuais = localTx.filter(t => t.tipo === "despesa" || t.tipo === "receita" || t.tipo === "acerto" || String(t.id).startsWith("t_"));
-    const idsBanco = new Set(rawTx.map(t => String(t.id)));
-    const manuaisUnicas = localManuais.filter(t => !idsBanco.has(String(t.id)));
-
-    transactions = [...rawTx, ...manuaisUnicas];
-
-    transactions = transactions.filter(t => t.id !== "t1" && t.id !== "t2" && t.id !== "t3" &&
-      !String(t.descricao).includes("Carlos Henrique") &&
-      !String(t.descricao).includes("Bruno Henrique") &&
-      !String(t.descricao).includes("Mensalidade do Campo Society"));
-
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-  } catch (e) {
-    console.error('[renderFinanceiroData]', e);
-  }
-  try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
-
-  // Carrega lista atualizada de atletas via API se a memória local estiver vazia ou nula
-  if ((!players || players.length === 0) && window.Api && window.Api.getPlayers) {
-    try {
-      players = await window.Api.getPlayers();
-      if (Array.isArray(players)) {
-        localStorage.setItem("players", JSON.stringify(players));
-      }
-    } catch(e) {}
-  }
-
-  let receipts = 0;
-  let expenses = 0;
-
-  (transactions || []).forEach(t => {
-    const rawVal = t.valor !== undefined && t.valor !== null ? t.valor : t.value;
-    const parsedVal = parseFloat(rawVal);
-    const numVal = isNaN(parsedVal) ? 0 : parsedVal;
-
-    if (t.sinal === "credito") receipts += numVal;
-    else if (t.sinal === "debito") expenses += numVal;
+    return {
+      id: t.id,
+      usuario_id: t.usuario_id,
+      grupo_id: t.grupo_id,
+      atletaNome: atletaNome,
+      valor: rawVal,
+      tipoOriginal: t.tipo,
+      isEntrada: isEntrada,
+      categoria: categoriaExibicao,
+      descricao: desc,
+      data: t.data ? new Date(t.data) : new Date()
+    };
   });
 
-  const net = receipts - expenses;
+  // Filtra por período selecionado
+  const agora = new Date();
+  const filtro = window.App._financeiroFilter || "este_mes";
 
-  const recEl = document.getElementById("finances-receipts");
-  const expEl = document.getElementById("finances-expenses");
-  const netEl = document.getElementById("finances-net");
+  let filteredTx = normalizedTx.filter(t => {
+    if (filtro === "tudo") return true;
+    const txDate = t.data;
+    if (filtro === "este_mes") {
+      return txDate.getFullYear() === agora.getFullYear() && txDate.getMonth() === agora.getMonth();
+    }
+    if (filtro === "ultimos_30") {
+      const trintaDiasAtras = new Date(agora.getTime() - (30 * 24 * 60 * 60 * 1000));
+      return txDate >= trintaDiasAtras;
+    }
+    return true;
+  });
 
-  if (recEl) recEl.textContent = window.Utils ? window.Utils.formatCurrency(receipts) : `R$ ${receipts.toFixed(2).replace(".", ",")}`;
-  if (expEl) expEl.textContent = window.Utils ? window.Utils.formatCurrency(expenses) : `R$ ${expenses.toFixed(2).replace(".", ",")}`;
-  if (netEl) {
-    netEl.textContent = window.Utils ? window.Utils.formatCurrency(net) : `R$ ${net.toFixed(2).replace(".", ",")}`;
-    netEl.style.color = net >= 0 ? "var(--success)" : "var(--danger)";
-  }
+  // =========================================================================
+  // NÍVEL 1: CÁLCULO E RENDERIZAÇÃO DOS CARTÕES DE RESUMO (KPIs)
+  // =========================================================================
+  let totalArrecadado = 0;
+  let totalDespesas = 0;
 
-  const transBody = document.getElementById("finances-transactions-body");
-  if (transBody) {
-    transBody.innerHTML = "";
-    if (!transactions || transactions.length === 0) {
-      transBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhum lançamento registrado.</td></tr>`;
+  filteredTx.forEach(t => {
+    if (t.isEntrada) totalArrecadado += t.valor;
+    else totalDespesas += t.valor;
+  });
+
+  // Saldo geral acumulado de todas as transações da história (Caixa Atual)
+  let caixaAtualTotal = 0;
+  normalizedTx.forEach(t => {
+    if (t.isEntrada) caixaAtualTotal += t.valor;
+    else caixaAtualTotal -= t.valor;
+  });
+
+  const saldoLiquidoPeriodo = totalArrecadado - totalDespesas;
+
+  // Atualiza elementos DOM dos KPIs
+  const elCaixa = document.getElementById("finances-kpi-caixa");
+  const elArrecadado = document.getElementById("finances-kpi-arrecadado");
+  const elDespesas = document.getElementById("finances-kpi-despesas");
+  const elSaldo = document.getElementById("finances-kpi-saldo");
+  const elSaldoSub = document.getElementById("finances-kpi-saldo-sub");
+  const elSaldoCard = document.getElementById("finances-kpi-saldo-card");
+  const elSaldoIcon = document.getElementById("finances-kpi-saldo-icon");
+
+  if (elCaixa) elCaixa.textContent = formatCurrencyBRL(caixaAtualTotal);
+  if (elArrecadado) elArrecadado.textContent = formatCurrencyBRL(totalArrecadado);
+  if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesas);
+
+  if (elSaldo) {
+    elSaldo.textContent = (saldoLiquidoPeriodo >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoLiquidoPeriodo));
+    if (saldoLiquidoPeriodo >= 0) {
+      elSaldo.style.color = "#1D9E75";
+      if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#1D9E75";
+      if (elSaldoIcon) {
+        elSaldoIcon.style.color = "#1D9E75";
+        elSaldoIcon.style.background = "rgba(29, 158, 117, 0.12)";
+      }
+      if (elSaldoSub) elSaldoSub.textContent = "Lucro no período selecionado";
     } else {
-      // Ordena explicitamente por data decrescente (mais recente no topo)
-      const sortedTransactions = [...transactions].sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
-      sortedTransactions.forEach(t => {
-        const tr = document.createElement("tr");
-        const dateFormatted = window.Utils ? window.Utils.formatDate(t.data) : (t.data ? new Date(t.data).toLocaleDateString("pt-BR") : '—');
-        let valColor = "var(--text-caption)";
-        let sign = "";
-        if (t.sinal === "credito") {
-          valColor = "var(--success)";
-          sign = "+";
-        } else if (t.sinal === "debito") {
-          valColor = "var(--danger)";
-          sign = "-";
-        } else if (t.sinal === "neutro") {
-          valColor = "var(--text-caption)";
-          sign = "-";
-        }
-
-        const rawVal = t.valor !== undefined && t.valor !== null ? t.valor : t.value;
-        const valNum = isNaN(parseFloat(rawVal)) ? 0 : parseFloat(rawVal);
-        const valText = window.Utils ? window.Utils.formatCurrency(valNum) : `R$ ${valNum.toFixed(2).replace(".", ",")}`;
-
-        tr.innerHTML = `
-          <td>${dateFormatted}</td>
-          <td>
-            <span style="font-weight: 500; font-size:13px; display:block;">${t.descricao || 'Lançamento'}</span>
-            <span style="font-size:11px; color:var(--text-caption);">${t.tipo || 'Geral'}</span>
-          </td>
-          <td style="text-align: right; font-weight: bold; color: ${valColor};">${sign} ${valText}</td>
-        `;
-        transBody.appendChild(tr);
-      });
+      elSaldo.style.color = "#E74C3C";
+      if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#E74C3C";
+      if (elSaldoIcon) {
+        elSaldoIcon.style.color = "#E74C3C";
+        elSaldoIcon.style.background = "rgba(231, 76, 60, 0.12)";
+      }
+      if (elSaldoSub) elSaldoSub.textContent = "Prejuízo no período selecionado";
     }
   }
 
-  const balBody = document.getElementById("finances-athlete-balances-body");
-  if (balBody) {
-    balBody.innerHTML = "";
-    const ativos = (players || []).filter(p => p.ativo !== false);
-    const sorted = [...ativos].sort((a,b) => {
-      const sA = isNaN(parseFloat(a.saldo)) ? 0 : parseFloat(a.saldo);
-      const sB = isNaN(parseFloat(b.saldo)) ? 0 : parseFloat(b.saldo);
-      return sA - sB;
-    });
+  // =========================================================================
+  // NÍVEL 2: AGRUPAMENTO POR PELADA / DATA E RENDERIZAÇÃO ESTRUTURADA
+  // =========================================================================
+  const groupedContainer = document.getElementById("finances-peladas-grouped-container");
+  const countBadge = document.getElementById("finances-count-badge");
+  if (!groupedContainer) return;
 
-    if (sorted.length === 0) {
-      balBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhum atleta cadastrado.</td></tr>`;
+  if (filteredTx.length === 0) {
+    groupedContainer.innerHTML = `
+      <div class="card" style="padding: 36px 20px; text-align: center; background: #FFFFFF; border-radius: 8px;">
+        <i data-feather="inbox" style="width: 40px; height: 40px; color: var(--text-caption); display: block; margin: 0 auto 12px auto;"></i>
+        <h4 style="margin: 0 0 6px 0; font-size: 15px; color: var(--text-heading);">Nenhum lançamento no período</h4>
+        <p style="margin: 0; font-size: 13px; color: var(--text-caption);">Utilize os botões acima para injetar verba ou registrar despesas, ou selecione outro período.</p>
+      </div>
+    `;
+    if (countBadge) countBadge.textContent = "0 lançamentos";
+    if (window.feather) feather.replace();
+    return;
+  }
+
+  if (countBadge) {
+    countBadge.textContent = `${filteredTx.length} lançamento(s) exibido(s)`;
+  }
+
+  // Agrupar transações por chave de pelada/data
+  const groupsMap = {};
+
+  filteredTx.forEach(t => {
+    let groupKey = "Geral";
+    let groupTitle = "Lançamentos Gerais / Caixa Avulso";
+    let peladaDataRef = null;
+
+    // 1. Tenta extrair data da pelada da descrição (ex: "dia 24/08" ou "Pelada 24/08/2026")
+    const matchDia = t.descricao.match(/dia\s+(\d{2}\/\d{2})/i) || t.descricao.match(/pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i);
+    if (matchDia && matchDia[1]) {
+      groupKey = `Pelada_${matchDia[1]}`;
+      groupTitle = `Pelada do dia ${matchDia[1]}`;
+      peladaDataRef = matchDia[1];
     } else {
-      sorted.forEach(p => {
-        const tr = document.createElement("tr");
-        const sNum = isNaN(parseFloat(p.saldo)) ? 0 : parseFloat(p.saldo);
-        const balanceColor = sNum >= 0 ? "var(--success)" : "var(--danger)";
-        const balanceFmt = window.Utils ? window.Utils.formatCurrency(sNum) : `R$ ${sNum.toFixed(2).replace(".", ",")}`;
+      // 2. Se não houver data no texto, associa à data da própria transação
+      const txDataFmt = t.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' });
+      groupKey = `Data_${txDataFmt}`;
+      groupTitle = `Movimentações do dia ${txDataFmt}`;
+    }
 
-        let btnCobrar = "";
-        if (sNum < 0) {
-          const nomeStr = (p.nome || p.apelido || 'Atleta').split(" ")[0];
-          const whatsMsg = window.encodeURIComponent(`Olá ${nomeStr}! Seu saldo no Pelada Pro está em ${balanceFmt}. Quando puder, realize o acerto via Pix. Obrigado!`);
-          const phone = (p.whatsapp || '').replace(/\D/g, "");
-          const linkWhats = phone ? `https://api.whatsapp.com/send?phone=55${phone}&text=${whatsMsg}` : '#';
-          btnCobrar = `
-            <a href="${linkWhats}" ${phone ? 'target="_blank"' : ''} class="btn btn-sm btn-outline" style="text-decoration:none; padding:4px 8px; border-color:var(--accent); color:var(--accent); font-size:11px; height:24px;">Cobrar</a>
-          `;
-        }
+    if (!groupsMap[groupKey]) {
+      groupsMap[groupKey] = {
+        key: groupKey,
+        title: groupTitle,
+        dataRef: peladaDataRef,
+        entradas: [],
+        despesas: [],
+        totalEntradas: 0,
+        totalDespesas: 0,
+        dataMaisRecente: t.data
+      };
+    }
 
-        tr.innerHTML = `
-          <td style="font-weight: 500;">${p.nome || p.apelido || 'Atleta'} ${p.goleiro ? '🧤' : ''}</td>
-          <td style="text-align: right; font-weight: bold; color: ${balanceColor};">${balanceFmt}</td>
-          <td style="text-align: center;">
-            <div style="display:flex; gap:6px; justify-content:center;">
-              ${btnCobrar}
-              <button class="btn btn-sm btn-secondary" onclick="manualFinanceSettlement('${p.id}')" style="font-size:11px; padding:4px 8px; height:24px;">Ajustar</button>
+    if (t.data > groupsMap[groupKey].dataMaisRecente) {
+      groupsMap[groupKey].dataMaisRecente = t.data;
+    }
+
+    if (t.isEntrada) {
+      groupsMap[groupKey].entradas.push(t);
+      groupsMap[groupKey].totalEntradas += t.valor;
+    } else {
+      groupsMap[groupKey].despesas.push(t);
+      groupsMap[groupKey].totalDespesas += t.valor;
+    }
+  });
+
+  // Ordena os grupos por data mais recente
+  const sortedGroups = Object.values(groupsMap).sort((a, b) => b.dataMaisRecente - a.dataMaisRecente);
+
+  let htmlCards = "";
+
+  sortedGroups.forEach(grp => {
+    const saldoGrupo = grp.totalEntradas - grp.totalDespesas;
+    
+    // Indicador visual: Verde (Lucro), Vermelho (Prejuízo), Cinza (Pendente/Neutro)
+    let badgeStatusColor = "#10B981";
+    let badgeStatusBg = "#ECFDF5";
+    let badgeStatusText = "🟢 Lucro";
+    let borderAccent = "#10B981";
+
+    if (saldoGrupo < 0) {
+      badgeStatusColor = "#EF4444";
+      badgeStatusBg = "#FEF2F2";
+      badgeStatusText = "🔴 Prejuízo";
+      borderAccent = "#EF4444";
+    } else if (saldoGrupo === 0 && grp.totalEntradas === 0 && grp.totalDespesas === 0) {
+      badgeStatusColor = "#64748B";
+      badgeStatusBg = "#F1F5F9";
+      badgeStatusText = "⚪ Neutro";
+      borderAccent = "#94A3B8";
+    }
+
+    const saldoFormatado = (saldoGrupo >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGrupo));
+
+    // Renderiza Lista de Entradas do Grupo
+    let entradasHtml = "";
+    if (grp.entradas.length === 0) {
+      entradasHtml = `<div style="font-size: 12px; color: var(--text-caption); padding: 8px 0;">Nenhuma entrada registrada nesta pelada.</div>`;
+    } else {
+      entradasHtml = grp.entradas.map(e => {
+        const horaFmt = e.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        const nomeOuDesc = e.atletaNome ? `⚽ <strong>${e.atletaNome}</strong> <span style="font-size:11px; color:var(--text-caption);">(${e.descricao})</span>` : e.descricao;
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
+            <div style="min-width: 0; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeOuDesc}</span>
+              <span style="font-size: 10px; color: #94A3B8;">${e.categoria} · ${horaFmt}</span>
             </div>
-          </td>
+            <span style="font-weight: 700; color: #059669; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
+          </div>
         `;
-        balBody.appendChild(tr);
-      });
+      }).join('');
     }
-  }
+
+    // Renderiza Lista de Despesas do Grupo
+    let despesasHtml = "";
+    if (grp.despesas.length === 0) {
+      despesasHtml = `<div style="font-size: 12px; color: var(--text-caption); padding: 8px 0;">Nenhuma despesa lançada nesta pelada.</div>`;
+    } else {
+      despesasHtml = grp.despesas.map(d => {
+        const horaFmt = d.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
+            <div style="min-width: 0; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.descricao}</span>
+              <span style="font-size: 10px; color: #94A3B8;">${d.categoria} · ${horaFmt}</span>
+            </div>
+            <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    htmlCards += `
+      <div class="card" style="padding: 18px 20px; border-left: 4px solid ${borderAccent}; background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+        
+        <!-- CABEÇALHO DO GRUPO (Data e 3 Totais) -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px; margin-bottom: 14px;">
+          <div>
+            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+              📅 ${grp.title}
+            </h4>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <span style="font-size: 12px; color: #475569;">
+              Arrecadado: <strong style="color: #059669;">${formatCurrencyBRL(grp.totalEntradas)}</strong>
+            </span>
+            <span style="font-size: 12px; color: #475569;">
+              Despesas: <strong style="color: #DC2626;">${formatCurrencyBRL(grp.totalDespesas)}</strong>
+            </span>
+            <span style="font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: ${badgeStatusBg}; color: ${badgeStatusColor};">
+              Saldo: ${saldoFormatado} (${badgeStatusText})
+            </span>
+          </div>
+        </div>
+
+        <!-- CORPO DAS SUBSEÇÕES: ENTRADAS X DESPESAS LADO A LADO -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+          <!-- Coluna 1: Entradas -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 800; color: #059669; text-transform: uppercase;">
+                📥 Entradas (${grp.entradas.length})
+              </span>
+              <span style="font-size: 12px; font-weight: 800; color: #059669;">
+                ${formatCurrencyBRL(grp.totalEntradas)}
+              </span>
+            </div>
+            <div style="max-height: 220px; overflow-y: auto;">
+              ${entradasHtml}
+            </div>
+          </div>
+
+          <!-- Coluna 2: Despesas -->
+          <div style="background: #FDF2F2; border: 1px solid #FEE2E2; border-radius: 8px; padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 800; color: #DC2626; text-transform: uppercase;">
+                📤 Despesas (${grp.despesas.length})
+              </span>
+              <span style="font-size: 12px; font-weight: 800; color: #DC2626;">
+                ${formatCurrencyBRL(grp.totalDespesas)}
+              </span>
+            </div>
+            <div style="max-height: 220px; overflow-y: auto;">
+              ${despesasHtml}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  });
+
+  groupedContainer.innerHTML = htmlCards;
+  if (window.feather) feather.replace();
 };
 
-// window.manualFinanceSettlement é definido globalmente em api.js
-
-
+function formatCurrencyBRL(val) {
+  const num = isNaN(parseFloat(val)) ? 0 : parseFloat(val);
+  return `R$ ${num.toFixed(2).replace('.', ',')}`;
+}
