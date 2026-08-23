@@ -93,6 +93,14 @@ window.App.renderFinanceiroData = async function() {
         } catch (e) {}
       }
 
+      // 2.1 Busca campanhas de arrecadação/vaquinha do grupo
+      if (window.Api.listarArrecadacoes) {
+        try {
+          const arrs = await window.Api.listarArrecadacoes(group.id);
+          if (Array.isArray(arrs)) window._financeiroArrecadacoesList = arrs;
+        } catch (e) {}
+      }
+
       // 3. Busca atletas para saldo
       if (window.Api.getPlayers) {
         try {
@@ -304,6 +312,62 @@ window.App.renderFinanceiroData = async function() {
       }).join('');
     }
 
+    // Informações das campanhas de arrecadação cadastradas
+    const campanhas = window._financeiroArrecadacoesList || [];
+    let campanhasProgressoHtml = "";
+
+    if (campanhas.length > 0) {
+      campanhasProgressoHtml = campanhas.map(c => {
+        const meta = parseFloat(c.meta_valor || 0);
+        const arrecadado = parseFloat(c.total_arrecadado || 0);
+        const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
+        const restante = Math.max(0, meta - arrecadado);
+        const isAtingida = (c.status === 'concluida') || (pct >= 100);
+
+        return `
+          <div style="background: #FFFFFF; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <span style="font-size: 10px; font-weight: 800; color: #0284C7; text-transform: uppercase; letter-spacing: 0.5px;">${c.categoria || 'Vaquinha'}</span>
+                <h5 style="margin: 0; font-size: 15px; font-weight: 800; color: #0F172A;">🏆 ${c.titulo}</h5>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; background: ${isAtingida ? '#ECFDF5' : '#EFF6FF'}; color: ${isAtingida ? '#047857' : '#1D4ED8'};">
+                  ${isAtingida ? '✅ Meta Atingida' : '🟢 Em Andamento'}
+                </span>
+              </div>
+            </div>
+
+            <!-- VALORES: ARRECADADO X ESTIPULADO (META) -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;">
+              <div>
+                <span style="font-size: 10px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Total Arrecadado</span>
+                <strong style="font-size: 18px; font-weight: 900; color: #0284C7;">
+                  ${formatCurrencyBRL(arrecadado)}
+                </strong>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 10px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Meta Estipulada</span>
+                <strong style="font-size: 16px; font-weight: 800; color: #0F172A;">
+                  ${formatCurrencyBRL(meta)}
+                </strong>
+              </div>
+            </div>
+
+            <!-- BARRA DE PROGRESSO -->
+            <div style="width: 100%; height: 10px; background: #E2E8F0; border-radius: 6px; overflow: hidden; margin-bottom: 4px;">
+              <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #0284C7 0%, #10B981 100%); border-radius: 6px; transition: width 0.4s ease;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #64748B;">
+              <span>${pct}% atingido</span>
+              <span>${restante > 0 ? `Faltam ${formatCurrencyBRL(restante)}` : 'Meta Concluída!'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     geralContainer.innerHTML = `
       <div class="card" style="padding: 18px 20px; border-left: 4px solid #0284C7; background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         
@@ -328,6 +392,9 @@ window.App.renderFinanceiroData = async function() {
             </span>
           </div>
         </div>
+
+        <!-- PAINEL DE METAS / ESTIPULADO VS ARRECADADO DAS VAQUINHAS -->
+        ${campanhasProgressoHtml}
 
         <!-- CORPO: ENTRADAS DA VAQUINHA X COMPRAS DE MATERIAIS -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
