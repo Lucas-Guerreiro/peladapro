@@ -231,13 +231,6 @@ window.App.renderFinanceiroData = async function() {
   }
 
   // =========================================================================
-  // NÍVEL 2: AGRUPAMENTO POR PELADA / DATA E RENDERIZAÇÃO ESTRUTURADA
-  // =========================================================================
-  const groupedContainer = document.getElementById("finances-peladas-grouped-container");
-  const countBadge = document.getElementById("finances-count-badge");
-  if (!groupedContainer) return;
-
-  // =========================================================================
   // NÍVEL 2: SEPARAÇÃO ENTRE CAIXA GERAL / VAQUINHAS E DEMONSTRATIVO DE PELADAS
   // =========================================================================
   const geralContainer = document.getElementById("finances-geral-card-container");
