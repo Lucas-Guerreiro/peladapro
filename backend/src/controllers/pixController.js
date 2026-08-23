@@ -168,14 +168,14 @@ exports.enviarComprovante = async (req, res) => {
     // Notifica todos os gestores por push sobre o novo comprovante recebido
     try {
       const { sendNotificationInternal } = require('./pushController');
-      
+
       sendNotificationInternal({
         title: '💸 Novo Comprovante Pix!',
         body: `${nomeExibir} enviou um comprovante de R$ ${valorNum.toFixed(2)}. Saldo creditado automaticamente!`,
         url: '/#/gestor/financeiro',
         onlyGestores: true
       }).catch(e => console.warn('[Push] Erro ao disparar push de comprovante para gestores:', e.message));
-    } catch(e) {}
+    } catch (e) { }
 
     res.json({
       message: 'Comprovante Pix aprovado e saldo creditado com sucesso!',
@@ -291,6 +291,20 @@ exports.estornarTransacao = async (req, res) => {
 
 // Função auxiliar para efetivar a convocação do jogador após aprovação do Pix
 async function efetivarConvocacaoPixAprovado(client, usuarioId, peladaId, valorPago, paymentId) {
+
+  // ── GUARDA DE IDEMPOTÊNCIA (CAMADA 2) — INSERIR AQUI, LOGO NO INÍCIO ──
+  // Se o crédito deste pagamento já foi lançado, não faz nada (evita duplicar)
+  const jaEfetivado = await client.query(
+    `SELECT id FROM transacoes
+     WHERE usuario_id = $1 AND tipo = 'credito' AND descricao = $2 LIMIT 1`,
+    [usuarioId, `Pagamento Pix Convocação - ID ${paymentId}`]
+  );
+  if (jaEfetivado.rows.length > 0) {
+    console.log(`[Pix] Pagamento ${paymentId} já efetivado. Ignorando duplicata.`);
+    return { statusConv: 'confirmado', posicaoFila: null };
+  }
+  // ── FIM DA GUARDA ──
+
   // 1. Obter informações da pelada e limite de atletas
   const queryConfig = `
     SELECT p.grupo_id, p.data, p.limite_atletas,
@@ -384,7 +398,7 @@ async function efetivarConvocacaoPixAprovado(client, usuarioId, peladaId, valorP
         url: '/#/jogador/convocacao'
       }).catch(e => console.warn('[Push] Erro:', e.message));
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return { statusConv, posicaoFila };
 }
@@ -584,12 +598,14 @@ exports.obterStatusPagamento = async (req, res) => {
               client = await db.pool.connect();
               await client.query('BEGIN');
 
-              await client.query(
-                `UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1`,
+              const travado = await client.query(
+                `UPDATE pagamentos_mercado_pago SET status = 'approved'
+                WHERE id = $1 AND status = 'pending' RETURNING id`,
                 [pagamento.id]
               );
-
-              await efetivarConvocacaoPixAprovado(client, usuario_id, peladaId, parseFloat(pagamento.valor), pagamento.id);
+              if (travado.rows.length > 0) {
+                await efetivarConvocacaoPixAprovado(client, usuario_id, peladaId, parseFloat(pagamento.valor), pagamento.id);
+              }
 
               await client.query('COMMIT');
               client.release();
@@ -641,7 +657,7 @@ exports.obterStatusPagamento = async (req, res) => {
       created_at: pagamento.created_at
     });
   } catch (err) {
-    if (client) await client.query('ROLLBACK').catch(() => {});
+    if (client) await client.query('ROLLBACK').catch(() => { });
     console.error('[obterStatusPagamento]', err);
     res.status(500).json({ error: 'Erro ao consultar status do pagamento.', detail: err.message });
   } finally {
@@ -664,7 +680,7 @@ exports.receberWebhookMercadoPago = async (req, res) => {
   let client;
   try {
     client = await db.pool.connect();
-    
+
     // Verificar se esse pagamento existe no nosso banco local e se está pendente
     const localPayRes = await client.query(
       `SELECT usuario_id, pelada_id, valor, status FROM pagamentos_mercado_pago WHERE id = $1`,
@@ -704,13 +720,15 @@ exports.receberWebhookMercadoPago = async (req, res) => {
       await client.query('BEGIN');
 
       // Atualizar status do pagamento
-      await client.query(
-        `UPDATE pagamentos_mercado_pago SET status = 'approved' WHERE id = $1`,
+      const travado = await client.query(
+        `UPDATE pagamentos_mercado_pago SET status = 'approved'
+   WHERE id = $1 AND status = 'pending' RETURNING id`,
         [paymentId]
       );
-
-      // Confirmar convocação
-      await efetivarConvocacaoPixAprovado(client, usuario_id, pelada_id, parseFloat(valor), paymentId);
+      // Só efetiva se ESTA chamada conseguiu travar (nenhum outro já processou)
+      if (travado.rows.length > 0) {
+        await efetivarConvocacaoPixAprovado(client, usuario_id, pelada_id, parseFloat(valor), paymentId);
+      }
 
       await client.query('COMMIT');
       console.log(`[WebhookMP] Pagamento aprovado com sucesso! Usuário ${usuario_id}, Pelada ${pelada_id}`);
@@ -751,7 +769,7 @@ exports.simularAprovacao = async (req, res) => {
   let client;
   try {
     client = await db.pool.connect();
-    
+
     // Verificar se existe
     const payRes = await client.query(
       `SELECT usuario_id, pelada_id, valor, status FROM pagamentos_mercado_pago WHERE id = $1`,
