@@ -2,8 +2,8 @@
 <div class="modal-backdrop" id="modal-contribuir-vaquinha-backdrop">
   <div class="modal-content" style="max-width: 480px; width: 95%;">
     <div class="modal-header">
-      <h3 style="color: #0284C7; display: flex; align-items: center; gap: 8px; font-size: 18px;">
-        <i data-feather="heart" style="width: 20px; height: 20px; color: #EF4444;"></i> Apoiar com Pix
+      <h3 style="color: #0284C7; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800;">
+        <i data-feather="heart" style="width: 20px; height: 20px; color: #0284C7;"></i> Apoiar com Pix
       </h3>
       <button class="modal-close" id="btn-close-contribuir-modal">&times;</button>
     </div>
@@ -39,7 +39,8 @@
       </div>
 
       <button id="btn-generate-contrib-pix" class="btn btn-md btn-accent" style="width: 100%; height: 46px; font-weight: 800; font-size: 15px; border-radius: 8px; background: #0284C7; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <span>Gerar Pix Copia e Cola</span> ⚡
+        <i data-feather="qr-code" style="width: 16px; height: 16px;"></i>
+        <span>Gerar Pix Copia e Cola</span>
       </button>
     </div>
 
@@ -72,15 +73,15 @@
       </div>
 
       <!-- Botão de Simulação em Ambiente Dev/Local -->
-      <button id="btn-simular-aprovacao-contrib" class="btn btn-sm" style="background: #F1F5F9; color: #64748B; border: 1px dashed #CBD5E1; font-size: 11px; margin-top: 4px; cursor: pointer;">
-        🧪 Simular Aprovação Imediata
+      <button id="btn-simular-aprovacao-contrib" class="btn btn-sm" style="background: #F1F5F9; color: #64748B; border: 1px dashed #CBD5E1; font-size: 11px; margin-top: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <i data-feather="check" style="width: 12px; height: 12px;"></i> Simular Aprovação Imediata
       </button>
     </div>
 
     <!-- Etapa 3: Sucesso -->
     <div id="step-contrib-success" style="display: none; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 20px 0;">
-      <div style="width: 60px; height: 60px; border-radius: 50%; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 28px;">
-        🎉
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center;">
+        <i data-feather="check-circle" style="width: 32px; height: 32px; color: #10B981;"></i>
       </div>
       <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #0F172A;">Contribuição Confirmada!</h3>
       <p style="font-size: 13px; color: var(--text-caption); margin: 0; line-height: 1.4;">

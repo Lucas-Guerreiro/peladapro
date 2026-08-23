@@ -58,22 +58,45 @@ async function renderCampanhasArrecadacao() {
       let apoiadoresHtml = "";
 
       if (apoiadores.length === 0) {
-        apoiadoresHtml = `<span style="font-size: 12px; color: var(--text-caption);">Seja o primeiro a contribuir com esta meta!</span>`;
+        apoiadoresHtml = `
+          <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 14px; text-align: center;">
+            <span style="font-size: 13px; color: #64748B; font-weight: 500;">Seja o primeiro atleta a contribuir com esta meta!</span>
+          </div>
+        `;
       } else {
         apoiadoresHtml = `
-          <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-size: 12px; font-weight: 700; color: #475569;">
-                👥 Atletas que já apoiaram (${apoiadores.length}):
+              <span style="font-size: 13px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+                <i data-feather="users" style="width: 15px; height: 15px; color: #0284C7;"></i>
+                Atletas que já apoiaram (${apoiadores.length})
+              </span>
+              <span style="font-size: 12px; font-weight: 800; color: #059669;">
+                Total: R$ ${arrecadado.toFixed(2).replace('.', ',')}
               </span>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+
+            <!-- GRID ELEGANTE DE ATLETAS APOIADORES -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
               ${apoiadores.map(a => {
                 const nomeDisplay = a.apelido || a.nome || "Atleta";
+                const inicial = nomeDisplay.charAt(0).toUpperCase();
+                const valorFormatado = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+                
                 return `
-                  <span style="display: inline-flex; align-items: center; gap: 4px; background: #F1F5F9; border: 1px solid #E2E8F0; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #1E293B;">
-                    ⚽ ${nomeDisplay} <span style="color: #059669;">(+R$ ${parseFloat(a.valor).toFixed(2).replace('.', ',')})</span>
-                  </span>
+                  <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                      <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #0284C7, #0369A1); color: #FFFFFF; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${inicial}
+                      </div>
+                      <span style="font-size: 12px; font-weight: 700; color: #1E293B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${nomeDisplay}">
+                        ${nomeDisplay}
+                      </span>
+                    </div>
+                    <span style="font-size: 12px; font-weight: 800; color: #059669; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 12px; white-space: nowrap;">
+                      +R$ ${valorFormatado}
+                    </span>
+                  </div>
                 `;
               }).join('')}
             </div>
@@ -81,21 +104,22 @@ async function renderCampanhasArrecadacao() {
         `;
       }
 
-      // Ícone por Categoria
-      let iconeCat = "⚽";
-      if (camp.categoria === 'Troféus / Premiações') iconeCat = "🏆";
-      else if (camp.categoria === 'Coletes / Uniformes') iconeCat = "🎽";
-      else if (camp.categoria === 'Churrasco') iconeCat = "🥩";
-      else if (camp.categoria === 'Equipamentos') iconeCat = "🥅";
+      // Ícone por Categoria usando Feather Icons vazados
+      let iconeCatFeather = "package";
+      if (camp.categoria === 'Troféus / Premiações') iconeCatFeather = "award";
+      else if (camp.categoria === 'Coletes / Uniformes') iconeCatFeather = "shield";
+      else if (camp.categoria === 'Churrasco') iconeCatFeather = "coffee";
+      else if (camp.categoria === 'Equipamentos') iconeCatFeather = "box";
+      else if (camp.categoria === 'Material' || camp.categoria === 'Materiais') iconeCatFeather = "target";
 
       htmlCards += `
-        <div class="card" style="padding: 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 16px;">
+        <div class="card" style="padding: 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 18px;">
           
           <!-- TOPO DO CARD -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
             <div style="display: flex; align-items: flex-start; gap: 12px;">
-              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(2, 132, 199, 0.1); color: #0284C7; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
-                ${iconeCat}
+              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(2, 132, 199, 0.08); color: #0284C7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(2, 132, 199, 0.15);">
+                <i data-feather="${iconeCatFeather}" style="width: 22px; height: 22px;"></i>
               </div>
               <div>
                 <span style="font-size: 11px; font-weight: 800; color: #0284C7; text-transform: uppercase; letter-spacing: 0.5px;">${camp.categoria || 'Material'}</span>
@@ -111,12 +135,12 @@ async function renderCampanhasArrecadacao() {
             <!-- STATUS BADGE -->
             <div>
               ${isConcluida ? `
-                <span style="background: #ECFDF5; color: #047857; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                  ✅ Meta Atingida!
+                <span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                  <i data-feather="check-circle" style="width: 14px; height: 14px;"></i> Meta Atingida!
                 </span>
               ` : `
-                <span style="background: #EFF6FF; color: #1D4ED8; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                  🟢 Vaquinha Ativa
+                <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                  <i data-feather="activity" style="width: 14px; height: 14px;"></i> Vaquinha Ativa
                 </span>
               `}
             </div>
@@ -156,7 +180,8 @@ async function renderCampanhasArrecadacao() {
           <!-- BOTÃO DE CONTRIBUIÇÃO VIA PIX -->
           <div style="padding-top: 4px;">
             <button class="btn btn-md btn-accent btn-apoiar-vaquinha" data-camp-id="${camp.id}" style="width: 100%; height: 46px; font-size: 15px; font-weight: 800; background: #0284C7; border: none; border-radius: 10px; color: #FFFFFF; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);">
-              <span>Contribuir via Pix</span> ⚡
+              <i data-feather="zap" style="width: 16px; height: 16px;"></i>
+              <span>Contribuir via Pix</span>
             </button>
           </div>
 
@@ -166,6 +191,8 @@ async function renderCampanhasArrecadacao() {
 
     container.innerHTML = htmlCards;
     if (headerTotalEl) headerTotalEl.textContent = `R$ ${totalGeralArrecadado.toFixed(2).replace('.', ',')}`;
+
+    if (window.feather) feather.replace();
 
     // Listener para abrir o modal de contribuição
     document.querySelectorAll(".btn-apoiar-vaquinha").forEach(btn => {
