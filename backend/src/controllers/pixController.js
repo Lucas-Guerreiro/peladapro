@@ -473,12 +473,18 @@ exports.criarPagamentoMercadoPago = async (req, res) => {
     const cleanCpf = (cpf || '').replace(/\D/g, '');
     const payerCpf = validarCPF(cleanCpf) ? cleanCpf : '19119119100';
 
+    // Higieniza o e-mail para o Mercado Pago: se terminar com .local ou for inválido, gera um formato válido @peladapro.com
+    let payerEmail = (email || '').trim().toLowerCase();
+    if (!payerEmail || payerEmail.endsWith('.local') || !payerEmail.includes('@') || !payerEmail.includes('.')) {
+      payerEmail = `atleta${usuario_id}@peladapro.com`;
+    }
+
     const payload = {
       transaction_amount: valorCusto,
       description: `Convocação PeladaPro - ${formatarDataDDMM(dataPelada)}`,
       payment_method_id: 'pix',
       payer: {
-        email: email || `atleta${usuario_id}@peladapro.com`,
+        email: payerEmail,
         first_name: nome.split(' ')[0] || 'Atleta',
         last_name: nome.split(' ').slice(1).join(' ') || 'PeladaPro',
         identification: {
