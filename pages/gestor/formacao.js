@@ -99,6 +99,10 @@ window.App.initFormacao = async function () {
       window.App.openModal("add_presence", { peladaId: peladaId });
     };
   }
+  const btnCopyList = document.getElementById("btn-copy-presence-list");
+  if (btnCopyList) {
+    btnCopyList.onclick = copiarListaPresencaWhatsApp;
+  }
   const btnExportExcel = document.getElementById("btn-export-presence-excel");
   if (btnExportExcel) {
     btnExportExcel.onclick = exportConvocadosExcel;
@@ -1211,6 +1215,90 @@ window.handleCustomEmblemUpload = function (event) {
   });
 };
 
+async function copiarListaPresencaWhatsApp() {
+  const selectPelada = document.getElementById("select-manager-pelada");
+  const peladaId = (selectPelada && selectPelada.value) || (window.App.activePelada ? window.App.activePelada.id : null);
+
+  if (!peladaId) {
+    window.App.showToast("Selecione uma pelada para copiar a lista.", "warning");
+    return;
+  }
+
+  try {
+    const convocados = await Api.listarConvocados(peladaId);
+    if (!convocados || convocados.length === 0) {
+      window.App.showToast("Nenhum atleta convocado para esta data.", "warning");
+      return;
+    }
+
+    const confirmados = convocados.filter(c => c.status === "confirmado");
+    if (confirmados.length === 0) {
+      window.App.showToast("Nenhum atleta confirmado nesta data.", "warning");
+      return;
+    }
+
+    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup || {};
+    const groupName = group.nome || "PeladaPro";
+    const peladaData = window.App.activePelada ? (window.App.activePelada.data || "") : "";
+    const rawDate = peladaData ? String(peladaData).split("T")[0] : "";
+    const dataFmt = window.Utils ? window.Utils.formatDate(rawDate || peladaData) : (rawDate || "Data");
+    const horarioFmt = window.App.activePelada && window.App.activePelada.horario ? ` às ${window.App.activePelada.horario}` : "";
+    const localFmt = window.App.activePelada && window.App.activePelada.local ? `\n📍 *Local:* ${window.App.activePelada.local}` : "";
+
+    const goleiros = confirmados.filter(c => c.goleiro);
+    const linha = confirmados.filter(c => !c.goleiro);
+
+    let texto = `⚽ *LISTA DE CONFIRMADOS — ${groupName.toUpperCase()}*\n`;
+    texto += `📅 *Data:* ${dataFmt}${horarioFmt}${localFmt}\n`;
+    texto += `👥 *Total:* ${confirmados.length} atleta(s)\n\n`;
+
+    if (goleiros.length > 0) {
+      texto += `🧤 *GOLEIROS:*\n`;
+      goleiros.forEach((g, idx) => {
+        const nomeStr = g.apelido || g.nome || 'Atleta';
+        const check = g.presenca ? " ✅" : "";
+        texto += `${idx + 1}. ${nomeStr}${check}\n`;
+      });
+      texto += `\n`;
+    }
+
+    texto += `🏃 *JOGADORES DE LINHA:*\n`;
+    linha.forEach((l, idx) => {
+      const nomeStr = l.apelido || l.nome || 'Atleta';
+      const check = l.presenca ? " ✅" : "";
+      texto += `${idx + 1}. ${nomeStr}${check}\n`;
+    });
+
+    // Fila de espera (se houver)
+    const emEspera = convocados.filter(c => c.status === "fila_espera" || c.status === "espera");
+    if (emEspera.length > 0) {
+      texto += `\n⏳ *FILA DE ESPERA:*\n`;
+      emEspera.forEach((e, idx) => {
+        const nomeStr = e.apelido || e.nome || 'Atleta';
+        texto += `${idx + 1}. ${nomeStr}\n`;
+      });
+    }
+
+    texto += `\n_Gerado por PeladaPro 📱_`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(texto);
+    } else {
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = texto;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempTextArea);
+    }
+
+    window.App.showToast("📋 Lista copiada com sucesso! Pronta para colar no WhatsApp.", "success");
+  } catch (err) {
+    console.error("[copiarListaPresencaWhatsApp]", err);
+    window.App.showToast("Erro ao copiar lista para a área de transferência.", "error");
+  }
+}
+
 async function exportConvocadosExcel() {
   const selectPelada = document.getElementById("select-manager-pelada");
   const peladaId = (selectPelada && selectPelada.value) || (window.App.activePelada ? window.App.activePelada.id : null);
@@ -1410,6 +1498,7 @@ window.App.abrirModalNomesTimes = function() {
 window.desconvocarAtleta = desconvocarAtleta;
 window.removerDaFilaGestor = removerDaFilaGestor;
 window.exportConvocadosExcel = exportConvocadosExcel;
+window.copiarListaPresencaWhatsApp = copiarListaPresencaWhatsApp;
 
 function renderFormacaoTournamentUI() {
   const card = document.getElementById("formacao-tournament-card");
