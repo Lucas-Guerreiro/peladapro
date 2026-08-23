@@ -142,29 +142,49 @@ window.App.renderManagerAthletesList = function(searchQuery = "") {
 
     const fotoUrl = p.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nome)}&background=0F172A&color=38BDF8&size=256&bold=true`;
 
-    const avatarHTML = `<img src="${fotoUrl}" class="athlete-avatar btn-download-avatar" alt="${p.nome}" title="Clique para baixar foto do perfil" style="width: 64px; height: 64px; min-width: 64px; min-height: 64px; max-width: 64px; max-height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1; cursor: pointer; transition: transform 0.15s; border: 2px solid var(--primary);" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" />`;
+    const avatarHTML = `<img src="${fotoUrl}" class="athlete-avatar btn-download-avatar" alt="${p.nome}" title="Clique para baixar foto do perfil" style="width: 56px; height: 56px; min-width: 56px; min-height: 56px; max-width: 56px; max-height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; aspect-ratio: 1/1; cursor: pointer; transition: transform 0.15s; border: 2px solid #0284C7; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'" />`;
 
-    const downloadBtnHTML = `<button class="btn btn-sm btn-outline btn-download-athlete-photo" data-id="${p.id}" title="Baixar foto do perfil">📷 Baixar</button>`;
+    const downloadBtnHTML = `<button class="btn btn-sm btn-outline btn-download-athlete-photo" data-id="${p.id}" title="Baixar foto do perfil" style="display: inline-flex; align-items: center; gap: 4px; border-radius: 8px; padding: 6px 10px; font-weight: 600;"><i data-feather="download" style="width: 13px; height: 13px;"></i> Foto</button>`;
+
+    const isGoleiroBadge = p.goleiro 
+      ? `<span style="font-size: 11px; font-weight: 700; background: rgba(255, 109, 0, 0.1); color: var(--accent); padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="shield" style="width: 11px; height: 11px;"></i> Goleiro</span>` 
+      : '';
 
     card.innerHTML = `
-      <div class="athlete-info">
+      <div class="athlete-info" style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0;">
         ${avatarHTML}
-        <div class="athlete-details">
-          <h4>${p.nome} ${p.goleiro ? '🧤' : ''}</h4>
-          <span style="font-size:12px; color: var(--text-caption); display: block; margin-top: 2px;">E-mail: ${p.email || '—'} | ⭐ ${estrelasText}</span>
+        <div class="athlete-details" style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.nome}</h4>
+            ${isGoleiroBadge}
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748B; flex-wrap: wrap;">
+            <span>${p.email || 'Sem e-mail'}</span>
+            <span>·</span>
+            <span style="display: inline-flex; align-items: center; gap: 3px; font-weight: 600; color: #D97706;"><i data-feather="star" style="width: 12px; height: 12px;"></i> ${estrelasText}</span>
+          </div>
         </div>
       </div>
-      <div class="card-athlete-right">
-        <div style="text-align: right;" class="athlete-saldo-col">
-          <span style="font-size:11px; display:block; text-transform:uppercase; color: var(--text-caption); font-weight: 700;">Saldo</span>
-          <strong style="color: ${balanceColor}; font-size:15px;">R$ ${balanceText}</strong>
+
+      <div class="card-athlete-right" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div style="text-align: right; min-width: 90px;" class="athlete-saldo-col">
+          <span style="font-size: 10px; display: block; text-transform: uppercase; color: #64748B; font-weight: 800; letter-spacing: 0.5px;">Saldo</span>
+          <strong style="color: ${balanceColor}; font-size: 16px; font-weight: 900;">R$ ${balanceText}</strong>
         </div>
-        <div class="athlete-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
+        <div class="athlete-actions" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
           ${downloadBtnHTML}
-          <button class="btn btn-sm btn-outline btn-merge-athlete" data-id="${p.id}" title="Incorporar Histórico de Convidado" style="border-color: #2563EB; color: #2563EB; font-weight: 600;">🔄 Convidado</button>
-          <button class="btn btn-sm btn-secondary btn-saldo-athlete" data-id="${p.id}" title="Lançar Crédito / Patrocínio / Ajuste">💰 Saldo</button>
-          <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}" title="Editar Atleta">✏️ Editar</button>
-          <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}" title="Excluir Atleta">🗑️ Excluir</button>
+          <button class="btn btn-sm btn-outline btn-merge-athlete" data-id="${p.id}" title="Incorporar Histórico de Convidado" style="border-color: #CBD5E1; color: #334155; font-weight: 700; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-feather="git-pull-request" style="width: 13px; height: 13px; color: #0284C7;"></i> Convidado
+          </button>
+          <button class="btn btn-sm btn-secondary btn-saldo-athlete" data-id="${p.id}" title="Lançar Crédito / Patrocínio / Ajuste" style="font-weight: 700; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-feather="dollar-sign" style="width: 13px; height: 13px;"></i> Saldo
+          </button>
+          <button class="btn btn-sm btn-outline btn-edit-athlete" data-id="${p.id}" title="Editar Atleta" style="font-weight: 700; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-feather="edit-2" style="width: 13px; height: 13px;"></i> Editar
+          </button>
+          <button class="btn btn-sm btn-danger btn-delete-athlete" data-id="${p.id}" title="Excluir Atleta" style="font-weight: 700; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-feather="trash-2" style="width: 13px; height: 13px;"></i>
+          </button>
         </div>
       </div>
     `;
