@@ -1,0 +1,52 @@
+<!-- Modal: Criar Nova Campanha de Arrecadação / Vaquinha (Gestor) -->
+<div class="modal-backdrop" id="modal-criar-arrecadacao-backdrop">
+  <div class="modal-content" style="max-width: 500px; width: 95%;">
+    <div class="modal-header">
+      <h3 style="color: #0284C7; display: flex; align-items: center; gap: 8px; font-size: 18px;">
+        <i data-feather="target" style="width: 20px; height: 20px;"></i> Nova Campanha de Arrecadação
+      </h3>
+      <button class="modal-close" id="btn-close-criar-arrecadacao-modal">&times;</button>
+    </div>
+
+    <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">
+      Crie uma vaquinha para compra de materiais, troféus ou confraternização. Os atletas poderão contribuir via Pix no app!
+    </p>
+
+    <div class="form-group" style="margin-bottom: 14px;">
+      <label for="arr-title" class="form-label" style="font-weight: 700;">Título da Campanha *</label>
+      <input type="text" id="arr-title" class="form-control" placeholder="Ex: Novos Coletes e 2 Bolas Penalty">
+    </div>
+
+    <div class="grid-2" style="gap: 12px; margin-bottom: 14px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="arr-meta" class="form-label" style="font-weight: 700;">Meta Total (R$) *</label>
+        <input type="number" id="arr-meta" class="form-control" placeholder="300.00" step="10.00" min="10" required style="font-weight: 800; font-size: 15px;">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="arr-sugerido" class="form-label" style="font-weight: 700;">Valor Sugerido (R$)</label>
+        <input type="number" id="arr-sugerido" class="form-control" placeholder="15.00" step="5.00" min="5" value="15.00" style="font-weight: 700;">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 14px;">
+      <label for="arr-category" class="form-label" style="font-weight: 700;">Categoria</label>
+      <select id="arr-category" class="form-control" style="font-size: 13px;">
+        <option value="Material">Material (Bolas/Coletes)</option>
+        <option value="Troféus / Premiações">Troféus / Medalhas / Premiações</option>
+        <option value="Coletes / Uniformes">Coletes / Uniformes</option>
+        <option value="Churrasco">Churrasco / Confraternização</option>
+        <option value="Equipamentos">Redes / Equipamentos</option>
+        <option value="Outros">Outros</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 24px;">
+      <label for="arr-desc" class="form-label" style="font-weight: 700;">Descrição / Detalhes para os Atletas</label>
+      <textarea id="arr-desc" class="form-control" rows="2" placeholder="Ex: Estamos arrecadando para renovar nossos coletes e bolas para a temporada."></textarea>
+    </div>
+
+    <button id="btn-save-nova-arrecadacao" class="btn btn-md btn-accent" style="width: 100%; font-weight: 800; height: 44px; background: #0284C7; border: none; cursor: pointer; border-radius: 8px;">
+      🚀 Lançar Campanha no App
+    </button>
+  </div>
+</div>

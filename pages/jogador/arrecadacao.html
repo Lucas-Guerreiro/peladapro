@@ -1,0 +1,36 @@
+<!-- pages/jogador/arrecadacao.html — Campanhas de Arrecadação / Vaquinha do Grupo -->
+<main style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+
+  <!-- BANNER DE APRESENTAÇÃO -->
+  <div class="card" style="padding: 24px; border-radius: 16px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);">
+    <div style="position: absolute; right: -30px; bottom: -30px; width: 140px; height: 140px; background: rgba(2, 132, 199, 0.15); border-radius: 50%; filter: blur(30px);"></div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; position: relative; z-index: 1;">
+      <div style="max-width: 580px;">
+        <span style="font-size: 11px; font-weight: 800; background: rgba(56, 189, 248, 0.2); color: #38BDF8; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; margin-bottom: 8px;">
+          🤝 Fortaleça Nossa Pelada
+        </span>
+        <h2 style="font-size: 24px; font-weight: 900; margin: 0 0 8px 0; color: #FFFFFF; font-family: 'Inter', sans-serif;">
+          Vaquinhas & Arrecadações
+        </h2>
+        <p style="font-size: 13px; color: #94A3B8; margin: 0; line-height: 1.5;">
+          Contribua diretamente via Pix para a compra de novos materiais (bolas, coletes novos, premiações, troféus e confraternizações). Cada apoio faz a diferença!
+        </p>
+      </div>
+
+      <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px 18px; text-align: right;">
+        <span style="font-size: 11px; color: #94A3B8; display: block; font-weight: 600;">Status Geral</span>
+        <strong id="arrecadacao-header-total" style="font-size: 18px; color: #10B981; font-weight: 800;">Carregando...</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER DE CAMPANHAS ATIVAS -->
+  <div id="arrecadacoes-cards-container" style="display: flex; flex-direction: column; gap: 20px;">
+    <div class="card" style="padding: 40px 20px; text-align: center; background: #FFFFFF; border-radius: 16px;">
+      <div class="skeleton skeleton-title" style="margin: 0 auto 16px auto; width: 40%;"></div>
+      <div class="skeleton skeleton-text" style="margin: 0 auto; width: 70%;"></div>
+    </div>
+  </div>
+
+</main>

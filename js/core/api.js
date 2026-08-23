@@ -366,6 +366,76 @@ const Api = {
     return res.json();
   },
 
+  // --- Arrecadações / Vaquinha do Grupo ---
+  async listarArrecadacoes(grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    const res = await fetch(`/api/arrecadacoes/grupo/${grupoId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.json();
+  },
+
+  async criarArrecadacao(dados) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(dados)
+    });
+    return res.json();
+  },
+
+  async atualizarStatusArrecadacao(id, status) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes/${id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    });
+    return res.json();
+  },
+
+  async gerarPixContribuicao(arrecadacao_id, valor, cpf = '') {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes/pix`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ arrecadacao_id, valor, cpf })
+    });
+    return res.json();
+  },
+
+  async consultarStatusContribuicao(contribuicaoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes/status/${contribuicaoId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.json();
+  },
+
+  async simularAprovacaoContribuicao(contribuicaoId) {
+    const res = await fetch(`/api/arrecadacoes/simular-aprovacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contribuicaoId })
+    });
+    return res.json();
+  },
+
   async deletarData(id) {
     const token = localStorage.getItem('token');
     if (!token) {

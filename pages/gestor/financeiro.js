@@ -25,6 +25,11 @@ window.App.initFinanceiro = async function() {
     btnSaldos.onclick = () => window.App.openModal("saldos");
   }
 
+  const btnCriarArr = document.getElementById("btn-open-criar-arrecadacao-modal");
+  if (btnCriarArr) {
+    btnCriarArr.onclick = () => window.App.openModal("criar_arrecadacao");
+  }
+
   // 2. Select de Filtragem por Pelada Específica
   const selectPelada = document.getElementById("finances-select-pelada");
   if (selectPelada) {

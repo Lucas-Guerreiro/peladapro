@@ -16,6 +16,7 @@ const vendasRoutes = require('./routes/vendas');
 const pixRoutes = require('./routes/pix');
 const pushRoutes = require('./routes/push');
 const timesCatalogRoutes = require('./routes/timesCatalogRoutes');
+const arrecadacaoRoutes = require('./routes/arrecadacoes');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -102,6 +103,7 @@ app.use('/api/vendas', vendasRoutes);
 app.use('/api/pix', pixRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/times-catalogo', timesCatalogRoutes);
+app.use('/api/arrecadacoes', arrecadacaoRoutes);
 
 // Rota de seed: apenas em desenvolvimento
 if (!isProduction) {
