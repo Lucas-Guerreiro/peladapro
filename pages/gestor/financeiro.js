@@ -4,6 +4,7 @@
 // ==========================================================================
 
 window.App._financeiroFilter = "este_mes"; // "este_mes" | "ultimos_30" | "tudo"
+window.App._financeiroPeladaFilter = "todas"; // "todas" | "Pelada_24/08" etc.
 
 window.App.initFinanceiro = async function() {
   await window.App.renderFinanceiroData();
@@ -24,7 +25,16 @@ window.App.initFinanceiro = async function() {
     btnSaldos.onclick = () => window.App.openModal("saldos");
   }
 
-  // 2. Chips de Filtro de Período
+  // 2. Select de Filtragem por Pelada Específica
+  const selectPelada = document.getElementById("finances-select-pelada");
+  if (selectPelada) {
+    selectPelada.onchange = (e) => {
+      window.App._financeiroPeladaFilter = e.target.value;
+      window.App.renderFinanceiroData();
+    };
+  }
+
+  // 3. Chips de Filtro de Período
   document.querySelectorAll(".finance-filter-chip").forEach(btn => {
     btn.onclick = (e) => {
       document.querySelectorAll(".finance-filter-chip").forEach(b => {
@@ -286,8 +296,29 @@ window.App.renderFinanceiroData = async function() {
     }
   });
 
+  // Popula o Select de Peladas com as opções disponíveis nos dados
+  const selectPeladaEl = document.getElementById("finances-select-pelada");
+  if (selectPeladaEl) {
+    const currentVal = window.App._financeiroPeladaFilter || "todas";
+    const availableKeys = Object.keys(groupsMap);
+    
+    let selectOpts = `<option value="todas">📋 Todas as Peladas (${availableKeys.length})</option>`;
+    availableKeys.forEach(k => {
+      const isSelected = (k === currentVal) ? "selected" : "";
+      selectOpts += `<option value="${k}" ${isSelected}>📅 ${groupsMap[k].title}</option>`;
+    });
+    selectPeladaEl.innerHTML = selectOpts;
+  }
+
+  // Filtra os grupos conforme a seleção do select de peladas
+  let displayGroups = Object.values(groupsMap);
+  const selectedPeladaKey = window.App._financeiroPeladaFilter || "todas";
+  if (selectedPeladaKey !== "todas") {
+    displayGroups = displayGroups.filter(g => g.key === selectedPeladaKey);
+  }
+
   // Ordena os grupos por data mais recente
-  const sortedGroups = Object.values(groupsMap).sort((a, b) => b.dataMaisRecente - a.dataMaisRecente);
+  const sortedGroups = displayGroups.sort((a, b) => b.dataMaisRecente - a.dataMaisRecente);
 
   let htmlCards = "";
 

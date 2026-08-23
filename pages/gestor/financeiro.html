@@ -84,11 +84,22 @@
 
   <!-- NÍVEL 2: CORPO PRINCIPAL AGRUPADO POR PELADA / DATA -->
   <div style="display: flex; flex-direction: column; gap: 16px;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-heading); display: flex; align-items: center; gap: 8px;">
         <i data-feather="calendar" style="width: 18px; height: 18px; color: var(--secondary);"></i> Demonstrativo por Pelada & Lançamentos
       </h3>
-      <span style="font-size: 12px; color: var(--text-caption);" id="finances-count-badge">Carregando dados...</span>
+      
+      <!-- Seletor de Pelada Específica -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="finances-select-pelada" style="font-size: 12px; font-weight: 700; color: var(--text-caption); margin: 0; white-space: nowrap;">
+          Filtrar Pelada:
+        </label>
+        <select id="finances-select-pelada" class="form-control" style="height: 36px; padding: 4px 12px; font-size: 13px; font-weight: 600; border-radius: 6px; border: 1.5px solid #CBD5E1; background: #FFF; min-width: 200px; cursor: pointer;">
+          <option value="todas">📋 Todas as Peladas</option>
+          <!-- Preenchido dinamicamente via JS -->
+        </select>
+        <span style="font-size: 12px; color: var(--text-caption); display: none;" id="finances-count-badge">Carregando...</span>
+      </div>
     </div>
 
     <!-- Container Dinâmico onde os cards de cada Pelada são renderizados -->
