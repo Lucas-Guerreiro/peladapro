@@ -17,23 +17,33 @@
       <input type="number" id="income-value" class="form-control" placeholder="0.00" step="5.00" min="1" required style="font-size: 16px; font-weight: 700;">
     </div>
 
-    <div class="form-group" style="margin-bottom: 16px;">
+    <div class="grid-2" style="gap: 12px; margin-bottom: 16px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="income-category" class="form-label" style="font-weight: 700;">Categoria *</label>
+        <select id="income-category" class="form-control" style="font-size: 13px;">
+          <option value="Patrocínio">Patrocínio</option>
+          <option value="Aporte do Gestor">Aporte do Gestor</option>
+          <option value="Doação">Doação</option>
+          <option value="Mensalidade Externa">Mensalidade Externa</option>
+          <option value="Outro">Outra Entrada</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="income-pelada-select" class="form-label" style="font-weight: 700;">Vincular à Pelada</label>
+        <select id="income-pelada-select" class="form-control" style="font-size: 13px;">
+          <option value="">Nenhuma (Entrada Geral)</option>
+          <!-- Preenchido dinamicamente via JS -->
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 24px;">
       <label for="income-description" class="form-label" style="font-weight: 700;">Motivo / Origem da Verba *</label>
       <input type="text" id="income-description" class="form-control" placeholder="Ex: Patrocínio Supermercado, Saldo Anterior">
     </div>
 
-    <div class="form-group" style="margin-bottom: 24px;">
-      <label for="income-category" class="form-label" style="font-weight: 700;">Categoria</label>
-      <select id="income-category" class="form-control">
-        <option value="Patrocínio">Patrocínio</option>
-        <option value="Aporte do Gestor">Aporte do Gestor</option>
-        <option value="Doação">Doação</option>
-        <option value="Mensalidade Externa">Mensalidade Externa</option>
-        <option value="Outro">Outra Entrada</option>
-      </select>
-    </div>
-
-    <button id="btn-save-income" class="btn btn-md btn-accent" style="width: 100%; font-weight: 700; height: 44px; cursor: pointer; background: #047857; border: none;">
+    <button id="btn-save-income" class="btn btn-md btn-accent" style="width: 100%; font-weight: 700; height: 44px; cursor: pointer; background: #047857; border: none; border-radius: 8px;">
       ✅ Confirmar Entrada de Verba
     </button>
   </div>
