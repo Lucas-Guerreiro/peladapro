@@ -255,26 +255,49 @@ window.App.renderFinanceiroData = async function() {
   // NÍVEL 1: CÁLCULO E RENDERIZAÇÃO DOS CARTÕES DE RESUMO (KPIs)
   // =========================================================================
   let totalArrecadado = 0;
-  let totalDespesas = 0;
+  let totalDespesasPrevistas = 0;
+  let totalDespesasConsolidadas = 0;
+  let totalDespesasPendentes = 0;
 
   filteredTx.forEach(t => {
-    if (t.isEntrada) totalArrecadado += t.valor;
-    else totalDespesas += t.valor;
+    if (t.isEntrada) {
+      totalArrecadado += t.valor;
+    } else {
+      totalDespesasPrevistas += t.valor;
+      if (t.isEfetivado) {
+        totalDespesasConsolidadas += t.valor;
+      } else if (t.isParcial) {
+        totalDespesasConsolidadas += t.valPago;
+        totalDespesasPendentes += t.valRestante;
+      } else {
+        totalDespesasPendentes += t.valor;
+      }
+    }
   });
 
-  // Saldo geral acumulado de todas as transações da história (Caixa Atual)
+  // Saldo geral acumulado de todas as transações da história (Caixa Real em Conta)
   let caixaAtualTotal = 0;
   gestorTx.forEach(t => {
-    if (t.isEntrada) caixaAtualTotal += t.valor;
-    else caixaAtualTotal -= t.valor;
+    if (t.isEntrada) {
+      caixaAtualTotal += t.valor;
+    } else {
+      if (t.isEfetivado) {
+        caixaAtualTotal -= t.valor;
+      } else if (t.isParcial) {
+        caixaAtualTotal -= t.valPago;
+      }
+      // Se não for efetivado (0% pago), não subtrai do caixa real em conta!
+    }
   });
 
-  const saldoLiquidoPeriodo = totalArrecadado - totalDespesas;
+  const saldoRealConsolidado = totalArrecadado - totalDespesasConsolidadas;
+  const saldoLiquidoPrevisto = totalArrecadado - totalDespesasPrevistas;
 
   // Atualiza elementos DOM dos KPIs
   const elCaixa = document.getElementById("finances-kpi-caixa");
   const elArrecadado = document.getElementById("finances-kpi-arrecadado");
   const elDespesas = document.getElementById("finances-kpi-despesas");
+  const elDespesasSub = document.getElementById("finances-kpi-despesas-sub");
   const elSaldo = document.getElementById("finances-kpi-saldo");
   const elSaldoSub = document.getElementById("finances-kpi-saldo-sub");
   const elSaldoCard = document.getElementById("finances-kpi-saldo-card");
@@ -282,18 +305,22 @@ window.App.renderFinanceiroData = async function() {
 
   if (elCaixa) elCaixa.textContent = formatCurrencyBRL(caixaAtualTotal);
   if (elArrecadado) elArrecadado.textContent = formatCurrencyBRL(totalArrecadado);
-  if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesas);
+  
+  // Exibe despesas efetivadas/pagas no número principal e o previsto/pendente no subtexto
+  if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesasConsolidadas);
+  if (elDespesasSub) elDespesasSub.textContent = `Previstas: ${formatCurrencyBRL(totalDespesasPrevistas)} · Pendente: ${formatCurrencyBRL(totalDespesasPendentes)}`;
 
   if (elSaldo) {
-    elSaldo.textContent = (saldoLiquidoPeriodo >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoLiquidoPeriodo));
-    if (saldoLiquidoPeriodo >= 0) {
+    elSaldo.textContent = (saldoRealConsolidado >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoRealConsolidado));
+    if (elSaldoSub) elSaldoSub.textContent = `Projetado: ${(saldoLiquidoPrevisto >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoLiquidoPrevisto))}`;
+
+    if (saldoRealConsolidado >= 0) {
       elSaldo.style.color = "#1D9E75";
       if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#1D9E75";
       if (elSaldoIcon) {
         elSaldoIcon.style.color = "#1D9E75";
         elSaldoIcon.style.background = "rgba(29, 158, 117, 0.12)";
       }
-      if (elSaldoSub) elSaldoSub.textContent = "Lucro no período selecionado";
     } else {
       elSaldo.style.color = "#E74C3C";
       if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#E74C3C";
@@ -301,7 +328,6 @@ window.App.renderFinanceiroData = async function() {
         elSaldoIcon.style.color = "#E74C3C";
         elSaldoIcon.style.background = "rgba(231, 76, 60, 0.12)";
       }
-      if (elSaldoSub) elSaldoSub.textContent = "Prejuízo no período selecionado";
     }
   }
 
@@ -567,7 +593,8 @@ window.App.renderFinanceiroData = async function() {
         entradas: [],
         despesas: [],
         totalEntradas: 0,
-        totalDespesas: 0,
+        totalDespesasPrevistas: 0,
+        totalDespesasConsolidadas: 0,
         dataMaisRecente: t.data
       };
     }
@@ -581,7 +608,12 @@ window.App.renderFinanceiroData = async function() {
       groupsMap[groupKey].totalEntradas += t.valor;
     } else {
       groupsMap[groupKey].despesas.push(t);
-      groupsMap[groupKey].totalDespesas += t.valor;
+      groupsMap[groupKey].totalDespesasPrevistas += t.valor;
+      if (t.isEfetivado) {
+        groupsMap[groupKey].totalDespesasConsolidadas += t.valor;
+      } else if (t.isParcial) {
+        groupsMap[groupKey].totalDespesasConsolidadas += t.valPago;
+      }
     }
   });
 
@@ -601,7 +633,8 @@ window.App.renderFinanceiroData = async function() {
             entradas: [],
             despesas: [],
             totalEntradas: 0,
-            totalDespesas: 0,
+            totalDespesasPrevistas: 0,
+            totalDespesasConsolidadas: 0,
             dataMaisRecente: new Date(p.data)
           };
         }
@@ -637,27 +670,29 @@ window.App.renderFinanceiroData = async function() {
   let htmlCards = "";
 
   sortedGroups.forEach(grp => {
-    const saldoGrupo = grp.totalEntradas - grp.totalDespesas;
+    const saldoGrupoConsolidado = grp.totalEntradas - grp.totalDespesasConsolidadas;
+    const saldoGrupoPrevisto = grp.totalEntradas - grp.totalDespesasPrevistas;
     
     // Indicador visual: Verde (Lucro), Vermelho (Prejuízo), Cinza (Pendente/Neutro)
     let badgeStatusColor = "#10B981";
     let badgeStatusBg = "#ECFDF5";
-    let badgeStatusText = "🟢 Lucro";
+    let badgeStatusText = "🟢 Lucro Real";
     let borderAccent = "#10B981";
 
-    if (saldoGrupo < 0) {
+    if (saldoGrupoConsolidado < 0) {
       badgeStatusColor = "#EF4444";
       badgeStatusBg = "#FEF2F2";
-      badgeStatusText = "🔴 Prejuízo";
+      badgeStatusText = "🔴 Prejuízo Real";
       borderAccent = "#EF4444";
-    } else if (saldoGrupo === 0 && grp.totalEntradas === 0 && grp.totalDespesas === 0) {
+    } else if (saldoGrupoConsolidado === 0 && grp.totalEntradas === 0 && grp.totalDespesasConsolidadas === 0) {
       badgeStatusColor = "#64748B";
       badgeStatusBg = "#F1F5F9";
       badgeStatusText = "⚪ Neutro";
       borderAccent = "#94A3B8";
     }
 
-    const saldoFormatado = (saldoGrupo >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGrupo));
+    const saldoFormatado = (saldoGrupoConsolidado >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGrupoConsolidado));
+    const saldoPrevistoFmt = (saldoGrupoPrevisto >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGrupoPrevisto));
 
     // Renderiza Lista de Entradas do Grupo
     let entradasHtml = "";
@@ -720,7 +755,7 @@ window.App.renderFinanceiroData = async function() {
     htmlCards += `
       <div class="card" style="padding: 18px 20px; border-left: 4px solid ${borderAccent}; background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
         
-        <!-- CABEÇALHO DO GRUPO (Data e 3 Totais) -->
+        <!-- CABEÇALHO DO GRUPO (Data e Totais Reais vs Previstos) -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px; margin-bottom: 14px;">
           <div>
             <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 8px;">
@@ -733,10 +768,10 @@ window.App.renderFinanceiroData = async function() {
               Arrecadado: <strong style="color: #059669;">${formatCurrencyBRL(grp.totalEntradas)}</strong>
             </span>
             <span style="font-size: 12px; color: #475569;">
-              Despesas: <strong style="color: #DC2626;">${formatCurrencyBRL(grp.totalDespesas)}</strong>
+              Despesas Pagas: <strong style="color: #DC2626;">${formatCurrencyBRL(grp.totalDespesasConsolidadas)}</strong> <span style="font-size: 10px; color: #64748B;">(Previstas: ${formatCurrencyBRL(grp.totalDespesasPrevistas)})</span>
             </span>
             <span style="font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: ${badgeStatusBg}; color: ${badgeStatusColor};">
-              Saldo: ${saldoFormatado} (${badgeStatusText})
+              Saldo Real: ${saldoFormatado} <span style="font-weight: 600; font-size: 11px;">(Projetado: ${saldoPrevistoFmt})</span>
             </span>
           </div>
         </div>

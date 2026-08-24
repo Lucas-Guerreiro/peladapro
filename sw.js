@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v230'; // ← Botões destacados ⚡ Efetivar com 1 clique diretamente nas despesas não efetivadas e pendentes
+const CACHE_NAME = 'peladapro-v231'; // ← Despesas Previstas vs Consolidadas/Pagas e Saldo Real Consolidado nos KPIs e Cards
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
