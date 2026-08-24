@@ -2,7 +2,7 @@
 // MODAL: DESCONVOCAR (remocao.js)
 // ==========================================================================
 
-let localPelada = null;
+var localPelada = null;
 
 function calculateHoursLeft(pelada) {
   if (!pelada || !pelada.data) return 999;
@@ -27,10 +27,10 @@ function calculateHoursLeft(pelada) {
 
   let timeStr = pelada.horario ? String(pelada.horario).trim() : '19:00';
   const timeParts = timeStr.split(':');
-  const hora = parseInt(timeParts[0] || 0, 10);
-  const min = parseInt(timeParts[1] || 0, 10);
+  const horaStr = String(timeParts[0] || '19').padStart(2, '0');
+  const minStr = String(timeParts[1] || '00').padStart(2, '0');
 
-  const peladaDateTime = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), hora, min, 0);
+  const peladaDateTime = new Date(`${year}-${month}-${day}T${horaStr}:${minStr}:00-03:00`);
   const now = new Date();
 
   if (isNaN(peladaDateTime.getTime())) return 999;

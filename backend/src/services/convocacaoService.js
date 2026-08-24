@@ -24,10 +24,12 @@ const verificarRegra2Horas = async (peladaId) => {
 
     let timeStr = row.horario ? String(row.horario).trim() : '19:00';
     const timeParts = timeStr.split(':');
-    const hora = parseInt(timeParts[0] || 0, 10);
-    const min = parseInt(timeParts[1] || 0, 10);
+    const horaStr = String(timeParts[0] || '19').padStart(2, '0');
+    const minStr = String(timeParts[1] || '00').padStart(2, '0');
 
-    const peladaDateTime = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), hora, min, 0);
+    // Data/Hora com fuso oficial de Brasília (-03:00) para funcionar independente do servidor (UTC/Vercel)
+    const peladaIsoStr = `${year}-${month}-${day}T${horaStr}:${minStr}:00-03:00`;
+    const peladaDateTime = new Date(peladaIsoStr);
     const agora = new Date();
 
     if (isNaN(peladaDateTime.getTime())) {
