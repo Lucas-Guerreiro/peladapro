@@ -464,25 +464,6 @@ exports.atualizarLiveState = async (req, res) => {
               [timeId, p.id]
             );
           }
-        // Envia notificações se notifyDraw for verdadeiro
-        if (req.body.notifyDraw && Array.isArray(uniqueCurrentTeams)) {
-          try {
-            const { sendNotificationInternal } = require('./pushController');
-            for (const t of uniqueCurrentTeams) {
-              const nomeTime = t.nome || t.name || 'seu time';
-              const pList = t.players || t.jogadores || [];
-              for (const p of pList) {
-                if (p && p.id) {
-                  sendNotificationInternal({
-                    usuarioId: p.id,
-                    title: 'Sorteio Realizado! ⚽',
-                    body: `O sorteio foi realizado e você foi escalado no ${nomeTime}!`,
-                    url: '/#/jogador/convocacao'
-                  }).catch(e => console.warn('[Push LiveState Sorteio] Erro ao notificar:', e.message));
-                }
-              }
-            }
-          } catch (e) { }
         }
       }
     } catch (persistErr) {

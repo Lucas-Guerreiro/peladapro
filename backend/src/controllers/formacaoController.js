@@ -84,27 +84,6 @@ exports.sortear = async (req, res) => {
     }
 
     await client.query('COMMIT');
-
-    // 6. Enviar Notificações Push para cada atleta sorteado
-    try {
-      const { sendNotificationInternal } = require('./pushController');
-      for (let time of timesSorteados) {
-        const nomeTime = time.nome || 'seu time';
-        for (let jogador of (time.jogadores || [])) {
-          if (jogador && jogador.id) {
-            sendNotificationInternal({
-              usuarioId: jogador.id,
-              title: 'Sorteio Realizado! ⚽',
-              body: `O sorteio foi realizado e você foi escalado no ${nomeTime}!`,
-              url: '/#/jogador/convocacao'
-            }).catch(e => console.warn('[Push Sorteio] Erro ao notificar atleta:', e.message));
-          }
-        }
-      }
-    } catch (pushErr) {
-      console.warn('[Push Sorteio] Falha ao disparar notificações de sorteio:', pushErr.message);
-    }
-
     res.json({ message: 'Sorteio realizado e salvo com sucesso!', times: timesSorteados });
   } catch (err) {
     if (client) await client.query('ROLLBACK');

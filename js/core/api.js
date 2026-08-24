@@ -461,7 +461,7 @@ const Api = {
 
   async listarConvocados(peladaId) {
     if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
-    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
     try {
       if (token) {
         const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
@@ -655,7 +655,7 @@ const Api = {
     return res.json();
   },
 
-  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams, isReset = false, notifyDraw = false) {
+  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams, isReset = false) {
     if (!peladaId) return { error: 'Pelada ID não informado.' };
 
     if (isReset) {
@@ -716,7 +716,7 @@ const Api = {
       });
     }
 
-    const liveStateObj = { liveMatch, waitingQueue, teams: cleanTeams, notifyDraw };
+    const liveStateObj = { liveMatch, waitingQueue, teams: cleanTeams };
 
     // Salva localmente para resposta instantânea na UI
     try {
