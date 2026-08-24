@@ -132,10 +132,22 @@ function handleExecuteSorteio() {
 
   window.App.closeModal();
 
-  const players = JSON.parse(localStorage.getItem("players")) || [];
+  let allAvailablePlayers = JSON.parse(localStorage.getItem("players")) || [];
+
+  if ((!allAvailablePlayers || allAvailablePlayers.length === 0) && window.App.confirmadosList && window.App.confirmadosList.length > 0) {
+    allAvailablePlayers = window.App.confirmadosList.map(c => ({
+      id: c.id,
+      nome: c.nome,
+      apelido: c.apelido || c.nome,
+      goleiro: !!c.goleiro,
+      autoavaliacao: parseInt(c.autoavaliacao) || 3,
+      ativo: true
+    }));
+  }
 
   // Obter configurações específicas da pelada/data selecionada (ou do grupo ativo como fallback)
-  const peladaAtiva = window.App.activePelada || {};
+  if (!window.App.activePelada) window.App.activePelada = {};
+  const peladaAtiva = window.App.activePelada;
   const grupoAtivo = window.App.currentGroup || {};
 
   let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
@@ -145,19 +157,39 @@ function handleExecuteSorteio() {
   let maxTeams = modalSelectQtd ? parseInt(modalSelectQtd.value) : parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
   if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
 
-  window.App.activePelada.quantidade_times = maxTeams;
-  localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+  peladaAtiva.quantidade_times = maxTeams;
+  try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
   if (peladaAtiva.id && window.Api && window.Api.atualizarConfigPartida) {
     window.Api.atualizarConfigPartida(peladaAtiva.id, { quantidade_times: maxTeams });
   }
 
-  // Filtra apenas jogadores que o gestor marcou manualmente como presentes (check-in ativo)
-  const activePresent = players.filter(p => {
-    return (window.App.presentPlayers || []).some(id => String(id) === String(p.id));
-  });
+  // 1. Tenta filtrar os atletas que foram explicitamente marcados como presentes no check-in
+  let activePresent = [];
+  if (window.App.presentPlayers && window.App.presentPlayers.length > 0) {
+    activePresent = allAvailablePlayers.filter(p => {
+      return window.App.presentPlayers.some(id => String(id) === String(p.id));
+    });
+  }
+
+  // 2. Fallback Inteligente: Se não houver atletas marcados individualmente no check-in,
+  // utiliza automaticamente todos os atletas confirmados para a partida!
+  if (activePresent.length < 2) {
+    if (window.App.confirmadosList && window.App.confirmadosList.length >= 2) {
+      activePresent = window.App.confirmadosList.map(c => ({
+        id: c.id,
+        nome: c.nome,
+        apelido: c.apelido || c.nome,
+        goleiro: !!c.goleiro,
+        autoavaliacao: parseInt(c.autoavaliacao) || 3,
+        ativo: true
+      }));
+    } else if (allAvailablePlayers.length >= 2) {
+      activePresent = [...allAvailablePlayers];
+    }
+  }
 
   if (activePresent.length < 2) {
-    window.App.showToast("Número insuficiente de jogadores para o sorteio.", "error");
+    window.App.showToast("Número insuficiente de jogadores para o sorteio (mínimo 2 atletas confirmados).", "error");
     return;
   }
 

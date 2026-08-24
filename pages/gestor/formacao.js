@@ -418,7 +418,8 @@ async function updateCheckinPlayersList(peladaId) {
       atualizarContadorPresencas();
       return;
     }
-    // Sincroniza jogadores com o localStorage local para retrocompatibilidade do Sorteio Técnico
+    window.App.confirmadosList = confirmados;
+    // Sincroniza jogadores com o localStorage local para o Sorteio Técnico
     const playersLocais = JSON.parse(localStorage.getItem("players")) || [];
     confirmados.forEach(c => {
       // Garante que o jogador está na tabela 'players' local para o sorteio usar
@@ -446,6 +447,11 @@ async function updateCheckinPlayersList(peladaId) {
       if (c.presenca) {
         window.App.presentPlayers.push(c.id);
       }
+    });
+
+    try {
+      localStorage.setItem("players", JSON.stringify(playersLocais));
+    } catch (e) {}
       const div = document.createElement("div");
       div.className = "checkin-athlete-card";
       div.style.display = "flex";
