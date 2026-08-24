@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v226'; // ← Registro de presenças (Saldo e Pix) como Crédito/Entrada no financeiro da pelada
+const CACHE_NAME = 'peladapro-v227'; // ← Revertidas transações de presença para o formato original conforme solicitado pelo usuário
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
