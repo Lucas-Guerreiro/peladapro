@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v231'; // ← Despesas Previstas vs Consolidadas/Pagas e Saldo Real Consolidado nos KPIs e Cards
+const CACHE_NAME = 'peladapro-v232'; // ← Lançamento automático de 1% referente à taxa Pix do Mercado Pago em vaquinhas
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

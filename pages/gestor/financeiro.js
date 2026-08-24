@@ -176,7 +176,9 @@ window.App.renderFinanceiroData = async function() {
       }
     } else {
       isEntrada = false;
-      if (!t.usuario_id) {
+      if (desc.includes("Taxa Mercado Pago") || desc.includes("Taxa Pix 1%")) {
+        categoriaExibicao = "Taxa Mercado Pago (1%)";
+      } else if (!t.usuario_id) {
         categoriaExibicao = "Despesa";
       } else if (desc.startsWith("Presença de")) {
         categoriaExibicao = "Débito Presença";
