@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v229'; // ← Suporte ao Pagamento Parcial de Despesas (Pago em partes / A Pagar) no Financeiro
+const CACHE_NAME = 'peladapro-v230'; // ← Botões destacados ⚡ Efetivar com 1 clique diretamente nas despesas não efetivadas e pendentes
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

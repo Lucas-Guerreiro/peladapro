@@ -69,6 +69,40 @@ window.App.initFinanceiro = async function() {
     }
     window.App.openModal("editar_transacao", { transaction: tx });
   };
+
+  window.App.efetivarDespesaDireta = async function(txId) {
+    const tx = (window._financeiroTransactionsMap || {})[String(txId)];
+    if (!tx) {
+      window.App.showToast("Lançamento não encontrado.", "error");
+      return;
+    }
+
+    const descLimpa = tx.descricao
+      .replace(/\s*\[PAGO:[\d.]+\/[\d.]+\]/gi, "")
+      .replace(/\s*\[NÃO EFETIVADO\]/gi, "")
+      .replace(/\s*\[PENDENTE\]/gi, "")
+      .trim();
+
+    const confirmEfetivar = confirm(`Confirmar a EFETIVAÇÃO (100% PAGO) da despesa:\n\n"${descLimpa}"\nValor Total: R$ ${tx.valor.toFixed(2)}?`);
+    if (!confirmEfetivar) return;
+
+    try {
+      window.App.showToast("Efetivando despesa no caixa...", "info");
+      const res = await window.Api.editarTransacao(tx.id, tx.valor, tx.tipoOriginal || 'debito', descLimpa);
+      if (res && res.error) {
+        window.App.showToast(res.error, "error");
+        return;
+      }
+
+      window.App.showToast("Despesa EFETIVADA com sucesso! ⚡✅", "success");
+      if (window.App.renderFinanceiroData) {
+        await window.App.renderFinanceiroData();
+      }
+    } catch (err) {
+      console.error("[efetivarDespesaDireta] Erro:", err);
+      window.App.showToast("Erro ao efetivar a despesa.", "error");
+    }
+  };
 };
 
 // --- RENDERIZAÇÃO COMPLETA DO PAINEL FINANCEIRO REESTRUTURADO ---
@@ -345,15 +379,19 @@ window.App.renderFinanceiroData = async function() {
         } else {
           badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         }
+        const btnEfetivar = !d.isEfetivado
+          ? `<button onclick="window.App.efetivarDespesaDireta('${d.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta despesa como 100% EFETIVADA (Pago)">⚡ Efetivar</button>`
+          : '';
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #FEE2E2; font-size: 13px;">
-            <div style="min-width: 0; flex: 1; padding-right: 8px;">
-              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🛍️ <strong>${descLimpa}</strong>${badgeEfetivado}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #FEE2E2; font-size: 13px; flex-wrap: wrap; gap: 6px;">
+            <div style="min-width: 140px; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">🛍️ <strong>${descLimpa}</strong>${badgeEfetivado}</span>
               <span style="font-size: 10px; color: #64748B;">${d.categoria} · ${dataFmt} às ${horaFmt}</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
-              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#DC2626'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+              <span style="font-weight: 800; color: #DC2626; white-space: nowrap; font-size: 14px;">- ${formatCurrencyBRL(d.valor)}</span>
+              ${btnEfetivar}
+              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>
             </div>
           </div>
         `;
@@ -456,7 +494,7 @@ window.App.renderFinanceiroData = async function() {
                 ${formatCurrencyBRL(totalGeraisEntradas)}
               </span>
             </div>
-            <div style="max-height: 220px; overflow-y: auto;">
+            <div style="max-height: 600px; overflow-y: auto;">
               ${entradasGeraisHtml}
             </div>
           </div>
@@ -471,7 +509,7 @@ window.App.renderFinanceiroData = async function() {
                 ${formatCurrencyBRL(totalGeraisDespesas)}
               </span>
             </div>
-            <div style="max-height: 220px; overflow-y: auto;">
+            <div style="max-height: 600px; overflow-y: auto;">
               ${despesasGeraisHtml}
             </div>
           </div>
@@ -660,15 +698,19 @@ window.App.renderFinanceiroData = async function() {
         } else {
           badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         }
+        const btnEfetivar = !d.isEfetivado
+          ? `<button onclick="window.App.efetivarDespesaDireta('${d.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta despesa como 100% EFETIVADA (Pago)">⚡ Efetivar</button>`
+          : '';
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
-            <div style="min-width: 0; flex: 1; padding-right: 8px;">
-              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${descLimpa}${badgeEfetivado}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px; flex-wrap: wrap; gap: 6px;">
+            <div style="min-width: 140px; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">${descLimpa}${badgeEfetivado}</span>
               <span style="font-size: 10px; color: #94A3B8;">${d.categoria} · ${horaFmt}</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
-              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#DC2626'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+              <span style="font-weight: 800; color: #DC2626; white-space: nowrap; font-size: 14px;">- ${formatCurrencyBRL(d.valor)}</span>
+              ${btnEfetivar}
+              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>
             </div>
           </div>
         `;
