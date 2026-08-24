@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v232'; // ← Lançamento automático de 1% referente à taxa Pix do Mercado Pago em vaquinhas
+const CACHE_NAME = 'peladapro-v233'; // ← Revertida a última alteração referente à taxa do Mercado Pago nas vaquinhas
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

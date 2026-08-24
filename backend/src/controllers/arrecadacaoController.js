@@ -298,20 +298,11 @@ exports.consultarStatusContribuicao = async (req, res) => {
 
             if (travado.rows.length > 0) {
               const atletaNome = contribuicao.apelido || contribuicao.nome || 'Atleta';
-              const valBruto = parseFloat(contribuicao.valor);
-              const taxaMP = parseFloat((valBruto * 0.01).toFixed(2));
-
-              // Registra crédito bruto no caixa da pelada com o nome da arrecadação
+              // Registra crédito no caixa da pelada com o nome da arrecadação
               await client.query(`
                 INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
                 VALUES ($1, $2, $3, 'credito', $4)
-              `, [usuario_id, contribuicao.grupo_id, valBruto, `Arrecadação: ${contribuicao.titulo} (${atletaNome})`]);
-
-              // Registra saída/débito automático da taxa de 1% do Mercado Pago (Efetivada)
-              await client.query(`
-                INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-                VALUES (NULL, $1, $2, 'debito', $3)
-              `, [contribuicao.grupo_id, taxaMP, `[Taxa Mercado Pago] - Taxa Pix 1% sobre Arrecadação: ${contribuicao.titulo} (${atletaNome})`]);
+              `, [usuario_id, contribuicao.grupo_id, parseFloat(contribuicao.valor), `Arrecadação: ${contribuicao.titulo} (${atletaNome})`]);
             }
 
             await client.query('COMMIT');
@@ -367,20 +358,10 @@ exports.simularAprovacaoContribuicao = async (req, res) => {
     );
 
     const atletaNome = contribuicao.apelido || contribuicao.nome || 'Atleta';
-    const valBruto = parseFloat(contribuicao.valor);
-    const taxaMP = parseFloat((valBruto * 0.01).toFixed(2));
-
-    // Registra entrada bruta
     await client.query(`
       INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
       VALUES ($1, $2, $3, 'credito', $4)
-    `, [contribuicao.usuario_id, contribuicao.grupo_id, valBruto, `Arrecadação: ${contribuicao.titulo} (${atletaNome})`]);
-
-    // Registra débito automático da taxa Pix 1% do Mercado Pago
-    await client.query(`
-      INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-      VALUES (NULL, $1, $2, 'debito', $3)
-    `, [contribuicao.grupo_id, taxaMP, `[Taxa Mercado Pago] - Taxa Pix 1% sobre Arrecadação: ${contribuicao.titulo} (${atletaNome})`]);
+    `, [contribuicao.usuario_id, contribuicao.grupo_id, parseFloat(contribuicao.valor), `Arrecadação: ${contribuicao.titulo} (${atletaNome})`]);
 
     await client.query('COMMIT');
     res.json({ message: 'Contribuição aprovada com sucesso!', status: 'approved' });
