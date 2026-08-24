@@ -137,26 +137,43 @@ async function handleConfirmRemoval() {
       return;
     }
 
-    // Atualizar dados de sessão e saldo do usuário via Backend
+    // 1. Atualizar dados de sessão e saldo do usuário via Backend
     if (window.Auth && typeof window.Auth.refreshCurrentUser === 'function') {
-      await window.Auth.refreshCurrentUser();
+      const updatedUser = await window.Auth.refreshCurrentUser();
+      if (updatedUser && updatedUser.saldo !== undefined) {
+        const saldoFmt = window.Utils ? window.Utils.formatCurrency(updatedUser.saldo) : `R$ ${parseFloat(updatedUser.saldo).toFixed(2).replace('.', ',')}`;
+        const balanceElConv = document.getElementById('my-balance-conv');
+        if (balanceElConv) balanceElConv.textContent = saldoFmt;
+        const balanceElDash = document.getElementById('player-balance-value');
+        if (balanceElDash) balanceElDash.textContent = saldoFmt;
+      }
+    }
+
+    // 2. Atualizar cache local de convocação imediatamente para status 'pendente'
+    const userObj = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser);
+    if (window.Api && window.Api.getConvocations && userObj) {
+      try {
+        let localConvs = window.Api.getConvocations();
+        localConvs = localConvs.map(c => {
+          if (String(c.pelada_id) === String(localPelada.id) && (String(c.player_id) === String(userObj.id) || String(c.usuario_id) === String(userObj.id))) {
+            return { ...c, status: 'pendente', presenca: false, posicao_fila: null };
+          }
+          return c;
+        });
+        window.Api.saveConvocations(localConvs);
+      } catch (e) {
+        console.warn('[remocao] Aviso ao atualizar cache local:', e);
+      }
     }
 
     // Sucesso!
     if (responseData.estornado || opcaoRemocao === 'estorno') {
       window.App.showToast("Desconvocado com sucesso! Valor estornado ao seu saldo. 💰", "success");
-      if (window.App.currentUser) {
-        window.App.currentUser.saldo = (parseFloat(window.App.currentUser.saldo) || 0) + cost;
-      }
-      if (window.Auth && window.Auth.currentUser) {
-        window.Auth.currentUser.saldo = (parseFloat(window.Auth.currentUser.saldo) || 0) + cost;
-        localStorage.setItem("currentUser", JSON.stringify(window.Auth.currentUser));
-      }
     } else {
       window.App.showToast("Desconvocado. Prazo de 2h expirado (sem estorno).", "warning");
     }
 
-    // Atualizar interface de convocados
+    // 3. Re-renderizar listas e status nas telas do atleta e do gestor
     if (window.Convocacao) {
       await window.Convocacao.renderConfirmedList(localPelada.id);
       await window.Convocacao.updateMyStatus();

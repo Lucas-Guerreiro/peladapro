@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v212'; // ← Correção do SyntaxError e fuso -03:00 de Brasília no backend e frontend para desconvocação
+const CACHE_NAME = 'peladapro-v213'; // ← Sincronização em tempo real de saldo e remoção imediata da lista de confirmados ao desconvocar
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
