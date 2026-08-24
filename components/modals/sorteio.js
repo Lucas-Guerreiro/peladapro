@@ -126,12 +126,13 @@ function handleExecuteSorteio() {
     const selectedQtdVal = modalSelectQtd ? parseInt(modalSelectQtd.value) : null;
     const selectedModoVal = modalSelectModo ? modalSelectModo.value : null;
 
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    const groupId = currentGroup ? currentGroup.id : null;
+
     // 2. Salva os nomes de times selecionados dos selects do modal
     const selectElements = document.querySelectorAll('.sorteio-team-name-select');
     if (selectElements && selectElements.length > 0) {
       const selectedNames = Array.from(selectElements).map(s => s.value.trim()).filter(Boolean);
-      const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-      const groupId = currentGroup ? currentGroup.id : null;
       try {
         if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(selectedNames));
         localStorage.setItem('customTeamNames', JSON.stringify(selectedNames));
@@ -261,8 +262,6 @@ function handleExecuteSorteio() {
   // Busca nomes de times cadastrados pelo gestor
   let customNames = [];
   try {
-    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-    const groupId = currentGroup ? currentGroup.id : null;
     customNames = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
   } catch(e) {}
 

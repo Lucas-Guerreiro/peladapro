@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v237'; // ← Correção no fechamento do modal e leitura prévia dos parâmetros de sorteio
+const CACHE_NAME = 'peladapro-v238'; // ← Correção definitiva no escopo do groupId na função de sorteio de times
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
