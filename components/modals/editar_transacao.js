@@ -49,18 +49,37 @@ window.App.initModalEditar_transacao = async function (data = {}) {
   }
 
   const selectStatus = document.getElementById("edit-tx-status-select");
+  const partialEditContainer = document.getElementById("edit-tx-partial-container");
+  const inputPaidVal = document.getElementById("edit-tx-paid-value");
+
+  if (selectStatus && partialEditContainer) {
+    selectStatus.onchange = function() {
+      if (selectStatus.value === 'parcial') {
+        partialEditContainer.style.display = 'block';
+      } else {
+        partialEditContainer.style.display = 'none';
+      }
+    };
+  }
 
   // Preenche dados atuais
   if (inputVal) inputVal.value = Math.abs(parseFloat(txData.valor || 0)).toFixed(2);
   
   const fullDesc = txData.descricao || "";
 
-  // Preenche status de efetivação
-  if (selectStatus) {
+  // Detecta tag de pagamento parcial ex: [PAGO:80.00/200.00]
+  const matchParcial = fullDesc.match(/\[PAGO:([\d.]+)\/([\d.]+)\]/i);
+  if (matchParcial && selectStatus) {
+    selectStatus.value = "parcial";
+    if (partialEditContainer) partialEditContainer.style.display = "block";
+    if (inputPaidVal) inputPaidVal.value = parseFloat(matchParcial[1] || 0).toFixed(2);
+  } else if (selectStatus) {
     if (fullDesc.includes("[NÃO EFETIVADO]") || fullDesc.includes("[PENDENTE]") || fullDesc.toLowerCase().includes("não efetivado")) {
       selectStatus.value = "pendente";
+      if (partialEditContainer) partialEditContainer.style.display = "none";
     } else {
       selectStatus.value = "efetivado";
+      if (partialEditContainer) partialEditContainer.style.display = "none";
     }
   }
   
@@ -75,6 +94,7 @@ window.App.initModalEditar_transacao = async function (data = {}) {
   // Limpa sufixos de pelada, tags de efetivação e prefixos para deixar a descrição limpa no input
   let cleanDesc = fullDesc
     .replace(/\s*\(Pelada\s+\d{2}\/\d{2}(?:\/\d{4})?\)/gi, "")
+    .replace(/\s*\[PAGO:[\d.]+\/[\d.]+\]/gi, "")
     .replace(/\s*\[NÃO EFETIVADO\]/gi, "")
     .replace(/\s*\[PENDENTE\]/gi, "")
     .replace(/^Pagamento Pix Atleta - /gi, "")
@@ -172,6 +192,11 @@ window.App.initModalEditar_transacao = async function (data = {}) {
 
       if (statusSel === "pendente") {
         descFinal += ` [NÃO EFETIVADO]`;
+      } else if (statusSel === "parcial") {
+        let valPago = parseFloat(inputPaidVal ? inputPaidVal.value : 0);
+        if (isNaN(valPago) || valPago < 0) valPago = 0;
+        if (valPago > val) valPago = val;
+        descFinal += ` [PAGO:${valPago.toFixed(2)}/${val.toFixed(2)}]`;
       }
 
       try {

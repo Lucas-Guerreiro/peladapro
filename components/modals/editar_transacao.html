@@ -54,13 +54,21 @@
       </select>
     </div>
 
-    <!-- Status de Efetivação (Efetivado vs Pendente / Não Efetivado) -->
+    <!-- Status de Efetivação (Efetivado vs Parcial vs Não Efetivado) -->
     <div class="form-group" style="margin-bottom: 14px;">
       <label for="edit-tx-status-select" class="form-label" style="font-weight: 700;">Status de Efetivação *</label>
       <select id="edit-tx-status-select" class="form-control" style="font-size: 13px; font-weight: 700; border: 1.5px solid #CBD5E1;">
-        <option value="efetivado">✅ Efetivado (Pago/Concluído)</option>
-        <option value="pendente">⏳ Não Efetivado (A Pagar / Pendente)</option>
+        <option value="efetivado">✅ Efetivado 100% (Totalmente Pago)</option>
+        <option value="parcial">🌗 Parcialmente Efetivado (Pago em Partes)</option>
+        <option value="pendente">⏳ Não Efetivado (A Pagar / 0% Pago)</option>
       </select>
+    </div>
+
+    <!-- Campo de Valor Parcial para Edição -->
+    <div class="form-group" id="edit-tx-partial-container" style="display: none; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #0284C7; border-radius: 8px; padding: 12px;">
+      <label for="edit-tx-paid-value" class="form-label" style="font-weight: 800; color: #0284C7;">Valor Já Pago / Efetivado (R$) *</label>
+      <input type="number" id="edit-tx-paid-value" class="form-control" placeholder="0.00" step="5.00" min="0" style="font-size: 15px; font-weight: 800; border: 1.5px solid #0284C7; background: #FFFFFF;">
+      <span style="font-size: 11px; color: #0284C7; display: block; margin-top: 4px;">Informe quanto do valor total desta despesa já foi pago no caixa.</span>
     </div>
 
     <!-- Descrição / Detalhes -->

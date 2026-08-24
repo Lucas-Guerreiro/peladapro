@@ -152,7 +152,21 @@ window.App.renderFinanceiroData = async function() {
     }
 
     const descLower = desc.toLowerCase();
-    const isEfetivado = !(desc.includes('[NÃO EFETIVADO]') || desc.includes('[PENDENTE]') || descLower.includes('não efetivado'));
+    const matchParcial = desc.match(/\[PAGO:([\d.]+)\/([\d.]+)\]/i);
+    let isEfetivado = !(desc.includes('[NÃO EFETIVADO]') || desc.includes('[PENDENTE]') || descLower.includes('não efetivado'));
+    let isParcial = false;
+    let valPago = rawVal;
+    let valRestante = 0;
+
+    if (matchParcial) {
+      isParcial = true;
+      isEfetivado = false;
+      valPago = parseFloat(matchParcial[1] || 0);
+      valRestante = Math.max(0, rawVal - valPago);
+    } else if (!isEfetivado) {
+      valPago = 0;
+      valRestante = rawVal;
+    }
 
     const txObj = {
       id: t.id,
@@ -163,6 +177,9 @@ window.App.renderFinanceiroData = async function() {
       tipoOriginal: t.tipo,
       isEntrada: isEntrada,
       isEfetivado: isEfetivado,
+      isParcial: isParcial,
+      valPago: valPago,
+      valRestante: valRestante,
       categoria: categoriaExibicao,
       descricao: desc,
       data: t.data ? new Date(t.data) : new Date()
@@ -319,10 +336,15 @@ window.App.renderFinanceiroData = async function() {
       despesasGeraisHtml = despesasGeraisList.map(d => {
         const horaFmt = d.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
         const dataFmt = d.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
-        const descLimpa = d.descricao.replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
-        const badgeEfetivado = d.isEfetivado
-          ? `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 6px;">✅ Efetivado</span>`
-          : `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
+        const descLimpa = d.descricao.replace(/\s*\[PAGO:[\d.]+\/[\d.]+\]/gi, '').replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
+        let badgeEfetivado = '';
+        if (d.isParcial) {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(2, 132, 199, 0.15); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.4); margin-left: 6px;">🌗 Pago ${formatCurrencyBRL(d.valPago)} de ${formatCurrencyBRL(d.valor)} (Falta ${formatCurrencyBRL(d.valRestante)})</span>`;
+        } else if (d.isEfetivado) {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 6px;">✅ Efetivado</span>`;
+        } else {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
+        }
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #FEE2E2; font-size: 13px;">
             <div style="min-width: 0; flex: 1; padding-right: 8px;">
@@ -629,10 +651,15 @@ window.App.renderFinanceiroData = async function() {
     } else {
       despesasHtml = grp.despesas.map(d => {
         const horaFmt = d.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
-        const descLimpa = d.descricao.replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
-        const badgeEfetivado = d.isEfetivado
-          ? `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 6px;">✅ Efetivado</span>`
-          : `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
+        const descLimpa = d.descricao.replace(/\s*\[PAGO:[\d.]+\/[\d.]+\]/gi, '').replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
+        let badgeEfetivado = '';
+        if (d.isParcial) {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(2, 132, 199, 0.15); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.4); margin-left: 6px;">🌗 Pago ${formatCurrencyBRL(d.valPago)} de ${formatCurrencyBRL(d.valor)} (Falta ${formatCurrencyBRL(d.valRestante)})</span>`;
+        } else if (d.isEfetivado) {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 6px;">✅ Efetivado</span>`;
+        } else {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
+        }
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
             <div style="min-width: 0; flex: 1; padding-right: 8px;">

@@ -9,6 +9,18 @@ window.App.initModalDespesa = async function() {
   const btnSave = document.getElementById("btn-save-expense");
   if (btnSave) btnSave.onclick = handleSaveExpense;
 
+  const selectStatus = document.getElementById("expense-status-select");
+  const partialContainer = document.getElementById("expense-partial-container");
+  if (selectStatus && partialContainer) {
+    selectStatus.onchange = function() {
+      if (selectStatus.value === 'parcial') {
+        partialContainer.style.display = 'block';
+      } else {
+        partialContainer.style.display = 'none';
+      }
+    };
+  }
+
   // Carrega opções de peladas para vínculo opcional
   const selectPelada = document.getElementById("expense-pelada-select");
   if (selectPelada) {
@@ -46,13 +58,19 @@ async function handleSaveExpense() {
     return;
   }
 
-  // Formata a descrição no padrão: "[categoria] - [descrição]" ou "[categoria] - [descrição] (Pelada DD/MM/AAAA) [NÃO EFETIVADO]"
+  // Formata a descrição no padrão: "[categoria] - [descrição]"
   let descricaoFinal = `[${cat}] - ${desc}`;
   if (peladaVinculada) {
     descricaoFinal += ` (Pelada ${peladaVinculada})`;
   }
   if (statusPayment === 'pendente') {
     descricaoFinal += ` [NÃO EFETIVADO]`;
+  } else if (statusPayment === 'parcial') {
+    const valPagoInput = document.getElementById("expense-paid-value");
+    let valPago = parseFloat(valPagoInput ? valPagoInput.value : 0);
+    if (isNaN(valPago) || valPago < 0) valPago = 0;
+    if (valPago > val) valPago = val;
+    descricaoFinal += ` [PAGO:${valPago.toFixed(2)}/${val.toFixed(2)}]`;
   }
 
   let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
