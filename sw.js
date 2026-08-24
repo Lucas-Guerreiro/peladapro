@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v217'; // ← Suporte aos fusos horários de Manaus (-04:00) e Brasília (-03:00) na regra de 2h
+const CACHE_NAME = 'peladapro-v218'; // ← Ferramenta de diagnóstico TestDesconvocacao() no console do navegador
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
