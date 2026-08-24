@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v224'; // ← Ajuste contábil: Estornos agora são registrados como Débito/Saída da pelada (e crédito na carteira do atleta)
+const CACHE_NAME = 'peladapro-v225'; // ← Inclusão do nome do atleta nas descrições de estorno no financeiro do gestor
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -313,11 +313,15 @@ exports.remover = async (req, res) => {
         // Estornar saldo (soma ao saldo do usuário)
         await client.query('UPDATE usuarios SET saldo = COALESCE(saldo, 0) + $1 WHERE id = $2', [valorCusto, usuario_id]);
 
-        // Registrar transação de débito/saída do caixa da pelada (pois o valor saiu da pelada e voltou ao saldo do atleta)
+        // Obter nome/apelido do atleta para identificação clara no extrato financeiro do gestor
+        const uRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+        const nomeAtleta = (uRes.rows[0] && (uRes.rows[0].apelido || uRes.rows[0].nome)) || 'Atleta';
+
+        // Registrar transação de débito/saída do caixa da pelada com o nome do atleta
         await client.query(`
           INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
           VALUES ($1, $2, $3, 'debito', $4)`,
-          [usuario_id, grupo_id, valorCusto, `Estorno de presença na Pelada #${pelada_id}`]
+          [usuario_id, grupo_id, valorCusto, `Estorno de presença - ${nomeAtleta} na Pelada #${pelada_id}`]
         );
       }
     }
