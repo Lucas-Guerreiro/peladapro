@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v233'; // ← Revertida a última alteração referente à taxa do Mercado Pago nas vaquinhas
+const CACHE_NAME = 'peladapro-v234'; // ← Exibição da Taxa de 1% do Mercado Pago ao lado do Total Arrecadado e Saldo Líquido nas Vaquinhas
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

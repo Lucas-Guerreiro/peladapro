@@ -424,16 +424,19 @@ window.App.renderFinanceiroData = async function() {
       }).join('');
     }
 
-    // Informações das campanhas de arrecadação cadastradas
+    // Informações das campanhas de arrecadação cadastradas com exibição explícita da Taxa do Mercado Pago (1%)
     const campanhas = window._financeiroArrecadacoesList || [];
     let campanhasProgressoHtml = "";
 
     if (campanhas.length > 0) {
       campanhasProgressoHtml = campanhas.map(c => {
         const meta = parseFloat(c.meta_valor || 0);
-        const arrecadado = parseFloat(c.total_arrecadado || 0);
-        const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
-        const restante = Math.max(0, meta - arrecadado);
+        const arrecadadoBruto = parseFloat(c.total_arrecadado || 0);
+        const taxaMP = parseFloat((arrecadadoBruto * 0.01).toFixed(2));
+        const arrecadadoLiquido = Math.max(0, arrecadadoBruto - taxaMP);
+
+        const pct = meta > 0 ? Math.min(100, Math.round((arrecadadoLiquido / meta) * 100)) : 0;
+        const restante = Math.max(0, meta - arrecadadoLiquido);
         const isAtingida = (c.status === 'concluida') || (pct >= 100);
 
         return `
@@ -450,17 +453,29 @@ window.App.renderFinanceiroData = async function() {
               </div>
             </div>
 
-            <!-- VALORES: ARRECADADO X ESTIPULADO (META) -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;">
+            <!-- VALORES: ARRECADADO BRUTO X TAXA MP 1% X LÍQUIDO DISPONÍVEL X META -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
               <div>
                 <span style="font-size: 10px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Total Arrecadado</span>
-                <strong style="font-size: 18px; font-weight: 900; color: #0284C7;">
-                  ${formatCurrencyBRL(arrecadado)}
+                <strong style="font-size: 17px; font-weight: 900; color: #0284C7;">
+                  ${formatCurrencyBRL(arrecadadoBruto)}
+                </strong>
+              </div>
+              <div>
+                <span style="font-size: 10px; color: #DC2626; text-transform: uppercase; font-weight: 700; display: block;">Taxa MP (1%)</span>
+                <strong style="font-size: 14px; font-weight: 800; color: #DC2626;">
+                  - ${formatCurrencyBRL(taxaMP)}
+                </strong>
+              </div>
+              <div>
+                <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 700; display: block;">Líquido em Conta</span>
+                <strong style="font-size: 17px; font-weight: 900; color: #047857;">
+                  ${formatCurrencyBRL(arrecadadoLiquido)}
                 </strong>
               </div>
               <div style="text-align: right;">
                 <span style="font-size: 10px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Meta Estipulada</span>
-                <strong style="font-size: 16px; font-weight: 800; color: #0F172A;">
+                <strong style="font-size: 15px; font-weight: 800; color: #0F172A;">
                   ${formatCurrencyBRL(meta)}
                 </strong>
               </div>
@@ -472,7 +487,7 @@ window.App.renderFinanceiroData = async function() {
             </div>
 
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #64748B;">
-              <span>${pct}% atingido</span>
+              <span>${pct}% atingido (líquido)</span>
               <span>${restante > 0 ? `Faltam ${formatCurrencyBRL(restante)}` : 'Meta Concluída!'}</span>
             </div>
           </div>
@@ -480,10 +495,15 @@ window.App.renderFinanceiroData = async function() {
       }).join('');
     }
 
+    const totalGeraisEntradasBruto = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
+    const taxaMPGerais = parseFloat((totalGeraisEntradasBruto * 0.01).toFixed(2));
+    const totalGeraisDespesasConsolidadas = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + (t.isEfetivado ? t.valor : (t.isParcial ? t.valPago : 0)), 0);
+    const saldoGeraisLiquido = totalGeraisEntradasBruto - taxaMPGerais - totalGeraisDespesasConsolidadas;
+
     geralContainer.innerHTML = `
       <div class="card" style="padding: 18px 20px; border-left: 4px solid #0284C7; background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         
-        <!-- CABEÇALHO DO CARD GERAL -->
+        <!-- CABEÇALHO DO CARD GERAL COM EXIBIÇÃO DA TAXA MP 1% -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px; margin-bottom: 14px;">
           <div>
             <span style="font-size: 11px; font-weight: 800; color: #0284C7; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Caixa Fixo & Arrecadações Extras</span>
@@ -492,15 +512,18 @@ window.App.renderFinanceiroData = async function() {
             </h4>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <span style="font-size: 12px; color: #475569;">
-              Arrecadado: <strong style="color: #0284C7;">${formatCurrencyBRL(totalGeraisEntradas)}</strong>
+              Arrecadado: <strong style="color: #0284C7;">${formatCurrencyBRL(totalGeraisEntradasBruto)}</strong>
+            </span>
+            <span style="font-size: 12px; color: #DC2626;">
+              Taxa MP (1%): <strong style="color: #DC2626;">- ${formatCurrencyBRL(taxaMPGerais)}</strong>
             </span>
             <span style="font-size: 12px; color: #475569;">
-              Despesas: <strong style="color: #DC2626;">${formatCurrencyBRL(totalGeraisDespesas)}</strong>
+              Despesas Pagas: <strong style="color: #DC2626;">- ${formatCurrencyBRL(totalGeraisDespesasConsolidadas)}</strong>
             </span>
-            <span style="font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: #EFF6FF; color: #1D4ED8;">
-              Saldo: ${(saldoGerais >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGerais))}
+            <span style="font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: #ECFDF5; color: #047857;">
+              Saldo Líquido: ${(saldoGeraisLiquido >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoGeraisLiquido))}
             </span>
           </div>
         </div>
