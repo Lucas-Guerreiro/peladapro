@@ -313,10 +313,10 @@ exports.remover = async (req, res) => {
         // Estornar saldo (soma ao saldo do usuário)
         await client.query('UPDATE usuarios SET saldo = COALESCE(saldo, 0) + $1 WHERE id = $2', [valorCusto, usuario_id]);
 
-        // Registrar transação de crédito
+        // Registrar transação de débito/saída do caixa da pelada (pois o valor saiu da pelada e voltou ao saldo do atleta)
         await client.query(`
           INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-          VALUES ($1, $2, $3, 'credito', $4)`,
+          VALUES ($1, $2, $3, 'debito', $4)`,
           [usuario_id, grupo_id, valorCusto, `Estorno de presença na Pelada #${pelada_id}`]
         );
       }
