@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v222'; // ← Fila de espera agora requer pagamento/saldo manual do atleta ao liberar vaga (sem entrada gratuita automática)
+const CACHE_NAME = 'peladapro-v223'; // ← Atletas da Fila de Espera agora podem clicar em Confirmar Presença (Vaga Liberada!) por Pix ou Saldo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

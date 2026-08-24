@@ -402,14 +402,25 @@ var Convocacao = {
       statusEl.textContent = '⏳ Selecione a pelada';
     }
 
-    // Exibe ou oculta o alerta de fila de espera
+    // Exibe ou oculta o alerta de fila de espera e gerencia estado de vaga liberada
+    var peladaObj = Convocacao._selectedPeladaId ? Api.getPelada(Convocacao._selectedPeladaId) : null;
+    var maxVagas = peladaObj ? (peladaObj.limite_atletas || peladaObj.max_jogadores || 20) : 20;
+    var confirmedList = (this._lastConvocados || []).filter(c => c.status === 'confirmado');
+    var temVagaLiberada = confirmedList.length < maxVagas;
+
     if (waitlistAlert && waitlistAlertText) {
       if (isWaiting && Convocacao._selectedPeladaId) {
-        var pelada = Api.getPelada(Convocacao._selectedPeladaId);
-        var limite = pelada ? (pelada.limite_atletas || pelada.max_jogadores || 20) : 20;
-        
-        waitlistAlert.style.display = 'flex';
-        waitlistAlertText.innerHTML = `Lista cheia (${limite} vagas). Você entrou na <b>fila de espera (posição #${posicaoFila})</b>.`;
+        if (temVagaLiberada) {
+          waitlistAlert.style.display = 'flex';
+          waitlistAlert.style.backgroundColor = 'rgba(0, 200, 83, 0.15)';
+          waitlistAlert.style.border = '1.5px solid rgba(0, 200, 83, 0.4)';
+          waitlistAlertText.innerHTML = `🎉 <b>Vaga Liberada na Pelada!</b> Um atleta se desconvocou. Clique em <b>"🎉 Confirmar Presença (Vaga Liberada!)"</b> abaixo para efetuar o pagamento por Pix ou Saldo e garantir sua vaga!`;
+        } else {
+          waitlistAlert.style.display = 'flex';
+          waitlistAlert.style.backgroundColor = '';
+          waitlistAlert.style.border = '';
+          waitlistAlertText.innerHTML = `Lista cheia (${maxVagas} vagas). Você está na <b>fila de espera (posição #${posicaoFila})</b>. Assim que um atleta se desconvocar, você poderá garantir sua vaga aqui!`;
+        }
       } else {
         waitlistAlert.style.display = 'none';
       }
@@ -417,14 +428,28 @@ var Convocacao = {
 
     // Habilita/Desabilita os botões de ação dinamicamente
     if (btnAdd) {
-      if (!hasSelected || isConfirmed || isWaiting) {
+      if (!hasSelected || isConfirmed || (isWaiting && !temVagaLiberada)) {
         btnAdd.disabled = true;
         btnAdd.style.opacity = "0.5";
         btnAdd.style.cursor = "not-allowed";
+        if (isConfirmed) {
+          btnAdd.innerHTML = '<span>✅ Presença Confirmada</span>';
+        } else if (isWaiting && !temVagaLiberada) {
+          btnAdd.innerHTML = `<span>⏳ Aguardando Vaga (Fila #${posicaoFila})</span>`;
+        } else {
+          btnAdd.innerHTML = '<span>⚡ Confirmar Presença</span>';
+        }
       } else {
         btnAdd.disabled = false;
         btnAdd.style.opacity = "1";
         btnAdd.style.cursor = "pointer";
+        if (isWaiting && temVagaLiberada) {
+          btnAdd.innerHTML = '<span>🎉 Confirmar Presença (Vaga Liberada!)</span>';
+          btnAdd.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+        } else {
+          btnAdd.innerHTML = '<span>⚡ Confirmar Presença</span>';
+          btnAdd.style.background = '';
+        }
       }
     }
 
