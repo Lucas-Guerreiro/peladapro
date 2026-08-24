@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v209'; // ← Correção da desconvocação de atletas, fuso horário das 2h e estorno automático de saldo
+const CACHE_NAME = 'peladapro-v210'; // ← Remoção do botão de adicionar saldo no card do atleta
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
