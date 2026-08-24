@@ -447,11 +447,7 @@ async function updateCheckinPlayersList(peladaId) {
       if (c.presenca) {
         window.App.presentPlayers.push(c.id);
       }
-    });
 
-    try {
-      localStorage.setItem("players", JSON.stringify(playersLocais));
-    } catch (e) {}
       const div = document.createElement("div");
       div.className = "checkin-athlete-card";
       div.style.display = "flex";
@@ -487,8 +483,10 @@ async function updateCheckinPlayersList(peladaId) {
       `;
       container.appendChild(div);
     });
-    localStorage.setItem("players", JSON.stringify(playersLocais));
-    window.App.confirmadosList = confirmados;
+
+    try {
+      localStorage.setItem("players", JSON.stringify(playersLocais));
+    } catch (e) {}
     atualizarContadorPresencas();
 
     // Renderizar Fila de Espera para o Gestor
