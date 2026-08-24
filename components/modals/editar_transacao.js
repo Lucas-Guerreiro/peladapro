@@ -48,10 +48,21 @@ window.App.initModalEditar_transacao = async function (data = {}) {
     }
   }
 
+  const selectStatus = document.getElementById("edit-tx-status-select");
+
   // Preenche dados atuais
   if (inputVal) inputVal.value = Math.abs(parseFloat(txData.valor || 0)).toFixed(2);
   
   const fullDesc = txData.descricao || "";
+
+  // Preenche status de efetivação
+  if (selectStatus) {
+    if (fullDesc.includes("[NÃO EFETIVADO]") || fullDesc.includes("[PENDENTE]") || fullDesc.toLowerCase().includes("não efetivado")) {
+      selectStatus.value = "pendente";
+    } else {
+      selectStatus.value = "efetivado";
+    }
+  }
   
   // Detecta vínculo de pelada existente na descrição (ex: "(Pelada 24/08/2026)")
   let currentPeladaMatch = fullDesc.match(/dia\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i) || fullDesc.match(/pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i);
@@ -61,9 +72,11 @@ window.App.initModalEditar_transacao = async function (data = {}) {
     selectPelada.value = matchData;
   }
 
-  // Limpa sufixos de pelada e prefixos para deixar a descrição limpa no input
+  // Limpa sufixos de pelada, tags de efetivação e prefixos para deixar a descrição limpa no input
   let cleanDesc = fullDesc
     .replace(/\s*\(Pelada\s+\d{2}\/\d{2}(?:\/\d{4})?\)/gi, "")
+    .replace(/\s*\[NÃO EFETIVADO\]/gi, "")
+    .replace(/\s*\[PENDENTE\]/gi, "")
     .replace(/^Pagamento Pix Atleta - /gi, "")
     .replace(/^Verba injetada - /gi, "")
     .replace(/^\[[^\]]+\] - /gi, "")
@@ -132,6 +145,7 @@ window.App.initModalEditar_transacao = async function (data = {}) {
       const tipo = radioCredito && radioCredito.checked ? "credito" : "debito";
       const peladaSel = selectPelada ? selectPelada.value : "";
       const catSel = selectCategory ? selectCategory.value : "Outros";
+      const statusSel = selectStatus ? selectStatus.value : "efetivado";
 
       if (isNaN(val) || val <= 0 || !rawDesc) {
         window.App.showToast("Informe um valor válido e a descrição do lançamento.", "warning");
@@ -154,6 +168,10 @@ window.App.initModalEditar_transacao = async function (data = {}) {
 
       if (peladaSel) {
         descFinal += ` (Pelada ${peladaSel})`;
+      }
+
+      if (statusSel === "pendente") {
+        descFinal += ` [NÃO EFETIVADO]`;
       }
 
       try {

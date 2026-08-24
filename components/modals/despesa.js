@@ -39,16 +39,20 @@ async function handleSaveExpense() {
   const cat = document.getElementById("expense-category") ? document.getElementById("expense-category").value : "Outros";
   const desc = document.getElementById("expense-description").value.trim();
   const peladaVinculada = document.getElementById("expense-pelada-select") ? document.getElementById("expense-pelada-select").value : "";
+  const statusPayment = document.getElementById("expense-status-select") ? document.getElementById("expense-status-select").value : "efetivado";
 
   if (isNaN(val) || val <= 0 || !desc) {
     window.App.showToast("Informe o valor e a descrição da despesa.", "warning");
     return;
   }
 
-  // Formata a descrição no padrão: "[categoria] - [descrição]" ou "[categoria] - [descrição] (Pelada DD/MM/AAAA)"
+  // Formata a descrição no padrão: "[categoria] - [descrição]" ou "[categoria] - [descrição] (Pelada DD/MM/AAAA) [NÃO EFETIVADO]"
   let descricaoFinal = `[${cat}] - ${desc}`;
   if (peladaVinculada) {
     descricaoFinal += ` (Pelada ${peladaVinculada})`;
+  }
+  if (statusPayment === 'pendente') {
+    descricaoFinal += ` [NÃO EFETIVADO]`;
   }
 
   let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;

@@ -151,6 +151,9 @@ window.App.renderFinanceiroData = async function() {
       }
     }
 
+    const descLower = desc.toLowerCase();
+    const isEfetivado = !(desc.includes('[NÃO EFETIVADO]') || desc.includes('[PENDENTE]') || descLower.includes('não efetivado'));
+
     const txObj = {
       id: t.id,
       usuario_id: t.usuario_id,
@@ -159,6 +162,7 @@ window.App.renderFinanceiroData = async function() {
       valor: rawVal,
       tipoOriginal: t.tipo,
       isEntrada: isEntrada,
+      isEfetivado: isEfetivado,
       categoria: categoriaExibicao,
       descricao: desc,
       data: t.data ? new Date(t.data) : new Date()
@@ -315,10 +319,14 @@ window.App.renderFinanceiroData = async function() {
       despesasGeraisHtml = despesasGeraisList.map(d => {
         const horaFmt = d.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
         const dataFmt = d.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
+        const descLimpa = d.descricao.replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
+        const badgeEfetivado = d.isEfetivado
+          ? `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 6px;">✅ Efetivado</span>`
+          : `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #FEE2E2; font-size: 13px;">
             <div style="min-width: 0; flex: 1; padding-right: 8px;">
-              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🛍️ <strong>${d.descricao}</strong></span>
+              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🛍️ <strong>${descLimpa}</strong>${badgeEfetivado}</span>
               <span style="font-size: 10px; color: #64748B;">${d.categoria} · ${dataFmt} às ${horaFmt}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -621,10 +629,14 @@ window.App.renderFinanceiroData = async function() {
     } else {
       despesasHtml = grp.despesas.map(d => {
         const horaFmt = d.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        const descLimpa = d.descricao.replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
+        const badgeEfetivado = d.isEfetivado
+          ? `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 6px;">✅ Efetivado</span>`
+          : `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
             <div style="min-width: 0; flex: 1; padding-right: 8px;">
-              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.descricao}</span>
+              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${descLimpa}${badgeEfetivado}</span>
               <span style="font-size: 10px; color: #94A3B8;">${d.categoria} · ${horaFmt}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">

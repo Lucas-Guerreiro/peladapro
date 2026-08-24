@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v227'; // ← Revertidas transações de presença para o formato original conforme solicitado pelo usuário
+const CACHE_NAME = 'peladapro-v228'; // ← Suporte a despesas Efetivadas vs Não Efetivadas (Pendente / A Pagar) no Financeiro
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
