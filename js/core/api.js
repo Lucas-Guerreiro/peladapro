@@ -461,19 +461,47 @@ const Api = {
 
   async listarConvocados(peladaId) {
     if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
-    const token = localStorage.getItem('token');
-    if (!token) return [];
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
     try {
-      const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      if (token) {
+        const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      }
     } catch (e) {
-      console.error('[Api] Erro em listarConvocados:', e);
-      return [];
+      console.warn('[Api] Erro REST em listarConvocados:', e);
     }
+
+    // Fallback Supabase direto se a API REST falhar ou não houver token REST
+    if (window.supabase) {
+      try {
+        const { data: convs, error } = await window.supabase
+          .from('convocacoes')
+          .select('*, usuarios(*)')
+          .eq('pelada_id', peladaId);
+        if (!error && Array.isArray(convs)) {
+          return convs.map(c => ({
+            id: c.usuario_id || (c.usuarios ? c.usuarios.id : null),
+            nome: c.usuarios ? c.usuarios.nome : 'Atleta',
+            apelido: c.usuarios ? (c.usuarios.apelido || c.usuarios.nome) : 'Atleta',
+            goleiro: c.usuarios ? !!c.usuarios.goleiro : false,
+            autoavaliacao: c.usuarios ? c.usuarios.autoavaliacao : 3,
+            foto: c.usuarios ? c.usuarios.foto : null,
+            saldo: c.usuarios ? c.usuarios.saldo : 0,
+            status: c.status,
+            presenca: c.presenca,
+            forma_pagamento: c.forma_pagamento,
+            saldo_estornado: c.saldo_estornado
+          }));
+        }
+      } catch (eSupabase) { }
+    }
+
+    return [];
   },
 
   async entrarFilaEspera(peladaId) {
