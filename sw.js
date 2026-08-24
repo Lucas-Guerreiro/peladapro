@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v210'; // ← Remoção do botão de adicionar saldo no card do atleta
+const CACHE_NAME = 'peladapro-v211'; // ← Funcionalidade de remanejamento manual de lançamentos pelo gestor
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -266,7 +266,7 @@ window.App.renderFinanceiroData = async function() {
   filteredTx.forEach(t => {
     const desc = t.descricao || "";
     const isVaquinha = desc.startsWith("Arrecadação:") || desc.toLowerCase().includes("vaquinha");
-    const hasPeladaVinculada = desc.match(/dia\s+\d{2}\/\d{2}/i) || desc.match(/pelada\s+\d{2}\/\d{2}/i) || desc.includes("Convocação");
+    const hasPeladaVinculada = desc.match(/(?:dia|pelada)\s+\d{2}\/\d{2}/i) || desc.match(/\(\s*Pelada\s+\d{2}\/\d{2}/i) || desc.includes("Convocação");
 
     if (isVaquinha) {
       txGerais.push({ ...t, subTipo: 'vaquinha' });
@@ -479,7 +479,7 @@ window.App.renderFinanceiroData = async function() {
   txPeladas.forEach(t => {
     let peladaDataIdentificada = null;
 
-    const matchDia = t.descricao.match(/dia\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i) || t.descricao.match(/pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i);
+    const matchDia = t.descricao.match(/(?:dia|pelada)\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i) || t.descricao.match(/\(\s*Pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)\)/i);
     if (matchDia && matchDia[1]) {
       const encontrada = matchDia[1];
       if (encontrada.length === 5) peladaDataIdentificada = `${encontrada}/2026`;
