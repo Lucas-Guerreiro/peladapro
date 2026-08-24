@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v236'; // ← Correção no carregamento dos atletas convocados na tela de Formação & Sorteio
+const CACHE_NAME = 'peladapro-v237'; // ← Correção no fechamento do modal e leitura prévia dos parâmetros de sorteio
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

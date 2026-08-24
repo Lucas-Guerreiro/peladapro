@@ -115,53 +115,63 @@ window.App.initModalSorteio = function () {
 };
 
 function handleExecuteSorteio() {
-  const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
-  const type = checkedRadio ? checkedRadio.value : "todos";
+  try {
+    const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
+    const type = checkedRadio ? checkedRadio.value : "todos";
 
-  // Salva os nomes de times selecionados dos selects do modal antes de rodar o draft
-  const selectElements = document.querySelectorAll('.sorteio-team-name-select');
-  if (selectElements && selectElements.length > 0) {
-    const selectedNames = Array.from(selectElements).map(s => s.value.trim()).filter(Boolean);
-    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-    const groupId = currentGroup ? currentGroup.id : null;
-    try {
-      if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(selectedNames));
-      localStorage.setItem('customTeamNames', JSON.stringify(selectedNames));
-    } catch(e) {}
-  }
+    // 1. Captura os seletores do modal ANTES de fechar o modal
+    const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+    const modalSelectModo = document.getElementById("modal-select-pelada-modo");
+    
+    const selectedQtdVal = modalSelectQtd ? parseInt(modalSelectQtd.value) : null;
+    const selectedModoVal = modalSelectModo ? modalSelectModo.value : null;
 
-  window.App.closeModal();
+    // 2. Salva os nomes de times selecionados dos selects do modal
+    const selectElements = document.querySelectorAll('.sorteio-team-name-select');
+    if (selectElements && selectElements.length > 0) {
+      const selectedNames = Array.from(selectElements).map(s => s.value.trim()).filter(Boolean);
+      const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+      const groupId = currentGroup ? currentGroup.id : null;
+      try {
+        if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(selectedNames));
+        localStorage.setItem('customTeamNames', JSON.stringify(selectedNames));
+      } catch(e) {}
+    }
 
-  let allAvailablePlayers = JSON.parse(localStorage.getItem("players")) || [];
+    // Fecha o modal após ler com segurança os campos do formulário
+    window.App.closeModal();
 
-  if ((!allAvailablePlayers || allAvailablePlayers.length === 0) && window.App.confirmadosList && window.App.confirmadosList.length > 0) {
-    allAvailablePlayers = window.App.confirmadosList.map(c => ({
-      id: c.id,
-      nome: c.nome,
-      apelido: c.apelido || c.nome,
-      goleiro: !!c.goleiro,
-      autoavaliacao: parseInt(c.autoavaliacao) || 3,
-      ativo: true
-    }));
-  }
+    let allAvailablePlayers = JSON.parse(localStorage.getItem("players")) || [];
 
-  // Obter configurações específicas da pelada/data selecionada (ou do grupo ativo como fallback)
-  if (!window.App.activePelada) window.App.activePelada = {};
-  const peladaAtiva = window.App.activePelada;
-  const grupoAtivo = window.App.currentGroup || {};
+    if ((!allAvailablePlayers || allAvailablePlayers.length === 0) && window.App.confirmadosList && window.App.confirmadosList.length > 0) {
+      allAvailablePlayers = window.App.confirmadosList.map(c => ({
+        id: c.id,
+        nome: c.nome,
+        apelido: c.apelido || c.nome,
+        goleiro: !!c.goleiro,
+        autoavaliacao: parseInt(c.autoavaliacao) || 3,
+        ativo: true
+      }));
+    }
 
-  let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
-  if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 6;
+    // Obter configurações específicas da pelada/data selecionada (ou do grupo ativo como fallback)
+    if (!window.App.activePelada) window.App.activePelada = {};
+    const peladaAtiva = window.App.activePelada;
+    const grupoAtivo = window.App.currentGroup || {};
 
-  const modalSelectQtd = document.getElementById("modal-select-qtd-times");
-  let maxTeams = modalSelectQtd ? parseInt(modalSelectQtd.value) : parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
-  if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
+    let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
+    if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 6;
 
-  peladaAtiva.quantidade_times = maxTeams;
-  try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
-  if (peladaAtiva.id && window.Api && window.Api.atualizarConfigPartida) {
-    window.Api.atualizarConfigPartida(peladaAtiva.id, { quantidade_times: maxTeams });
-  }
+    let maxTeams = (!isNaN(selectedQtdVal) && selectedQtdVal > 0) 
+      ? selectedQtdVal 
+      : parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
+    if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
+
+    peladaAtiva.quantidade_times = maxTeams;
+    try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
+    if (peladaAtiva.id && window.Api && window.Api.atualizarConfigPartida) {
+      window.Api.atualizarConfigPartida(peladaAtiva.id, { quantidade_times: maxTeams });
+    }
 
   // 1. Tenta filtrar os atletas que foram explicitamente marcados como presentes no check-in
   let activePresent = [];
@@ -491,10 +501,9 @@ function handleExecuteSorteio() {
     });
   }
 
-  const modalSelectModo = document.getElementById("modal-select-pelada-modo");
   const selectModo = document.getElementById("select-pelada-modo");
   const selectTurno = document.getElementById("select-pelada-turno");
-  const modoAtual = (modalSelectModo && modalSelectModo.value) ? modalSelectModo.value : ((selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal'));
+  const modoAtual = selectedModoVal || ((selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal'));
   const turnoAtual = (selectTurno && selectTurno.value) ? selectTurno.value : ((peladaAtiva && peladaAtiva.turno_torneio) || 'ida');
   
   if (selectModo) selectModo.value = modoAtual;
@@ -642,6 +651,10 @@ function handleExecuteSorteio() {
   window.App.showToast(toastMsg);
   window.App.renderDrawnTeams();
   window.App.updateAcompanhamentoUI();
+  } catch (err) {
+    console.error("[Sorteio]", err);
+    window.App.showToast("Erro ao executar sorteio: " + (err.message || err), "error");
+  }
 }
 
 function getColoName(idx) {
