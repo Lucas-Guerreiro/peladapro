@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v216'; // ← Logs detalhados no console de desconvocação e fechamento limpo do modal
+const CACHE_NAME = 'peladapro-v217'; // ← Suporte aos fusos horários de Manaus (-04:00) e Brasília (-03:00) na regra de 2h
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
