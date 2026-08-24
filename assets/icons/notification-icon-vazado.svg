@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Icone Vazado Elegante para Notificações - PeladaPro -->
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Escudo / Crest de Fundo Vazado -->
+    <path d="M 256,40 L 416,90 C 416,280 340,410 256,472 C 172,410 96,280 96,90 Z" stroke-width="20"/>
+    
+    <!-- Bola de Futebol Central (Linhas Vazadas) -->
+    <!-- Circulo da Bola -->
+    <circle cx="256" cy="275" r="115" stroke-width="16"/>
+    
+    <!-- Pentágono Central -->
+    <polygon points="256,230 295,258 280,305 232,305 217,258" stroke-width="14"/>
+    
+    <!-- Linhas Radiais da Bola para a Borda -->
+    <line x1="256" y1="230" x2="256" y2="160" stroke-width="14"/>
+    <line x1="295" y1="258" x2="361" y2="237" stroke-width="14"/>
+    <line x1="280" y1="305" x2="321" y2="367" stroke-width="14"/>
+    <line x1="232" y1="305" x2="191" y2="367" stroke-width="14"/>
+    <line x1="217" y1="258" x2="151" y2="237" stroke-width="14"/>
+
+    <!-- Estrela / Sino de Notificação no topo do Escudo -->
+    <path d="M 256,105 L 265,123 L 285,126 L 270,140 L 274,160 L 256,150 L 238,160 L 242,140 L 227,126 L 247,123 Z" stroke-width="10" fill="#FFFFFF"/>
+  </g>
+</svg>

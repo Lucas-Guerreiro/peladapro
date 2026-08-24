@@ -88,16 +88,17 @@ window.App.initFormacao = async function () {
   if (btnAddTeam) {
     btnAddTeam.onclick = criarTimeManual;
   }
+  window.App.openAddPresenceModal = function () {
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    if (!peladaId) {
+      window.App.showToast("Selecione uma data para adicionar presença.", "warning");
+      return;
+    }
+    window.App.openModal("adicionar_presenca", { peladaId: peladaId });
+  };
   const btnOpenAddPresence = document.getElementById("btn-open-add-presence-modal");
   if (btnOpenAddPresence) {
-    btnOpenAddPresence.onclick = () => {
-      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-      if (!peladaId) {
-        window.App.showToast("Selecione uma data para adicionar presença.", "warning");
-        return;
-      }
-      window.App.openModal("add_presence", { peladaId: peladaId });
-    };
+    btnOpenAddPresence.onclick = window.App.openAddPresenceModal;
   }
   const btnCopyList = document.getElementById("btn-copy-presence-list");
   if (btnCopyList) {

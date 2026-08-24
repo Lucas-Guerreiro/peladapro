@@ -416,6 +416,7 @@ const Router = {
 
   // --- Modal --------------------------------------------------------------
   async openModal(modalName, data = {}) {
+    if (modalName === 'add_presence') modalName = 'adicionar_presenca';
     const root = document.getElementById('modal-container-root');
     if (!root) {
       // Cria container de modal se não existir

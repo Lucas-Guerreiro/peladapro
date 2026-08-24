@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v204'; // ← Algoritmo exato de rodadas (circulo/fixo com mando invertido na volta) fornecido pelo gestor
+const CACHE_NAME = 'peladapro-v205'; // ← Alias automatico add_presence e modal de presença via saldo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
