@@ -572,6 +572,63 @@ exports.criarTransacaoManual = async (req, res) => {
   }
 };
 
+exports.editarTransacaoManual = async (req, res) => {
+  const { id } = req.params;
+  const { valor, tipo, descricao } = req.body;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Acesso restrito ao gestor.' });
+  }
+
+  if (!id || valor === undefined || !tipo || !descricao) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios (id, valor, tipo, descricao).' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `UPDATE transacoes
+       SET valor = $1, tipo = $2, descricao = $3
+       WHERE id = $4
+       RETURNING *`,
+      [parseFloat(valor), tipo, descricao, id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Transação não encontrada.' });
+    }
+
+    res.json({ message: 'Transação atualizada com sucesso!', transacao: rows[0] });
+  } catch (err) {
+    console.error('[editarTransacaoManual]', err);
+    res.status(500).json({ error: 'Erro ao editar transação no banco.', detail: err.message });
+  }
+};
+
+exports.deletarTransacaoManual = async (req, res) => {
+  const { id } = req.params;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Acesso restrito ao gestor.' });
+  }
+
+  if (!id) {
+    return res.status(400).json({ error: 'ID da transação é obrigatório.' });
+  }
+
+  try {
+    const { rows } = await db.query('DELETE FROM transacoes WHERE id = $1 RETURNING *', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Transação não encontrada.' });
+    }
+    res.json({ message: 'Transação apagada com sucesso!', id });
+  } catch (err) {
+    console.error('[deletarTransacaoManual]', err);
+    res.status(500).json({ error: 'Erro ao deletar transação no banco.', detail: err.message });
+  }
+};
+
 exports.ajustarSaldoAtleta = async (req, res) => {
   const { atletaId } = req.params;
   const { grupoId, valor, descricao } = req.body;

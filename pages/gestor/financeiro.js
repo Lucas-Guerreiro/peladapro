@@ -60,6 +60,15 @@ window.App.initFinanceiro = async function() {
   });
 
   window.manualFinanceSettlement = manualFinanceSettlement;
+
+  window.App.abrirEditarTransacao = function(txId) {
+    const tx = (window._financeiroTransactionsMap || {})[String(txId)];
+    if (!tx) {
+      window.App.showToast("Lançamento não encontrado para edição.", "warning");
+      return;
+    }
+    window.App.openModal("editar_transacao", { transaction: tx });
+  };
 };
 
 // --- RENDERIZAÇÃO COMPLETA DO PAINEL FINANCEIRO REESTRUTURADO ---
@@ -142,7 +151,7 @@ window.App.renderFinanceiroData = async function() {
       }
     }
 
-    return {
+    const txObj = {
       id: t.id,
       usuario_id: t.usuario_id,
       grupo_id: t.grupo_id,
@@ -154,6 +163,9 @@ window.App.renderFinanceiroData = async function() {
       descricao: desc,
       data: t.data ? new Date(t.data) : new Date()
     };
+    if (!window._financeiroTransactionsMap) window._financeiroTransactionsMap = {};
+    window._financeiroTransactionsMap[String(t.id)] = txObj;
+    return txObj;
   });
 
   // Para o painel financeiro do gestor:
@@ -286,7 +298,10 @@ window.App.renderFinanceiroData = async function() {
               <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${badgeIcon} <strong>${e.descricao}</strong></span>
               <span style="font-size: 10px; color: #64748B;">${e.categoria} · ${dataFmt} às ${horaFmt}</span>
             </div>
-            <span style="font-weight: 700; color: #0284C7; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; color: #0284C7; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
+              <button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#0284C7'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -306,7 +321,10 @@ window.App.renderFinanceiroData = async function() {
               <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🛍️ <strong>${d.descricao}</strong></span>
               <span style="font-size: 10px; color: #64748B;">${d.categoria} · ${dataFmt} às ${horaFmt}</span>
             </div>
-            <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
+              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#DC2626'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -587,7 +605,10 @@ window.App.renderFinanceiroData = async function() {
               <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeOuDesc}</span>
               <span style="font-size: 10px; color: #94A3B8;">${e.categoria} · ${horaFmt}</span>
             </div>
-            <span style="font-weight: 700; color: #059669; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; color: #059669; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
+              <button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#059669'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -606,7 +627,10 @@ window.App.renderFinanceiroData = async function() {
               <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.descricao}</span>
               <span style="font-size: 10px; color: #94A3B8;">${d.categoria} · ${horaFmt}</span>
             </div>
-            <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; color: #DC2626; white-space: nowrap;">- ${formatCurrencyBRL(d.valor)}</span>
+              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#DC2626'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+            </div>
           </div>
         `;
       }).join('');

@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v207'; // ← Restauração da busca de convocados com múltiplos tokens e fallback Supabases e fallback de autenticação
+const CACHE_NAME = 'peladapro-v208'; // ← Edição e exclusão de lançamentos financeiros pelo gestor
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

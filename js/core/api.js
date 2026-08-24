@@ -352,6 +352,32 @@ const Api = {
     return res.json();
   },
 
+  async editarTransacao(id, valor, tipo, descricao) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/peladas/transacoes/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ valor, tipo, descricao })
+    });
+    return res.json();
+  },
+
+  async deletarTransacao(id) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/peladas/transacoes/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return res.json();
+  },
+
   async ajustarSaldoAtleta(atletaId, grupoId, valor, descricao = '') {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Token não encontrado' };
