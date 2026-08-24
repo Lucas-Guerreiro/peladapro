@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v220'; // ← Correção definitiva da transação PostgreSQL (COMMIT antecipado pós-estorno)
+const CACHE_NAME = 'peladapro-v221'; // ← Correção do fuso Manaus (-04:00) em calculateHoursLeft no modal de remoção do frontend
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -30,13 +30,16 @@ function calculateHoursLeft(pelada) {
   const horaStr = String(timeParts[0] || '19').padStart(2, '0');
   const minStr = String(timeParts[1] || '00').padStart(2, '0');
 
-  const peladaDateTime = new Date(`${year}-${month}-${day}T${horaStr}:${minStr}:00-03:00`);
+  const peladaManaus = new Date(`${year}-${month}-${day}T${horaStr}:${minStr}:00-04:00`);
+  const peladaBrasilia = new Date(`${year}-${month}-${day}T${horaStr}:${minStr}:00-03:00`);
   const now = new Date();
 
-  if (isNaN(peladaDateTime.getTime())) return 999;
+  if (isNaN(peladaManaus.getTime()) && isNaN(peladaBrasilia.getTime())) return 999;
 
-  const timeDiffMs = peladaDateTime.getTime() - now.getTime();
-  return timeDiffMs / (1000 * 60 * 60);
+  const timeDiffMsManaus = peladaManaus.getTime() - now.getTime();
+  const timeDiffMsBrasilia = peladaBrasilia.getTime() - now.getTime();
+
+  return Math.max(timeDiffMsManaus, timeDiffMsBrasilia) / (1000 * 60 * 60);
 }
 
 window.App.initModalRemocao = function (pelada) {
