@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v218'; // ← Ferramenta de diagnóstico TestDesconvocacao() no console do navegador
+const CACHE_NAME = 'peladapro-v219'; // ← Registro global de TestDesconvocacao() no api.js (carregamento inicial da página)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

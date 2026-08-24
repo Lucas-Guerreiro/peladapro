@@ -1378,3 +1378,84 @@ window.manualFinanceSettlement = function (playerId) {
     window.Router.openModal("ajustar_saldo", { id: playerId });
   }
 };
+
+// ===== FERRAMENTA GLOBAL DE TESTE E DIAGNÓSTICO EM TEMPO REAL DE DESCONVOCACÃO =====
+window.TestDesconvocacao = async function (peladaIdInput) {
+  const peladaId = peladaIdInput || 27;
+  console.group('%c 🧪 DIAGNÓSTICO DE DESCONVOCACÃO (CONSOLE) ', 'background: #0284C7; color: white; font-size: 14px; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+  
+  const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
+  console.log('1️⃣ Token JWT em Uso:', token ? `${token.substring(0, 25)}...` : '❌ NENHUM TOKEN ENCONTRADO!');
+
+  if (!token) {
+    console.groupEnd();
+    return '❌ Erro: Sessão não encontrada no navegador.';
+  }
+
+  // 2. Testa perfil / me
+  let userMe = null;
+  try {
+    const resMe = await fetch('/api/usuarios/me', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resMe.ok) {
+      userMe = await resMe.json();
+      console.log('2️⃣ Dados do Atleta Logado (/api/usuarios/me):', userMe);
+      console.log(`   ➜ ID: ${userMe.id} | Nome: ${userMe.nome || userMe.apelido} | Saldo Atual no Banco: R$ ${userMe.saldo}`);
+    } else {
+      console.error('2️⃣ Erro ao consultar perfil:', resMe.status, resMe.statusText);
+    }
+  } catch (e) {
+    console.error('2️⃣ Falha na requisição /api/usuarios/me:', e);
+  }
+
+  // 3. Convocação da pelada antes da desconvocação
+  try {
+    const resConvs = await fetch(`/api/convocacoes/pelada/${peladaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resConvs.ok) {
+      const convs = await resConvs.json();
+      const minhaConv = convs.find(c => String(c.id || c.usuario_id) === String(userMe?.id));
+      console.log(`3️⃣ Lista de Convocados no Banco (Pelada #${peladaId}):`);
+      console.log('   ➜ Sua Convocação Atual no Banco:', minhaConv || '❌ Nenhuma convocação nesta pelada');
+    }
+  } catch (e) {
+    console.error('3️⃣ Erro ao listar convocados:', e);
+  }
+
+  // 4. Executa desconvocação via POST /api/convocacoes/remover
+  console.log('4️⃣ Disparando POST /api/convocacoes/remover...');
+  try {
+    const resRemover = await fetch('/api/convocacoes/remover', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ pelada_id: peladaId, opcao_remocao: 'estorno' })
+    });
+    const bodyRemover = await resRemover.json();
+    console.log(`   ➜ HTTP Status: ${resRemover.status} ${resRemover.statusText}`);
+    console.log('   ➜ Resposta do Backend:', bodyRemover);
+
+    // 5. Re-checa o saldo pós-remoção
+    const resMePos = await fetch('/api/usuarios/me', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resMePos.ok) {
+      const userMePos = await resMePos.json();
+      console.log(`5️⃣ Verificação Pós-Remoção (/api/usuarios/me):`);
+      console.log(`   ➜ Saldo Anterior: R$ ${userMe?.saldo} | Novo Saldo no Banco: R$ ${userMePos.saldo}`);
+    }
+
+    // 6. Re-checa a lista de convocados pós-remoção
+    const resConvsPos = await fetch(`/api/convocacoes/pelada/${peladaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resConvsPos.ok) {
+      const convsPos = await resConvsPos.json();
+      const minhaConvPos = convsPos.find(c => String(c.id || c.usuario_id) === String(userMe?.id));
+      console.log(`6️⃣ Convocados no Banco Pós-Remoção:`);
+      console.log('   ➜ Status do Atleta Pós-Remoção:', minhaConvPos || '✅ Removido completamente!');
+    }
+
+  } catch (e) {
+    console.error('4️⃣ Erro na requisição:', e);
+  }
+
+  console.groupEnd();
+  return '✅ Diagnóstico finalizado! Verifique os passos 1 a 6 acima no Console.';
+};
