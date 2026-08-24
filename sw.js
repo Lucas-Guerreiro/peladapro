@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v214'; // ← Correção definitiva de estorno de valor e sincronização em tempo real da lista de convocados
+const CACHE_NAME = 'peladapro-v215'; // ← Sincronização automatizada do perfil e saldo com REST API no Dashboard
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
