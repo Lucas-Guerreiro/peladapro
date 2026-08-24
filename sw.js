@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v225'; // ← Inclusão do nome do atleta nas descrições de estorno no financeiro do gestor
+const CACHE_NAME = 'peladapro-v226'; // ← Registro de presenças (Saldo e Pix) como Crédito/Entrada no financeiro da pelada
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

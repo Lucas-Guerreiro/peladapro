@@ -99,18 +99,18 @@ exports.confirmar = async (req, res) => {
         // Atualizar saldo do usuário
         await client.query('UPDATE usuarios SET saldo = $1 WHERE id = $2', [novoSaldo, usuario_id]);
 
-        // Registrar transação de débito
+        // Registrar transação de crédito (Entrada da Pelada arrecadada via Saldo)
         await client.query(`
           INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-          VALUES ($1, $2, $3, 'debito', $4)`,
-          [usuario_id, grupo_id, valorCusto, descText]
+          VALUES ($1, $2, $3, 'credito', $4)`,
+          [usuario_id, grupo_id, valorCusto, `Pagamento via Saldo - ${descText}`]
         );
       } else {
-        // Registrar transação de débito para pagamento via PIX/Dinheiro
+        // Registrar transação de crédito (Entrada da Pelada arrecadada via PIX/Dinheiro)
         await client.query(`
           INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-          VALUES ($1, $2, $3, 'debito', $4)`,
-          [usuario_id, grupo_id, valorCusto, descText]
+          VALUES ($1, $2, $3, 'credito', $4)`,
+          [usuario_id, grupo_id, valorCusto, `Pagamento via ${forma_pagamento.toUpperCase()} - ${descText}`]
         );
       }
     }
