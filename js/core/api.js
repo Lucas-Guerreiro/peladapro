@@ -627,7 +627,7 @@ const Api = {
     return res.json();
   },
 
-  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams, isReset = false) {
+  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams, isReset = false, notifyDraw = false) {
     if (!peladaId) return { error: 'Pelada ID não informado.' };
 
     if (isReset) {
@@ -688,7 +688,7 @@ const Api = {
       });
     }
 
-    const liveStateObj = { liveMatch, waitingQueue, teams: cleanTeams };
+    const liveStateObj = { liveMatch, waitingQueue, teams: cleanTeams, notifyDraw };
 
     // Salva localmente para resposta instantânea na UI
     try {

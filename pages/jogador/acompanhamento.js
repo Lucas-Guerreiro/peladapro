@@ -628,6 +628,60 @@ var Acompanhamento = {
       }).join('');
       goalsBEl.innerHTML = htmlB;
     }
+
+    this._renderDrawnTeamsCompact(teams);
+  },
+
+  // --- Times Sorteados Compactos & Clicáveis -------------------------------
+  _renderDrawnTeamsCompact: function (teams) {
+    var cardEl = document.getElementById('acomp-drawn-teams-card');
+    var containerEl = document.getElementById('acomp-drawn-teams-container');
+    var countEl = document.getElementById('acomp-drawn-teams-count');
+
+    if (!cardEl || !containerEl) return;
+
+    if (!teams || !Array.isArray(teams) || teams.length === 0) {
+      cardEl.style.display = 'none';
+      return;
+    }
+
+    cardEl.style.display = 'block';
+    if (countEl) countEl.textContent = teams.length + (teams.length === 1 ? ' Time' : ' Times');
+
+    var self = this;
+    containerEl.innerHTML = teams.map(function (t, idx) {
+      var name = t.nome || t.name || ('Time ' + String.fromCharCode(65 + idx));
+      var playersList = t.players || t.jogadores || [];
+      var playerCount = playersList.length;
+      var theme = self._getTeamTheme(name);
+
+      var emblemHtml = t.emblema_url
+        ? '<img src="' + t.emblema_url + '" style="width: 28px; height: 28px; border-radius: 6px; object-fit: contain; flex-shrink: 0;">'
+        : '<div style="width: 28px; height: 28px; border-radius: 6px; background: ' + theme.bg + '; border: 1.5px solid ' + theme.border + '; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: ' + theme.text + '; flex-shrink: 0;">' + name.charAt(0).toUpperCase() + '</div>';
+
+      return '<div class="acomp-team-pill-item" data-team-index="' + idx + '" style="flex: 1; min-width: 140px; max-width: 220px; background: #FFFFFF; border: 1.5px solid ' + theme.border + '; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" title="Clique para ver os atletas do ' + name + '">' +
+        '<div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">' +
+          emblemHtml +
+          '<div style="display: flex; flex-direction: column; overflow: hidden;">' +
+            '<span style="font-size: 13px; font-weight: 700; color: ' + theme.text + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + name + '</span>' +
+            '<span style="font-size: 11px; color: #64748B; font-weight: 600;">' + playerCount + (playerCount === 1 ? ' atleta' : ' atletas') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<span style="font-size: 14px; opacity: 0.7; margin-left: 4px;">👁️</span>' +
+      '</div>';
+    }).join('');
+
+    var pills = containerEl.querySelectorAll('.acomp-team-pill-item');
+    pills.forEach(function (pill) {
+      pill.onclick = function () {
+        var idx = parseInt(pill.getAttribute('data-team-index'));
+        var teamObj = teams[idx];
+        if (teamObj && window.App && window.App.openModal) {
+          var playersList = teamObj.players || teamObj.jogadores || [];
+          window.App.openModal("ver_time", { teamName: teamObj.nome || teamObj.name, players: playersList });
+        }
+      };
+    });
   },
 
   // --- Fila de Espera ----------------------------------------------------

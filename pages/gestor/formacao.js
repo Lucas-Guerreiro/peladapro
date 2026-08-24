@@ -826,7 +826,7 @@ async function syncDrawnTeamsToCloud(showToastMessage) {
   }
   if (teams && teams.length > 0 && window.Api && window.Api.atualizarLiveState) {
     try {
-      const res = await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+      const res = await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams, false, true);
       if (showToastMessage) {
         if (res && res.error) {
           window.App.showToast(res.error, "error");
