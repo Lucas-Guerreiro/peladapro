@@ -376,9 +376,13 @@ exports.remover = async (req, res) => {
       );
     }
 
-    // 4.6 Notificar o Gestor e gravar notificação em banco para TODAS as desconvocações
+    // 4.7 COMMIT DA TRANSAÇÃO DO BANCO (Gravando desconvocação e saldo estornado de forma permanente)
+    await client.query('COMMIT');
+    console.log(`[Backend-Remover] ✅ Transação COMMITADA no PostgreSQL com sucesso para usuario_id=${usuario_id}!`);
+
+    // 5. Notificações pós-commit (executadas com segurança fora da transação bancária)
     try {
-      const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
+      const peladaRes = await db.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
       const grupo_id = peladaRes.rows[0] ? peladaRes.rows[0].grupo_id : null;
       const dataPelada = peladaRes.rows[0] ? peladaRes.rows[0].data : null;
       
@@ -390,27 +394,24 @@ exports.remover = async (req, res) => {
         dataFmt = `${dia}/${mes}`;
       }
 
-      const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+      const userRes = await db.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
       const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Um atleta';
 
       if (grupo_id) {
-        // Busca os IDs de todos os gestores do grupo
-        const gestoresRes = await client.query(`
-          SELECT DISTINCT u.id 
-          FROM usuarios u
-          LEFT JOIN grupo_membros gm ON gm.usuario_id = u.id AND gm.grupo_id = $1
-          WHERE u.tipo IN ('gestor', 'ambos', 'admin') OR gm.papel IN ('gestor', 'admin')
-        `, [grupo_id]);
+        // Busca os IDs de todos os gestores
+        const gestoresRes = await db.query(`
+          SELECT DISTINCT id FROM usuarios WHERE tipo IN ('gestor', 'ambos', 'admin')
+        `);
 
         const tituloNotif = '🚫 Atleta Desconvocado';
         const msgNotif = `O atleta ${atletaNome} desconvocou-se da pelada do dia ${dataFmt}.${statusAntes === 'confirmado' ? ' Vaga liberada na lista oficial!' : ' (Fila de Espera)'}`;
 
         // Inserir registro na tabela 'notificacoes' para cada gestor
         for (const gestor of gestoresRes.rows) {
-          await client.query(`
+          await db.query(`
             INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem, lida, created_at)
             VALUES ($1, 'desconvocacao', $2, $3, false, NOW())
-          `, [gestor.id, tituloNotif, msgNotif]);
+          `, [gestor.id, tituloNotif, msgNotif]).catch(() => {});
         }
 
         // Disparar Push Notification para os gestores
@@ -436,13 +437,13 @@ exports.remover = async (req, res) => {
         }).catch(e => console.warn('[Push] Erro próximo da fila:', e.message));
       }
     } catch (e) {
-      console.warn('[Notificação] Erro nas notificações de desconvocação:', e);
+      console.warn('[Notificação] Aviso nas notificações pós-commit:', e.message);
     }
 
-    await client.query('COMMIT');
     res.json({ message: 'Remoção processada com sucesso!', estornado: statusAntes === 'confirmado' && podeEstornar && opcao_remocao === 'estorno' });
   } catch (err) {
     if (client) await client.query('ROLLBACK');
+    console.error('[Backend-Remover] ❌ Erro ao processar remoção:', err);
     res.status(400).json({ error: err.message });
   } finally {
     if (client) client.release();

@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v219'; // ← Registro global de TestDesconvocacao() no api.js (carregamento inicial da página)
+const CACHE_NAME = 'peladapro-v220'; // ← Correção definitiva da transação PostgreSQL (COMMIT antecipado pós-estorno)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
