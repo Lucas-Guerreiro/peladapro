@@ -261,6 +261,8 @@ exports.remover = async (req, res) => {
   const { pelada_id, opcao_remocao } = req.body; // 'estorno', 'caixa', 'cortado'
   const usuario_id = req.usuarioId;
 
+  console.log(`[Backend-Remover] 📥 Solicitação recebida: usuario_id=${usuario_id}, pelada_id=${pelada_id}, opcao_remocao=${opcao_remocao}`);
+
   if (!pelada_id || !opcao_remocao) {
     return res.status(400).json({ error: 'Pelada e opção de remoção são obrigatórias' });
   }
@@ -273,6 +275,7 @@ exports.remover = async (req, res) => {
 
     // 1. Verificar se pode estornar (Regra das 2 horas)
     const podeEstornar = await verificarRegra2Horas(pelada_id);
+    console.log(`[Backend-Remover] podeEstornar (2h):`, podeEstornar);
 
     if (!podeEstornar && opcao_remocao === 'estorno') {
       await client.query('ROLLBACK');
@@ -284,6 +287,7 @@ exports.remover = async (req, res) => {
       'SELECT status, forma_pagamento FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
       [pelada_id, usuario_id]
     );
+    console.log(`[Backend-Remover] Estado atual da convocação para usuario_id=${usuario_id}:`, convRes.rows[0]);
 
     if (convRes.rows.length === 0 || (convRes.rows[0].status !== 'confirmado' && convRes.rows[0].status !== 'espera')) {
       await client.query('ROLLBACK');

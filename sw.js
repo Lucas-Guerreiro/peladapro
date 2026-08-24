@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v215'; // ← Sincronização automatizada do perfil e saldo com REST API no Dashboard
+const CACHE_NAME = 'peladapro-v216'; // ← Logs detalhados no console de desconvocação e fechamento limpo do modal
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

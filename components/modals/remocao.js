@@ -116,6 +116,12 @@ async function handleConfirmRemoval() {
   const cost = parseFloat(localPelada.valor_convocacao) || 20.00;
 
   try {
+    console.log('[Desconvocacao] 🚀 Iniciando fluxo de desconvocação:', {
+      pelada_id: localPelada.id,
+      opcaoRemocao: opcaoRemocao,
+      hoursLeft: hoursLeft
+    });
+
     window.App.showToast("Processando desconvocação...", "info");
 
     const res = await fetch('/api/convocacoes/remover', {
@@ -131,8 +137,10 @@ async function handleConfirmRemoval() {
     });
 
     const responseData = await res.json();
+    console.log('[Desconvocacao] 📩 Resposta da API REST:', { status: res.status, ok: res.ok, body: responseData });
 
     if (!res.ok) {
+      console.error('[Desconvocacao] ❌ API retornou erro:', responseData);
       window.App.showToast(responseData.error || "Erro ao desconvocar.", "error");
       return;
     }
@@ -140,13 +148,7 @@ async function handleConfirmRemoval() {
     // 1. Atualizar dados de sessão e saldo do usuário via Backend
     if (window.Auth && typeof window.Auth.refreshCurrentUser === 'function') {
       const updatedUser = await window.Auth.refreshCurrentUser();
-      if (updatedUser && updatedUser.saldo !== undefined) {
-        const saldoFmt = window.Utils ? window.Utils.formatCurrency(updatedUser.saldo) : `R$ ${parseFloat(updatedUser.saldo).toFixed(2).replace('.', ',')}`;
-        const balanceElConv = document.getElementById('my-balance-conv');
-        if (balanceElConv) balanceElConv.textContent = saldoFmt;
-        const balanceElDash = document.getElementById('player-balance-value');
-        if (balanceElDash) balanceElDash.textContent = saldoFmt;
-      }
+      console.log('[Desconvocacao] 🔄 Usuário/saldo atualizado via refreshCurrentUser:', updatedUser);
     }
 
     // 2. Atualizar cache local de convocação imediatamente para status 'pendente'
@@ -161,8 +163,9 @@ async function handleConfirmRemoval() {
           return c;
         });
         window.Api.saveConvocations(localConvs);
+        console.log('[Desconvocacao] 💾 Cache local de convocação atualizado para pendente.');
       } catch (e) {
-        console.warn('[remocao] Aviso ao atualizar cache local:', e);
+        console.warn('[Desconvocacao] Aviso ao atualizar cache local:', e);
       }
     }
 
@@ -184,6 +187,7 @@ async function handleConfirmRemoval() {
       const balanceElDash = document.getElementById('player-balance-value');
       if (balanceElDash) balanceElDash.textContent = saldoFinalFmt;
 
+      console.log('[Desconvocacao] 💰 Saldo exibido na tela:', saldoFinalFmt);
       window.App.showToast("Desconvocado com sucesso! Valor estornado ao seu saldo. 💰", "success");
     } else {
       window.App.showToast("Desconvocado. Prazo de 2h expirado (sem estorno).", "warning");
@@ -201,34 +205,10 @@ async function handleConfirmRemoval() {
       window.Dashboard.renderPlayerData();
     }
 
-    // Notifica gestores no Supabase se ativo no frontend
-    if (window.supabase && localPelada) {
-      try {
-        const u = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser) || {};
-        const atletaNome = u.apelido || u.nome || 'Atleta';
-        const { data: gestores } = await window.supabase
-          .from('usuarios')
-          .select('id')
-          .or('tipo.eq.gestor,tipo.eq.ambos,tipo.eq.admin');
-
-        if (gestores && gestores.length > 0) {
-          const notifs = gestores.map(g => ({
-            usuario_id: g.id,
-            tipo: 'desconvocacao',
-            titulo: '🚫 Atleta Desconvocado',
-            mensagem: `O atleta ${atletaNome} desconvocou-se da pelada.`,
-            lida: false
-          }));
-          await window.supabase.from('notificacoes').insert(notifs);
-        }
-      } catch (e) {
-        console.warn('[remocao] Aviso ao salvar notificação para o gestor:', e);
-      }
-    }
-
+    console.log('[Desconvocacao] ✅ Fluxo concluído com sucesso! Fechando modal.');
     window.App.closeModal();
   } catch (err) {
-    console.error("[remocao] Erro:", err);
-    window.App.showToast("Erro de conexão ao desconvocar.", "error");
+    console.error("[Desconvocacao] ❌ Erro de execução:", err);
+    window.App.showToast("Erro ao processar desconvocação.", "error");
   }
 }
