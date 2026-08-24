@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v221'; // ← Correção do fuso Manaus (-04:00) em calculateHoursLeft no modal de remoção do frontend
+const CACHE_NAME = 'peladapro-v222'; // ← Fila de espera agora requer pagamento/saldo manual do atleta ao liberar vaga (sem entrada gratuita automática)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

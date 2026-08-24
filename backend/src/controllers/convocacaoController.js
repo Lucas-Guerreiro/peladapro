@@ -330,34 +330,29 @@ exports.remover = async (req, res) => {
       WHERE pelada_id = $3 AND usuario_id = $4`;
     await client.query(queryUpdate, [statusFinal, opcao_remocao, pelada_id, usuario_id]);
 
-    // 4.5 Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
+    // 4.5 Se o atleta removido era da LISTA OFICIAL, notifica o 1º da fila de espera que uma vaga foi liberada
     if (statusAntes === 'confirmado') {
       const filaRes = await client.query(
         `SELECT usuario_id FROM convocacoes
          WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
          ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC
-         LIMIT 1 FOR UPDATE`,
+         LIMIT 1`,
         [pelada_id]
       );
 
       if (filaRes.rows.length > 0) {
-        const promovidoUsuarioId = filaRes.rows[0].usuario_id;
-        await client.query(
-          `UPDATE convocacoes
-           SET status = 'confirmado', posicao_fila = NULL
-           WHERE pelada_id = $1 AND usuario_id = $2`,
-          [pelada_id, promovidoUsuarioId]
-        );
+        const primeiroDaFilaId = filaRes.rows[0].usuario_id;
+        console.log(`[Backend-Remover] Vaga liberada na pelada #${pelada_id}. Notificando atleta da fila ID=${primeiroDaFilaId}...`);
 
-        // Notificação push ao atleta promovido
+        // Envia notificação para o atleta da fila realizar o pagamento/confirmar presencia
         try {
           const { sendNotificationInternal } = require('./pushController');
           sendNotificationInternal({
-            usuarioId: promovidoUsuarioId,
+            usuarioId: primeiroDaFilaId,
             title: '🎉 Vaga Liberada na Pelada!',
-            body: 'Um atleta desistiu e uma vaga foi liberada para você! Acesse o aplicativo e efetue o pagamento para garantir sua vaga.',
+            body: 'Uma vaga foi liberada na lista oficial! Acesse o aplicativo e efetue o pagamento por Pix ou Saldo para garantir sua presença.',
             url: '/#/jogador/convocacao'
-          }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
+          }).catch(e => console.warn('[Push] Erro ao notificar primeiro da fila:', e.message));
         } catch (e) { }
       }
     }
