@@ -10,17 +10,24 @@ const verificarRegra2Horas = async (peladaId) => {
     const row = rows[0];
     if (!row.data) return false;
 
-    let dataStr = '';
+    let year, month, day;
     if (row.data instanceof Date) {
-      dataStr = row.data.toISOString().split('T')[0];
+      year = row.data.getFullYear();
+      month = String(row.data.getMonth() + 1).padStart(2, '0');
+      day = String(row.data.getDate()).padStart(2, '0');
     } else {
-      dataStr = String(row.data).split('T')[0];
+      const parts = String(row.data).split('T')[0].split('-');
+      year = parts[0];
+      month = parts[1];
+      day = parts[2];
     }
 
     let timeStr = row.horario ? String(row.horario).trim() : '19:00';
-    if (timeStr.length === 5) timeStr += ':00';
+    const timeParts = timeStr.split(':');
+    const hora = parseInt(timeParts[0] || 0, 10);
+    const min = parseInt(timeParts[1] || 0, 10);
 
-    const peladaDateTime = new Date(`${dataStr}T${timeStr}`);
+    const peladaDateTime = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), hora, min, 0);
     const agora = new Date();
 
     if (isNaN(peladaDateTime.getTime())) {

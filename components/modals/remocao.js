@@ -7,17 +7,30 @@ let localPelada = null;
 function calculateHoursLeft(pelada) {
   if (!pelada || !pelada.data) return 999;
 
-  let dataStr = '';
+  let year, month, day;
+
   if (pelada.data instanceof Date) {
-    dataStr = pelada.data.toISOString().split('T')[0];
+    year = pelada.data.getFullYear();
+    month = String(pelada.data.getMonth() + 1).padStart(2, '0');
+    day = String(pelada.data.getDate()).padStart(2, '0');
   } else {
-    dataStr = String(pelada.data).split('T')[0];
+    const raw = String(pelada.data).split('T')[0];
+    const parts = raw.split('-');
+    if (parts.length === 3) {
+      year = parts[0];
+      month = parts[1];
+      day = parts[2];
+    } else {
+      return 999;
+    }
   }
 
   let timeStr = pelada.horario ? String(pelada.horario).trim() : '19:00';
-  if (timeStr.length === 5) timeStr += ':00';
+  const timeParts = timeStr.split(':');
+  const hora = parseInt(timeParts[0] || 0, 10);
+  const min = parseInt(timeParts[1] || 0, 10);
 
-  const peladaDateTime = new Date(`${dataStr}T${timeStr}`);
+  const peladaDateTime = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), hora, min, 0);
   const now = new Date();
 
   if (isNaN(peladaDateTime.getTime())) return 999;
@@ -124,24 +137,32 @@ async function handleConfirmRemoval() {
       return;
     }
 
+    // Atualizar dados de sessão e saldo do usuário via Backend
+    if (window.Auth && typeof window.Auth.refreshCurrentUser === 'function') {
+      await window.Auth.refreshCurrentUser();
+    }
+
     // Sucesso!
-    if (opcaoRemocao === 'estorno') {
+    if (responseData.estornado || opcaoRemocao === 'estorno') {
       window.App.showToast("Desconvocado com sucesso! Valor estornado ao seu saldo. 💰", "success");
       if (window.App.currentUser) {
         window.App.currentUser.saldo = (parseFloat(window.App.currentUser.saldo) || 0) + cost;
       }
       if (window.Auth && window.Auth.currentUser) {
         window.Auth.currentUser.saldo = (parseFloat(window.Auth.currentUser.saldo) || 0) + cost;
-        localStorage.setItem("user", JSON.stringify(window.Auth.currentUser));
+        localStorage.setItem("currentUser", JSON.stringify(window.Auth.currentUser));
       }
     } else {
       window.App.showToast("Desconvocado. Prazo de 2h expirado (sem estorno).", "warning");
     }
 
-    // Atualizar interface
+    // Atualizar interface de convocados
     if (window.Convocacao) {
       await window.Convocacao.renderConfirmedList(localPelada.id);
       await window.Convocacao.updateMyStatus();
+    }
+    if (window.App && window.App.renderManagerCheckin) {
+      await window.App.renderManagerCheckin(localPelada.id);
     }
     if (window.Dashboard && typeof window.Dashboard.renderPlayerData === 'function') {
       window.Dashboard.renderPlayerData();

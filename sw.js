@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v208'; // ← Edição e exclusão de lançamentos financeiros pelo gestor
+const CACHE_NAME = 'peladapro-v209'; // ← Correção da desconvocação de atletas, fuso horário das 2h e estorno automático de saldo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

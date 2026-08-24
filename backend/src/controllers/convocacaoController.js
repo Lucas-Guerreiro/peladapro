@@ -292,8 +292,8 @@ exports.remover = async (req, res) => {
 
     const { status: statusAntes, forma_pagamento } = convRes.rows[0];
 
-    // 3. Executar lógica de reembolso se aplicável (apenas se estava confirmado e pagou com saldo)
-    if (statusAntes === 'confirmado' && forma_pagamento === 'saldo' && opcao_remocao === 'estorno' && podeEstornar) {
+    // 3. Executar lógica de reembolso se aplicável (apenas se estava confirmado e for dentro do prazo de 2h)
+    if (statusAntes === 'confirmado' && opcao_remocao === 'estorno' && podeEstornar) {
       // Obter custo real da pelada (respeitando override por data)
       const configRes = await client.query(`
         SELECT COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo, p.grupo_id
@@ -317,11 +317,11 @@ exports.remover = async (req, res) => {
       }
     }
 
-    // 4. Atualizar status da convocação
+    // 4. Atualizar status da convocação (reseta presencia para false e remove posição da fila)
     const statusFinal = opcao_remocao === 'cortado' ? 'cortado' : 'pendente';
     const queryUpdate = `
       UPDATE convocacoes 
-      SET status = $1, motivo_remocao = $2, data_remocao = NOW(), posicao_fila = NULL
+      SET status = $1, motivo_remocao = $2, data_remocao = NOW(), posicao_fila = NULL, presenca = FALSE
       WHERE pelada_id = $3 AND usuario_id = $4`;
     await client.query(queryUpdate, [statusFinal, opcao_remocao, pelada_id, usuario_id]);
 
