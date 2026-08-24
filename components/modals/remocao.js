@@ -168,6 +168,22 @@ async function handleConfirmRemoval() {
 
     // Sucesso!
     if (responseData.estornado || opcaoRemocao === 'estorno') {
+      const estornoVal = parseFloat(localPelada.valor_convocacao) > 0 ? parseFloat(localPelada.valor_convocacao) : 20.00;
+      if (window.Auth && window.Auth.currentUser) {
+        window.Auth.currentUser.saldo = Math.max(parseFloat(window.Auth.currentUser.saldo || 0), estornoVal);
+        localStorage.setItem("currentUser", JSON.stringify(window.Auth.currentUser));
+        localStorage.setItem("usuario", JSON.stringify(window.Auth.currentUser));
+      }
+      if (window.App && window.App.currentUser) {
+        window.App.currentUser.saldo = Math.max(parseFloat(window.App.currentUser.saldo || 0), estornoVal);
+      }
+
+      const saldoFinalFmt = window.Utils ? window.Utils.formatCurrency(window.Auth.currentUser.saldo) : `R$ ${parseFloat(window.Auth.currentUser.saldo).toFixed(2).replace('.', ',')}`;
+      const balanceElConv = document.getElementById('my-balance-conv');
+      if (balanceElConv) balanceElConv.textContent = saldoFinalFmt;
+      const balanceElDash = document.getElementById('player-balance-value');
+      if (balanceElDash) balanceElDash.textContent = saldoFinalFmt;
+
       window.App.showToast("Desconvocado com sucesso! Valor estornado ao seu saldo. 💰", "success");
     } else {
       window.App.showToast("Desconvocado. Prazo de 2h expirado (sem estorno).", "warning");

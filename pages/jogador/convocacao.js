@@ -370,10 +370,16 @@ var Convocacao = {
 
     if (statusEl && user && Convocacao._selectedPeladaId) {
       hasSelected = true;
-      var convocations = Api.getConvocations();
-      var myConv = convocations.find(function (c) {
-        return String(c.pelada_id) === String(Convocacao._selectedPeladaId) && String(c.player_id) === String(user.id);
-      });
+      let myConv = null;
+      if (this._lastConvocados && Array.isArray(this._lastConvocados)) {
+        myConv = this._lastConvocados.find(c => String(c.id || c.usuario_id || c.player_id) === String(user.id));
+      }
+      if (!myConv) {
+        var convocations = Api.getConvocations();
+        myConv = convocations.find(function (c) {
+          return String(c.pelada_id) === String(Convocacao._selectedPeladaId) && (String(c.player_id) === String(user.id) || String(c.usuario_id) === String(user.id));
+        });
+      }
 
       if (myConv && myConv.status === 'confirmado') {
         statusEl.className = 'badge-status confirmado';

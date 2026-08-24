@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v213'; // ← Sincronização em tempo real de saldo e remoção imediata da lista de confirmados ao desconvocar
+const CACHE_NAME = 'peladapro-v214'; // ← Correção definitiva de estorno de valor e sincronização em tempo real da lista de convocados
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -296,17 +296,18 @@ exports.remover = async (req, res) => {
     if (statusAntes === 'confirmado' && opcao_remocao === 'estorno' && podeEstornar) {
       // Obter custo real da pelada (respeitando override por data)
       const configRes = await client.query(`
-        SELECT COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo, p.grupo_id
+        SELECT COALESCE(NULLIF(p.valor_convocacao, 0), NULLIF(c.valor_convocacao, 0), 20.00) as custo, p.grupo_id
         FROM peladas p
         LEFT JOIN configs c ON p.grupo_id = c.grupo_id
         WHERE p.id = $1`, [pelada_id]);
 
       if (configRes.rows.length > 0) {
         const { custo, grupo_id } = configRes.rows[0];
-        const valorCusto = parseFloat(custo || 0);
+        let valorCusto = parseFloat(custo || 0);
+        if (isNaN(valorCusto) || valorCusto <= 0) valorCusto = 20.00;
 
         // Estornar saldo (soma ao saldo do usuário)
-        await client.query('UPDATE usuarios SET saldo = saldo + $1 WHERE id = $2', [valorCusto, usuario_id]);
+        await client.query('UPDATE usuarios SET saldo = COALESCE(saldo, 0) + $1 WHERE id = $2', [valorCusto, usuario_id]);
 
         // Registrar transação de crédito
         await client.query(`
