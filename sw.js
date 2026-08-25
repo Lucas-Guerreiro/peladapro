@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v246'; // ← Funcionalidade de utilização do Saldo do Atleta em Vaquinhas e Arrecadações
+const CACHE_NAME = 'peladapro-v247'; // ← Redesign estético moderno e premium dos cards de confrontos e histórico de partidas
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
