@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v244'; // ← Correção da contagem duplicada (+1/-1 por clique nos botões de placar)
+const CACHE_NAME = 'peladapro-v245'; // ← Separação estrita de jogos de Ida e Volta e otimização de descanso contra jogos seguidos
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

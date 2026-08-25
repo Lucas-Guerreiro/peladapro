@@ -101,28 +101,51 @@ window.TournamentEngine = {
   },
 
   /**
-   * Reordena e otimiza a sequência de partidas da fase de grupos para equilibrar o descanso das equipes.
-   * Evita jogos seguidos do mesmo time e impede que equipes fiquem muito tempo sem jogar.
+   * Reordena e otimiza a sequência de partidas da fase de grupos e mata-mata para equilibrar o descanso das equipes.
+   * Garante estritamente que todos os jogos da IDA sejam realizados primeiro e depois todos da VOLTA,
+   * evitando ao máximo que um time jogue partidas consecutivas repetidas vezes.
    */
   optimizeMatchSequence(matches) {
     if (!Array.isArray(matches) || matches.length <= 2) return matches;
 
+    const matchesIda = matches.filter(m => m.turno === 'ida');
+    const matchesVolta = matches.filter(m => m.turno === 'volta');
+
+    if (matchesIda.length > 0 && matchesVolta.length > 0) {
+      const orderedIda = this._optimizeSinglePool(matchesIda, []);
+      const orderedVolta = this._optimizeSinglePool(matchesVolta, orderedIda);
+      const combined = [...orderedIda, ...orderedVolta];
+      combined.forEach((m, idx) => {
+        m.numeroJogo = idx + 1;
+      });
+      return combined;
+    }
+
+    return this._optimizeSinglePool(matches, []);
+  },
+
+  _optimizeSinglePool(matches, previousMatches = []) {
+    if (!Array.isArray(matches) || matches.length <= 1) return matches;
+
     const playedMatches = matches.filter(m => m.status === 'encerrado' || m.status === 'em_andamento');
     const unplayedMatches = matches.filter(m => m.status !== 'encerrado' && m.status !== 'em_andamento');
 
-    if (unplayedMatches.length <= 1) return matches;
+    if (unplayedMatches.length === 0) return matches;
 
     const pool = [...unplayedMatches];
     const ordered = [...playedMatches];
     const lastPlayed = {};
 
-    playedMatches.forEach((m, idx) => {
-      lastPlayed[m.teamA] = idx;
-      lastPlayed[m.teamB] = idx;
+    const contextMatches = [...previousMatches, ...playedMatches];
+    contextMatches.forEach((m, idx) => {
+      if (m.teamA) lastPlayed[m.teamA] = idx;
+      if (m.teamB) lastPlayed[m.teamB] = idx;
     });
 
+    const contextOffset = previousMatches.length;
+
     while (pool.length > 0) {
-      const currentIndex = ordered.length;
+      const currentIndex = contextOffset + ordered.length;
       let bestIdx = 0;
       let bestScore = -Infinity;
 
@@ -138,19 +161,19 @@ window.TournamentEngine = {
 
         if (restA === 999 && restB === 999) score += 2500;
 
-        // Penalidade gravíssima para jogos seguidos (rest == 1)
-        if (restA === 1) score -= 10000;
-        if (restB === 1) score -= 10000;
+        // Penalidade extrema para jogos seguidos do mesmo time (rest == 1)
+        if (restA === 1) score -= 100000;
+        if (restB === 1) score -= 100000;
 
-        // Penalidade para descanso curto (rest == 2)
-        if (restA === 2) score -= 1200;
-        if (restB === 2) score -= 1200;
+        // Penalidade severa para descanso curto (rest == 2)
+        if (restA === 2) score -= 2500;
+        if (restB === 2) score -= 2500;
 
         // Bônus proporcional para times esperando há mais tempo
-        score += (restA * 200) + (restB * 200);
+        score += (restA * 500) + (restB * 500);
 
         // Penalidade se a diferença de descanso entre os 2 times for alta
-        score -= Math.abs(restA - restB) * 100;
+        score -= Math.abs(restA - restB) * 200;
 
         if (score > bestScore) {
           bestScore = score;
