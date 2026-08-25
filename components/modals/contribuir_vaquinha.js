@@ -41,22 +41,61 @@ window.App.initModalContribuir_vaquinha = function(data = {}) {
     };
   });
 
-  // Verifica e exibe o saldo atual do atleta logado
-  const user = window.Auth ? window.Auth.currentUser : null;
-  const saldoCard = document.getElementById("saldo-contrib-card");
-  const saldoDisplay = document.getElementById("user-current-saldo-display");
-  const btnPaySaldo = document.getElementById("btn-pay-with-saldo");
-
-  const currentSaldo = user ? parseFloat(user.saldo || 0) : 0;
-  if (currentSaldo > 0 && saldoCard) {
-    saldoCard.style.display = "block";
-    if (saldoDisplay) saldoDisplay.textContent = `R$ ${currentSaldo.toFixed(2).replace('.', ',')}`;
-  } else if (saldoCard) {
-    saldoCard.style.display = "none";
+  // Verifica e exibe o saldo atual do atleta logado (busca valor atualizado do backend)
+  const token = localStorage.getItem("token");
+  if (token) {
+    fetch('/api/usuarios/me', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.ok ? res.json() : null)
+      .then(userFresh => {
+        if (userFresh && userFresh.saldo !== undefined && window.Auth && window.Auth.currentUser) {
+          window.Auth.currentUser.saldo = userFresh.saldo;
+          try { localStorage.setItem("currentUser", JSON.stringify(window.Auth.currentUser)); } catch(e){}
+        }
+        updateSaldoCardUI();
+      })
+      .catch(() => updateSaldoCardUI());
+  } else {
+    updateSaldoCardUI();
   }
 
-  if (btnPaySaldo) {
-    btnPaySaldo.onclick = handlePayWithSaldo;
+  function updateSaldoCardUI() {
+    const user = window.Auth ? window.Auth.currentUser : null;
+    const saldoCard = document.getElementById("saldo-contrib-card");
+    const saldoDisplay = document.getElementById("user-current-saldo-display");
+    const btnPaySaldo = document.getElementById("btn-pay-with-saldo");
+    const actionArea = document.getElementById("saldo-contrib-action-area");
+
+    const currentSaldo = user ? parseFloat(user.saldo || 0) : 0;
+    if (saldoDisplay) saldoDisplay.textContent = `R$ ${currentSaldo.toFixed(2).replace('.', ',')}`;
+
+    if (saldoCard) {
+      saldoCard.style.display = "block";
+      if (currentSaldo > 0) {
+        saldoCard.style.background = "#F0FDF4";
+        saldoCard.style.borderColor = "#86EFAC";
+        if (actionArea) {
+          actionArea.innerHTML = `
+            <button id="btn-pay-with-saldo" type="button" class="btn" style="width: 100%; background: #15803D; color: #FFFFFF; font-weight: 800; font-size: 14px; border-radius: 8px; height: 42px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);">
+              <i data-feather="check-circle" style="width: 18px; height: 18px;"></i>
+              <span>Contribuir usando meu Saldo (R$ ${currentSaldo.toFixed(2).replace('.', ',')})</span>
+            </button>
+          `;
+          const btnNew = document.getElementById("btn-pay-with-saldo");
+          if (btnNew) btnNew.onclick = handlePayWithSaldo;
+          if (window.feather) feather.replace();
+        }
+      } else {
+        saldoCard.style.background = "#F8FAFC";
+        saldoCard.style.borderColor = "#CBD5E1";
+        if (actionArea) {
+          actionArea.innerHTML = `
+            <div style="font-size: 11px; color: #64748B; font-weight: 600; text-align: center; padding: 4px 0;">
+              💡 Você possui R$ 0,00 em haver. Para contribuir, escolha o valor abaixo e pague com Pix!
+            </div>
+          `;
+        }
+      }
+    }
   }
 
   // Botão Gerar Pix

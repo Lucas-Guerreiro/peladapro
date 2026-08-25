@@ -195,17 +195,26 @@ async function renderCampanhasArrecadacao() {
           <!-- LISTA DE APOIADORES -->
           ${apoiadoresHtml}
 
-          <!-- BOTÃO DE CONTRIBUIÇÃO VIA PIX -->
-          <div style="padding-top: 4px;">
-            <button class="btn btn-md btn-accent btn-apoiar-vaquinha" data-camp-id="${camp.id}" style="width: 100%; height: 46px; font-size: 15px; font-weight: 800; background: #0284C7; border: none; border-radius: 10px; color: #FFFFFF; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);">
-              <i data-feather="zap" style="width: 16px; height: 16px;"></i>
-              <span>Contribuir via Pix</span>
+          <!-- BOTÃO DE CONTRIBUIÇÃO (SALDO OU PIX) -->
+          <div style="padding-top: 4px; display: flex; flex-direction: column; gap: 6px; text-align: center;">
+            <button class="btn btn-md btn-accent btn-apoiar-vaquinha" data-camp-id="${camp.id}" style="width: 100%; height: 48px; font-size: 15px; font-weight: 800; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: none; border-radius: 12px; color: #FFFFFF; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);">
+              <i data-feather="heart" style="width: 18px; height: 18px;"></i>
+              <span>Apoiar Vaquinha (Usar Saldo ou Pix)</span>
             </button>
+            <span style="font-size: 11px; color: #0284C7; font-weight: 700;">✨ Use seu saldo em haver ou pague via Pix instantâneo</span>
           </div>
 
         </div>
       `;
     });
+
+    // Atualiza o indicador de Saldo Disponível do Atleta no cabeçalho
+    const userSaldoHeader = document.getElementById("user-arrecadacao-saldo-header");
+    if (userSaldoHeader) {
+      const u = window.Auth ? window.Auth.currentUser : null;
+      const valSaldo = u ? parseFloat(u.saldo || 0) : 0;
+      userSaldoHeader.textContent = `R$ ${valSaldo.toFixed(2).replace('.', ',')}`;
+    }
 
     container.innerHTML = htmlCards;
     if (headerTotalEl) {
