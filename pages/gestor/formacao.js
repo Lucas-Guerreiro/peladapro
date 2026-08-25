@@ -48,6 +48,10 @@ window.App.initFormacao = async function () {
   }
 
 
+  const btnExportWhatsapp = document.getElementById("btn-export-teams-whatsapp");
+  if (btnExportWhatsapp) {
+    btnExportWhatsapp.onclick = () => window.App.exportTeamsWhatsApp();
+  }
   const btnSyncCloud = document.getElementById("btn-sync-teams-cloud");
   if (btnSyncCloud) {
     btnSyncCloud.onclick = async () => {
@@ -1617,3 +1621,58 @@ function renderFormacaoTournamentUI() {
 }
 
 window.App.renderFormacaoTournamentUI = renderFormacaoTournamentUI;
+
+window.App.exportTeamsWhatsApp = function () {
+  const teamsKey = getTeamsKey();
+  const drawnTeams = JSON.parse(localStorage.getItem(teamsKey)) || window.App.teams || [];
+
+  if (!drawnTeams || drawnTeams.length === 0) {
+    window.App.showToast("Nenhum time sorteado para exportar.", "warning");
+    return;
+  }
+
+  const TEAM_EMOJIS = ["🟡", "🔵", "🟢", "🟣", "🟠", "🔴", "⚪", "⚫"];
+  let texto = `⚽ *PELADA PRO - TIMES ESCALADOS* ⚽\n\n`;
+
+  drawnTeams.forEach((team, idx) => {
+    const emoji = TEAM_EMOJIS[idx % TEAM_EMOJIS.length];
+    const nomeTime = (team.nome || `Time ${String.fromCharCode(65 + idx)}`).trim();
+
+    const players = team.players || [];
+    let soma = 0;
+    players.forEach(p => soma += (parseInt(p.autoavaliacao || p.habilidade || 3)));
+    const media = players.length > 0 ? (soma / players.length).toFixed(1) : "0.0";
+
+    texto += `${emoji} *${nomeTime.toUpperCase()}* (Média: ${media}★)\n`;
+
+    const goleiro = players.find(p => p.goleiro || String(p.posicao || '').toLowerCase().includes('goleiro'));
+    const linha = players.filter(p => !p.goleiro && !String(p.posicao || '').toLowerCase().includes('goleiro'));
+
+    if (goleiro) {
+      const nomeGk = goleiro.apelido || goleiro.nome;
+      const fotoGk = goleiro.foto_url || goleiro.foto || goleiro.avatar_url;
+      const infoFoto = fotoGk ? ` 🖼️ (Foto: ${fotoGk})` : '';
+      texto += `🧤 *${nomeGk}* (Goleiro)${infoFoto}\n`;
+    }
+
+    linha.forEach(p => {
+      const nomeP = p.apelido || p.nome;
+      const fotoP = p.foto_url || p.foto || p.avatar_url;
+      const infoFoto = fotoP ? ` 🖼️ (Foto: ${fotoP})` : '';
+      texto += `• ${nomeP}${infoFoto}\n`;
+    });
+
+    texto += `\n`;
+  });
+
+  texto += `Organizado pelo *Pelada Pro* 🏆`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(() => {
+      window.App.showToast("Escalação dos times com fotos copiada para a área de transferência! Abrindo WhatsApp...", "success");
+    }).catch(() => {});
+  }
+
+  const encoded = encodeURIComponent(texto);
+  window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+};

@@ -229,11 +229,15 @@ function TeamSelection() {
       const linha = time.filter(j => !isGoleiro(j));
 
       if (goleiro) {
-        texto += `🧤 ${goleiro.nome} (Goleiro)\n`;
+        const fotoGk = goleiro.foto_url || goleiro.foto || goleiro.avatar_url;
+        const infoFoto = fotoGk ? ` 🖼️ (Foto: ${fotoGk})` : '';
+        texto += `🧤 *${goleiro.nome}* (Goleiro)${infoFoto}\n`;
       }
 
       linha.forEach(j => {
-        texto += `• ${j.nome}\n`;
+        const fotoJ = j.foto_url || j.foto || j.avatar_url;
+        const infoFoto = fotoJ ? ` 🖼️ (Foto: ${fotoJ})` : '';
+        texto += `• ${j.nome}${infoFoto}\n`;
       });
 
       texto += `\n`;
