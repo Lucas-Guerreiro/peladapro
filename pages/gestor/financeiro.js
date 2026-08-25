@@ -335,7 +335,7 @@ window.App.renderFinanceiroData = async function() {
   if (elDespesasSub) elDespesasSub.textContent = `Previstas: ${formatCurrencyBRL(totalDespesasPrevistas)} · Pendente: ${formatCurrencyBRL(totalDespesasPendentes)}`;
 
   if (elSaldoAtletas) elSaldoAtletas.textContent = (totalSaldoAtletas >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(totalSaldoAtletas));
-  if (elSaldoAtletasSub) elSaldoAtletasSub.textContent = `Soma das carteiras (${playersList ? playersList.length : 0} atletas)`;
+  if (elSaldoAtletasSub) elSaldoAtletasSub.textContent = `🔒 Saldo seguro (${playersList ? playersList.length : 0} atletas) · Usado só em convocação via saldo`;
 
   if (elSaldoPelada) {
     elSaldoPelada.textContent = (saldoPelada >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoPelada));

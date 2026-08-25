@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v267'; // ← 5 Cards Financeiros: Total Arrecadado, Despesas, Saldo Atletas, Saldo Pelada e Caixa Total
+const CACHE_NAME = 'peladapro-v268'; // ← Identificação visual e informativa de Saldo Seguro no card de Saldo Total do Atleta
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -33,16 +33,19 @@
       <span id="finances-kpi-despesas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Previstas: R$ 0,00 · A Pagar: R$ 0,00</span>
     </div>
 
-    <!-- 3. Saldo Total do Atleta -->
-    <div class="card" id="finances-kpi-saldo-atletas-card" style="padding: 16px 20px; border-left: 4px solid #8B5CF6; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Total do Atleta</span>
+    <!-- 3. Saldo Total do Atleta (Saldo Seguro) -->
+    <div class="card" id="finances-kpi-saldo-atletas-card" style="padding: 16px 20px; border-left: 4px solid #8B5CF6; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;" title="Saldo seguro reservado na carteira dos atletas. Utilizado exclusivamente quando o atleta confirma convocação por saldo.">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Total do Atleta</span>
+          <span style="font-size: 9px; font-weight: 800; background: #F3E8FF; color: #7C3AED; border: 1px solid #E9D5FF; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">🔒 SALDO SEGURO</span>
+        </div>
         <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139, 92, 246, 0.12); color: #8B5CF6; display: flex; align-items: center; justify-content: center;">
-          <i data-feather="users" style="width: 16px; height: 16px;"></i>
+          <i data-feather="shield" style="width: 16px; height: 16px;"></i>
         </div>
       </div>
       <h2 id="finances-kpi-saldo-atletas" style="font-size: 24px; font-weight: 800; color: #8B5CF6; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
-      <span id="finances-kpi-saldo-atletas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Soma dos saldos dos atletas</span>
+      <span id="finances-kpi-saldo-atletas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">🔒 Consumido só quando o atleta convocar via saldo</span>
     </div>
 
     <!-- 4. Saldo Pelada (Caixa Total - Saldo Total do Atleta) -->
