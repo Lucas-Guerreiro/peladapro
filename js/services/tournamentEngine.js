@@ -45,7 +45,7 @@ window.TournamentEngine = {
       // Pareia os demais de fora para dentro
       const half = Math.floor(n / 2);
       for (let i = 1; i < half; i++) {
-        rodada.push([circulo[i], circulo[circulo.length - i]]);
+        rodada.push([circulo[circulo.length - i], circulo[i]]);
       }
       rodadasIda.push(rodada);
 
@@ -55,9 +55,9 @@ window.TournamentEngine = {
       circulo = [last, ...rest];
     }
 
-    // Volta: reverte a ordem e inverte o mando
+    // Volta: segue a mesma sequência das rodadas da Ida (1 -> 2 -> 3), invertendo o mando (teamB x teamA)
     const rodadasVolta = [];
-    for (let r = rodadasIda.length - 1; r >= 0; r--) {
+    for (let r = 0; r < rodadasIda.length; r++) {
       const rodada = rodadasIda[r];
       const rodadaInvertida = rodada.map(([a, b]) => [b, a]);
       rodadasVolta.push(rodadaInvertida);
@@ -97,7 +97,7 @@ window.TournamentEngine = {
       });
     });
 
-    return this.optimizeMatchSequence(rawMatches);
+    return rawMatches;
   },
 
   /**
