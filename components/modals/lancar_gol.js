@@ -84,21 +84,24 @@ window.App.initModalLancar_gol = function(data) {
       btnSubmit.textContent = "Gravando...";
 
       try {
-        // 1. Grava no banco de dados real do PostgreSQL local para o atleta
-        const res = await Api.lancarGolAtleta(autorId);
-
-        if (res.error) {
-          window.App.showToast(res.error, "error");
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = "Confirmar Gol";
-          return;
+        // 1. Tenta gravar no banco de dados em segundo plano (sem bloquear o jogo ao vivo)
+        try {
+          if (window.Api && window.Api.lancarGolAtleta) {
+            window.Api.lancarGolAtleta(autorId).catch(e => console.warn("[lancar_gol] DB sync warning:", e));
+          }
+        } catch (e) {
+          console.warn("[lancar_gol] Ignorando falha de API local para manter o jogo ativo:", e);
         }
 
         // 2. Incrementa o placar local na partida ativa e grava a lista de autores de gols
+        if (!window.App.liveMatch) {
+          window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
+        }
+
         if (teamKey === "a") {
-          window.App.liveMatch.scoreA = Math.max(0, window.App.liveMatch.scoreA + 1);
+          window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) + 1);
         } else {
-          window.App.liveMatch.scoreB = Math.max(0, window.App.liveMatch.scoreB + 1);
+          window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) + 1);
         }
 
         const autorObj = players.find(p => String(p.id) === String(autorId));
@@ -116,16 +119,19 @@ window.App.initModalLancar_gol = function(data) {
           assistNome: assistNome || null,
           teamKey: teamKey,
           teamName: teamName,
-          timeSecs: window.App.liveMatch.timerSeconds
+          timeSecs: window.App.liveMatch.timerSeconds || 0
         });
 
         // 3. Persiste no localStorage e envia ao backend em tempo real
-        localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+        try { localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch)); } catch(e) {}
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-        if (peladaId && window.Api && window.Api.atualizarLiveState) {
-          let teams = [];
-          try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
-          window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+        if (peladaId) {
+          try { localStorage.setItem(`liveMatch_${peladaId}`, JSON.stringify(window.App.liveMatch)); } catch(e) {}
+          if (window.Api && window.Api.atualizarLiveState) {
+            let teams = window.App.teams || [];
+            let queue = window.App.waitingQueue || [];
+            window.Api.atualizarLiveState(peladaId, window.App.liveMatch, queue, teams).catch(e => {});
+          }
         }
 
         // 4. Feedback visual
@@ -139,15 +145,17 @@ window.App.initModalLancar_gol = function(data) {
         window.App.closeModal();
 
         // 6. Atualiza a UI do placar na aba de Partidas e no Acompanhamento
-        if (window.App.initPartidas) {
-          // Atualiza os placares sem recarregar tudo
-          const scoreAEl = document.getElementById("match-control-score-a");
-          const scoreBEl = document.getElementById("match-control-score-b");
-          if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
-          if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
-        }
+        const scoreAEl = document.getElementById("match-control-score-a");
+        const scoreBEl = document.getElementById("match-control-score-b");
+        if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
+        if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
 
-        window.App.updateAcompanhamentoUI();
+        if (window.App.updateAcompanhamentoUI) {
+          window.App.updateAcompanhamentoUI();
+        }
+        if (window.App.renderLiveMatchUI) {
+          window.App.renderLiveMatchUI();
+        }
 
       } catch (err) {
         console.error("[lancar_gol]", err);

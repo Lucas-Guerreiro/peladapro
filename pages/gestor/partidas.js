@@ -393,15 +393,7 @@ window.App.initPartidas = async function () {
     }
 
     const resolveTeamObj = (targetTeamName) => {
-      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-      let teams = window.App.teams || [];
-      if ((!teams || teams.length === 0) && peladaId) {
-        try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch (e) { }
-      }
-      if (!teams || teams.length === 0) {
-        try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
-      }
-
+      let teams = getAppTeamsList();
       const cleanTarget = (targetTeamName || "").trim().toLowerCase();
       let found = teams.find(t => t.nome && t.nome.trim().toLowerCase() === cleanTarget);
       if (!found) {
@@ -418,38 +410,62 @@ window.App.initPartidas = async function () {
       };
     };
 
-    // Botões de Visualização do Time (Olho)
-    const btnViewA = document.getElementById("btn-view-team-a");
-    if (btnViewA) {
-      btnViewA.onclick = () => {
-        const teamObj = resolveTeamObj(window.App.liveMatch.teamA);
-        window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
-      };
-    }
+    // Delegação Global de Eventos de Clique para botões de Jogo ao Vivo
+    if (!window._partidasClickDelegated) {
+      window._partidasClickDelegated = true;
+      document.addEventListener('click', (e) => {
+        // 1. Botão Lançar Gol
+        const goalBtn = e.target.closest('#btn-goal-team-a, #btn-goal-team-b, .btn-goal-trigger');
+        if (goalBtn) {
+          e.preventDefault();
+          const isA = goalBtn.id === 'btn-goal-team-a' || goalBtn.getAttribute('data-team') === 'a';
+          const teamKey = isA ? 'a' : 'b';
+          const targetName = isA 
+            ? (window.App.liveMatch ? window.App.liveMatch.teamA : 'Time A')
+            : (window.App.liveMatch ? window.App.liveMatch.teamB : 'Time B');
+          const teamObj = resolveTeamObj(targetName);
+          window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: teamKey, players: teamObj.players });
+          return;
+        }
 
-    const btnViewB = document.getElementById("btn-view-team-b");
-    if (btnViewB) {
-      btnViewB.onclick = () => {
-        const teamObj = resolveTeamObj(window.App.liveMatch.teamB);
-        window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
-      };
-    }
+        // 2. Botões de Placar (- / +)
+        const scoreBtn = e.target.closest('.btn-score-adjust, .btn-adjust-score');
+        if (scoreBtn) {
+          e.preventDefault();
+          const team = scoreBtn.getAttribute("data-team");
+          const diff = parseInt(scoreBtn.getAttribute("data-diff"));
+          if (team && !isNaN(diff)) {
+            updateLiveScore(team, diff);
+          }
+          return;
+        }
 
-    // Botões de Lançamento de Gol
-    const btnGoalA = document.getElementById("btn-goal-team-a");
-    if (btnGoalA) {
-      btnGoalA.onclick = () => {
-        const teamObj = resolveTeamObj(window.App.liveMatch.teamA);
-        window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: "a", players: teamObj.players });
-      };
-    }
+        // 3. Botões de Ver Time
+        const viewBtn = e.target.closest('#btn-view-team-a, #btn-view-team-b');
+        if (viewBtn) {
+          e.preventDefault();
+          const isA = viewBtn.id === 'btn-view-team-a';
+          const targetName = isA 
+            ? (window.App.liveMatch ? window.App.liveMatch.teamA : 'Time A')
+            : (window.App.liveMatch ? window.App.liveMatch.teamB : 'Time B');
+          const teamObj = resolveTeamObj(targetName);
+          window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
+          return;
+        }
 
-    const btnGoalB = document.getElementById("btn-goal-team-b");
-    if (btnGoalB) {
-      btnGoalB.onclick = () => {
-        const teamObj = resolveTeamObj(window.App.liveMatch.teamB);
-        window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: "b", players: teamObj.players });
-      };
+        // 4. Botão Reabrir Pelada Finalizada
+        const reopenBtn = e.target.closest('#btn-reopen-pelada');
+        if (reopenBtn) {
+          e.preventDefault();
+          if (window.App.activePelada) {
+            window.App.activePelada.status = 'em_andamento';
+            try { localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada)); } catch(err) {}
+            window.App.initPartidas();
+            window.App.showToast("Rodada reaberta para Jogo ao Vivo!");
+          }
+          return;
+        }
+      });
     }
 
   setTimeout(() => {

@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v242'; // ← Correção e suporte infalível aos botões de súmula, lançamento de resultado e edição de partidas
+const CACHE_NAME = 'peladapro-v243'; // ← Delegação global infalível de cliques e gravação instantânea de gols no Jogo ao Vivo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
