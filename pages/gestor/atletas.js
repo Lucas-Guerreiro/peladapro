@@ -14,11 +14,60 @@ window.App.initAtletas = function() {
   const btnTransfer = document.getElementById("btn-open-transfer-guest-modal");
   if (btnTransfer) btnTransfer.onclick = () => window.App.openModal("transferir_convidado");
 
+  const btnExport = document.getElementById("btn-export-athlete-names");
+  if (btnExport) btnExport.onclick = () => window.App.exportAthleteNames();
+
   const searchInput = document.getElementById("athlete-search-input");
   if (searchInput) {
     searchInput.oninput = debounce((e) => {
       window.App.renderManagerAthletesList(e.target.value);
     }, 300);
+  }
+};
+
+window.App.exportAthleteNames = function() {
+  const players = JSON.parse(localStorage.getItem("players")) || [];
+  const isAthlete = (p) => (!p.tipo || p.tipo === 'jogador' || p.tipo === 'gestor' || p.tipo === 'ambos') && p.tipo !== 'incorporado';
+  const approvedPlayers = players.filter(p => (p.verificado === true || p.ativo === true) && isAthlete(p));
+
+  const searchInput = document.getElementById("athlete-search-input");
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+  const targetPlayers = query 
+    ? approvedPlayers.filter(p => (p.nome && p.nome.toLowerCase().includes(query)) || (p.email && p.email.toLowerCase().includes(query)))
+    : approvedPlayers;
+
+  if (targetPlayers.length === 0) {
+    if (window.Utils && window.Utils.toast) window.Utils.toast("Nenhum atleta encontrado para exportar.", "warning");
+    return;
+  }
+
+  const names = targetPlayers
+    .map(p => (p.nome || '').trim())
+    .filter(n => n.length > 0);
+
+  const textContent = names.join("\n");
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(textContent).catch(() => {});
+  }
+
+  const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `nomes_atletas_${dateStr}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const msg = `${names.length} nome(s) exportado(s) e copiado(s)!`;
+  if (window.Utils && window.Utils.toast) {
+    window.Utils.toast(msg, "success");
+  } else if (window.App && window.App.showToast) {
+    window.App.showToast(msg, "success");
   }
 };
 
