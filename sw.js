@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v264'; // ← Centralização perfeita do escudo com o nome dos times nos cards
+const CACHE_NAME = 'peladapro-v265'; // ← Painel financeiro do atleta configurado estritamente como Apenas Leitura
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

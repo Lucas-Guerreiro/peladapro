@@ -62,6 +62,11 @@ window.App.initFinanceiro = async function() {
   window.manualFinanceSettlement = manualFinanceSettlement;
 
   window.App.abrirEditarTransacao = function(txId) {
+    const isAthleteView = window.location.hash.startsWith('#/jogador') || (window.Auth && window.Auth.getUserRole && window.Auth.getUserRole() === 'jogador');
+    if (isAthleteView) {
+      if (window.App.showToast) window.App.showToast("Modo de visualização do atleta (apenas leitura).", "info");
+      return;
+    }
     const tx = (window._financeiroTransactionsMap || {})[String(txId)];
     if (!tx) {
       window.App.showToast("Lançamento não encontrado para edição.", "warning");
@@ -71,6 +76,11 @@ window.App.initFinanceiro = async function() {
   };
 
   window.App.efetivarDespesaDireta = async function(txId) {
+    const isAthleteView = window.location.hash.startsWith('#/jogador') || (window.Auth && window.Auth.getUserRole && window.Auth.getUserRole() === 'jogador');
+    if (isAthleteView) {
+      if (window.App.showToast) window.App.showToast("Modo de visualização do atleta (apenas leitura).", "info");
+      return;
+    }
     const tx = (window._financeiroTransactionsMap || {})[String(txId)];
     if (!tx) {
       window.App.showToast("Lançamento não encontrado.", "error");
@@ -234,6 +244,8 @@ window.App.renderFinanceiroData = async function() {
     return false;
   });
 
+  const isAthleteView = window.location.hash.startsWith('#/jogador') || (window.Auth && window.Auth.getUserRole && window.Auth.getUserRole() === 'jogador');
+
   // Filtra por período selecionado
   const agora = new Date();
   const filtro = window.App._financeiroFilter || "este_mes";
@@ -381,7 +393,7 @@ window.App.renderFinanceiroData = async function() {
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; color: #0284C7; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
-              <button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#0284C7'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+              ${isAthleteView ? '' : `<button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#0284C7'" onmouseout="this.style.color='#94A3B8'">✏️</button>`}
             </div>
           </div>
         `;
@@ -405,8 +417,11 @@ window.App.renderFinanceiroData = async function() {
         } else {
           badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         }
-        const btnEfetivar = !d.isEfetivado
+        const btnEfetivar = (!d.isEfetivado && !isAthleteView)
           ? `<button onclick="window.App.efetivarDespesaDireta('${d.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta despesa como 100% EFETIVADA (Pago)">⚡ Efetivar</button>`
+          : '';
+        const btnEditar = !isAthleteView
+          ? `<button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>`
           : '';
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #FEE2E2; font-size: 13px; flex-wrap: wrap; gap: 6px;">
@@ -417,7 +432,7 @@ window.App.renderFinanceiroData = async function() {
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
               <span style="font-weight: 800; color: #DC2626; white-space: nowrap; font-size: 14px;">- ${formatCurrencyBRL(d.valor)}</span>
               ${btnEfetivar}
-              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>
+              ${btnEditar}
             </div>
           </div>
         `;
@@ -733,7 +748,7 @@ window.App.renderFinanceiroData = async function() {
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; color: #059669; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
-              <button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#059669'" onmouseout="this.style.color='#94A3B8'">✏️</button>
+              ${isAthleteView ? '' : `<button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#059669'" onmouseout="this.style.color='#94A3B8'">✏️</button>`}
             </div>
           </div>
         `;
@@ -756,8 +771,11 @@ window.App.renderFinanceiroData = async function() {
         } else {
           badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         }
-        const btnEfetivar = !d.isEfetivado
+        const btnEfetivar = (!d.isEfetivado && !isAthleteView)
           ? `<button onclick="window.App.efetivarDespesaDireta('${d.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta despesa como 100% EFETIVADA (Pago)">⚡ Efetivar</button>`
+          : '';
+        const btnEditar = !isAthleteView
+          ? `<button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>`
           : '';
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px; flex-wrap: wrap; gap: 6px;">
@@ -768,7 +786,7 @@ window.App.renderFinanceiroData = async function() {
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
               <span style="font-weight: 800; color: #DC2626; white-space: nowrap; font-size: 14px;">- ${formatCurrencyBRL(d.valor)}</span>
               ${btnEfetivar}
-              <button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>
+              ${btnEditar}
             </div>
           </div>
         `;
