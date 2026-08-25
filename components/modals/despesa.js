@@ -21,11 +21,45 @@ window.App.initModalDespesa = async function() {
     };
   }
 
+  // Carrega categorias customizadas salvas previamente para o grupo
+  const selectCat = document.getElementById("expense-category");
+  const customCatContainer = document.getElementById("expense-category-custom-container");
+  const customCatInput = document.getElementById("expense-category-custom-input");
+
+  const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = group ? group.id : "default";
+
+  if (selectCat) {
+    // Restaura categorias customizadas do LocalStorage
+    let customCats = [];
+    try {
+      customCats = JSON.parse(localStorage.getItem(`custom_expense_categories_${groupId}`)) || [];
+    } catch (e) {}
+
+    // Injeta opções customizadas antes de "__nova_categoria__" se já não existirem
+    customCats.forEach(cName => {
+      if (!Array.from(selectCat.options).some(opt => opt.value.toLowerCase() === cName.toLowerCase())) {
+        const opt = document.createElement("option");
+        opt.value = cName;
+        opt.textContent = `✨ ${cName}`;
+        selectCat.insertBefore(opt, selectCat.options[selectCat.options.length - 1]);
+      }
+    });
+
+    selectCat.onchange = function() {
+      if (selectCat.value === '__nova_categoria__') {
+        if (customCatContainer) customCatContainer.style.display = 'block';
+        if (customCatInput) customCatInput.focus();
+      } else {
+        if (customCatContainer) customCatContainer.style.display = 'none';
+      }
+    };
+  }
+
   // Carrega opções de peladas para vínculo opcional
   const selectPelada = document.getElementById("expense-pelada-select");
   if (selectPelada) {
     selectPelada.innerHTML = `<option value="">Nenhuma (Despesa Geral)</option>`;
-    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
     if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
       try {
         const peladas = await window.Api.listarDatasDoGrupo(group.id);
@@ -48,7 +82,33 @@ window.App.initModalDespesa = async function() {
 
 async function handleSaveExpense() {
   const val = parseFloat(document.getElementById("expense-value").value);
-  const cat = document.getElementById("expense-category") ? document.getElementById("expense-category").value : "Outros";
+  const selectCat = document.getElementById("expense-category");
+  const customInput = document.getElementById("expense-category-custom-input");
+
+  let cat = selectCat ? selectCat.value : "Outros";
+
+  // Se o gestor escolheu a opção de digitar nova categoria
+  if (cat === '__nova_categoria__' || (customInput && customInput.value.trim() && selectCat && selectCat.value === '__nova_categoria__')) {
+    const novaCatDigitada = customInput ? customInput.value.trim() : "";
+    if (!novaCatDigitada) {
+      window.App.showToast("Por favor, digite o nome da nova categoria de despesa.", "warning");
+      if (customInput) customInput.focus();
+      return;
+    }
+    cat = novaCatDigitada;
+
+    // Salva a nova categoria no localStorage do grupo para reuso futuro
+    let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    const groupId = group ? group.id : "default";
+    try {
+      let customCats = JSON.parse(localStorage.getItem(`custom_expense_categories_${groupId}`)) || [];
+      if (!customCats.some(c => c.toLowerCase() === cat.toLowerCase())) {
+        customCats.push(cat);
+        localStorage.setItem(`custom_expense_categories_${groupId}`, JSON.stringify(customCats));
+      }
+    } catch (e) {}
+  }
+
   const desc = document.getElementById("expense-description").value.trim();
   const peladaVinculada = document.getElementById("expense-pelada-select") ? document.getElementById("expense-pelada-select").value : "";
   const statusPayment = document.getElementById("expense-status-select") ? document.getElementById("expense-status-select").value : "efetivado";

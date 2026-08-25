@@ -17,7 +17,6 @@
       <input type="number" id="expense-value" class="form-control" placeholder="0.00" step="5.00" min="1" required style="font-size: 16px; font-weight: 700;">
     </div>
 
-    <div class="grid-2" style="gap: 12px; margin-bottom: 16px;">
       <div class="form-group" style="margin-bottom: 0;">
         <label for="expense-category" class="form-label" style="font-weight: 700;">Categoria *</label>
         <select id="expense-category" class="form-control" style="font-size: 13px;">
@@ -26,8 +25,19 @@
           <option value="Material">Material (Bolas/Coletes)</option>
           <option value="Água">Água / Gelo</option>
           <option value="Churrasco">Churrasco / Confraternização</option>
+          <option value="Troféus">Troféus / Medalhas</option>
+          <option value="Uniformes">Uniformes / Coletes</option>
+          <option value="Mensalidade PWA">Mensalidade App / PWA</option>
+          <option value="Fotografia">Fotografia / Mídia</option>
+          <option value="Transporte">Transporte / Logística</option>
           <option value="Outros">Outros</option>
+          <option value="__nova_categoria__">➕ Outra Categoria (Digitar)...</option>
         </select>
+
+        <!-- Campo para digitar uma nova categoria personalizada -->
+        <div id="expense-category-custom-container" style="display: none; margin-top: 8px;">
+          <input type="text" id="expense-category-custom-input" class="form-control" placeholder="Digite a nova categoria (ex: Premiação, Segurança...)" style="font-size: 13px; border: 1.5px solid #0284C7;">
+        </div>
       </div>
 
       <div class="form-group" style="margin-bottom: 0;">

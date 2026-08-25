@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v268'; // ← Identificação visual e informativa de Saldo Seguro no card de Saldo Total do Atleta
+const CACHE_NAME = 'peladapro-v269'; // ← Adição de categorias de despesa customizadas pelo gestor em Registrar Nova Despesa
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
