@@ -1050,7 +1050,6 @@ var Acompanhamento = {
           mHtml += '<div style="margin-bottom: 8px; background: ' + rowBg + '; border-radius: 12px; border: 1px solid ' + rowBorder + '; border-left: 4px solid ' + (isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')) + '; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 6px; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
             '<div style="display: flex; justify-content: space-between; align-items: center;">' +
             '<span style="font-size: 11px; font-weight: 800; color: ' + subTextColor + '; text-transform: uppercase; letter-spacing: 0.5px;">📌 ' + (m.faseNome || ('Jogo ' + (idx + 1))) + '</span>' +
-            '<div>' + statusTag + '</div>' +
             '</div>' +
             '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
             '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">' +

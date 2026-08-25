@@ -2786,11 +2786,11 @@ function renderTournamentUI() {
           ? ` <small style="font-size: 9px; opacity: 0.9;">(${m.penaltisA} x ${m.penaltisB} 🎯)</small>`
           : '';
 
-        const statusTag = isDone
-          ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5'}; color:${isTeamTheme ? '#A7F3D0' : '#065F46'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid rgba(16, 185, 129, 0.4)' : 'none'};">✅ ${m.golsA} x ${m.golsB}${penText}</span>`
+        const scorePill = isDone
+          ? `<div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 4px 14px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: center;">${m.golsA} x ${m.golsB}${penText}</div>`
           : (isCurrent
-            ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7'}; color:${isTeamTheme ? '#FFFFFF' : '#B45309'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid #F59E0B' : '1px solid #FCD34D'};">⚽ EM ANDAMENTO</span>`
-            : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9'}; color:${isTeamTheme ? '#E2E8F0' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};">⏳ A JOGAR</span>`);
+            ? `<div style="background: #D97706; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 14px; text-transform: uppercase; text-align: center; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);">⚽ EM ANDAMENTO</div>`
+            : `<div style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 14px; text-transform: uppercase; text-align: center;">⏳ A JOGAR</div>`);
 
         const isGroupMatch = Array.isArray(tState.matches) && idx < tState.matches.length;
         const prevMatch = isGroupMatch && idx > 0 ? tState.matches[idx - 1] : null;
@@ -2837,7 +2837,7 @@ function renderTournamentUI() {
                 <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamA)}</span>
               </div>
               <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                ${statusTag}
+                ${scorePill}
               </div>
               <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">
                 <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamB)}</span>
