@@ -1642,18 +1642,12 @@ function updateLiveScore(team, diff) {
 async function handleFinishMatch() {
   window.App.isFinishingMatch = true;
   try {
-    const teams = JSON.parse(localStorage.getItem("teams")) || [];
-    if (teams.length < 2) {
-      window.App.showToast("Sorteie os times antes de finalizar partidas.", "error");
-      window.App.isFinishingMatch = false;
-      return;
-    }
-
-    const scoreA = window.App.liveMatch.scoreA;
-    const scoreB = window.App.liveMatch.scoreB;
-    const teamAName = window.App.liveMatch.teamA;
-    const teamBName = window.App.liveMatch.teamB;
+    const teams = getAppTeamsList();
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    const teamAName = window.App.liveMatch ? (window.App.liveMatch.teamA || "Time A") : "Time A";
+    const teamBName = window.App.liveMatch ? (window.App.liveMatch.teamB || "Time B") : "Time B";
+    const scoreA = window.App.liveMatch ? (window.App.liveMatch.scoreA || 0) : 0;
+    const scoreB = window.App.liveMatch ? (window.App.liveMatch.scoreB || 0) : 0;
 
     if (!peladaId) {
       window.App.showToast("Nenhuma pelada selecionada.", "error");
@@ -2148,8 +2142,7 @@ function setupHistoryActions() {
     btn.onclick = async () => {
       const partidaData = JSON.parse(btn.getAttribute("data-partida"));
 
-      let teams = [];
-      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+      let teams = getAppTeamsList();
 
       const peladaId = partidaData.pelada_id || (window.App.activePelada ? window.App.activePelada.id : null);
       let allPartidas = [];
