@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v249'; // ← Garante carregamento do histórico e layout flexbox perfeito para cards de confronto em qualquer tela
+const CACHE_NAME = 'peladapro-v250'; // ← Solução definitiva contra ReferenceError runtime e carregamento infalível no Acompanhamento do Jogador
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

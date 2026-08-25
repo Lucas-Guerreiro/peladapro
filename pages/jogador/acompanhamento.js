@@ -2,6 +2,9 @@
 // pages/jogador/acompanhamento.js — Partida ao Vivo (Módulo Jogador Redesign Responsivo)
 // ==========================================================================
 
+var Auth = window.Auth || window.App || {};
+var Api = window.Api || window.App || {};
+
 var Acompanhamento = {
 
   // Limpa o estado quando a pelada não está em andamento (sem sorteio)
@@ -777,16 +780,34 @@ var Acompanhamento = {
       }
     }
 
-    if (!peladaId) {
-      container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:12px 0;">Nenhuma pelada selecionada.</p>';
-      return;
-    }
-
     try {
-      var partidas = window.Api ? await window.Api.listarPartidas(peladaId) : [];
+      var partidas = [];
+      if (peladaId && window.Api && window.Api.listarPartidas) {
+        try { partidas = await window.Api.listarPartidas(peladaId); } catch(e) {}
+      }
+      if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+        if (peladaId) {
+          try { partidas = JSON.parse(localStorage.getItem("partidas_" + peladaId)) || []; } catch(e) {}
+        }
+      }
+      if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+        try { partidas = JSON.parse(localStorage.getItem("partidas")) || []; } catch(e) {}
+      }
       if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
         try {
-          partidas = JSON.parse(localStorage.getItem("partidas_" + peladaId)) || JSON.parse(localStorage.getItem("partidas")) || [];
+          var keys = Object.keys(localStorage).filter(function(k) { return k.indexOf("partidas") >= 0; });
+          keys.forEach(function(k) {
+            try {
+              var items = JSON.parse(localStorage.getItem(k));
+              if (Array.isArray(items) && items.length > 0) {
+                items.forEach(function(item) {
+                  if (item && item.time_a_nome && !partidas.some(function(p) { return p.id === item.id; })) {
+                    partidas.push(item);
+                  }
+                });
+              }
+            } catch(e) {}
+          });
         } catch(e) {}
       }
 
