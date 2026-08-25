@@ -9,13 +9,9 @@ var Acompanhamento = {
 
   // Limpa o estado quando a pelada não está em andamento (sem sorteio)
   _limparEstado: function () {
-    window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
-    window.App.waitingQueue = [];
-    window.App.teams = [];
-    localStorage.removeItem("teams");
-    localStorage.setItem("waitingQueue", "[]");
-    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-    console.log("🧹 [Acompanhamento] Estado limpo (sem sorteio/pelada em andamento).");
+    if (!window.App.liveMatch) {
+      window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
+    }
   },
 
   _pollingTimer: null,
@@ -72,7 +68,7 @@ var Acompanhamento = {
     var select = document.getElementById("acomp-select-pelada-date");
     if (!select) return;
 
-    var currentGroup = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    var currentGroup = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
     if (!currentGroup) {
       try {
         var groupRaw = localStorage.getItem('currentGroup');
@@ -81,7 +77,7 @@ var Acompanhamento = {
     }
     if (!currentGroup) {
       try {
-        var groups = Api.getGroups ? Api.getGroups() : [];
+        var groups = (window.Api && window.Api.getGroups) ? window.Api.getGroups() : [];
         if (groups && groups.length > 0) currentGroup = groups[0];
       } catch (e) { }
     }
@@ -93,11 +89,11 @@ var Acompanhamento = {
 
     try {
       var peladas = [];
-      if (Api.listarDatasDoGrupo) {
-        peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+      if (window.Api && window.Api.listarDatasDoGrupo) {
+        peladas = await window.Api.listarDatasDoGrupo(currentGroup.id);
       }
       if (!peladas || peladas.length === 0) {
-        peladas = Api.getPeladas ? Api.getPeladas().filter(function (p) { return String(p.grupo_id) === String(currentGroup.id); }) : [];
+        peladas = (window.Api && window.Api.getPeladas) ? window.Api.getPeladas().filter(function (p) { return String(p.grupo_id) === String(currentGroup.id); }) : [];
       }
       if ((!peladas || peladas.length === 0) && window.supabase) {
         try {
@@ -123,23 +119,17 @@ var Acompanhamento = {
         if (found) activePelada = found;
       }
 
-      window.App.activePelada = activePelada;
-      try { localStorage.setItem("activePelada", JSON.stringify(activePelada)); } catch (e) { }
       select.value = activePelada.id;
+      window.App.activePelada = activePelada;
 
-      var self = this;
-      select.onchange = async function () {
-        var selectedId = select.value;
-        var found = peladas.find(function (p) { return String(p.id) === String(selectedId); });
-        if (found) {
-          window.App.activePelada = found;
-          // Se a pelada selecionada não estiver em andamento, limpa confronto/fila
-          if (found.status !== "ativa") {
-            self._limparEstado();
-          }
-          try { localStorage.setItem("activePelada", JSON.stringify(found)); } catch (e) { }
-          await self._fetchServerLiveState();
-          self.render();
+      select.onchange = async () => {
+        var selId = select.value;
+        var pSel = peladas.find(function (p) { return String(p.id) === String(selId); });
+        if (pSel) {
+          window.App.activePelada = pSel;
+          try { localStorage.setItem("activePelada", JSON.stringify(pSel)); } catch (e) { }
+          await Acompanhamento._fetchServerLiveState();
+          Acompanhamento.render();
         }
       };
     } catch (e) {
@@ -158,13 +148,6 @@ var Acompanhamento = {
   _fetchServerLiveState: async function () {
     var peladaId = window.App.activePelada ? window.App.activePelada.id : null;
 
-    var peladaAtiva = window.App.activePelada || {};
-    // Só limpa se a pelada for explicitamente 'finalizada' sem dados de partida ao vivo
-    if (peladaAtiva.status === "finalizada" && !localStorage.getItem("liveMatch")) {
-      this._limparEstado();
-      return;
-    }
-
     if (!peladaId) {
       try {
         var rawPelada = localStorage.getItem("activePelada");
@@ -176,10 +159,10 @@ var Acompanhamento = {
     }
 
     if (!peladaId) {
-      var group = (Auth && Auth.currentGroup) || window.App.currentGroup;
-      if (group && group.id && Api.listarDatasDoGrupo) {
+      var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
         try {
-          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          var peladasGroup = await window.Api.listarDatasDoGrupo(group.id);
           if (Array.isArray(peladasGroup) && peladasGroup.length > 0) {
             var active = peladasGroup.find(function (p) { return p.status !== 'finalizada'; }) || peladasGroup[0];
             if (active) {
@@ -192,16 +175,16 @@ var Acompanhamento = {
       }
     }
 
-    const groupConfigs = window.Api.getConfigs() || [];
-    const currentGrp = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    const groupConfigs = (window.Api && window.Api.getConfigs) ? window.Api.getConfigs() : [];
+    const currentGrp = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
     const grpCfg = currentGrp ? groupConfigs.find(function (c) { return c.grupo_id === currentGrp.id; }) : null;
     const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
 
     let stateCarregado = false;
 
-    if (peladaId && Api.obterLiveState) {
+    if (peladaId && window.Api && window.Api.obterLiveState) {
       try {
-        var res = await Api.obterLiveState(peladaId);
+        var res = await window.Api.obterLiveState(peladaId);
         if (res && res.state) {
           if (res.state.liveMatch) {
             window.App.liveMatch = res.state.liveMatch;
@@ -223,15 +206,10 @@ var Acompanhamento = {
           if (res.state.waitingQueue) {
             window.App.waitingQueue = res.state.waitingQueue;
             localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
-          } else {
-            window.App.waitingQueue = [];
-            localStorage.setItem("waitingQueue", "[]");
           }
 
           if (res.state.teams && res.state.teams.length > 0) {
             localStorage.setItem("teams", JSON.stringify(res.state.teams));
-          } else {
-            localStorage.removeItem("teams");
           }
           stateCarregado = true;
         }
@@ -240,7 +218,7 @@ var Acompanhamento = {
       }
     }
 
-    if (!stateCarregado) {
+    if (!stateCarregado && !window.App.liveMatch) {
       window.App.liveMatch = {
         teamA: 'Time A',
         teamB: 'Time B',
@@ -252,9 +230,6 @@ var Acompanhamento = {
         goals: []
       };
       localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-      window.App.waitingQueue = [];
-      localStorage.setItem("waitingQueue", "[]");
-      localStorage.removeItem("teams");
     }
   },
 
@@ -269,67 +244,24 @@ var Acompanhamento = {
       if (rawPelada) window.App.activePelada = JSON.parse(rawPelada);
     } catch (e) { }
 
-    var teams = [];
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
-
     const timerCard = document.querySelector('.acomp-timer-wrapper-clear');
     const scoreCard = document.querySelector('.acomp-score-card-clear');
     const queueCard = document.getElementById('acomp-queue-list')?.closest('.acomp-card-clear');
     const ruleCard = document.getElementById('acomp-rule-desc-clear')?.closest('.acomp-card-clear') || document.querySelector('.acomp-rule-title-clear')?.closest('.acomp-card-clear');
     let infoCard = document.getElementById('acomp-no-teams-card');
 
-    const hasLiveMatch = window.App.liveMatch && (window.App.liveMatch.teamA || window.App.liveMatch.teamB);
-    if ((!teams || teams.length < 2) && !hasLiveMatch) {
-      if (timerCard) timerCard.style.display = 'none';
-      if (scoreCard) scoreCard.style.display = 'none';
-      if (queueCard) queueCard.style.display = 'none';
-      if (ruleCard) ruleCard.style.display = 'none';
+    if (timerCard) timerCard.style.display = 'flex';
+    if (scoreCard) scoreCard.style.display = 'flex';
+    if (queueCard) queueCard.style.display = 'flex';
+    if (ruleCard) ruleCard.style.display = 'flex';
+    if (infoCard) infoCard.style.display = 'none';
 
-      if (!infoCard) {
-        infoCard = document.createElement('div');
-        infoCard.id = 'acomp-no-teams-card';
-        infoCard.className = 'acomp-card-clear';
-        infoCard.style.textAlign = 'center';
-        infoCard.style.padding = '32px 20px';
-        infoCard.style.display = 'flex';
-        infoCard.style.flexDirection = 'column';
-        infoCard.style.alignItems = 'center';
-        infoCard.style.justifyContent = 'center';
-        infoCard.style.gap = '12px';
-
-        infoCard.innerHTML = `
-          <div style="font-size: 40px; line-height: 1;">⚽</div>
-          <h4 class="text-inter" style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin: 0;">Aguardando Sorteio</h4>
-          <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin: 0; max-width: 320px; line-height: 1.5;">
-            O gestor ainda não realizou o sorteio dos times para esta pelada. Assim que for feito, o placar e a fila de espera aparecerão aqui em tempo real!
-          </p>
-        `;
-        const container = document.getElementById('player-tab-content-container');
-        if (container) {
-          const recentCard = document.querySelector('.acomp-card-clear:last-child');
-          if (recentCard && recentCard !== infoCard) {
-            container.insertBefore(infoCard, recentCard);
-          } else {
-            container.appendChild(infoCard);
-          }
-        }
-      } else {
-        infoCard.style.display = 'flex';
-      }
-    } else {
-      if (timerCard) timerCard.style.display = 'flex';
-      if (scoreCard) scoreCard.style.display = 'flex';
-      if (queueCard) queueCard.style.display = 'flex';
-      if (ruleCard) ruleCard.style.display = 'flex';
-      if (infoCard) infoCard.style.display = 'none';
-
-      this.renderTimer();
-      this.renderScore();
-      this.renderQueue();
-      this.renderRule();
-    }
-
+    this.renderTimer();
+    this.renderScore();
+    this.renderQueue();
+    this.renderRule();
     this.renderRecentMatches();
+    this.renderAcompanhamentoTournamentUI();
   },
 
   // --- Cronômetro --------------------------------------------------------

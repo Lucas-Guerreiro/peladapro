@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v251'; // ← Exibição da Taxa MP de 1% nas Vaquinhas e Arrecadações para o Atleta
+const CACHE_NAME = 'peladapro-v252'; // ← Solução definitiva: renderização universal sem ocultar cards no Acompanhamento do Jogador
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
