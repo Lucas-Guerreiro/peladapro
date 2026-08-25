@@ -813,20 +813,21 @@ var Acompanhamento = {
         }
 
         html += '<div style="margin-bottom: 10px; background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); border-radius: 14px; border: 1px solid #E2E8F0; border-left: 5px solid #10B981; padding: 12px 16px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 8px;">' +
-          '<div style="display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
+          '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">' +
+          '  <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">📌 Jogo #' + numJogo + '</span>' +
+          '  <button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (' + goalsList.length + ')</button>' +
+          '</div>' +
+          '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
           '  <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">' +
           '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
           '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_a_nome || 'Time A') + '</span>' +
           '  </div>' +
-          '  <div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 4px 14px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0; text-align: center;">' +
-          '    ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '' +
+          '  <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+          '    <div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 14px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: center;">' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '</div>' +
           '  </div>' +
           '  <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">' +
           '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_b_nome || 'Time B') + '</span>' +
           '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
-          '  </div>' +
-          '  <div style="flex-shrink: 0;">' +
-          '    <button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (' + goalsList.length + ')</button>' +
           '  </div>' +
           '</div>' +
           '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +

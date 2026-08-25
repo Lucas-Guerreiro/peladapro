@@ -2089,28 +2089,31 @@ async function renderRecentMatches() {
       const subTextColor = isRecentDark ? "rgba(255, 255, 255, 0.8)" : "#64748B";
 
       item.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:220px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:6px;">
-              <div style="width:24px; height:26px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
-              <strong class="text-inter" style="font-size:13px; color:${textColor}; font-family:'Inter', sans-serif; font-weight:800; text-transform:uppercase;">${p.time_a_nome}</strong>
-            </div>
-            <div style="background:#0F172A; color:#38BDF8; font-family:monospace; font-size:15px; font-weight:900; padding:3px 12px; border-radius:16px; letter-spacing:1px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.3); flex-shrink:0;">
-              ${p.gols_time_a || 0} x ${p.gols_time_b || 0}
-            </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <strong class="text-inter" style="font-size:13px; color:${textColor}; font-family:'Inter', sans-serif; font-weight:800; text-transform:uppercase;">${p.time_b_nome}</strong>
-              <div style="width:24px; height:26px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embB}</div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols da partida" style="padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.3)' : '#CBD5E1'}; background: ${isRecentDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}; color: ${textColor}; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (${goalsList.length})</button>
-            <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
-            <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
-            <span class="text-inter" style="font-size:11px; color:${subTextColor}; margin-left: 2px;">${timeStr}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.15)' : '#F1F5F9'}; padding-bottom: 6px; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 0.5px;">📌 Jogo #${p.numero_jogo || p.id || ''}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.3)' : '#CBD5E1'}; background: ${isRecentDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}; color: ${textColor}; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (${goalsList.length})</button>
+            <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 2px 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
+            <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 2px 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
+            <span style="font-size:11px; color:${subTextColor}; margin-left: 2px;">${timeStr}</span>
           </div>
         </div>
-        <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 10px; padding-top: 10px; border-top: 1px dashed ${isRecentDark ? 'rgba(255,255,255,0.2)' : '#CBD5E1'}; font-size: 12px; color: ${textColor};">
+        <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">
+            <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
+            <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.time_a_nome}</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 12px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: center;">
+              ${p.gols_time_a || 0} x ${p.gols_time_b || 0}
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">
+            <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.time_b_nome}</span>
+            <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embB}</div>
+          </div>
+        </div>
+        <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed ${isRecentDark ? 'rgba(255,255,255,0.2)' : '#CBD5E1'}; font-size: 12px; color: ${textColor};">
           ${goalsList.length > 0
           ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${goalsList.map(g => `<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚽ ${g.autorNome || 'Jogador'}${g.assistNome ? ` <span style="color:${textColor}; font-weight:600;">(Ass: ${g.assistNome} 👟)</span>` : ''} <span style="color:${subTextColor}; font-size:10px;">(${g.teamName || ''})</span></span>`).join('')}</div>`
           : `<span style="font-size:11px; color:${subTextColor};">Placar encerrado: ${p.time_a_nome} ${p.gols_time_a} x ${p.gols_time_b} ${p.time_b_nome}</span>`
