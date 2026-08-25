@@ -2763,7 +2763,7 @@ function renderTournamentUI() {
   if (matchesList) {
     let allMatches = [];
     if (Array.isArray(tState.matches)) {
-      const optGroup = (window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence)
+      const optGroup = (tState.manualOrder !== true && window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence)
         ? window.TournamentEngine.optimizeMatchSequence(tState.matches)
         : tState.matches;
       allMatches.push(...optGroup);
@@ -2792,6 +2792,20 @@ function renderTournamentUI() {
             ? `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7'}; color:${isTeamTheme ? '#FFFFFF' : '#B45309'}; padding:2px 6px; border-radius:4px; font-weight:700; border:${isTeamTheme ? '1px solid #F59E0B' : '1px solid #FCD34D'};">⚽ EM ANDAMENTO</span>`
             : `<span style="font-size:10px; background:${isTeamTheme ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9'}; color:${isTeamTheme ? '#E2E8F0' : '#64748B'}; padding:2px 6px; border-radius:4px; font-weight:600; border:${isTeamTheme ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};">⏳ A JOGAR</span>`);
 
+        const isGroupMatch = Array.isArray(tState.matches) && idx < tState.matches.length;
+        const prevMatch = isGroupMatch && idx > 0 ? tState.matches[idx - 1] : null;
+        const nextMatch = isGroupMatch && idx < tState.matches.length - 1 ? tState.matches[idx + 1] : null;
+
+        const disableUp = !isGroupMatch || idx === 0 || (prevMatch && prevMatch.status === 'encerrado') || isDone;
+        const disableDown = !isGroupMatch || idx === tState.matches.length - 1 || (nextMatch && nextMatch.status === 'encerrado') || isDone;
+
+        const reorderBtns = isGroupMatch
+          ? `<div style="display:inline-flex; align-items:center; gap:2px; margin-left:6px;">
+               <button type="button" class="btn-reorder-tournament-match" data-idx="${idx}" data-dir="-1" title="Subir jogo na ordem" ${disableUp ? 'disabled style="opacity:0.25; cursor:not-allowed; border:none; background:transparent; font-size:11px;"' : 'style="cursor:pointer; border:1px solid #CBD5E1; background:#FFFFFF; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:700; color:#0F172A; transition:all 0.2s;"'}>⬆️</button>
+               <button type="button" class="btn-reorder-tournament-match" data-idx="${idx}" data-dir="1" title="Descer jogo na ordem" ${disableDown ? 'disabled style="opacity:0.25; cursor:not-allowed; border:none; background:transparent; font-size:11px;"' : 'style="cursor:pointer; border:1px solid #CBD5E1; background:#FFFFFF; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:700; color:#0F172A; transition:all 0.2s;"'}>⬇️</button>
+             </div>`
+          : '';
+
         const rowBg = isTeamTheme 
           ? (isCurrent ? 'linear-gradient(135deg, rgba(245, 210, 112, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)' : 'rgba(255, 255, 255, 0.12)')
           : (isCurrent ? '#FFFBEB' : '#F8FAFC');
@@ -2819,11 +2833,43 @@ function renderTournamentUI() {
               <span style="color:${subTextColor}; font-size:11px; margin: 0 2px;">vs</span>
               <span style="display:inline-flex; align-items:center;"><strong style="color:${textColor}; font-weight:700;">${resolveOfficialTeamName(m.teamB)}</strong>${embB}</span>
             </div>
-            <div>${statusTag}</div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              ${statusTag}
+              ${reorderBtns}
+            </div>
           </div>
         `;
       });
       matchesList.innerHTML = html;
+
+      // Event Listeners para botões de reordenação (⬆️ ⬇️)
+      document.querySelectorAll(".btn-reorder-tournament-match").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const matchIdx = parseInt(btn.getAttribute("data-idx"));
+          const dir = parseInt(btn.getAttribute("data-dir"));
+          const targetIdx = matchIdx + dir;
+
+          if (Array.isArray(tState.matches) && matchIdx >= 0 && targetIdx >= 0 && targetIdx < tState.matches.length) {
+            const temp = tState.matches[matchIdx];
+            tState.matches[matchIdx] = tState.matches[targetIdx];
+            tState.matches[targetIdx] = temp;
+            tState.manualOrder = true;
+
+            const peladaId = window.App.activePelada ? String(window.App.activePelada.id) : null;
+            window.App.liveMatch.tournamentState = tState;
+            safeLocalStorageSetItem('tournamentState', tState);
+            if (peladaId) safeLocalStorageSetItem(`tournamentState_${peladaId}`, tState);
+
+            if (peladaId && window.Api && window.Api.atualizarLiveState) {
+              await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue || [], window.App.teams || []);
+            }
+
+            renderTournamentUI();
+            if (window.App.showToast) window.App.showToast("Sequência dos jogos reordenada com sucesso!", "success");
+          }
+        };
+      });
     }
   }
 

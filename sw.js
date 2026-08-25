@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v254'; // ← Suporte a requisições de atleta sem token e busca exaustiva de recentMatches no Acompanhamento
+const CACHE_NAME = 'peladapro-v255'; // ← Botoes de subir (⬆️) e descer (⬇️) para o gestor reordenar jogos do torneio
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
