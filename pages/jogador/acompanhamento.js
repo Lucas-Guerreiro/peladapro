@@ -931,6 +931,8 @@ var Acompanhamento = {
     var peladaAtiva = window.App.activePelada || {};
     var liveMatch = window.App.liveMatch || {};
     var tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem('tournamentState_' + peladaAtiva.id) || 'null') : null);
+    var teams = [];
+    try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
     var isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
 

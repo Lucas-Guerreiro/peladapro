@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v256'; // ← Liberada rota GET de partidas para atletas sem bloqueio de token authMiddleware
+const CACHE_NAME = 'peladapro-v257'; // ← Corrigido ReferenceError: teams is not defined no renderAcompanhamentoTournamentUI
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
