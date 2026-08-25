@@ -115,6 +115,9 @@ async function renderCampanhasArrecadacao() {
       else if (camp.categoria === 'Equipamentos') iconeCatFeather = "box";
       else if (camp.categoria === 'Material' || camp.categoria === 'Materiais') iconeCatFeather = "target";
 
+      const taxaMP = arrecadado * 0.01;
+      const arrecadadoLiquido = arrecadado - taxaMP;
+
       htmlCards += `
         <div class="card" style="padding: 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 18px;">
           
@@ -149,18 +152,30 @@ async function renderCampanhasArrecadacao() {
             </div>
           </div>
 
-          <!-- BARRA DE PROGRESSO E VALORES -->
-          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <!-- BARRA DE PROGRESSO E VALORES COM TAXA MP 1% -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
               <div>
-                <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Arrecadado até agora</span>
-                <strong style="font-size: 22px; font-weight: 900; color: #059669;">
+                <span style="font-size: 10px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Total Arrecadado</span>
+                <strong style="font-size: 17px; font-weight: 900; color: #0284C7;">
                   R$ ${arrecadado.toFixed(2).replace('.', ',')}
                 </strong>
               </div>
+              <div>
+                <span style="font-size: 10px; color: #DC2626; text-transform: uppercase; font-weight: 700; display: block;">Taxa MP (1%)</span>
+                <strong style="font-size: 14px; font-weight: 800; color: #DC2626;">
+                  - R$ ${taxaMP.toFixed(2).replace('.', ',')}
+                </strong>
+              </div>
+              <div>
+                <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 700; display: block;">Líquido em Conta</span>
+                <strong style="font-size: 17px; font-weight: 900; color: #047857;">
+                  R$ ${arrecadadoLiquido.toFixed(2).replace('.', ',')}
+                </strong>
+              </div>
               <div style="text-align: right;">
-                <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Meta do Grupo</span>
-                <strong style="font-size: 16px; font-weight: 800; color: #0F172A;">
+                <span style="font-size: 10px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; display: block;">Meta do Grupo</span>
+                <strong style="font-size: 15px; font-weight: 800; color: #0F172A;">
                   R$ ${meta.toFixed(2).replace('.', ',')}
                 </strong>
               </div>
@@ -173,7 +188,7 @@ async function renderCampanhasArrecadacao() {
             
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-caption);">
               <span>${pct}% concluído</span>
-              <span>Faltam R$ ${Math.max(0, meta - arrecadado).toFixed(2).replace('.', ',')}</span>
+              <span>Faltam R$ ${Math.max(0, meta - arrecadadoLiquido).toFixed(2).replace('.', ',')} (Líquido)</span>
             </div>
           </div>
 
@@ -193,7 +208,16 @@ async function renderCampanhasArrecadacao() {
     });
 
     container.innerHTML = htmlCards;
-    if (headerTotalEl) headerTotalEl.textContent = `R$ ${totalGeralArrecadado.toFixed(2).replace('.', ',')}`;
+    if (headerTotalEl) {
+      const totalTaxaMP = totalGeralArrecadado * 0.01;
+      const totalLiquidoGeral = totalGeralArrecadado - totalTaxaMP;
+      headerTotalEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+          <span style="font-size: 16px; color: #10B981; font-weight: 900;">R$ ${totalLiquidoGeral.toFixed(2).replace('.', ',')} <small style="font-size: 10px; color: #94A3B8; font-weight: 600;">(Líquido)</small></span>
+          <span style="font-size: 10px; color: #F87171; font-weight: 700;">- R$ ${totalTaxaMP.toFixed(2).replace('.', ',')} (Taxa MP 1%)</span>
+        </div>
+      `;
+    }
 
     if (window.feather) feather.replace();
 

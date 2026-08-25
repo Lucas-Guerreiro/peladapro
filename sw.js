@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v250'; // ← Solução definitiva contra ReferenceError runtime e carregamento infalível no Acompanhamento do Jogador
+const CACHE_NAME = 'peladapro-v251'; // ← Exibição da Taxa MP de 1% nas Vaquinhas e Arrecadações para o Atleta
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
