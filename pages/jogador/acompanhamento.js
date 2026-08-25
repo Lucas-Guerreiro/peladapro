@@ -825,16 +825,16 @@ var Acompanhamento = {
           '  <button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (' + goalsList.length + ')</button>' +
           '</div>' +
           '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
-          '  <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">' +
+          '  <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
           '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
           '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_a_nome || 'Time A') + '</span>' +
           '  </div>' +
           '  <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
           '    <div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 14px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: center;">' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '</div>' +
           '  </div>' +
-          '  <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">' +
-          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_b_nome || 'Time B') + '</span>' +
+          '  <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
           '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
+          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_b_nome || 'Time B') + '</span>' +
           '  </div>' +
           '</div>' +
           '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
@@ -1056,16 +1056,16 @@ var Acompanhamento = {
           }
 
           mHtml += '<div style="margin-bottom: 8px; background: ' + rowBg + '; border-radius: 12px; border: 1px solid ' + rowBorder + '; border-left: 4px solid ' + (isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')) + '; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
-            '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">' +
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
             '<div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
             '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamA + '</span>' +
             '</div>' +
             '<div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
             (isDone ? '<div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 12px; border-radius: 16px; letter-spacing: 1px;">' + m.golsA + ' x ' + m.golsB + penTxt + '</div>' : (isCurrent ? '<div style="background: #D97706; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⚽ EM ANDAMENTO</div>' : '<div style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⏳ A JOGAR</div>')) +
             '</div>' +
-            '<div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">' +
-            '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamB + '</span>' +
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
             '<div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
+            '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamB + '</span>' +
             '</div>' +
             '</div>';
         });
