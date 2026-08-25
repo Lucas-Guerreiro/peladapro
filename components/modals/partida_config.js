@@ -9,6 +9,16 @@ window.App.initModalPartida_config = function(data) {
     return;
   }
 
+  // Verificar se é modalidade de Torneio (diferente de 'normal')
+  const peladaAtiva = window.App.activePelada || {};
+  const modo = data.modo || peladaAtiva.modo || "normal";
+  const isTorneio = modo !== "normal" && modo !== "tradicional";
+
+  const rulesSection = document.getElementById("partida-config-rules-section");
+  const tournamentNotice = document.getElementById("partida-config-tournament-notice");
+  if (rulesSection) rulesSection.style.display = isTorneio ? "none" : "block";
+  if (tournamentNotice) tournamentNotice.style.display = isTorneio ? "block" : "none";
+
   // Preencher os dados no modal
   document.getElementById("partida-config-id").value = data.id;
   document.getElementById("partida-config-tie").value = data.criterio_empate || "ambos_permanecem";
@@ -29,7 +39,7 @@ window.App.initModalPartida_config = function(data) {
   document.getElementById("btn-save-partida-config").onclick = async function() {
     const id = document.getElementById("partida-config-id").value;
     const tie = document.getElementById("partida-config-tie").value;
-    const wins = parseInt(document.getElementById("partida-config-wins").value);
+    const wins = parseInt(document.getElementById("partida-config-wins").value) || 2;
     const exitRule = document.getElementById("partida-config-exit-rule").value;
     const players = parseInt(document.getElementById("partida-config-players").value);
     const teams = parseInt(document.getElementById("partida-config-teams").value);
@@ -39,7 +49,7 @@ window.App.initModalPartida_config = function(data) {
     const pixName = document.getElementById("partida-config-pix-name").value;
 
     // Validações
-    if (wins < 2 || wins > 5) {
+    if (!isTorneio && (wins < 2 || wins > 5)) {
       window.App.showToast("O limite de vitórias deve ser entre 2 e 5.", "warning");
       return;
     }

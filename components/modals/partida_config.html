@@ -16,30 +16,38 @@
 
     <input type="hidden" id="partida-config-id" value="">
 
-    <!-- Critério de Empate -->
-    <div class="form-group" style="margin-bottom: 20px;">
-      <label class="form-label" style="font-weight: 700;">Critério de Empate</label>
-      <select id="partida-config-tie" class="form-control">
-        <option value="ambos_permanecem">Ambos permanecem em campo</option>
-        <option value="vencedor_ultima">Fica o vencedor da partida anterior</option>
-        <option value="time_entrando">Fica o time que estava entrando</option>
-        <option value="saem_ambos">Saem ambos os times</option>
-        <option value="gestor_manual">Gestor decide manualmente</option>
-      </select>
+    <!-- Aviso para Modalidades de Torneio -->
+    <div id="partida-config-tournament-notice" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1.5px solid #F59E0B; color: #B45309; border-radius: 10px; padding: 12px 14px; font-size: 12px; font-weight: 700; margin-bottom: 20px; line-height: 1.4;">
+      🏆 <strong>Modalidade de Torneio:</strong> As regras de empate e rodízio da pelada tradicional são gerenciadas pelo motor do torneio. Nesta modalidade, apenas <strong>Jogadores por Time</strong>, <strong>Quantidade de Times</strong>, <strong>Valor da Convocação</strong> e <strong>Limite de Vagas</strong> surtem efeito.
     </div>
 
-    <!-- Regra de Saída -->
-    <div class="grid-2" style="gap: 16px; margin-bottom: 20px;">
-      <div class="form-group" style="margin-bottom: 0;">
-        <label for="partida-config-wins" class="form-label" style="font-weight: 700;">Vitórias para Sair</label>
-        <input type="number" id="partida-config-wins" class="form-control" min="2" max="5">
-      </div>
-      <div class="form-group" style="margin-bottom: 0;">
-        <label for="partida-config-exit-rule" class="form-label" style="font-weight: 700;">Destino do Vencedor</label>
-        <select id="partida-config-exit-rule" class="form-control">
-          <option value="final_fila">Final da fila</option>
-          <option value="fora_1_jogo">Fica fora por 1 jogo</option>
+    <!-- Regras Exclusivas do Modo Pelada Normal -->
+    <div id="partida-config-rules-section">
+      <!-- Critério de Empate -->
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label" style="font-weight: 700;">Critério de Empate</label>
+        <select id="partida-config-tie" class="form-control">
+          <option value="ambos_permanecem">Ambos permanecem em campo</option>
+          <option value="vencedor_ultima">Fica o vencedor da partida anterior</option>
+          <option value="time_entrando">Fica o time que estava entrando</option>
+          <option value="saem_ambos">Saem ambos os times</option>
+          <option value="gestor_manual">Gestor decide manualmente</option>
         </select>
+      </div>
+
+      <!-- Regra de Saída -->
+      <div class="grid-2" style="gap: 16px; margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="partida-config-wins" class="form-label" style="font-weight: 700;">Vitórias para Sair</label>
+          <input type="number" id="partida-config-wins" class="form-control" min="2" max="5">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="partida-config-exit-rule" class="form-label" style="font-weight: 700;">Destino do Vencedor</label>
+          <select id="partida-config-exit-rule" class="form-control">
+            <option value="final_fila">Final da fila</option>
+            <option value="fora_1_jogo">Fica fora por 1 jogo</option>
+          </select>
+        </div>
       </div>
     </div>
 

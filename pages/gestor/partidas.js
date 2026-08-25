@@ -1099,16 +1099,21 @@ function renderLiveMatchUI() {
     }
   }
 
-  // Lógica de alerta visual de limite de vitórias seguidas
+  // Lógica de alerta visual de limite de vitórias seguidas (Apenas para Pelada Normal)
   const peladaAtiva = window.App.activePelada || {};
   const grupoAtivo = window.App.currentGroup || {};
-  const winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
-
-  const winsA = window.App.liveMatch.consecutiveWinsA || 0;
-  const winsB = window.App.liveMatch.consecutiveWinsB || 0;
+  const isTorneioMode = peladaAtiva.modo && peladaAtiva.modo !== 'normal' && peladaAtiva.modo !== 'tradicional';
 
   const statusAEl = document.getElementById("match-control-team-a-status");
   const statusBEl = document.getElementById("match-control-team-b-status");
+
+  if (isTorneioMode) {
+    if (statusAEl) statusAEl.innerHTML = "";
+    if (statusBEl) statusBEl.innerHTML = "";
+    return;
+  }
+
+  const winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
 
   if (statusAEl) {
     statusAEl.innerHTML = "";

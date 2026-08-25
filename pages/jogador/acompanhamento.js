@@ -423,31 +423,38 @@ var Acompanhamento = {
       phaseBanner.style.display = "block";
     }
 
-    // Alertas de vitórias consecutivas
+    // Alertas de vitórias consecutivas (Apenas para Pelada Normal)
     var peladaAtiva = window.App.activePelada || {};
     var grupoAtivo = (Auth && Auth.currentGroup) || window.App.currentGroup || {};
-    var winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
-    var winsA = match.consecutiveWinsA || 0;
-    var winsB = match.consecutiveWinsB || 0;
+    var isTorneioMode = peladaAtiva.modo && peladaAtiva.modo !== 'normal' && peladaAtiva.modo !== 'tradicional';
 
     var statusAEl = document.getElementById('acomp-team-a-status');
     var statusBEl = document.getElementById('acomp-team-b-status');
 
-    if (statusAEl) {
-      statusAEl.innerHTML = '';
-      if (winsA === winsLimit - 1 && winsA > 0) {
-        statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
-      } else if (winsA > 0) {
-        statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsA + (winsA === 1 ? ' Vitória' : ' Vitórias') + '</span>';
-      }
-    }
+    if (isTorneioMode) {
+      if (statusAEl) statusAEl.innerHTML = '';
+      if (statusBEl) statusBEl.innerHTML = '';
+    } else {
+      var winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
+      var winsA = match.consecutiveWinsA || 0;
+      var winsB = match.consecutiveWinsB || 0;
 
-    if (statusBEl) {
-      statusBEl.innerHTML = '';
-      if (winsB === winsLimit - 1 && winsB > 0) {
-        statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
-      } else if (winsB > 0) {
-        statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsB + (winsB === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+      if (statusAEl) {
+        statusAEl.innerHTML = '';
+        if (winsA === winsLimit - 1 && winsA > 0) {
+          statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
+        } else if (winsA > 0) {
+          statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsA + (winsA === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+        }
+      }
+
+      if (statusBEl) {
+        statusBEl.innerHTML = '';
+        if (winsB === winsLimit - 1 && winsB > 0) {
+          statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
+        } else if (winsB > 0) {
+          statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsB + (winsB === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+        }
       }
     }
 

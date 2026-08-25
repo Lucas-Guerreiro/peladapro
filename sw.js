@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v261'; // ← Card unico limpo estilo Partida ao Vivo para todos os confrontos
+const CACHE_NAME = 'peladapro-v262'; // ← Regras de pelada tradicional limitadas apenas ao modo Pelada Normal
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
