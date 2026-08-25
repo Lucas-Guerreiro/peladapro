@@ -3,12 +3,148 @@
    PeladaPro · Fundacional
    ========================================================================== */
 
-/* --- TABLET (≤ 1024px) ---------------------------------------------------- */
-@media (max-width: 1024px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+/* ==========================================================================
+   CONFIGURAÇÃO EXCLUSIVA PARA TABLETS (769px a 1200px)
+   Ajusta proporcionalmente elementos, botões, grades e tipografia
+   sem alterar as experiências Web (Desktop > 1200px) nem Mobile (Smartphones <= 768px).
+   ========================================================================== */
+@media (min-width: 769px) and (max-width: 1200px) {
+  /* Container e Margens Laterais Ajustadas para Tela de Tablet */
+  .app-container,
+  .gestor-web-body,
+  main {
+    max-width: 100% !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    padding-top: 16px !important;
+  }
 
-  .score-numbers { font-size: 56px; }
+  /* Cabeçalho da Aplicação Otimizado para Tablet */
+  .main-header {
+    padding: 16px 24px !important;
+  }
+
+  .main-header .brand h1 {
+    font-size: 26px !important;
+  }
+
+  /* Abas de Navegação Ajustadas para Toque em Tablet */
+  .tabs-navigation {
+    gap: 8px !important;
+  }
+
+  .tab-btn {
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+  }
+
+  /* Grades Adaptadas para Tablet (2 Colunas Perfeitamente Equilibradas) */
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .teams-draft-grid,
+  .teams-setup-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  /* Cards e Contêineres de Informações */
+  .card,
+  .gestor-score-card,
+  .gestor-card-clear {
+    padding: 20px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Ajustes de Placar ao Vivo na Aba Partidas para Gestores no Campo com Tablet */
+  .gestor-score-num,
+  #match-control-score-a,
+  #match-control-score-b {
+    font-size: 42px !important;
+  }
+
+  .gestor-timer-time {
+    font-size: 44px !important;
+  }
+
+  .score-numbers {
+    font-size: 64px !important;
+  }
+
+  /* Botões e Áreas de Toque para Tablet (Fácil Manuseio Sem Ficar Pequeno) */
+  .btn-lg {
+    height: 50px !important;
+    padding: 0 24px !important;
+    font-size: 16px !important;
+  }
+
+  .btn-md {
+    height: 44px !important;
+    padding: 0 18px !important;
+    font-size: 15px !important;
+  }
+
+  .btn-sm {
+    height: 38px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Entradas de Formulário e Selects */
+  .form-control,
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"] {
+    height: 44px !important;
+    font-size: 14px !important;
+    padding: 0 14px !important;
+  }
+
+  /* Modais Otimizados para Tela de Tablet (Centralizados e Confortáveis) */
+  .modal-backdrop {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .modal-content {
+    width: 90% !important;
+    max-width: 620px !important;
+    max-height: 85vh !important;
+    border-radius: 18px !important;
+    padding: 28px 24px !important;
+    margin: auto !important;
+  }
+
+  /* Tabelas de Classificação e Histórico no Tablet */
+  .table-custom th,
+  .table-custom td {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+  }
+
+  /* Agenda de Jogos e Lista de Partidas Recentes */
+  #tournament-matches-list,
+  #recent-matches-container {
+    max-height: 420px !important;
+  }
+}
+
+/* --- TABLET EM MODO EM PÉ (Portrait 768px a 991px) ------------------------ */
+@media (min-width: 768px) and (max-width: 991px) and (orientation: portrait) {
+  .teams-draft-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .modal-content {
+    max-width: 580px !important;
+  }
 }
 
 /* --- MOBILE (≤ 768px) ----------------------------------------------------- */
