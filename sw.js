@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v240'; // ← Correção no atalho lógico de times e visibilidade constante dos controles de jogo ao vivo
+const CACHE_NAME = 'peladapro-v241'; // ← Correção da sintaxe e inicialização limpa da página de jogo ao vivo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

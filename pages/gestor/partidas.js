@@ -41,6 +41,8 @@ function safeLocalStorageGetItem(key, fallback = null) {
     console.warn(`[Storage] Erro ao ler/parsear ${key} do localStorage:`, e);
     return fallback;
   }
+}
+
 function getAppTeamsList() {
   const peladaId = window.App && window.App.activePelada ? String(window.App.activePelada.id) : null;
   let teams = window.App ? window.App.teams : null;
