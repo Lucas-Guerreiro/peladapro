@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v253'; // ← Removida declaração var Auth duplicada resolvendo o SyntaxError do acompanhamento.js
+const CACHE_NAME = 'peladapro-v254'; // ← Suporte a requisições de atleta sem token e busca exaustiva de recentMatches no Acompanhamento
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

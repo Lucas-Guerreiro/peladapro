@@ -716,15 +716,15 @@ var Acompanhamento = {
       }
       if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
         if (peladaId) {
-          try { partidas = JSON.parse(localStorage.getItem("partidas_" + peladaId)) || []; } catch(e) {}
+          try { partidas = JSON.parse(localStorage.getItem("partidas_" + peladaId)) || JSON.parse(localStorage.getItem("recentMatches_" + peladaId)) || []; } catch(e) {}
         }
       }
       if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
-        try { partidas = JSON.parse(localStorage.getItem("partidas")) || []; } catch(e) {}
+        try { partidas = JSON.parse(localStorage.getItem("recentMatches")) || JSON.parse(localStorage.getItem("partidas")) || []; } catch(e) {}
       }
       if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
         try {
-          var keys = Object.keys(localStorage).filter(function(k) { return k.indexOf("partidas") >= 0; });
+          var keys = Object.keys(localStorage).filter(function(k) { return k.indexOf("partidas") >= 0 || k.indexOf("recentMatches") >= 0; });
           keys.forEach(function(k) {
             try {
               var items = JSON.parse(localStorage.getItem(k));
