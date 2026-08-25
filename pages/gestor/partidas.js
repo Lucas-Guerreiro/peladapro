@@ -375,15 +375,6 @@ window.App.initPartidas = async function () {
       startTimerLoop(); // usa a função centralizada para evitar duplo interval
     }
 
-    const adjustButtons = document.querySelectorAll(".btn-score-adjust");
-    adjustButtons.forEach(btn => {
-      btn.onclick = () => {
-        const team = btn.getAttribute("data-team");
-        const diff = parseInt(btn.getAttribute("data-diff"));
-        updateLiveScore(team, diff);
-      };
-    });
-
     // Botão Zerar Testes da Pelada
     const btnZerar = document.getElementById("btn-zerar-dados-pelada");
     if (btnZerar) {
