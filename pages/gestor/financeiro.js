@@ -322,11 +322,22 @@ window.App.renderFinanceiroData = async function() {
   if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesasConsolidadas);
   if (elDespesasSub) elDespesasSub.textContent = `Previstas: ${formatCurrencyBRL(totalDespesasPrevistas)} · Pendente: ${formatCurrencyBRL(totalDespesasPendentes)}`;
 
-  if (elSaldo) {
-    elSaldo.textContent = (saldoRealConsolidado >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoRealConsolidado));
-    if (elSaldoSub) elSaldoSub.textContent = `Projetado: ${(saldoLiquidoPrevisto >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoLiquidoPrevisto))}`;
+  // Calcula o Saldo Total Acumulado nas carteiras de todos os atletas do grupo
+  let totalSaldoAtletas = 0;
+  let numAtletasComSaldo = 0;
+  if (Array.isArray(playersList)) {
+    playersList.forEach(p => {
+      const s = parseFloat(p.saldo || p.usuario_saldo || 0);
+      totalSaldoAtletas += s;
+      if (s !== 0) numAtletasComSaldo++;
+    });
+  }
 
-    if (saldoRealConsolidado >= 0) {
+  if (elSaldo) {
+    elSaldo.textContent = (totalSaldoAtletas >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(totalSaldoAtletas));
+    if (elSaldoSub) elSaldoSub.textContent = `Soma das carteiras (${playersList ? playersList.length : 0} atletas)`;
+
+    if (totalSaldoAtletas >= 0) {
       elSaldo.style.color = "#1D9E75";
       if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#1D9E75";
       if (elSaldoIcon) {
