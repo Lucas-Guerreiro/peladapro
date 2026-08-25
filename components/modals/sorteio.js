@@ -650,6 +650,11 @@ function handleExecuteSorteio() {
   window.App.showToast(toastMsg);
   window.App.renderDrawnTeams();
   window.App.updateAcompanhamentoUI();
+
+  // Dispara as notificações individuais para cada atleta convocado informado sobre seu time
+  if (window.App && window.App.notificarAtletasSorteados) {
+    window.App.notificarAtletasSorteados(drawnTeams);
+  }
   } catch (err) {
     console.error("[Sorteio]", err);
     window.App.showToast("Erro ao executar sorteio: " + (err.message || err), "error");

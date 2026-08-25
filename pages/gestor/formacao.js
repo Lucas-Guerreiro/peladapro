@@ -1676,3 +1676,67 @@ window.App.exportTeamsWhatsApp = function () {
   const encoded = encodeURIComponent(texto);
   window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
 };
+
+// ==========================================================================
+// NOTIFICAÇÃO DOS ATLETAS CONVOCADOS SOBRE SEUS RESPECTIVOS TIMES
+// ==========================================================================
+window.App.notificarAtletasSorteados = async function (drawnTeams) {
+  if (!Array.isArray(drawnTeams) || drawnTeams.length === 0) return;
+
+  const token = localStorage.getItem("token");
+  let countNotificados = 0;
+
+  for (let idx = 0; idx < drawnTeams.length; idx++) {
+    const team = drawnTeams[idx];
+    const nomeTime = (team.nome || `Time ${String.fromCharCode(65 + idx)}`).trim();
+    const players = team.players || team.jogadores || [];
+
+    for (let p of players) {
+      const nomeAtleta = p.apelido || p.nome || 'Atleta';
+      const usuarioId = p.id;
+
+      const titulo = '⚽ Sorteio de Times Realizado!';
+      const mensagem = `Olá, ${nomeAtleta}! O sorteio foi concluído e você jogará no *${nomeTime}*!`;
+
+      // 1. Notificação In-App Persistida no LocalStorage do Atleta
+      try {
+        const keyNotif = `notificacoes_user_${usuarioId}`;
+        const prev = JSON.parse(localStorage.getItem(keyNotif)) || [];
+        const nova = {
+          id: `sorteio_${Date.now()}_${usuarioId}`,
+          titulo,
+          mensagem,
+          tipo: 'sorteio_time',
+          time: nomeTime,
+          lida: false,
+          data: new Date().toISOString()
+        };
+        localStorage.setItem(keyNotif, JSON.stringify([nova, ...prev].slice(0, 20)));
+      } catch(e) {}
+
+      // 2. Envio de Push Notification via backend API
+      try {
+        fetch('/api/push/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            title: titulo,
+            body: mensagem,
+            usuarioId: usuarioId,
+            url: '/#/jogador/formacao',
+            payload: { type: 'sorteio_realizado', team: nomeTime }
+          })
+        }).catch(() => {});
+      } catch(e) {}
+
+      countNotificados++;
+    }
+  }
+
+  if (window.App && window.App.showToast && countNotificados > 0) {
+    window.App.showToast(`🔔 ${countNotificados} atletas convocados foram notificados de suas equipes!`, 'success');
+  }
+};

@@ -84,7 +84,22 @@ exports.sortear = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'Sorteio realizado e salvo com sucesso!', times: timesSorteados });
+
+    // 6. Enviar Push Notification para todos os atletas convocados e sorteados
+    const pushController = require('./pushController');
+    for (let time of timesSorteados) {
+      for (let jogador of time.jogadores) {
+        pushController.sendNotificationInternal({
+          title: '⚽ Sorteio de Times Realizado!',
+          body: `Olá, ${jogador.apelido || jogador.nome}! O sorteio foi concluído e você defenderá o *${time.nome}*!`,
+          usuarioId: jogador.id,
+          url: '/#/jogador/formacao',
+          payload: { type: 'sorteio_realizado', team: time.nome }
+        }).catch(err => console.warn('[PushSorteio] Erro ao notificar atleta:', err.message));
+      }
+    }
+
+    res.json({ message: 'Sorteio realizado e salvo com sucesso! Atletas notificados.', times: timesSorteados });
   } catch (err) {
     if (client) await client.query('ROLLBACK');
     res.status(500).json({ error: 'Erro ao executar sorteio', detail: err.message });

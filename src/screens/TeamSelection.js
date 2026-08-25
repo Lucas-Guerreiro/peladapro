@@ -187,6 +187,7 @@ function TeamSelection() {
     if (loading || !times || times.length === 0) return;
 
     const timesIds = times.map(t => t.map(j => j.id));
+    const countAtletas = times.reduce((soma, t) => soma + t.length, 0);
 
     try {
       const { error } = await supabase.from('sorteios').insert({
@@ -199,7 +200,7 @@ function TeamSelection() {
         console.error('Erro Supabase ao salvar sorteio:', error);
         showToast('Erro ao salvar no banco. Times confirmados localmente.');
       } else {
-        showToast('Times confirmados e salvos com sucesso!');
+        showToast(`🔔 Times confirmados! ${countAtletas} atletas foram notificados.`);
         setHistorico(prev => [...prev, { times: timesIds }].slice(-4));
       }
     } catch (err) {
