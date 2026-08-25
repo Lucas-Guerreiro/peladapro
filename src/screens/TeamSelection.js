@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Share,
 } from 'react-native';
 import {
   Button,
@@ -51,10 +52,10 @@ const jogadores = [
 ];
 
 const TEAM_CONFIGS = [
-  { nome: 'Time A', letra: 'A', cor: '#F5A623' }, // Amarelo
-  { nome: 'Time B', letra: 'B', cor: '#378ADD' }, // Azul
-  { nome: 'Time C', letra: 'C', cor: '#1D9E75' }, // Verde
-  { nome: 'Time D', letra: 'D', cor: '#8E44AD' }, // Roxo
+  { nome: 'Time A', letra: 'A', cor: '#F5A623', emoji: '🟡' }, // Amarelo
+  { nome: 'Time B', letra: 'B', cor: '#378ADD', emoji: '🔵' }, // Azul
+  { nome: 'Time C', letra: 'C', cor: '#1D9E75', emoji: '🟢' }, // Verde
+  { nome: 'Time D', letra: 'D', cor: '#8E44AD', emoji: '🟣' }, // Roxo
 ];
 
 const modoSegments = [
@@ -70,6 +71,11 @@ const navTabs = [
   { key: 'ranking', label: 'Ranking' },
   { key: 'mais', label: 'Mais' },
 ];
+
+function isGoleiro(j) {
+  const pos = String(j.posicao || '').toLowerCase();
+  return pos.includes('goleiro') || pos === 'gk' || !!j.goleiro;
+}
 
 function renderStars(habilidade) {
   const max = 5;
@@ -144,7 +150,6 @@ function TeamSelection() {
           console.warn('Aviso Supabase ao carregar historico:', error.message);
           showToast('Aviso: Histórico de sorteios não carregado.');
         } else if (data && data.length > 0) {
-          // Inverte a ordem para alimentar do mais antigo para o mais recente (cronológico)
           hist = [...data].reverse();
           setHistorico(hist);
         }
@@ -200,6 +205,53 @@ function TeamSelection() {
     } catch (err) {
       console.error('Erro de rede ao confirmar times:', err);
       showToast('Falha na conexao ao salvar os times.');
+    }
+  };
+
+  const handleCompartilharWhatsApp = async () => {
+    if (!times || times.length === 0) {
+      showToast('Nenhum sorteio disponível para compartilhar.');
+      return;
+    }
+
+    let texto = `⚽ *PELADA PRO - TIMES ESCALADOS* ⚽\n\n`;
+
+    times.forEach((time, idx) => {
+      const config = TEAM_CONFIGS[idx] || {
+        nome: `Time ${String.fromCharCode(65 + idx)}`,
+        emoji: '⚽',
+      };
+      const media = mediaHabilidade(time);
+
+      texto += `${config.emoji} *${config.nome.toUpperCase()}* (Média: ${media}★)\n`;
+
+      const goleiro = time.find(j => isGoleiro(j));
+      const linha = time.filter(j => !isGoleiro(j));
+
+      if (goleiro) {
+        texto += `🧤 ${goleiro.nome} (Goleiro)\n`;
+      }
+
+      linha.forEach(j => {
+        texto += `• ${j.nome}\n`;
+      });
+
+      texto += `\n`;
+    });
+
+    texto += `Organizado pelo *Pelada Pro* 🏆`;
+
+    try {
+      const result = await Share.share({
+        message: texto,
+        title: 'Escalação dos Times - Pelada Pro',
+      });
+      if (result.action === Share.sharedAction) {
+        showToast('Escalação compartilhada!');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar no WhatsApp:', error);
+      showToast('Erro ao abrir compartilhamento.');
     }
   };
 
@@ -268,21 +320,31 @@ function TeamSelection() {
           </View>
         </Card>
 
-        <View style={styles.buttonsRow}>
-          <Button
-            title={loading ? "Carregando..." : "Re-sortear"}
-            variant="secondary"
-            onPress={handleSortear}
+        <View style={styles.buttonsColumn}>
+          <TouchableOpacity
+            style={[styles.whatsappButton, loading && { opacity: 0.6 }]}
+            onPress={handleCompartilharWhatsApp}
             disabled={loading}
-            style={styles.button}
-          />
-          <Button
-            title={loading ? "Carregando..." : "Confirmar Times"}
-            variant="primary"
-            onPress={handleConfirmar}
-            disabled={loading}
-            style={styles.button}
-          />
+          >
+            <Text style={styles.whatsappButtonText}>💬 Compartilhar no WhatsApp</Text>
+          </TouchableOpacity>
+
+          <View style={styles.buttonsRow}>
+            <Button
+              title={loading ? "Carregando..." : "Re-sortear"}
+              variant="secondary"
+              onPress={handleSortear}
+              disabled={loading}
+              style={styles.button}
+            />
+            <Button
+              title={loading ? "Carregando..." : "Confirmar Times"}
+              variant="primary"
+              onPress={handleConfirmar}
+              disabled={loading}
+              style={styles.button}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -439,10 +501,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Tokens.colors.text || Tokens.colors.neutralDark || '#1A1A1A',
   },
+  buttonsColumn: {
+    gap: 10,
+    marginTop: 12,
+  },
+  whatsappButton: {
+    backgroundColor: '#25D366',
+    borderRadius: 10,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  whatsappButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
   buttonsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 12,
   },
   button: {
     flex: 1,
