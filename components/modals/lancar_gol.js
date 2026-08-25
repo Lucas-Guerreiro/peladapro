@@ -153,6 +153,12 @@ window.App.initModalLancar_gol = function(data) {
         if (window.App.updateAcompanhamentoUI) {
           window.App.updateAcompanhamentoUI();
         }
+        if (window.App.renderTournamentUI) {
+          window.App.renderTournamentUI();
+        }
+        if (window.App.renderFormacaoTournamentUI) {
+          window.App.renderFormacaoTournamentUI();
+        }
         if (window.App.renderLiveMatchUI) {
           window.App.renderLiveMatchUI();
         }

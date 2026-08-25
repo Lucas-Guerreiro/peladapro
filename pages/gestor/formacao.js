@@ -1582,6 +1582,7 @@ function renderFormacaoTournamentUI() {
       matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:${isNight ? '#CBD5E1' : '#64748B'}; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
     } else {
       matchesList.innerHTML = matches.map((m, idx) => {
+        const isEncerrado = m.status === 'encerrado' || (m.golsA !== null && m.golsA !== undefined);
         const hasPenalties = (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined);
         const scoreText = isEncerrado
           ? (hasPenalties ? `${m.golsA} x ${m.golsB} (${m.penaltisA}x${m.penaltisB} 🎯)` : `${m.golsA} x ${m.golsB}`)

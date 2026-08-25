@@ -474,6 +474,10 @@ window.App.initPartidas = async function () {
     }
     renderLiveMatchUI();
     renderWaitingQueue();
+    renderTournamentUI();
+    if (window.App.renderFormacaoTournamentUI) {
+      try { window.App.renderFormacaoTournamentUI(); } catch (e) { }
+    }
     await renderRecentMatches();
   };
 
@@ -602,7 +606,7 @@ function startGestorPolling() {
 }
 
 function onGestorStorageChange(e) {
-  if (e.key === 'liveMatch' || e.key === 'waitingQueue' || e.key === 'teams' || e.key === 'activePelada') {
+  if (e.key === 'liveMatch' || e.key === 'waitingQueue' || e.key === 'teams' || e.key === 'activePelada' || e.key === 'tournamentState') {
     try {
       if (e.key === 'liveMatch' && e.newValue) window.App.liveMatch = JSON.parse(e.newValue);
       if (e.key === 'waitingQueue' && e.newValue) window.App.waitingQueue = JSON.parse(e.newValue);
@@ -610,6 +614,10 @@ function onGestorStorageChange(e) {
     } catch (err) { }
     renderLiveMatchUI();
     renderWaitingQueue();
+    renderTournamentUI();
+    if (window.App.renderFormacaoTournamentUI) {
+      try { window.App.renderFormacaoTournamentUI(); } catch (e) { }
+    }
     renderRecentMatches();
   }
 }
@@ -1940,6 +1948,10 @@ async function handleFinishMatch() {
     // Re-renderiza a interface do Gestor imediatamente
     renderLiveMatchUI();
     renderWaitingQueue();
+    renderTournamentUI();
+    if (window.App.renderFormacaoTournamentUI) {
+      try { window.App.renderFormacaoTournamentUI(); } catch (e) { }
+    }
 
     // Sincroniza o novo estado no banco de dados e atualiza histórico recente
     if (window.App.updateAcompanhamentoUI) {
@@ -2922,6 +2934,8 @@ function renderTournamentUI() {
   // Garante a aplicação do estilo do time em todo o card de torneio e seus filhos
   applyAthleteTeamStyleToPartidasCards();
 }
+
+window.App.renderTournamentUI = renderTournamentUI;
 
 window.App.corrigirEJogosExcedentes = async function(peladaId) {
   const activePelada = window.App.activePelada || {};
