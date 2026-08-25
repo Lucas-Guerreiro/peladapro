@@ -275,7 +275,8 @@ var Acompanhamento = {
     const ruleCard = document.getElementById('acomp-rule-desc-clear')?.closest('.acomp-card-clear') || document.querySelector('.acomp-rule-title-clear')?.closest('.acomp-card-clear');
     let infoCard = document.getElementById('acomp-no-teams-card');
 
-    if (!teams || teams.length < 2) {
+    const hasLiveMatch = window.App.liveMatch && (window.App.liveMatch.teamA || window.App.liveMatch.teamB);
+    if ((!teams || teams.length < 2) && !hasLiveMatch) {
       if (timerCard) timerCard.style.display = 'none';
       if (scoreCard) scoreCard.style.display = 'none';
       if (queueCard) queueCard.style.display = 'none';

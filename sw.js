@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v248'; // ← Correção do carregamento do Histórico de Partidas e layout CSS Grid perfeito dos cards
+const CACHE_NAME = 'peladapro-v249'; // ← Garante carregamento do histórico e layout flexbox perfeito para cards de confronto em qualquer tela
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
