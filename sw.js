@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v252'; // ← Solução definitiva: renderização universal sem ocultar cards no Acompanhamento do Jogador
+const CACHE_NAME = 'peladapro-v253'; // ← Removida declaração var Auth duplicada resolvendo o SyntaxError do acompanhamento.js
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -2,9 +2,6 @@
 // pages/jogador/acompanhamento.js — Partida ao Vivo (Módulo Jogador Redesign Responsivo)
 // ==========================================================================
 
-var Auth = window.Auth || window.App || {};
-var Api = window.Api || window.App || {};
-
 var Acompanhamento = {
 
   // Limpa o estado quando a pelada não está em andamento (sem sorteio)
