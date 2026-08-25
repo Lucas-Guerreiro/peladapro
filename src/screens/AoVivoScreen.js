@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Card from '../components/Card';
 import Avatar from '../components/Avatar';
+import PartidaAoVivoCard from '../components/PartidaAoVivoCard';
 
 const AoVivoScreen = () => {
   const [scoreA, setScoreA] = useState(2);
@@ -61,46 +62,30 @@ const AoVivoScreen = () => {
     <ScrollView style={styles.container}>
       {/* TOP BAR */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.topBarSide}>
+        <TouchableOpacity style={styles.topBarSide} accessibilityRole="button" accessibilityLabel="Voltar">
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <View style={styles.topBarCenter}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>AO VIVO</Text>
+          <Text style={styles.screenTitleText}>ACOMPANHAMENTO</Text>
         </View>
-        <TouchableOpacity style={styles.topBarSide}>
-          <Text style={styles.pauseIcon}>⏸️</Text>
+        <TouchableOpacity style={styles.topBarSide} accessibilityRole="button" accessibilityLabel={isRunning ? "Pausar" : "Iniciar"} onPress={() => setIsRunning(!isRunning)}>
+          <Text style={styles.pauseIcon}>{isRunning ? '⏸️' : '▶️'}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* SCOREBOARD */}
-      <Card style={styles.scoreboardCard}>
-        <View style={styles.scoresRow}>
-          <View style={styles.teamColumn}>
-            <View style={styles.teamCircleA}>
-              <Text style={styles.teamCircleText}>A</Text>
-            </View>
-            <Text style={styles.teamNameA}>Time A</Text>
-            <Text style={styles.scoreText}>{scoreA}</Text>
-          </View>
-          <Text style={styles.versusText}>x</Text>
-          <View style={styles.teamColumn}>
-            <View style={styles.teamCircleB}>
-              <Text style={styles.teamCircleText}>B</Text>
-            </View>
-            <Text style={styles.teamNameB}>Time B</Text>
-            <Text style={styles.scoreText}>{scoreB}</Text>
-          </View>
-        </View>
-
-        <View style={styles.timerSection}>
-          <Text style={styles.timerText}>{formatTime(timer)}</Text>
-          <View style={styles.timerBar}>
-            <View style={styles.timerBarFill} />
-          </View>
-          <Text style={styles.periodText}>{period === 1 ? '1º Tempo' : '2º Tempo'}</Text>
-        </View>
-      </Card>
+      {/* CARD DE PARTIDA AO VIVO REDESENHADO */}
+      <PartidaAoVivoCard
+        teamAName="Time A"
+        teamBName="Time B"
+        scoreA={scoreA}
+        scoreB={scoreB}
+        timerStr={formatTime(timer)}
+        periodStr={period === 1 ? '1º Tempo' : '2º Tempo'}
+        proximaReveza={true}
+        revezaText="PRÓXIMA REVEZA"
+        onPause={() => setIsRunning(!isRunning)}
+        style={{ marginHorizontal: 16, marginTop: 8 }}
+      />
 
       {/* QUICK ACTIONS */}
       <View style={styles.quickActionsRow}>
@@ -192,6 +177,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  screenTitleText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 1,
   },
   liveDot: {
     width: 8,

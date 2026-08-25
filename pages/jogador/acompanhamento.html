@@ -74,35 +74,36 @@
     }
   }
 
-  /* --- Scoreboard ao Vivo (Fundo Claro) --- */
+  /* --- Scoreboard ao Vivo (Fundo Claro com Header Verde Primário #1D9E75) --- */
   .acomp-score-card-clear {
     position: relative;
-    padding: 32px 20px 24px;
+    padding: 0 0 16px 0;
     background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    border: 1px solid #E5E7EB;
+    overflow: hidden;
   }
 
   .acomp-live-tag-clear {
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #D1FAE5; /* Fundo verde menta suave */
-    border: 1px solid #A7F3D0;
-    color: #065F46;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 12px;
-    border-radius: 100px;
+    width: 100%;
+    background: #1D9E75; /* Verde primário */
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 10px 16px;
     letter-spacing: 1px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
   }
 
   .acomp-live-tag-clear span {
-    width: 6px;
-    height: 6px;
-    background-color: #34D399;
+    width: 8px;
+    height: 8px;
+    background-color: #E74C3C; /* Ponto vermelho pulsante */
     border-radius: 50%;
     display: inline-block;
     animation: acomp-pulse-clear 1.5s infinite;
@@ -113,6 +114,7 @@
     justify-content: space-between;
     align-items: center;
     margin-top: 12px;
+    padding: 0 16px;
     gap: 8px;
   }
 
@@ -124,13 +126,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: #FFFFFF; /* Fundo branco unificado */
+    background: #FFFFFF;
     border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .acomp-team-title-clear {
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: 16px;
     max-width: 100%;
     white-space: nowrap;
@@ -175,20 +177,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
+    background: #2C3E50; /* Card central escuro */
+    border-radius: 16px;
+    padding: 8px 16px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   .acomp-score-num-clear {
-    font-size: 52px;
+    font-size: 36px;
     font-weight: 800;
-    color: #1E293B;
+    color: #FFFFFF; /* Números grandes brancos em destaque */
     font-family: monospace, sans-serif;
   }
 
   .acomp-score-divider-clear {
-    font-size: 22px;
-    color: #94A3B8;
-    opacity: 0.5;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 700;
   }
 
   /* --- Fila de Espera --- */

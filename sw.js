@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v262'; // ← Regras de pelada tradicional limitadas apenas ao modo Pelada Normal
+const CACHE_NAME = 'peladapro-v263'; // ← Redesenho completo do Card de Partida ao Vivo (React Native & Web)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
