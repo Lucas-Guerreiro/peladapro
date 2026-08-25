@@ -41,6 +41,58 @@ function safeLocalStorageGetItem(key, fallback = null) {
     console.warn(`[Storage] Erro ao ler/parsear ${key} do localStorage:`, e);
     return fallback;
   }
+function getAppTeamsList() {
+  const peladaId = window.App && window.App.activePelada ? String(window.App.activePelada.id) : null;
+  let teams = window.App ? window.App.teams : null;
+
+  if (Array.isArray(teams) && teams.length > 0) return teams;
+
+  if (peladaId) {
+    try {
+      const rawSpecific = localStorage.getItem(`teams_${peladaId}`);
+      if (rawSpecific) {
+        const parsed = JSON.parse(rawSpecific);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const rawGeneric = localStorage.getItem("teams");
+    if (rawGeneric) {
+      const parsed = JSON.parse(rawGeneric);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch(e) {}
+
+  return [];
+}
+
+function getAppWaitingQueue() {
+  const peladaId = window.App && window.App.activePelada ? String(window.App.activePelada.id) : null;
+  let queue = window.App ? window.App.waitingQueue : null;
+
+  if (Array.isArray(queue) && queue.length > 0) return queue;
+
+  if (peladaId) {
+    try {
+      const rawSpecific = localStorage.getItem(`waitingQueue_${peladaId}`);
+      if (rawSpecific) {
+        const parsed = JSON.parse(rawSpecific);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const rawGeneric = localStorage.getItem("waitingQueue");
+    if (rawGeneric) {
+      const parsed = JSON.parse(rawGeneric);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch(e) {}
+
+  return [];
 }
 
 function getTournamentActiveMatch(tState, currentMatchId) {
@@ -889,14 +941,8 @@ function renderLiveMatchUI() {
     if (queueCard) queueCard.style.display = "none";
     return;
   }
-  // Verificar se existem times sorteados
-  let teamsList = [];
-  try {
-    const activePId = window.App.activePelada ? window.App.activePelada.id : null;
-    teamsList = (window.App && window.App.teams && window.App.teams.length > 0)
-      ? window.App.teams
-      : (JSON.parse(localStorage.getItem("teams")) || (activePId ? JSON.parse(localStorage.getItem("teams_" + activePId)) : null) || []);
-  } catch (e) { }
+  // Verificar se existem times sorteados usando a função auxiliar segura
+  let teamsList = getAppTeamsList();
 
   const timerCont = document.getElementById("gestor-timer-container");
   const scoreCont = document.getElementById("gestor-scoreboard-container");
@@ -904,70 +950,26 @@ function renderLiveMatchUI() {
   const queueCard = document.getElementById("gestor-queue-card");
   let infoCard = document.getElementById("gestor-no-teams-card");
 
+  // Garante que o cronômetro, placar e controles da partida fiquem SEMPRE VISÍVEIS durante a rodada ativa
+  if (timerCont) timerCont.style.display = "block";
+  if (scoreCont) scoreCont.style.display = "block";
+  if (finishCont) finishCont.style.display = "flex";
+  if (queueCard) queueCard.style.display = "block";
+
   if (!teamsList || teamsList.length < 2) {
-    if (timerCont) timerCont.style.display = "none";
-    if (scoreCont) scoreCont.style.display = "none";
-    if (finishCont) finishCont.style.display = "none";
     const badgeEl = document.getElementById("match-live-status-badge");
-    if (badgeEl) {
+    if (badgeEl && badgeEl.textContent !== "EM ANDAMENTO") {
       badgeEl.textContent = "AGUARDANDO SORTEIO";
       badgeEl.style.background = "#FEF3C7";
       badgeEl.style.color = "#D97706";
     }
 
-    if (!infoCard) {
-      infoCard = document.createElement("div");
-      infoCard.id = "gestor-no-teams-card";
-      infoCard.className = "gestor-card-clear";
-      infoCard.style.textAlign = "center";
-      infoCard.style.padding = "32px 20px";
-      infoCard.style.display = "flex";
-      infoCard.style.flexDirection = "column";
-      infoCard.style.alignItems = "center";
-      infoCard.style.justifyContent = "center";
-      infoCard.style.gap = "16px";
-      infoCard.style.background = "#FFFFFF";
-      infoCard.style.borderRadius = "16px";
-      infoCard.style.border = "1px solid rgba(0, 0, 0, 0.04)";
-      infoCard.style.boxShadow = "0 4px 14px rgba(30, 41, 59, 0.03)";
-      infoCard.style.width = "100%";
-      infoCard.style.boxSizing = "border-box";
-
-      infoCard.innerHTML = `
-        <div style="font-size: 40px; line-height: 1;">📋</div>
-        <h4 class="text-inter" style="font-size: 16px; font-weight: 700; color: #0F172A; margin: 0;">Nenhum Time Sorteado</h4>
-        <p class="text-inter" style="font-size: 13px; color: #64748B; margin: 0; max-width: 340px; line-height: 1.5;">
-          Para iniciar o controle da partida ao vivo e da fila de espera, é necessário sortear os times primeiro.
-        </p>
-        <button class="btn" style="background: #0284C7; color: #FFF; font-weight: 700; font-size: 13px; border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;" onclick="Router.navigate('#/gestor/formacao')">
-          ⚡ Sortear Times Agora
-        </button>
-      `;
-
-      const parent = document.getElementById("manager-tab-content-container") || (timerCont ? timerCont.parentElement.parentElement : null);
-      if (parent) {
-        // Insere antes do histórico de partidas (que é o último card do container)
-        const cards = parent.querySelectorAll(".gestor-card-clear");
-        const lastCard = cards[cards.length - 1];
-        if (lastCard && lastCard !== infoCard) {
-          parent.insertBefore(infoCard, lastCard);
-        } else {
-          parent.appendChild(infoCard);
-        }
-      }
-    } else {
-      infoCard.style.display = "flex";
+    if (infoCard) {
+      infoCard.style.display = "none";
     }
-    renderTournamentUI();
-    return;
+  } else {
+    if (infoCard) infoCard.style.display = "none";
   }
-
-  // Se houver times sorteados, exibir os elementos normalmente e ocultar o infoCard
-  if (timerCont) timerCont.style.display = "block";
-  if (scoreCont) scoreCont.style.display = "block";
-  if (finishCont) finishCont.style.display = "flex";
-  if (queueCard) queueCard.style.display = "block";
-  if (infoCard) infoCard.style.display = "none";
 
   // Sincronização automática em modo Torneio com a partida agendada na tabela respeitando a fase
   const peladaAct = window.App.activePelada || {};
@@ -1607,15 +1609,31 @@ function updateTimerDisplay() {
 }
 
 function updateLiveScore(team, diff) {
+  if (!window.App.liveMatch) {
+    window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
+  }
+
   if (team === "a") {
-    window.App.liveMatch.scoreA = Math.max(0, window.App.liveMatch.scoreA + diff);
+    window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) + diff);
     const scoreAEl = document.getElementById("match-control-score-a");
     if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
   } else {
-    window.App.liveMatch.scoreB = Math.max(0, window.App.liveMatch.scoreB + diff);
+    window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) + diff);
     const scoreBEl = document.getElementById("match-control-score-b");
     if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
   }
+
+  safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (peladaId) {
+    safeLocalStorageSetItem(`liveMatch_${peladaId}`, window.App.liveMatch);
+    if (window.Api && window.Api.atualizarLiveState) {
+      const teams = getAppTeamsList();
+      const queue = getAppWaitingQueue();
+      window.Api.atualizarLiveState(peladaId, window.App.liveMatch, queue, teams);
+    }
+  }
+
   window.App.updateAcompanhamentoUI();
 }
 

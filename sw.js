@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v239'; // ← Resolução dinâmica e fallback automático de atletas no lançamento de gols no Jogo ao Vivo
+const CACHE_NAME = 'peladapro-v240'; // ← Correção no atalho lógico de times e visibilidade constante dos controles de jogo ao vivo
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
