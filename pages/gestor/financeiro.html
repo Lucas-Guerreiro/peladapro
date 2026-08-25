@@ -1,21 +1,9 @@
 <!-- Parcial: Gestão Financeira Reestruturada -->
 <div class="financeiro-gestor-container" style="display: flex; flex-direction: column; gap: 20px;">
 
-  <!-- NÍVEL 1: CARTÕES DE RESUMO (KPIs) -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-    <!-- 1. Caixa Atual -->
-    <div class="card" style="padding: 16px 20px; border-left: 4px solid var(--secondary, #1D9E75); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Caixa Atual</span>
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(29, 158, 117, 0.12); color: var(--secondary, #1D9E75); display: flex; align-items: center; justify-content: center;">
-          <i data-feather="briefcase" style="width: 16px; height: 16px;"></i>
-        </div>
-      </div>
-      <h2 id="finances-kpi-caixa" style="font-size: 26px; font-weight: 800; color: var(--secondary, #1D9E75); margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
-      <span style="font-size: 11px; color: var(--text-caption);">Saldo total disponível</span>
-    </div>
-
-    <!-- 2. Total Arrecadado -->
+  <!-- NÍVEL 1: CARTÕES DE RESUMO (5 KPIs) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+    <!-- 1. Total Arrecadado -->
     <div class="card" style="padding: 16px 20px; border-left: 4px solid #378ADD; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Arrecadado</span>
@@ -23,11 +11,11 @@
           <i data-feather="arrow-down-left" style="width: 16px; height: 16px;"></i>
         </div>
       </div>
-      <h2 id="finances-kpi-arrecadado" style="font-size: 26px; font-weight: 800; color: #378ADD; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
-      <span style="font-size: 11px; color: var(--text-caption);">Pix atletas + Vaquinhas + Verbas</span>
+      <h2 id="finances-kpi-arrecadado" style="font-size: 24px; font-weight: 800; color: #378ADD; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span style="font-size: 11px; color: var(--text-caption);">Pix + Vaquinhas + Verbas</span>
     </div>
 
-    <!-- 3. Total de Despesas -->
+    <!-- 2. Despesas Efetivadas / Pagas -->
     <div class="card" style="padding: 16px 20px; border-left: 4px solid var(--danger, #E74C3C); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Despesas Efetivadas / Pagas</span>
@@ -35,20 +23,44 @@
           <i data-feather="arrow-up-right" style="width: 16px; height: 16px;"></i>
         </div>
       </div>
-      <h2 id="finances-kpi-despesas" style="font-size: 26px; font-weight: 800; color: var(--danger, #E74C3C); margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <h2 id="finances-kpi-despesas" style="font-size: 24px; font-weight: 800; color: var(--danger, #E74C3C); margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
       <span id="finances-kpi-despesas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Previstas: R$ 0,00 · A Pagar: R$ 0,00</span>
     </div>
 
-    <!-- 4. Saldo dos Atletas -->
-    <div class="card" id="finances-kpi-saldo-card" style="padding: 16px 20px; border-left: 4px solid #1D9E75; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+    <!-- 3. Saldo Total do Atleta -->
+    <div class="card" id="finances-kpi-saldo-atletas-card" style="padding: 16px 20px; border-left: 4px solid #8B5CF6; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Total dos Atletas</span>
-        <div id="finances-kpi-saldo-icon" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(29, 158, 117, 0.12); color: #1D9E75; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Total do Atleta</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139, 92, 246, 0.12); color: #8B5CF6; display: flex; align-items: center; justify-content: center;">
           <i data-feather="users" style="width: 16px; height: 16px;"></i>
         </div>
       </div>
-      <h2 id="finances-kpi-saldo" style="font-size: 26px; font-weight: 800; color: #1D9E75; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
-      <span id="finances-kpi-saldo-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Soma dos saldos individuais dos atletas</span>
+      <h2 id="finances-kpi-saldo-atletas" style="font-size: 24px; font-weight: 800; color: #8B5CF6; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span id="finances-kpi-saldo-atletas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Soma dos saldos dos atletas</span>
+    </div>
+
+    <!-- 4. Saldo Pelada (Caixa Total - Saldo Total do Atleta) -->
+    <div class="card" id="finances-kpi-saldo-pelada-card" style="padding: 16px 20px; border-left: 4px solid #1D9E75; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Pelada</span>
+        <div id="finances-kpi-saldo-pelada-icon" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(29, 158, 117, 0.12); color: #1D9E75; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="pie-chart" style="width: 16px; height: 16px;"></i>
+        </div>
+      </div>
+      <h2 id="finances-kpi-saldo-pelada" style="font-size: 24px; font-weight: 800; color: #1D9E75; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span id="finances-kpi-saldo-pelada-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Caixa Total menos Saldo dos Atletas</span>
+    </div>
+
+    <!-- 5. Caixa Total -->
+    <div class="card" style="padding: 16px 20px; border-left: 4px solid #0284C7; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Caixa Total</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(2, 132, 199, 0.12); color: #0284C7; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="briefcase" style="width: 16px; height: 16px;"></i>
+        </div>
+      </div>
+      <h2 id="finances-kpi-caixa" style="font-size: 24px; font-weight: 800; color: #0284C7; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span style="font-size: 11px; color: var(--text-caption);">Saldo real disponível em conta</span>
     </div>
   </div>
 

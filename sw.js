@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v266'; // ← Exibição do Saldo Total dos Atletas no 4º card KPI do Financeiro
+const CACHE_NAME = 'peladapro-v267'; // ← 5 Cards Financeiros: Total Arrecadado, Despesas, Saldo Atletas, Saldo Pelada e Caixa Total
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

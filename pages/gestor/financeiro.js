@@ -302,54 +302,58 @@ window.App.renderFinanceiroData = async function() {
     }
   });
 
-  const saldoRealConsolidado = totalArrecadado - totalDespesasConsolidadas;
-  const saldoLiquidoPrevisto = totalArrecadado - totalDespesasPrevistas;
-
-  // Atualiza elementos DOM dos KPIs
-  const elCaixa = document.getElementById("finances-kpi-caixa");
-  const elArrecadado = document.getElementById("finances-kpi-arrecadado");
-  const elDespesas = document.getElementById("finances-kpi-despesas");
-  const elDespesasSub = document.getElementById("finances-kpi-despesas-sub");
-  const elSaldo = document.getElementById("finances-kpi-saldo");
-  const elSaldoSub = document.getElementById("finances-kpi-saldo-sub");
-  const elSaldoCard = document.getElementById("finances-kpi-saldo-card");
-  const elSaldoIcon = document.getElementById("finances-kpi-saldo-icon");
-
-  if (elCaixa) elCaixa.textContent = formatCurrencyBRL(caixaAtualTotal);
-  if (elArrecadado) elArrecadado.textContent = formatCurrencyBRL(totalArrecadado);
-  
-  // Exibe despesas efetivadas/pagas no número principal e o previsto/pendente no subtexto
-  if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesasConsolidadas);
-  if (elDespesasSub) elDespesasSub.textContent = `Previstas: ${formatCurrencyBRL(totalDespesasPrevistas)} · Pendente: ${formatCurrencyBRL(totalDespesasPendentes)}`;
-
-  // Calcula o Saldo Total Acumulado nas carteiras de todos os atletas do grupo
+  // 1. Calcula o Saldo Total Acumulado nas carteiras de todos os atletas do grupo
   let totalSaldoAtletas = 0;
-  let numAtletasComSaldo = 0;
   if (Array.isArray(playersList)) {
     playersList.forEach(p => {
       const s = parseFloat(p.saldo || p.usuario_saldo || 0);
       totalSaldoAtletas += s;
-      if (s !== 0) numAtletasComSaldo++;
     });
   }
 
-  if (elSaldo) {
-    elSaldo.textContent = (totalSaldoAtletas >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(totalSaldoAtletas));
-    if (elSaldoSub) elSaldoSub.textContent = `Soma das carteiras (${playersList ? playersList.length : 0} atletas)`;
+  // 2. Saldo Pelada = Caixa Total - Saldo Total dos Atletas
+  const saldoPelada = caixaAtualTotal - totalSaldoAtletas;
 
-    if (totalSaldoAtletas >= 0) {
-      elSaldo.style.color = "#1D9E75";
-      if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#1D9E75";
-      if (elSaldoIcon) {
-        elSaldoIcon.style.color = "#1D9E75";
-        elSaldoIcon.style.background = "rgba(29, 158, 117, 0.12)";
+  // Atualiza elementos DOM dos 5 KPIs
+  const elCaixa = document.getElementById("finances-kpi-caixa");
+  const elArrecadado = document.getElementById("finances-kpi-arrecadado");
+  const elDespesas = document.getElementById("finances-kpi-despesas");
+  const elDespesasSub = document.getElementById("finances-kpi-despesas-sub");
+
+  const elSaldoAtletas = document.getElementById("finances-kpi-saldo-atletas") || document.getElementById("finances-kpi-saldo");
+  const elSaldoAtletasSub = document.getElementById("finances-kpi-saldo-atletas-sub") || document.getElementById("finances-kpi-saldo-sub");
+
+  const elSaldoPelada = document.getElementById("finances-kpi-saldo-pelada");
+  const elSaldoPeladaSub = document.getElementById("finances-kpi-saldo-pelada-sub");
+  const elSaldoPeladaCard = document.getElementById("finances-kpi-saldo-pelada-card");
+  const elSaldoPeladaIcon = document.getElementById("finances-kpi-saldo-pelada-icon");
+
+  if (elCaixa) elCaixa.textContent = formatCurrencyBRL(caixaAtualTotal);
+  if (elArrecadado) elArrecadado.textContent = formatCurrencyBRL(totalArrecadado);
+  
+  if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesasConsolidadas);
+  if (elDespesasSub) elDespesasSub.textContent = `Previstas: ${formatCurrencyBRL(totalDespesasPrevistas)} · Pendente: ${formatCurrencyBRL(totalDespesasPendentes)}`;
+
+  if (elSaldoAtletas) elSaldoAtletas.textContent = (totalSaldoAtletas >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(totalSaldoAtletas));
+  if (elSaldoAtletasSub) elSaldoAtletasSub.textContent = `Soma das carteiras (${playersList ? playersList.length : 0} atletas)`;
+
+  if (elSaldoPelada) {
+    elSaldoPelada.textContent = (saldoPelada >= 0 ? "+ " : "- ") + formatCurrencyBRL(Math.abs(saldoPelada));
+    if (elSaldoPeladaSub) elSaldoPeladaSub.textContent = `Caixa Total (${formatCurrencyBRL(caixaAtualTotal)}) - Atletas (${formatCurrencyBRL(totalSaldoAtletas)})`;
+
+    if (saldoPelada >= 0) {
+      elSaldoPelada.style.color = "#1D9E75";
+      if (elSaldoPeladaCard) elSaldoPeladaCard.style.borderLeftColor = "#1D9E75";
+      if (elSaldoPeladaIcon) {
+        elSaldoPeladaIcon.style.color = "#1D9E75";
+        elSaldoPeladaIcon.style.background = "rgba(29, 158, 117, 0.12)";
       }
     } else {
-      elSaldo.style.color = "#E74C3C";
-      if (elSaldoCard) elSaldoCard.style.borderLeftColor = "#E74C3C";
-      if (elSaldoIcon) {
-        elSaldoIcon.style.color = "#E74C3C";
-        elSaldoIcon.style.background = "rgba(231, 76, 60, 0.12)";
+      elSaldoPelada.style.color = "#E74C3C";
+      if (elSaldoPeladaCard) elSaldoPeladaCard.style.borderLeftColor = "#E74C3C";
+      if (elSaldoPeladaIcon) {
+        elSaldoPeladaIcon.style.color = "#E74C3C";
+        elSaldoPeladaIcon.style.background = "rgba(231, 76, 60, 0.12)";
       }
     }
   }
