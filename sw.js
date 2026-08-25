@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v257'; // ← Corrigido ReferenceError: teams is not defined no renderAcompanhamentoTournamentUI
+const CACHE_NAME = 'peladapro-v258'; // ← Layout visual 3 colunas harmonioso na Agenda de Jogos do Torneio
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
