@@ -1,8 +1,8 @@
 <!-- Modal: Registrar Nova Despesa -->
 <div class="modal-backdrop" id="modal-despesa-backdrop">
-  <div class="modal-content" style="max-width: 480px;">
+  <div class="modal-content" style="max-width: 480px; width: 95%; max-height: 90vh; overflow-y: auto; box-sizing: border-box;">
     <div class="modal-header">
-      <h3 style="color: #DC2626; display: flex; align-items: center; gap: 8px; font-size: 18px;">
+      <h3 style="color: #DC2626; display: flex; align-items: center; gap: 8px; font-size: 18px; margin: 0;">
         <i data-feather="minus-circle" style="width: 20px; height: 20px;"></i> Registrar Nova Despesa
       </h3>
       <button class="modal-close" id="btn-close-expense-modal">&times;</button>
@@ -17,6 +17,8 @@
       <input type="number" id="expense-value" class="form-control" placeholder="0.00" step="5.00" min="1" required style="font-size: 16px; font-weight: 700;">
     </div>
 
+    <!-- Categoria e Vínculo com a Pelada em Grid 2 colunas -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
       <div class="form-group" style="margin-bottom: 0;">
         <label for="expense-category" class="form-label" style="font-weight: 700;">Categoria *</label>
         <select id="expense-category" class="form-control" style="font-size: 13px;">
@@ -36,7 +38,7 @@
 
         <!-- Campo para digitar uma nova categoria personalizada -->
         <div id="expense-category-custom-container" style="display: none; margin-top: 8px;">
-          <input type="text" id="expense-category-custom-input" class="form-control" placeholder="Digite a nova categoria (ex: Premiação, Segurança...)" style="font-size: 13px; border: 1.5px solid #0284C7;">
+          <input type="text" id="expense-category-custom-input" class="form-control" placeholder="Digite a nova categoria..." style="font-size: 13px; border: 1.5px solid #0284C7;">
         </div>
       </div>
 
@@ -70,7 +72,7 @@
       <input type="text" id="expense-description" class="form-control" placeholder="Ex: Aluguel do campo 2 horas, Compra de 2 bolas Penalty">
     </div>
 
-    <button id="btn-save-expense" class="btn btn-md btn-danger" style="width: 100%; font-weight: 700; height: 44px; cursor: pointer; background: #DC2626; border: none;">
+    <button id="btn-save-expense" class="btn btn-md btn-danger" style="width: 100%; font-weight: 700; height: 44px; cursor: pointer; background: #DC2626; border: none; border-radius: 8px;">
       💸 Confirmar Registro de Despesa
     </button>
   </div>

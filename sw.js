@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v269'; // ← Adição de categorias de despesa customizadas pelo gestor em Registrar Nova Despesa
+const CACHE_NAME = 'peladapro-v270'; // ← Correção e alinhamento do modal Registrar Nova Despesa
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
