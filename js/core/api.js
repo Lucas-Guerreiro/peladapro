@@ -659,16 +659,23 @@ const Api = {
   async listarPartidas(peladaId) {
     if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
     const token = localStorage.getItem('token');
-    if (!token) return [];
     try {
-      const res = await fetch(`/api/partidas/pelada/${peladaId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      if (token) {
+        const res = await fetch(`/api/partidas/pelada/${peladaId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) return data;
+        }
+      }
     } catch (e) {
       console.error('[Api] Erro em listarPartidas:', e);
+    }
+    try {
+      const localP = JSON.parse(localStorage.getItem(`partidas_${peladaId}`)) || JSON.parse(localStorage.getItem("partidas")) || [];
+      return Array.isArray(localP) ? localP : [];
+    } catch(e) {
       return [];
     }
   },

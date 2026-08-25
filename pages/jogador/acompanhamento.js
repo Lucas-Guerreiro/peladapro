@@ -764,10 +764,10 @@ var Acompanhamento = {
     }
 
     if (!peladaId) {
-      var group = (Auth && Auth.currentGroup) || window.App.currentGroup;
-      if (group && group.id && Api.listarDatasDoGrupo) {
+      var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
         try {
-          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          var peladasGroup = await window.Api.listarDatasDoGrupo(group.id);
           if (Array.isArray(peladasGroup) && peladasGroup.length > 0) {
             var active = peladasGroup.find(function (p) { return p.status !== 'finalizada'; }) || peladasGroup[0];
             if (active) peladaId = active.id;
@@ -782,7 +782,13 @@ var Acompanhamento = {
     }
 
     try {
-      var partidas = await Api.listarPartidas(peladaId);
+      var partidas = window.Api ? await window.Api.listarPartidas(peladaId) : [];
+      if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+        try {
+          partidas = JSON.parse(localStorage.getItem("partidas_" + peladaId)) || JSON.parse(localStorage.getItem("partidas")) || [];
+        } catch(e) {}
+      }
+
       if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
         container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:12px 0;">Nenhuma partida encerrada nesta pelada ainda.</p>';
         return;
@@ -855,24 +861,24 @@ var Acompanhamento = {
           } catch (e) { }
         }
 
-        html += '<div style="margin-bottom: 10px; background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); border-radius: 14px; border: 1px solid #E2E8F0; border-left: 5px solid #10B981; padding: 12px 16px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: transform 0.2s ease;">' +
-          '<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">' +
-          '<div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; flex-wrap: wrap;">' +
-          '  <div style="display: flex; align-items: center; gap: 6px;">' +
+        html += '<div style="margin-bottom: 10px; background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); border-radius: 14px; border: 1px solid #E2E8F0; border-left: 5px solid #10B981; padding: 12px 16px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 8px;">' +
+          '<div style="display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
+          '  <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">' +
           '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
-          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase;">' + (p.time_a_nome || 'Time A') + '</span>' +
+          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_a_nome || 'Time A') + '</span>' +
           '  </div>' +
-          '  <div style="background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 15px; font-weight: 900; padding: 3px 12px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0;">' +
+          '  <div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 4px 14px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0; text-align: center;">' +
           '    ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '' +
           '  </div>' +
-          '  <div style="display: flex; align-items: center; gap: 6px;">' +
-          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase;">' + (p.time_b_nome || 'Time B') + '</span>' +
+          '  <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">' +
+          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_b_nome || 'Time B') + '</span>' +
           '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
           '  </div>' +
+          '  <div style="flex-shrink: 0;">' +
+          '    <button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (' + goalsList.length + ')</button>' +
+          '  </div>' +
           '</div>' +
-          '<button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (' + goalsList.length + ')</button>' +
-          '</div>' +
-          '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
+          '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
           (goalsList.length > 0
             ? '<div style="display:flex; flex-wrap:wrap; gap:6px;">' + goalsList.map(function (g) { return '<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚽ ' + (g.autorNome || 'Jogador') + (g.assistNome ? ' <span style="color:#0F172A; font-weight:600;">(Ass: ' + g.assistNome + ' 👟)</span>' : '') + ' <span style="color:#64748B; font-size:10px;">(' + (g.teamName || '') + ')</span></span>'; }).join('') + '</div>'
             : '<span style="font-size:11px; color:#64748B;">Placar encerrado: ' + (p.time_a_nome || 'Time A') + ' ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + ' ' + (p.time_b_nome || 'Time B') + '</span>'
@@ -1088,14 +1094,17 @@ var Acompanhamento = {
             if (tB) embB = '<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">' + window.TeamEmblems.forTeam(tB) + '</span>';
           }
 
-          mHtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:' + rowBg + '; border:1px solid ' + rowBorder + '; border-radius:10px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
-            '<div style="display:flex; align-items:center; gap:6px;">' +
-            '<span style="font-weight:700; color:' + subTextColor + '; font-size:11px;">' + (m.faseNome || 'Jogo ' + (idx + 1)) + ':</span>' +
-            '<span style="display:inline-flex; align-items:center;">' + embA + '<strong style="color:' + textColor + '; font-weight:700;">' + m.teamA + '</strong></span>' +
-            '<span style="color:' + subTextColor + '; font-size:11px; margin: 0 2px;">vs</span>' +
-            '<span style="display:inline-flex; align-items:center;"><strong style="color:' + textColor + '; font-weight:700;">' + m.teamB + '</strong>' + embB + '</span>' +
+          mHtml += '<div style="display:grid; grid-template-columns: 1fr auto 1fr auto; align-items:center; gap:8px; padding:10px 14px; background:' + rowBg + '; border:1px solid ' + rowBorder + '; border-radius:12px; font-size:12px; margin-bottom: 6px; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
+            '<div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; text-align:right;">' +
+            '<span style="display:inline-flex; align-items:center; flex-shrink:0;">' + embA + '</span>' +
+            '<strong style="color:' + textColor + '; font-weight:800; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + m.teamA + '</strong>' +
             '</div>' +
-            '<div>' + statusTag + '</div>' +
+            '<div style="font-size:11px; font-weight:800; color:' + subTextColor + '; background:rgba(0,0,0,0.04); padding:2px 8px; border-radius:6px; text-transform:uppercase; text-align:center;">VS</div>' +
+            '<div style="display:flex; align-items:center; justify-content:flex-start; gap:6px; min-width:0; text-align:left;">' +
+            '<strong style="color:' + textColor + '; font-weight:800; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + m.teamB + '</strong>' +
+            '<span style="display:inline-flex; align-items:center; flex-shrink:0;">' + embB + '</span>' +
+            '</div>' +
+            '<div style="flex-shrink:0;">' + statusTag + '</div>' +
             '</div>';
         });
         matchesList.innerHTML = mHtml;
