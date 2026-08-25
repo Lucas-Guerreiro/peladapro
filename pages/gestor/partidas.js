@@ -338,12 +338,37 @@ window.App.initPartidas = async function () {
       };
     }
 
+    const resolveTeamObj = (targetTeamName) => {
+      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+      let teams = window.App.teams || [];
+      if ((!teams || teams.length === 0) && peladaId) {
+        try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch (e) { }
+      }
+      if (!teams || teams.length === 0) {
+        try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+      }
+
+      const cleanTarget = (targetTeamName || "").trim().toLowerCase();
+      let found = teams.find(t => t.nome && t.nome.trim().toLowerCase() === cleanTarget);
+      if (!found) {
+        found = teams.find(t => t.nome && (t.nome.toLowerCase().includes(cleanTarget) || cleanTarget.includes(t.nome.toLowerCase())));
+      }
+
+      if (found && Array.isArray(found.players) && found.players.length > 0) {
+        return found;
+      }
+      const fallbackList = window.App.confirmadosList || JSON.parse(localStorage.getItem("players")) || [];
+      return {
+        nome: found ? found.nome : (targetTeamName || "Time"),
+        players: (found && Array.isArray(found.players) && found.players.length > 0) ? found.players : fallbackList
+      };
+    };
+
     // Botões de Visualização do Time (Olho)
     const btnViewA = document.getElementById("btn-view-team-a");
     if (btnViewA) {
       btnViewA.onclick = () => {
-        const teams = JSON.parse(localStorage.getItem("teams")) || [];
-        const teamObj = teams.find(t => t.nome === window.App.liveMatch.teamA) || { nome: window.App.liveMatch.teamA, players: [] };
+        const teamObj = resolveTeamObj(window.App.liveMatch.teamA);
         window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
       };
     }
@@ -351,8 +376,7 @@ window.App.initPartidas = async function () {
     const btnViewB = document.getElementById("btn-view-team-b");
     if (btnViewB) {
       btnViewB.onclick = () => {
-        const teams = JSON.parse(localStorage.getItem("teams")) || [];
-        const teamObj = teams.find(t => t.nome === window.App.liveMatch.teamB) || { nome: window.App.liveMatch.teamB, players: [] };
+        const teamObj = resolveTeamObj(window.App.liveMatch.teamB);
         window.App.openModal("ver_time", { teamName: teamObj.nome, players: teamObj.players });
       };
     }
@@ -361,8 +385,7 @@ window.App.initPartidas = async function () {
     const btnGoalA = document.getElementById("btn-goal-team-a");
     if (btnGoalA) {
       btnGoalA.onclick = () => {
-        const teams = JSON.parse(localStorage.getItem("teams")) || [];
-        const teamObj = teams.find(t => t.nome === window.App.liveMatch.teamA) || { nome: window.App.liveMatch.teamA, players: [] };
+        const teamObj = resolveTeamObj(window.App.liveMatch.teamA);
         window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: "a", players: teamObj.players });
       };
     }
@@ -370,8 +393,7 @@ window.App.initPartidas = async function () {
     const btnGoalB = document.getElementById("btn-goal-team-b");
     if (btnGoalB) {
       btnGoalB.onclick = () => {
-        const teams = JSON.parse(localStorage.getItem("teams")) || [];
-        const teamObj = teams.find(t => t.nome === window.App.liveMatch.teamB) || { nome: window.App.liveMatch.teamB, players: [] };
+        const teamObj = resolveTeamObj(window.App.liveMatch.teamB);
         window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: "b", players: teamObj.players });
       };
     }

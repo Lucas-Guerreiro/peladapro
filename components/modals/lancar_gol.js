@@ -3,9 +3,33 @@
 // ==========================================================================
 
 window.App.initModalLancar_gol = function(data) {
+  data = data || {};
   const teamName = data.teamName || "Time";
   const teamKey = data.teamKey; // "a" | "b"
-  const players = data.players || [];
+  let players = data.players || [];
+
+  // Se a lista de jogadores do time veio vazia, tenta resolver de todas as fontes disponíveis
+  if (!players || players.length === 0) {
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    let teams = window.App.teams || [];
+    if ((!teams || teams.length === 0) && peladaId) {
+      try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch (e) {}
+    }
+    if (!teams || teams.length === 0) {
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) {}
+    }
+
+    const cleanTarget = (teamName || "").trim().toLowerCase();
+    const found = teams.find(t => t.nome && t.nome.trim().toLowerCase() === cleanTarget)
+      || teams.find(t => t.nome && (t.nome.toLowerCase().includes(cleanTarget) || cleanTarget.includes(t.nome.toLowerCase())));
+
+    if (found && Array.isArray(found.players) && found.players.length > 0) {
+      players = found.players;
+    } else {
+      // Fallback: se o time não contiver a lista individual, usa todos os atletas confirmados da partida
+      players = window.App.confirmadosList || JSON.parse(localStorage.getItem("players")) || [];
+    }
+  }
 
   const titleEl = document.getElementById("lancar-gol-modal-title");
   if (titleEl) {
@@ -18,21 +42,24 @@ window.App.initModalLancar_gol = function(data) {
 
   if (authorSelect) {
     authorSelect.innerHTML = "";
-    players.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = `${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}`;
-      authorSelect.appendChild(opt);
-    });
+    if (players.length === 0) {
+      authorSelect.innerHTML = '<option value="">Nenhum atleta encontrado</option>';
+    } else {
+      players.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.apelido || p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}`;
+        authorSelect.appendChild(opt);
+      });
+    }
   }
 
   if (assistSelect) {
-    // Mantém a opção "Nenhuma"
     assistSelect.innerHTML = '<option value="">Nenhuma</option>';
     players.forEach(p => {
       const opt = document.createElement("option");
       opt.value = p.id;
-      opt.textContent = `${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}`;
+      opt.textContent = `${p.apelido || p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}`;
       assistSelect.appendChild(opt);
     });
   }
