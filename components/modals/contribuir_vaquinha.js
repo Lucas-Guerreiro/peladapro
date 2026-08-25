@@ -41,6 +41,24 @@ window.App.initModalContribuir_vaquinha = function(data = {}) {
     };
   });
 
+  // Verifica e exibe o saldo atual do atleta logado
+  const user = window.Auth ? window.Auth.currentUser : null;
+  const saldoCard = document.getElementById("saldo-contrib-card");
+  const saldoDisplay = document.getElementById("user-current-saldo-display");
+  const btnPaySaldo = document.getElementById("btn-pay-with-saldo");
+
+  const currentSaldo = user ? parseFloat(user.saldo || 0) : 0;
+  if (currentSaldo > 0 && saldoCard) {
+    saldoCard.style.display = "block";
+    if (saldoDisplay) saldoDisplay.textContent = `R$ ${currentSaldo.toFixed(2).replace('.', ',')}`;
+  } else if (saldoCard) {
+    saldoCard.style.display = "none";
+  }
+
+  if (btnPaySaldo) {
+    btnPaySaldo.onclick = handlePayWithSaldo;
+  }
+
   // Botão Gerar Pix
   const btnGen = document.getElementById("btn-generate-contrib-pix");
   if (btnGen) {
@@ -54,6 +72,72 @@ function stopPollingContrib() {
   if (_contribPollInterval) {
     clearInterval(_contribPollInterval);
     _contribPollInterval = null;
+  }
+}
+
+async function handlePayWithSaldo() {
+  const arrecadacao = window._activeModalArrecadacao;
+  if (!arrecadacao || !arrecadacao.id) {
+    window.App.showToast("Campanha inválida.", "error");
+    return;
+  }
+
+  const inputVal = document.getElementById("contrib-custom-value");
+  const valor = parseFloat(inputVal ? inputVal.value : 0);
+
+  if (isNaN(valor) || valor <= 0) {
+    window.App.showToast("Informe um valor válido para contribuir.", "warning");
+    return;
+  }
+
+  const user = window.Auth ? window.Auth.currentUser : null;
+  const currentSaldo = user ? parseFloat(user.saldo || 0) : 0;
+
+  if (currentSaldo < valor) {
+    window.App.showToast(`Saldo insuficiente. Seu saldo atual é R$ ${currentSaldo.toFixed(2).replace('.', ',')}.`, "warning");
+    return;
+  }
+
+  const btnPaySaldo = document.getElementById("btn-pay-with-saldo");
+  if (btnPaySaldo) {
+    btnPaySaldo.disabled = true;
+    btnPaySaldo.innerHTML = `Processando pagamento... ⏳`;
+  }
+
+  try {
+    const res = await window.Api.contribuirVaquinhaComSaldo(arrecadacao.id, valor);
+    if (res.error) {
+      window.App.showToast(res.error, "error");
+      if (btnPaySaldo) {
+        btnPaySaldo.disabled = false;
+        btnPaySaldo.innerHTML = `<i data-feather="check-circle" style="width: 18px; height: 18px;"></i> <span>Contribuir usando meu Saldo</span>`;
+        if (window.feather) feather.replace();
+      }
+      return;
+    }
+
+    // Atualiza saldo local do usuário
+    if (res.novoSaldo !== undefined && window.Auth && window.Auth.currentUser) {
+      window.Auth.currentUser.saldo = parseFloat(res.novoSaldo);
+      try { localStorage.setItem("currentUser", JSON.stringify(window.Auth.currentUser)); } catch(e) {}
+    }
+
+    stopPollingContrib();
+    showSuccessStep(valor);
+    window.App.showToast("Contribuição realizada com sucesso utilizando seu saldo!", "success");
+
+    // Recarrega lista da campanha se a tela estiver aberta
+    if (window.App.initArrecadacao) {
+      window.App.initArrecadacao();
+    }
+  } catch (err) {
+    console.error('[handlePayWithSaldo]', err);
+    window.App.showToast("Erro ao processar contribuição com saldo.", "error");
+    if (btnPaySaldo) {
+      btnPaySaldo.disabled = false;
+      btnPaySaldo.innerHTML = `<i data-feather="check-circle" style="width: 18px; height: 18px;"></i> <span>Contribuir usando meu Saldo</span>`;
+      if (window.feather) feather.replace();
+    }
   }
 }
 

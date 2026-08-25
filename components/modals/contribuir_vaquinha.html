@@ -38,9 +38,23 @@
         <input type="number" id="contrib-custom-value" class="form-control" placeholder="10.00" min="2" step="5" style="font-size: 16px; font-weight: 800;">
       </div>
 
+      <!-- Card de Utilização de Saldo Atual do Atleta -->
+      <div id="saldo-contrib-card" style="display: none; background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 13px; font-weight: 700; color: #166534; display: flex; align-items: center; gap: 6px;">
+            <i data-feather="wallet" style="width: 16px; height: 16px;"></i> Saldo Disponível:
+          </span>
+          <span id="user-current-saldo-display" style="font-size: 15px; font-weight: 900; color: #15803D;">R$ 0,00</span>
+        </div>
+        <button id="btn-pay-with-saldo" type="button" class="btn" style="width: 100%; background: #15803D; color: #FFFFFF; font-weight: 800; font-size: 14px; border-radius: 8px; height: 42px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);">
+          <i data-feather="check-circle" style="width: 18px; height: 18px;"></i>
+          <span>Contribuir usando meu Saldo</span>
+        </button>
+      </div>
+
       <button id="btn-generate-contrib-pix" class="btn btn-md btn-accent" style="width: 100%; height: 46px; font-weight: 800; font-size: 15px; border-radius: 8px; background: #0284C7; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <i data-feather="qr-code" style="width: 16px; height: 16px;"></i>
-        <span>Gerar Pix Copia e Cola</span>
+        <span>Pagar com Pix Copia e Cola</span>
       </button>
     </div>
 

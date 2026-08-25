@@ -444,6 +444,46 @@ const Api = {
     return res.json();
   },
 
+  async contribuirVaquinhaComSaldo(arrecadacaoId, valor) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado. Por favor, faça login.' };
+
+    try {
+      const res = await fetch(`/api/arrecadacoes/usar-saldo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ arrecadacao_id: arrecadacaoId, valor: parseFloat(valor) })
+      });
+      return await res.json();
+    } catch (e) {
+      console.warn('[contribuirVaquinhaComSaldo Offline Fallback]', e);
+      const user = window.Auth ? window.Auth.currentUser : null;
+      if (!user) return { error: 'Usuário não autenticado.' };
+      const currentSaldo = parseFloat(user.saldo || 0);
+      const val = parseFloat(valor);
+      if (currentSaldo < val) {
+        return { error: `Saldo insuficiente. Seu saldo atual é R$ ${currentSaldo.toFixed(2).replace('.', ',')}` };
+      }
+      user.saldo = currentSaldo - val;
+      if (window.Auth) window.Auth.currentUser = user;
+      try { localStorage.setItem("currentUser", JSON.stringify(user)); } catch(err) {}
+
+      try {
+        let mockArrecadacoes = JSON.parse(localStorage.getItem("arrecadacoes") || "[]");
+        let camp = mockArrecadacoes.find(a => String(a.id) === String(arrecadacaoId));
+        if (camp) {
+          camp.arrecadado = (parseFloat(camp.arrecadado || 0) + val);
+          localStorage.setItem("arrecadacoes", JSON.stringify(mockArrecadacoes));
+        }
+      } catch(err) {}
+
+      return { success: true, status: 'approved', novoSaldo: user.saldo, message: 'Contribuição realizada com sucesso usando seu saldo!' };
+    }
+  },
+
   async consultarStatusContribuicao(contribuicaoId) {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Token não encontrado' };

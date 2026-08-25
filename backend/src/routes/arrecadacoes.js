@@ -12,6 +12,7 @@ router.post('/', arrecadacaoController.criarArrecadacao);
 router.get('/grupo/:grupoId', arrecadacaoController.listarArrecadacoesDoGrupo);
 router.put('/:id/status', arrecadacaoController.atualizarStatusArrecadacao);
 router.post('/pix', arrecadacaoController.gerarPixContribuicao);
+router.post('/usar-saldo', arrecadacaoController.contribuirComSaldo);
 router.get('/status/:contribuicaoId', arrecadacaoController.consultarStatusContribuicao);
 
 module.exports = router;

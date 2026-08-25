@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v245'; // ← Separação estrita de jogos de Ida e Volta e otimização de descanso contra jogos seguidos
+const CACHE_NAME = 'peladapro-v246'; // ← Funcionalidade de utilização do Saldo do Atleta em Vaquinhas e Arrecadações
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
