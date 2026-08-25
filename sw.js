@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v260'; // ← Padronização de design unificado e harmonioso para todos os cards de partidas
+const CACHE_NAME = 'peladapro-v261'; // ← Card unico limpo estilo Partida ao Vivo para todos os confrontos
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

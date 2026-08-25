@@ -1048,22 +1048,17 @@ var Acompanhamento = {
             if (tB) embB = '<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">' + window.TeamEmblems.forTeam(tB) + '</span>';
           }
 
-          mHtml += '<div style="margin-bottom: 8px; background: ' + rowBg + '; border-radius: 12px; border: 1px solid ' + rowBorder + '; border-left: 4px solid ' + (isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')) + '; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 6px; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
-            '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-            '<span style="font-size: 11px; font-weight: 800; color: ' + subTextColor + '; text-transform: uppercase; letter-spacing: 0.5px;">📌 ' + (m.faseNome || ('Jogo ' + (idx + 1))) + '</span>' +
-            '</div>' +
-            '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
+          mHtml += '<div style="margin-bottom: 8px; background: ' + rowBg + '; border-radius: 12px; border: 1px solid ' + rowBorder + '; border-left: 4px solid ' + (isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')) + '; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
             '<div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">' +
             '<div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
             '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamA + '</span>' +
             '</div>' +
             '<div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
-            (isDone ? '<div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 14px; font-weight: 900; padding: 4px 12px; border-radius: 16px; letter-spacing: 1px;">' + m.golsA + ' x ' + m.golsB + penTxt + '</div>' : (isCurrent ? '<div style="background: #D97706; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⚽ EM ANDAMENTO</div>' : '<div style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⏳ A JOGAR</div>')) +
+            (isDone ? '<div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 12px; border-radius: 16px; letter-spacing: 1px;">' + m.golsA + ' x ' + m.golsB + penTxt + '</div>' : (isCurrent ? '<div style="background: #D97706; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⚽ EM ANDAMENTO</div>' : '<div style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⏳ A JOGAR</div>')) +
             '</div>' +
             '<div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">' +
             '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamB + '</span>' +
             '<div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
-            '</div>' +
             '</div>' +
             '</div>';
         });

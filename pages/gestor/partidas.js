@@ -2089,16 +2089,7 @@ async function renderRecentMatches() {
       const subTextColor = isRecentDark ? "rgba(255, 255, 255, 0.8)" : "#64748B";
 
       item.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.15)' : '#F1F5F9'}; padding-bottom: 6px; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 0.5px;">📌 Jogo #${p.numero_jogo || p.id || ''}</span>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.3)' : '#CBD5E1'}; background: ${isRecentDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}; color: ${textColor}; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (${goalsList.length})</button>
-            <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 2px 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
-            <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 2px 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
-            <span style="font-size:11px; color:${subTextColor}; margin-left: 2px;">${timeStr}</span>
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">
+        <div style="display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">
             <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
             <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.time_a_nome}</span>
@@ -2111,6 +2102,11 @@ async function renderRecentMatches() {
           <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">
             <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.time_b_nome}</span>
             <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embB}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <button class="btn btn-sm btn-toggle-goals" data-id="${p.id}" title="Ver quem fez os gols" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid ${isRecentDark ? 'rgba(255,255,255,0.3)' : '#CBD5E1'}; background: ${isRecentDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}; color: ${textColor}; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (${goalsList.length})</button>
+            <button class="btn btn-sm btn-edit-match" data-partida='${JSON.stringify(p)}' title="Editar" style="padding: 2px 4px; border:none; background:transparent; cursor:pointer;">✏️</button>
+            <button class="btn btn-sm btn-delete-match" data-id="${p.id}" title="Excluir" style="padding: 2px 4px; border:none; background:transparent; cursor:pointer;">🗑️</button>
           </div>
         </div>
         <div id="match-goals-list-${p.id}" style="display: ${isOpen ? 'block' : 'none'}; margin-top: 8px; padding-top: 8px; border-top: 1px dashed ${isRecentDark ? 'rgba(255,255,255,0.2)' : '#CBD5E1'}; font-size: 12px; color: ${textColor};">
@@ -2829,24 +2825,19 @@ function renderTournamentUI() {
         }
 
         html += `
-          <div style="margin-bottom: 8px; background: ${rowBg}; border-radius: 12px; border: 1px solid ${rowBorder}; border-left: 4px solid ${isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')}; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 6px; backdrop-filter: blur(8px); ${isCurrent && isTeamTheme ? 'box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 11px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 0.5px;">📌 ${m.faseNome || 'Jogo ' + (idx + 1)}</span>
-              ${reorderBtns}
+          <div style="margin-bottom: 8px; background: ${rowBg}; border-radius: 12px; border: 1px solid ${rowBorder}; border-left: 4px solid ${isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')}; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: grid; grid-template-columns: 1fr auto 1fr ${reorderBtns ? 'auto' : ''}; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; backdrop-filter: blur(8px); ${isCurrent && isTeamTheme ? 'box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : ''}">
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">
+              <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
+              <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamA)}</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">
-              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right;">
-                <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
-                <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamA)}</span>
-              </div>
-              <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                ${scorePill}
-              </div>
-              <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">
-                <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamB)}</span>
-                <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embB}</div>
-              </div>
+            <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ${scorePill}
             </div>
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; text-align: left;">
+              <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamB)}</span>
+              <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embB}</div>
+            </div>
+            ${reorderBtns ? `<div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">${reorderBtns}</div>` : ''}
           </div>
         `;
       });
