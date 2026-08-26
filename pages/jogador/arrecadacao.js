@@ -96,8 +96,8 @@ async function renderCampanhasArrecadacao() {
                         ${nomeDisplay}
                       </span>
                     </div>
-                    <span style="font-size: 12px; font-weight: 800; color: #059669; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 12px; white-space: nowrap;">
-                      +R$ ${valorFormatado}
+                    <span style="font-size: 11px; font-weight: 800; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 12px; white-space: nowrap;">
+                      Apoiou ✅
                     </span>
                   </div>
                 `;
