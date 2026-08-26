@@ -385,7 +385,155 @@ window.App.renderFinanceiroData = async function() {
     }
   });
 
-  // --- RENDERIZAR CARD DE CAIXA GERAL & VAQUINHAS (NÃO VINCULADOS A PELADAS) ---
+  // --- RENDERIZAR CARD DE CAMPANHAS DE VAQUINHA & ARRECADAÇÕES DO GRUPO ---
+  const vaquinhasContainer = document.getElementById("finances-vaquinhas-card-container");
+  if (vaquinhasContainer) {
+    const arrecadacoesList = window._financeiroArrecadacoesList || [];
+    if (arrecadacoesList.length === 0) {
+      vaquinhasContainer.innerHTML = "";
+    } else {
+      let vaqHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
+          <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+            <i data-feather="heart" style="width: 18px; height: 18px; color: #0284C7;"></i> Relatório de Vaquinhas & Arrecadações (${arrecadacoesList.length})
+          </h3>
+        </div>
+      `;
+
+      arrecadacoesList.forEach(camp => {
+        const meta = parseFloat(camp.meta_valor || 0);
+        const arrecadado = parseFloat(camp.total_arrecadado || 0);
+        const taxaMP = arrecadado * 0.01;
+        const arrecadadoLiquido = arrecadado - taxaMP;
+        const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
+        const isConcluida = (camp.status === 'concluida') || (pct >= 100);
+        const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+
+        let apoiadoresListHtml = "";
+        if (apoiadores.length === 0) {
+          apoiadoresListHtml = `
+            <div style="font-size: 12px; color: #64748B; padding: 10px; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; text-align: center;">
+              Nenhum atleta contribuiu com esta vaquinha ainda.
+            </div>
+          `;
+        } else {
+          apoiadoresListHtml = `
+            <div style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+              ${apoiadores.map((a, idx) => {
+                const nomeDisplay = a.apelido || a.nome || "Atleta";
+                const inicial = nomeDisplay.charAt(0).toUpperCase();
+                const valFmt = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+                const dt = a.created_at ? new Date(a.created_at) : null;
+                const horaFmt = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+                const dataFmt = dt ? dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '';
+                const temFoto = a.foto && a.foto.trim().length > 0;
+                const avatarHtml = temFoto
+                  ? `<img src="${a.foto}" alt="${nomeDisplay}" style="width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1.5px solid #0284C7; flex-shrink: 0;">`
+                  : `<div style="width: 26px; height: 26px; border-radius: 50%; background: #0284C7; color: #FFF; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${inicial}</div>`;
+
+                return `
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px 12px; font-size: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                      <span style="font-weight: 700; color: #64748B; width: 18px; text-align: center; flex-shrink: 0;">${idx + 1}º</span>
+                      ${avatarHtml}
+                      <div style="display: flex; flex-direction: column; min-width: 0;">
+                        <strong style="color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeDisplay}</strong>
+                        <span style="font-size: 10px; color: #64748B;">${dataFmt}${horaFmt ? ` às ${horaFmt}` : ''}</span>
+                      </div>
+                    </div>
+                    <span style="font-weight: 800; color: #059669; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;">
+                      + R$ ${valFmt}
+                    </span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        }
+
+        vaqHtml += `
+          <div class="card" style="padding: 20px; border-left: 4px solid #0284C7; background: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 14px;">
+            
+            <!-- TOPO DA ARRECADAÇÃO -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-size: 10px; font-weight: 800; color: #0284C7; background: #E0F2FE; border: 1px solid #BAE6FD; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">
+                    ${camp.categoria || 'Vaquinha'}
+                  </span>
+                  <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; ${isConcluida ? 'background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;' : 'background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D;'}">
+                    ${isConcluida ? '✅ Meta Atingida / Concluída' : '⚡ Ativa'}
+                  </span>
+                </div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #0F172A;">${camp.titulo}</h3>
+                ${camp.descricao ? `<p style="margin: 4px 0 0 0; font-size: 12px; color: #64748B;">${camp.descricao}</p>` : ''}
+              </div>
+
+              <!-- BOTÕES DE AÇÃO E EXPORTAÇÃO EXCLUSIVOS DO GESTOR -->
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button onclick="window.App.exportVaquinhaWhatsApp('${camp.id}')" class="btn btn-sm" style="background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; font-weight: 700; font-size: 12px; border-radius: 8px; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(22, 101, 52, 0.1);" title="Copiar e compartilhar relatório no WhatsApp">
+                  📲 Exportar WhatsApp
+                </button>
+                <button onclick="window.App.exportVaquinhaExcel('${camp.id}')" class="btn btn-sm" style="background: #F0F9FF; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 700; font-size: 12px; border-radius: 8px; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(3, 105, 161, 0.1);" title="Baixar planilha Excel (CSV) dos contribuintes">
+                  📊 Exportar Excel (CSV)
+                </button>
+                <button onclick="window.App.alternarStatusVaquinha('${camp.id}', '${isConcluida ? 'ativa' : 'concluida'}')" class="btn btn-sm" style="background: #F8FAFC; color: #475569; border: 1px solid #CBD5E1; font-weight: 600; font-size: 11px; border-radius: 8px; padding: 6px 10px; cursor: pointer;" title="Alterar status da vaquinha">
+                  ${isConcluida ? '🔄 Reabrir' : '🔒 Encerrar'}
+                </button>
+              </div>
+            </div>
+
+            <!-- VALORES E PROGRESSO -->
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <span style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase; display: block;">Total Arrecadado</span>
+                  <strong style="font-size: 16px; font-weight: 900; color: #0284C7;">${formatCurrencyBRL(arrecadado)}</strong>
+                </div>
+                <div>
+                  <span style="font-size: 10px; color: #DC2626; font-weight: 700; text-transform: uppercase; display: block;">Taxa MP (1%)</span>
+                  <strong style="font-size: 13px; font-weight: 800; color: #DC2626;">- ${formatCurrencyBRL(taxaMP)}</strong>
+                </div>
+                <div>
+                  <span style="font-size: 10px; color: #047857; font-weight: 700; text-transform: uppercase; display: block;">Líquido em Conta</span>
+                  <strong style="font-size: 16px; font-weight: 900; color: #047857;">${formatCurrencyBRL(arrecadadoLiquido)}</strong>
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 10px; color: #64748B; font-weight: 700; text-transform: uppercase; display: block;">Meta do Grupo</span>
+                  <strong style="font-size: 15px; font-weight: 800; color: #0F172A;">${formatCurrencyBRL(meta)}</strong>
+                </div>
+              </div>
+
+              <!-- BARRA DE PROGRESSO -->
+              <div style="width: 100%; height: 10px; background: #E2E8F0; border-radius: 8px; overflow: hidden;">
+                <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #10B981 0%, #059669 100%); border-radius: 8px; transition: width 0.4s ease;"></div>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #64748B;">
+                <span>${pct}% concluído</span>
+                <span>Faltam ${formatCurrencyBRL(Math.max(0, meta - arrecadadoLiquido))} (Líquido)</span>
+              </div>
+            </div>
+
+            <!-- SEÇÃO DE CONTRIBUINTES -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+                  👥 Lista dos Atletas que Contribuíram (${apoiadores.length})
+                </h4>
+              </div>
+              ${apoiadoresListHtml}
+            </div>
+
+          </div>
+        `;
+      });
+
+      vaquinhasContainer.innerHTML = vaqHtml;
+    }
+  }
+
+  // --- RENDERIZAR CARD DE CAIXA GERAL & LANÇAMENTOS AVULSOS (NÃO VINCULADOS A PELADAS) ---
   if (geralContainer) {
     const totalGeraisEntradas = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
     const totalGeraisDespesas = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
@@ -877,3 +1025,129 @@ function formatCurrencyBRL(val) {
   const num = isNaN(parseFloat(val)) ? 0 : parseFloat(val);
   return `R$ ${num.toFixed(2).replace('.', ',')}`;
 }
+
+// =========================================================================
+// RELATÓRIO DA VAQUINHA: EXPORTAÇÃO (WHATSAPP & EXCEL / CSV) - GESTOR
+// =========================================================================
+window.App.exportVaquinhaWhatsApp = function(arrecadacaoId) {
+  const campanhas = window._financeiroArrecadacoesList || [];
+  const camp = campanhas.find(c => String(c.id) === String(arrecadacaoId));
+
+  if (!camp) {
+    if (window.App.showToast) window.App.showToast("Campanha de vaquinha não encontrada.", "warning");
+    return;
+  }
+
+  const meta = parseFloat(camp.meta_valor || 0);
+  const arrecadado = parseFloat(camp.total_arrecadado || 0);
+  const taxaMP = arrecadado * 0.01;
+  const arrecadadoLiquido = arrecadado - taxaMP;
+  const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
+  const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+
+  let text = `🏆 *RELATÓRIO DA VAQUINHA — ${camp.titulo.toUpperCase()}*\n`;
+  if (camp.categoria) text += `📌 Categoria: ${camp.categoria}\n`;
+  text += `----------------------------------\n`;
+  text += `🎯 Meta do Grupo: R$ ${meta.toFixed(2).replace('.', ',')}\n`;
+  text += `💰 Total Arrecadado: R$ ${arrecadado.toFixed(2).replace('.', ',')} (${pct}% da meta)\n`;
+  text += `💳 Taxa MP (1%): -R$ ${taxaMP.toFixed(2).replace('.', ',')}\n`;
+  text += `✅ Líquido em Conta: R$ ${arrecadadoLiquido.toFixed(2).replace('.', ',')}\n\n`;
+
+  if (apoiadores.length === 0) {
+    text += `👥 *LISTA DE CONTRIBUINTES:* Nenhuma contribuição registrada ainda.\n`;
+  } else {
+    text += `👥 *LISTA DE CONTRIBUINTES QUE JÁ APOIARAM (${apoiadores.length}):*\n`;
+    apoiadores.forEach((a, idx) => {
+      const nomeDisplay = a.apelido || a.nome || "Atleta";
+      const valFmt = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+      const dt = a.created_at ? new Date(a.created_at) : null;
+      const dataHoraFmt = dt ? `${dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
+      text += `${idx + 1}. ⚽ *${nomeDisplay}* — R$ ${valFmt}${dataHoraFmt ? ` _(${dataHoraFmt})_` : ''}\n`;
+    });
+  }
+
+  text += `\n*PeladaPro* · Transparência & Gestão 💚`;
+
+  if (navigator.clipboard && text) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (window.App.showToast) window.App.showToast("Relatório da vaquinha copiado para o WhatsApp com sucesso! 📲", "success");
+      const encoded = encodeURIComponent(text);
+      window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    }).catch(() => {
+      const encoded = encodeURIComponent(text);
+      window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    });
+  } else {
+    const encoded = encodeURIComponent(text);
+    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+  }
+};
+
+window.App.exportVaquinhaExcel = function(arrecadacaoId) {
+  const campanhas = window._financeiroArrecadacoesList || [];
+  const camp = campanhas.find(c => String(c.id) === String(arrecadacaoId));
+
+  if (!camp) {
+    if (window.App.showToast) window.App.showToast("Campanha de vaquinha não encontrada.", "warning");
+    return;
+  }
+
+  const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+
+  if (apoiadores.length === 0) {
+    if (window.App.showToast) window.App.showToast("Nenhuma contribuição registrada para exportar nesta vaquinha.", "warning");
+    return;
+  }
+
+  let csv = "\uFEFF"; // BOM para acentuação no Excel em PT-BR
+  csv += `RELATÓRIO DA VAQUINHA: ${camp.titulo}\n`;
+  csv += `Meta: R$ ${parseFloat(camp.meta_valor || 0).toFixed(2)};Total Arrecadado: R$ ${parseFloat(camp.total_arrecadado || 0).toFixed(2)};Total Contribuições: ${apoiadores.length}\n\n`;
+  csv += "#;Nome do Atleta;Apelido;Valor Contribuído (R$);Data da Contribuição;Status\n";
+
+  apoiadores.forEach((a, idx) => {
+    const num = idx + 1;
+    const nome = (a.nome || "").replace(/;/g, ",");
+    const apelido = (a.apelido || "").replace(/;/g, ",");
+    const valor = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+    const dt = a.created_at ? new Date(a.created_at).toLocaleString('pt-BR') : "";
+    const status = (a.status === 'approved' || a.status === 'aprovado') ? 'Aprovado' : (a.status || 'Confirmado');
+
+    csv += `${num};${nome};${apelido};${valor};${dt};${status}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  const titleClean = camp.titulo.replace(/[^a-zA-Z0-9]/g, "_");
+  const filename = `Relatorio_Vaquinha_${titleClean}.csv`;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  if (window.App.showToast) window.App.showToast("Relatório em Excel (CSV) exportado com sucesso! 📊", "success");
+};
+
+window.App.alternarStatusVaquinha = async function(arrecadacaoId, novoStatus) {
+  const confirmMsg = novoStatus === 'concluida'
+    ? "Deseja encerrar esta vaquinha? Ela continuará visível no histórico com a lista final de apoiadores."
+    : "Deseja reabrir esta vaquinha para receber novas contribuições?";
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await window.Api.atualizarStatusArrecadacao(arrecadacaoId, novoStatus);
+    if (res && res.error) {
+      if (window.App.showToast) window.App.showToast(res.error, "error");
+      return;
+    }
+
+    if (window.App.showToast) window.App.showToast(`Status da vaquinha atualizado para '${novoStatus === 'concluida' ? 'Concluída' : 'Ativa'}'!`, "success");
+    if (window.App.renderFinanceiroData) {
+      await window.App.renderFinanceiroData();
+    }
+  } catch (err) {
+    console.error("[alternarStatusVaquinha]", err);
+    if (window.App.showToast) window.App.showToast("Erro ao atualizar status da vaquinha.", "error");
+  }
+};
