@@ -436,10 +436,7 @@ window.App.renderFinanceiroData = async function() {
                     <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
                       <span style="font-weight: 700; color: #64748B; width: 18px; text-align: center; flex-shrink: 0;">${idx + 1}º</span>
                       ${avatarHtml}
-                      <div style="display: flex; flex-direction: column; min-width: 0;">
-                        <strong style="color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeDisplay}</strong>
-                        <span style="font-size: 10px; color: #64748B;">${dataFmt}${horaFmt ? ` às ${horaFmt}` : ''}</span>
-                      </div>
+                      <strong style="color: #0F172A; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeDisplay}</strong>
                     </div>
                     <span style="font-weight: 800; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;">
                       Apoiou ✅
@@ -1059,9 +1056,7 @@ window.App.exportVaquinhaWhatsApp = function(arrecadacaoId) {
     text += `👥 *LISTA DE CONTRIBUINTES QUE JÁ APOIARAM (${apoiadores.length}):*\n`;
     apoiadores.forEach((a, idx) => {
       const nomeDisplay = a.apelido || a.nome || "Atleta";
-      const dt = a.created_at ? new Date(a.created_at) : null;
-      const dataHoraFmt = dt ? `${dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
-      text += `${idx + 1}. ⚽ *${nomeDisplay}*${dataHoraFmt ? ` _(${dataHoraFmt})_` : ''}\n`;
+      text += `${idx + 1}. ⚽ *${nomeDisplay}*\n`;
     });
   }
 
@@ -1101,16 +1096,15 @@ window.App.exportVaquinhaExcel = function(arrecadacaoId) {
   let csv = "\uFEFF"; // BOM para acentuação no Excel em PT-BR
   csv += `RELATÓRIO DA VAQUINHA: ${camp.titulo}\n`;
   csv += `Meta: R$ ${parseFloat(camp.meta_valor || 0).toFixed(2)};Total Arrecadado: R$ ${parseFloat(camp.total_arrecadado || 0).toFixed(2)};Total Contribuições: ${apoiadores.length}\n\n`;
-  csv += "#;Nome do Atleta;Apelido;Data da Contribuição;Status\n";
+  csv += "#;Nome do Atleta;Apelido;Status\n";
 
   apoiadores.forEach((a, idx) => {
     const num = idx + 1;
     const nome = (a.nome || "").replace(/;/g, ",");
     const apelido = (a.apelido || "").replace(/;/g, ",");
-    const dt = a.created_at ? new Date(a.created_at).toLocaleString('pt-BR') : "";
     const status = (a.status === 'approved' || a.status === 'aprovado') ? 'Aprovado' : (a.status || 'Confirmado');
 
-    csv += `${num};${nome};${apelido};${dt};${status}\n`;
+    csv += `${num};${nome};${apelido};${status}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
