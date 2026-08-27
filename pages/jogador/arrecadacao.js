@@ -11,22 +11,44 @@ async function renderCampanhasArrecadacao() {
   const headerTotalEl = document.getElementById("arrecadacao-header-total");
   if (!container) return;
 
-  let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
-  if (!group || !group.id) {
+  // 1. Tenta obter o grupo atual de várias fontes seguras (Auth, App, LocalStorage, User)
+  let groupId = null;
+
+  let group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+  if (!group || (!group.id && !group.grupo_id)) {
     try { group = JSON.parse(localStorage.getItem("currentGroup")); } catch (e) {}
   }
 
-  if (!group || !group.id) {
-    container.innerHTML = `
-      <div class="card" style="padding: 32px; text-align: center; background: #FFFFFF; border-radius: 16px;">
-        <p style="color: var(--text-caption); margin: 0;">Selecione um grupo para visualizar as campanhas.</p>
-      </div>
-    `;
-    return;
+  if (group) {
+    groupId = group.id || group.grupo_id;
+  }
+
+  if (!groupId) {
+    let user = (window.Auth && window.Auth.currentUser) || (window.App && window.App.currentUser);
+    if (!user || (!user.id && !user.grupo_id)) {
+      try { user = JSON.parse(localStorage.getItem("currentUser")); } catch (e) {}
+    }
+    if (user && user.grupo_id) {
+      groupId = user.grupo_id;
+    }
+  }
+
+  if (!groupId && window.Api && window.Api.getGroups) {
+    try {
+      const groups = window.Api.getGroups();
+      if (Array.isArray(groups) && groups.length > 0) {
+        groupId = groups[0].id || groups[0].grupo_id;
+      }
+    } catch(e) {}
+  }
+
+  // Se não encontrou o id localmente, envia 'me' para o backend resolver via JWT token
+  if (!groupId) {
+    groupId = 'me';
   }
 
   try {
-    const campanhas = await window.Api.listarArrecadacoes(group.id);
+    const campanhas = await window.Api.listarArrecadacoes(groupId);
 
     if (!Array.isArray(campanhas) || campanhas.length === 0) {
       container.innerHTML = `

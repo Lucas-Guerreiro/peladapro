@@ -69,8 +69,35 @@ exports.criarArrecadacao = async (req, res) => {
 
 // 2. Listar Arrecadações do Grupo com Total Arrecadado e Contribuições (Pública para membros do grupo)
 exports.listarArrecadacoesDoGrupo = async (req, res) => {
-  const { grupoId } = req.params;
-  if (!grupoId) return res.status(400).json({ error: 'grupoId é obrigatório' });
+  let { grupoId } = req.params;
+
+  // Se o grupoId for 'me', 'undefined', 'null' ou inválido, busca o grupo do usuário autenticado no banco
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    try {
+      if (req.usuarioId) {
+        const userRes = await db.query(`SELECT grupo_id FROM usuarios WHERE id = $1`, [req.usuarioId]);
+        if (userRes.rows.length > 0 && userRes.rows[0].grupo_id) {
+          grupoId = userRes.rows[0].grupo_id;
+        }
+      }
+    } catch (e) {
+      console.warn('[listarArrecadacoesDoGrupo Fallback User Group]', e.message);
+    }
+  }
+
+  // Se ainda assim não encontrar grupo_id, pega o primeiro grupo do banco como fallback
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    try {
+      const firstGroupRes = await db.query(`SELECT id FROM grupos ORDER BY created_at ASC LIMIT 1`);
+      if (firstGroupRes.rows.length > 0) {
+        grupoId = firstGroupRes.rows[0].id;
+      }
+    } catch (e) {}
+  }
+
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    return res.json([]);
+  }
 
   try {
     const query = `

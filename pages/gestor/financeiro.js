@@ -149,7 +149,8 @@ window.App.renderFinanceiroData = async function() {
       // 2.1 Busca campanhas de arrecadação/vaquinha do grupo
       if (window.Api.listarArrecadacoes) {
         try {
-          const arrs = await window.Api.listarArrecadacoes(group.id);
+          const groupId = (group && (group.id || group.grupo_id)) ? (group.id || group.grupo_id) : 'me';
+          const arrs = await window.Api.listarArrecadacoes(groupId);
           if (Array.isArray(arrs)) window._financeiroArrecadacoesList = arrs;
         } catch (e) {}
       }

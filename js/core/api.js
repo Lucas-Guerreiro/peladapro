@@ -396,10 +396,18 @@ const Api = {
   async listarArrecadacoes(grupoId) {
     const token = localStorage.getItem('token');
     if (!token) return [];
-    const res = await fetch(`/api/arrecadacoes/grupo/${grupoId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return res.json();
+    const targetGroup = (grupoId && grupoId !== 'undefined' && grupoId !== 'null') ? grupoId : 'me';
+    try {
+      const res = await fetch(`/api/arrecadacoes/grupo/${targetGroup}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.warn('[listarArrecadacoes Error]', e);
+      return [];
+    }
   },
 
   async criarArrecadacao(dados) {
