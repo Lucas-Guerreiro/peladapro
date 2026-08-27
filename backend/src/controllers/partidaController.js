@@ -159,3 +159,19 @@ exports.deletarPartidasPorIds = async (req, res) => {
     res.status(500).json({ error: 'Erro ao deletar partidas excedentes.', detail: err.message });
   }
 };
+
+exports.zerarEstatisticasGerais = async (req, res) => {
+  const gestorTipo = req.usuarioTipo;
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem zerar as estatísticas gerais.' });
+  }
+
+  try {
+    await db.query('UPDATE usuarios SET gols = 0, partidas = 0');
+    await db.query('DELETE FROM gols').catch(() => {});
+    await db.query('DELETE FROM partidas');
+    res.json({ message: 'Todas as estatísticas, gols e ranking foram zerados com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao zerar estatísticas gerais.', detail: err.message });
+  }
+};
