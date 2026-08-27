@@ -168,21 +168,33 @@ exports.gerarPixContribuicao = async (req, res) => {
   }
 
   const valorContribuicao = parseFloat(valor);
+  let client = null;
 
-  let client;
   try {
-    client = await db.pool.connect();
+    if (db.pool && typeof db.pool.connect === 'function') {
+      try {
+        client = await db.pool.connect();
+      } catch (poolErr) {
+        console.warn('[gerarPixContribuicao Pool Connect Warning]', poolErr.message);
+      }
+    }
+
+    const queryFn = client ? (text, params) => client.query(text, params) : (text, params) => db.query(text, params);
 
     // 1. Obter informações da arrecadação
-    const arrRes = await client.query('SELECT * FROM arrecadacoes WHERE id = $1 AND status = \'ativa\'', [arrecadacao_id]);
+    const arrRes = await queryFn('SELECT * FROM arrecadacoes WHERE id = $1', [arrecadacao_id]);
     if (arrRes.rows.length === 0) {
-      return res.status(400).json({ error: 'Campanha de arrecadação encerrada ou não encontrada.' });
+      return res.status(400).json({ error: 'Campanha de arrecadação não encontrada.' });
     }
     const arrecadacao = arrRes.rows[0];
+    if (String(arrecadacao.status).toLowerCase() === 'cancelada') {
+      return res.status(400).json({ error: 'Esta campanha de arrecadação foi cancelada.' });
+    }
 
     // 2. Obter informações do atleta
-    const userRes = await client.query('SELECT nome, email FROM usuarios WHERE id = $1', [usuario_id]);
-    const { nome, email } = userRes.rows[0];
+    const userRes = await queryFn('SELECT nome, email FROM usuarios WHERE id = $1', [usuario_id]);
+    const userObj = (userRes.rows && userRes.rows.length > 0) ? userRes.rows[0] : { nome: 'Atleta', email: '' };
+    const { nome, email } = userObj;
 
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
@@ -192,7 +204,7 @@ exports.gerarPixContribuicao = async (req, res) => {
       const mockQrCode = `00020101021226870014br.gov.bcb.pix2565peladapro-arrecadacao-mock-key5204000053039865405${valorContribuicao.toFixed(2)}5802BR5913PeladaPro Mock6009SAO PAULO62070503***6304FC7F`;
       const mockQrCodeBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAQBAAAEAQAQMAAAD71YlPAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAWElEQVRYhe3MsQkAMBAEsdf/0K4j9zCBQODuBvCSpI6qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsqPvwH8f668W2n0gAAAAABJRU5ErkJggg==';
 
-      const insertRes = await client.query(`
+      const insertRes = await queryFn(`
         INSERT INTO arrecadacoes_contribuicoes (arrecadacao_id, usuario_id, valor, status, payment_id, qr_code, qr_code_base64)
         VALUES ($1, $2, $3, 'pending', $4, $5, $6)
         RETURNING id
@@ -224,8 +236,8 @@ exports.gerarPixContribuicao = async (req, res) => {
       payment_method_id: 'pix',
       payer: {
         email: payerEmail,
-        first_name: nome.split(' ')[0] || 'Atleta',
-        last_name: nome.split(' ').slice(1).join(' ') || 'PeladaPro',
+        first_name: (nome || 'Atleta').split(' ')[0] || 'Atleta',
+        last_name: (nome || 'PeladaPro').split(' ').slice(1).join(' ') || 'PeladaPro',
         identification: {
           type: 'CPF',
           number: payerCpf
@@ -256,7 +268,7 @@ exports.gerarPixContribuicao = async (req, res) => {
     const qrCode = mpData.point_of_interaction.transaction_data.qr_code;
     const qrCodeBase64 = mpData.point_of_interaction.transaction_data.qr_code_base64;
 
-    const insertRes = await client.query(`
+    const insertRes = await queryFn(`
       INSERT INTO arrecadacoes_contribuicoes (arrecadacao_id, usuario_id, valor, status, payment_id, qr_code, qr_code_base64)
       VALUES ($1, $2, $3, 'pending', $4, $5, $6)
       RETURNING id
@@ -272,10 +284,12 @@ exports.gerarPixContribuicao = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[gerarPixContribuicao]', err);
+    console.error('[gerarPixContribuicao Error]', err);
     res.status(500).json({ error: 'Erro ao gerar Pix para contribuição.', detail: err.message });
   } finally {
-    if (client) client.release();
+    if (client) {
+      try { client.release(); } catch(e){}
+    }
   }
 };
 

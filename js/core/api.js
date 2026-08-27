@@ -440,16 +440,25 @@ const Api = {
 
   async gerarPixContribuicao(arrecadacao_id, valor, cpf = '') {
     const token = localStorage.getItem('token');
-    if (!token) return { error: 'Token não encontrado' };
-    const res = await fetch(`/api/arrecadacoes/pix`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ arrecadacao_id, valor, cpf })
-    });
-    return res.json();
+    if (!token) return { error: 'Token não encontrado. Por favor, faça login.' };
+    try {
+      const res = await fetch(`/api/arrecadacoes/pix`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ arrecadacao_id, valor, cpf })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || data.detail || 'Erro ao gerar Pix de contribuição.' };
+      }
+      return data;
+    } catch (e) {
+      console.warn('[gerarPixContribuicao Error]', e);
+      return { error: 'Erro de conexão ao gerar Pix.' };
+    }
   },
 
   async contribuirVaquinhaComSaldo(arrecadacaoId, valor) {
