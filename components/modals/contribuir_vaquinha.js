@@ -105,12 +105,14 @@ window.App.initModalContribuir_vaquinha = function(data = {}) {
   }
 };
 
-let _contribPollInterval = null;
+if (typeof window._contribPollInterval === "undefined") {
+  window._contribPollInterval = null;
+}
 
 function stopPollingContrib() {
-  if (_contribPollInterval) {
-    clearInterval(_contribPollInterval);
-    _contribPollInterval = null;
+  if (window._contribPollInterval) {
+    clearInterval(window._contribPollInterval);
+    window._contribPollInterval = null;
   }
 }
 
@@ -281,7 +283,7 @@ async function handleGeneratePix() {
 
 function startPollingStatus(contribuicaoId, valor) {
   stopPollingContrib();
-  _contribPollInterval = setInterval(async () => {
+  window._contribPollInterval = setInterval(async () => {
     try {
       const res = await window.Api.consultarStatusContribuicao(contribuicaoId);
       if (res && res.status === 'approved') {
