@@ -469,9 +469,9 @@ exports.contribuirComSaldo = async (req, res) => {
       return res.status(400).json({ error: 'Esta campanha de arrecadação foi cancelada.' });
     }
 
-    // 3. Debita do saldo do usuário
+    // 3. Debita do saldo do usuário (tabela usuarios nao possui coluna updated_at)
     const novoSaldo = Math.max(0, saldoAtual - valorContrib);
-    await queryFn('UPDATE usuarios SET saldo = $1, updated_at = NOW() WHERE id = $2', [novoSaldo, usuario_id]);
+    await queryFn('UPDATE usuarios SET saldo = $1 WHERE id = $2', [novoSaldo, usuario_id]);
 
     // 4. Insere a contribuição aprovada
     const paymentId = `saldo_${usuario_id}_${Date.now()}`;
@@ -503,7 +503,7 @@ exports.contribuirComSaldo = async (req, res) => {
   } catch (err) {
     if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('[contribuirComSaldo Error]', err);
-    res.status(500).json({ error: 'Erro ao processar contribuição com saldo.', detail: err.message });
+    res.status(500).json({ error: err.message || 'Erro ao processar contribuição com saldo.', detail: err.message });
   } finally {
     if (client) {
       try { client.release(); } catch(e){}
