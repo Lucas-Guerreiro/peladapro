@@ -465,30 +465,14 @@ const Api = {
         },
         body: JSON.stringify({ arrecadacao_id: arrecadacaoId, valor: parseFloat(valor) })
       });
-      return await res.json();
-    } catch (e) {
-      console.warn('[contribuirVaquinhaComSaldo Offline Fallback]', e);
-      const user = window.Auth ? window.Auth.currentUser : null;
-      if (!user) return { error: 'Usuário não autenticado.' };
-      const currentSaldo = parseFloat(user.saldo || 0);
-      const val = parseFloat(valor);
-      if (currentSaldo < val) {
-        return { error: `Saldo insuficiente. Seu saldo atual é R$ ${currentSaldo.toFixed(2).replace('.', ',')}` };
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || data.detail || 'Erro ao processar contribuição com saldo.' };
       }
-      user.saldo = currentSaldo - val;
-      if (window.Auth) window.Auth.currentUser = user;
-      try { localStorage.setItem("currentUser", JSON.stringify(user)); } catch(err) {}
-
-      try {
-        let mockArrecadacoes = JSON.parse(localStorage.getItem("arrecadacoes") || "[]");
-        let camp = mockArrecadacoes.find(a => String(a.id) === String(arrecadacaoId));
-        if (camp) {
-          camp.arrecadado = (parseFloat(camp.arrecadado || 0) + val);
-          localStorage.setItem("arrecadacoes", JSON.stringify(mockArrecadacoes));
-        }
-      } catch(err) {}
-
-      return { success: true, status: 'approved', novoSaldo: user.saldo, message: 'Contribuição realizada com sucesso usando seu saldo!' };
+      return data;
+    } catch (e) {
+      console.warn('[contribuirVaquinhaComSaldo Error]', e);
+      return { error: 'Erro de conexão com o servidor.' };
     }
   },
 

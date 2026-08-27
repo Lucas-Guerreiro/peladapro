@@ -411,16 +411,25 @@ exports.contribuirComSaldo = async (req, res) => {
   }
 
   const valorContrib = parseFloat(valor);
-  let client;
+  let client = null;
 
   try {
-    client = await db.pool.connect();
-    await client.query('BEGIN');
+    if (db.pool && typeof db.pool.connect === 'function') {
+      try {
+        client = await db.pool.connect();
+      } catch (poolErr) {
+        console.warn('[contribuirComSaldo Pool Connect Warning]', poolErr.message);
+      }
+    }
 
-    // 1. Verifica saldo do usuário
-    const uRes = await client.query('SELECT id, nome, apelido, saldo FROM usuarios WHERE id = $1 FOR UPDATE', [usuario_id]);
+    const queryFn = client ? (text, params) => client.query(text, params) : (text, params) => db.query(text, params);
+
+    if (client) await client.query('BEGIN');
+
+    // 1. Verifica usuário e saldo atual
+    const uRes = await queryFn('SELECT id, nome, apelido, saldo FROM usuarios WHERE id = $1', [usuario_id]);
     if (uRes.rows.length === 0) {
-      await client.query('ROLLBACK');
+      if (client) await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
@@ -428,39 +437,47 @@ exports.contribuirComSaldo = async (req, res) => {
     const saldoAtual = parseFloat(usuario.saldo || 0);
 
     if (saldoAtual < valorContrib) {
-      await client.query('ROLLBACK');
+      if (client) await client.query('ROLLBACK');
       return res.status(400).json({
         error: `Saldo insuficiente. Seu saldo atual é R$ ${saldoAtual.toFixed(2).replace('.', ',')}.`
       });
     }
 
-    // 2. Verifica se a arrecadação existe
-    const aRes = await client.query('SELECT id, titulo, grupo_id FROM arrecadacoes WHERE id = $1 AND status = \'ativa\'', [arrecadacao_id]);
+    // 2. Verifica se a arrecadação existe (aceita qualquer status ativo/concluido no banco)
+    const aRes = await queryFn('SELECT id, titulo, grupo_id, status FROM arrecadacoes WHERE id = $1', [arrecadacao_id]);
     if (aRes.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Campanha de arrecadação encerrada ou não encontrada.' });
+      if (client) await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Campanha de arrecadação não encontrada.' });
     }
     const arrecadacao = aRes.rows[0];
+    if (String(arrecadacao.status).toLowerCase() === 'cancelada') {
+      if (client) await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Esta campanha de arrecadação foi cancelada.' });
+    }
 
     // 3. Debita do saldo do usuário
-    const novoSaldo = saldoAtual - valorContrib;
-    await client.query('UPDATE usuarios SET saldo = $1, updated_at = NOW() WHERE id = $2', [novoSaldo, usuario_id]);
+    const novoSaldo = Math.max(0, saldoAtual - valorContrib);
+    await queryFn('UPDATE usuarios SET saldo = $1, updated_at = NOW() WHERE id = $2', [novoSaldo, usuario_id]);
 
     // 4. Insere a contribuição aprovada
     const paymentId = `saldo_${usuario_id}_${Date.now()}`;
-    await client.query(`
+    await queryFn(`
       INSERT INTO arrecadacoes_contribuicoes (arrecadacao_id, usuario_id, valor, status, payment_id)
       VALUES ($1, $2, $3, 'approved', $4)
     `, [arrecadacao_id, usuario_id, valorContrib, paymentId]);
 
-    // 5. Registra o crédito no caixa da pelada (transacoes)
+    // 5. Registra o crédito de entrada no caixa geral (transacoes)
     const atletaNome = usuario.apelido || usuario.nome || 'Atleta';
-    await client.query(`
-      INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-      VALUES ($1, $2, $3, 'credito', $4)
-    `, [usuario_id, arrecadacao.grupo_id, valorContrib, `Arrecadação (Saldo): ${arrecadacao.titulo} (${atletaNome})`]);
+    try {
+      await queryFn(`
+        INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
+        VALUES ($1, $2, $3, 'credito', $4)
+      `, [usuario_id, arrecadacao.grupo_id, valorContrib, `Arrecadação (Saldo): ${arrecadacao.titulo} (${atletaNome})`]);
+    } catch (tErr) {
+      console.warn('[contribuirComSaldo Transacao Warning]', tErr.message);
+    }
 
-    await client.query('COMMIT');
+    if (client) await client.query('COMMIT');
 
     res.json({
       success: true,
@@ -471,9 +488,11 @@ exports.contribuirComSaldo = async (req, res) => {
 
   } catch (err) {
     if (client) await client.query('ROLLBACK').catch(() => {});
-    console.error('[contribuirComSaldo]', err);
+    console.error('[contribuirComSaldo Error]', err);
     res.status(500).json({ error: 'Erro ao processar contribuição com saldo.', detail: err.message });
   } finally {
-    if (client) client.release();
+    if (client) {
+      try { client.release(); } catch(e){}
+    }
   }
 };
