@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v274'; // ← Otimização de layout em tela cheia para tablets (Samsung S6/S10 Lite)
+const CACHE_NAME = 'peladapro-v275'; // ← Aumento de placar, cronômetro e fontes da Partida ao Vivo em tablets
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

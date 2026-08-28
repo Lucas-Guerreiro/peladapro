@@ -73,26 +73,96 @@
   .gestor-score-card,
   .gestor-card-clear,
   .gestor-header-unified-card,
-  .acomp-header-unified-card {
-    padding: 20px !important;
-    border-radius: 16px !important;
+  .acomp-header-unified-card,
+  #gestor-queue-card,
+  #gestor-recent-matches-card,
+  #gestor-tournament-card {
+    padding: 26px !important;
+    border-radius: 18px !important;
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
-  /* Ajustes de Placar ao Vivo na Aba Partidas para Gestores no Campo com Tablet */
+  /* --- ELEMENTOS DA TELA PARTIDA AO VIVO (PLACAR, CRONÔMETRO, BOTOES E NOMES) OTIMIZADOS PARA TABLET --- */
   .gestor-score-num,
   #match-control-score-a,
   #match-control-score-b {
-    font-size: 42px !important;
+    font-size: 68px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
   }
 
-  .gestor-timer-time {
-    font-size: 44px !important;
+  .gestor-score-divider {
+    font-size: 36px !important;
+    opacity: 0.7 !important;
+  }
+
+  .gestor-timer-time,
+  #match-control-timer {
+    font-size: 58px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0px !important;
+  }
+
+  .gestor-timer-wrapper {
+    padding: 24px 20px !important;
+    border-radius: 18px !important;
+  }
+
+  .gestor-team-title,
+  #match-control-team-a,
+  #match-control-team-b {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  #emblem-team-a,
+  #emblem-team-b {
+    width: 56px !important;
+    height: 64px !important;
+  }
+
+  .btn-adjust-score,
+  .btn-score-adjust,
+  #btn-timer-minus,
+  #btn-timer-plus {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+  }
+
+  .btn-goal-trigger,
+  #btn-goal-team-a,
+  #btn-goal-team-b {
+    height: 42px !important;
+    padding: 6px 18px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+
+  #gestor-phase-header-title {
+    font-size: 20px !important;
+    font-weight: 900 !important;
+  }
+
+  #gestor-phase-header-sub {
+    font-size: 13px !important;
+  }
+
+  /* Títulos de Seção em Destaque no Tablet */
+  .gestor-card-clear h3,
+  #gestor-queue-card h3,
+  #gestor-recent-matches-card h3,
+  #gestor-tournament-card h3 {
+    font-size: 19px !important;
+    font-weight: 800 !important;
   }
 
   .score-numbers {
-    font-size: 64px !important;
+    font-size: 72px !important;
   }
 
   /* Botões e Áreas de Toque para Tablet (Fácil Manuseio Sem Ficar Pequeno) */
