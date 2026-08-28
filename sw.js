@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v275'; // ← Aumento de placar, cronômetro e fontes da Partida ao Vivo em tablets
+const CACHE_NAME = 'peladapro-v276'; // ← Sincronização de convocados de 31/08 com 24/08
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
