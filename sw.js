@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v277'; // ← Sincronização exata de 24 atletas confirmados entre 24/08 e 31/08 no Financeiro e Convocação
+const CACHE_NAME = 'peladapro-v276'; // ← Sincronização de convocados de 31/08 com 24/08
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
