@@ -820,13 +820,38 @@ window.App.renderFinanceiroData = async function() {
   txPeladas.forEach(t => {
     let peladaDataIdentificada = null;
 
-    const matchDia = t.descricao.match(/(?:dia|pelada)\s+(\d{2}\/\d{2}(?:\/\d{4})?)/i) || t.descricao.match(/\(\s*Pelada\s+(\d{2}\/\d{2}(?:\/\d{4})?)\)/i);
+    // 1. Busca por datas explícitas na descrição (ex: "dia 24/08", "Pelada 24/08/2026", "24/08", etc)
+    const matchDia = t.descricao.match(/(?:dia|pelada)?\s*(\d{2}\/\d{2}(?:\/\d{4})?)/i) || 
+                     t.descricao.match(/(\d{2}\/\d{2}(?:\/\d{4})?)/);
+
     if (matchDia && matchDia[1]) {
       const encontrada = matchDia[1];
       if (encontrada.length === 5) peladaDataIdentificada = `${encontrada}/2026`;
       else peladaDataIdentificada = encontrada;
     } else {
-      peladaDataIdentificada = defaultDataPelada;
+      // 2. Se a descrição não tiver data explicita, associa com a pelada cuja data é mais próxima da data de lançamento da transação (t.data)
+      let peladaMaisProxima = null;
+      let menorDiferenca = Infinity;
+
+      (peladasList || []).forEach(p => {
+        if (p.data) {
+          const pDate = new Date(p.data);
+          const diff = Math.abs(t.data.getTime() - pDate.getTime());
+          if (diff < menorDiferenca) {
+            menorDiferenca = diff;
+            peladaMaisProxima = p;
+          }
+        }
+      });
+
+      if (peladaMaisProxima && peladaMaisProxima.data) {
+        const parts = String(peladaMaisProxima.data).split("T")[0].split("-");
+        if (parts.length === 3) peladaDataIdentificada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+
+      if (!peladaDataIdentificada) {
+        peladaDataIdentificada = defaultDataPelada;
+      }
     }
 
     const groupKey = `Pelada_${peladaDataIdentificada.replace(/\//g, '-')}`;

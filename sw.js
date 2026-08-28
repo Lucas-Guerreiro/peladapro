@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v276'; // ← Sincronização de convocados de 31/08 com 24/08
+const CACHE_NAME = 'peladapro-v278'; // ← Correção de agrupamento por data de transações de peladas no Financeiro
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
