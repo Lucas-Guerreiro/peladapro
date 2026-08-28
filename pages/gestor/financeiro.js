@@ -972,13 +972,13 @@ window.App.renderFinanceiroData = async function() {
       entradasHtml = `<div style="font-size: 12px; color: var(--text-caption); padding: 8px 0;">Nenhuma entrada registrada nesta pelada.</div>`;
     } else {
       entradasHtml = grp.entradas.map(e => {
-        const horaFmt = e.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        const dataPagFmt = e.data ? `${e.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })} às ${e.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}` : '';
         const nomeOuDesc = e.atletaNome ? `⚽ <strong>${e.atletaNome}</strong> <span style="font-size:11px; color:var(--text-caption);">(${e.descricao})</span>` : e.descricao;
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
             <div style="min-width: 0; flex: 1; padding-right: 8px;">
               <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeOuDesc}</span>
-              <span style="font-size: 10px; color: #94A3B8;">${e.categoria} · ${horaFmt}</span>
+              <span style="font-size: 10px; color: #64748B;">${e.categoria} · 📅 Pago em <strong>${dataPagFmt}</strong></span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; color: #059669; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>

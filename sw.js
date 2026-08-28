@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v278'; // ← Correção de agrupamento por data de transações de peladas no Financeiro
+const CACHE_NAME = 'peladapro-v279'; // ← Exibição da data e hora de pagamento das convocações no Demonstrativo por Pelada
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
