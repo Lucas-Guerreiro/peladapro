@@ -145,10 +145,14 @@ async function handlePaymentAction() {
 async function handleConfirmPaymentSaldo() {
   const cost = parseFloat(localPelada.valor_convocacao) || 20.00;
   const token = localStorage.getItem('token');
+  const confirmBtn = document.getElementById("btn-confirm-payment-action");
+
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "⏳ Confirmando...";
+  }
 
   try {
-    window.App.showToast("Confirmando presença via Saldo...", "info");
-
     const res = await fetch('/api/convocacoes/confirmar', {
       method: 'POST',
       headers: {
@@ -165,10 +169,14 @@ async function handleConfirmPaymentSaldo() {
 
     if (res.status < 200 || res.status >= 300) {
       window.App.showToast(data.error || "Erro ao confirmar presença.", "error");
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Concluir Convocação";
+      }
       return;
     }
 
-    window.App.showToast("Presença confirmada via Saldo!", "success");
+    window.App.showToast("Presença confirmada via Saldo! ⚽", "success");
 
     // Deduz do saldo na sessão local
     if (window.App.currentUser) {
@@ -190,6 +198,10 @@ async function handleConfirmPaymentSaldo() {
   } catch (err) {
     console.error("[pagamento] Erro no saldo:", err);
     window.App.showToast("Erro ao se conectar ao servidor.", "error");
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Concluir Convocação";
+    }
   }
 }
 

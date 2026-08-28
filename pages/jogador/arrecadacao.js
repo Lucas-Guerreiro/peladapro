@@ -75,8 +75,20 @@ async function renderCampanhasArrecadacao() {
       const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
       const isConcluida = (camp.status === 'concluida') || (pct >= 100);
 
-      // Apoiadores
-      const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+      // Agrupa apoiadores por atleta
+      const apoiadoresMap = new Map();
+      (Array.isArray(camp.contribuicoes) ? camp.contribuicoes : []).forEach(a => {
+        const key = String(a.usuario_id || a.nome || a.apelido || 'atleta').toLowerCase().trim();
+        const val = parseFloat(a.valor || 0);
+        if (!apoiadoresMap.has(key)) {
+          apoiadoresMap.set(key, { ...a, valorTotal: val });
+        } else {
+          apoiadoresMap.get(key).valorTotal += val;
+        }
+      });
+      const apoiadores = Array.from(apoiadoresMap.values());
+      apoiadores.sort((a, b) => b.valorTotal - a.valorTotal);
+
       let apoiadoresHtml = "";
 
       if (apoiadores.length === 0) {
@@ -103,7 +115,7 @@ async function renderCampanhasArrecadacao() {
               ${apoiadores.map(a => {
                 const nomeDisplay = a.apelido || a.nome || "Atleta";
                 const inicial = nomeDisplay.charAt(0).toUpperCase();
-                const valorFormatado = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+                const valorFormatado = parseFloat(a.valorTotal || 0).toFixed(2).replace('.', ',');
                 const temFoto = a.foto && a.foto.trim().length > 0;
                 
                 const avatarHtml = temFoto 
@@ -119,7 +131,7 @@ async function renderCampanhasArrecadacao() {
                       </span>
                     </div>
                     <span style="font-size: 11px; font-weight: 800; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 12px; white-space: nowrap;">
-                      Apoiou ✅
+                      + R$ ${valorFormatado} ✅
                     </span>
                   </div>
                 `;

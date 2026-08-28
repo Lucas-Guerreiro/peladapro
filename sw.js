@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v270'; // ← Correção e alinhamento do modal Registrar Nova Despesa
+const CACHE_NAME = 'peladapro-v274'; // ← Otimização de layout em tela cheia para tablets (Samsung S6/S10 Lite)
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -55,11 +55,13 @@ self.addEventListener('fetch', (event) => {
   // Ignora requisições de esquemas não suportados pelo Cache API (chrome-extension, data, etc.)
   if (!request.url.startsWith('http')) return;
 
-  // 1) API / Supabase: SEMPRE direto, nunca cachear
-  if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
-    event.respondWith(fetch(request).catch(() => {
-      return new Response('Erro de rede', { status: 503 });
-    }));
+  // 1) API / Supabase / Páginas & Modais JS/HTML: Network-First (sempre busca versão mais recente)
+  if (request.url.includes('/api/') || request.url.includes('supabase.co') || request.url.includes('/pages/') || request.url.includes('/components/')) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match(request);
+      })
+    );
     return;
   }
 

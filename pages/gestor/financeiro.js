@@ -6,6 +6,41 @@
 window.App._financeiroFilter = "este_mes"; // "este_mes" | "ultimos_30" | "tudo"
 window.App._financeiroPeladaFilter = "todas"; // "todas" | "Pelada_24/08" etc.
 
+function agruparContribuicoesPorAtleta(contribuicoesList) {
+  const map = new Map();
+  (Array.isArray(contribuicoesList) ? contribuicoesList : []).forEach(a => {
+    const key = String(a.usuario_id || a.nome || a.apelido || 'atleta').toLowerCase().trim();
+    const val = parseFloat(a.valor || 0);
+
+    if (!map.has(key)) {
+      map.set(key, {
+        id: a.id,
+        usuario_id: a.usuario_id,
+        nome: a.nome,
+        apelido: a.apelido,
+        foto: a.foto,
+        valorTotal: val,
+        qtdContribuicoes: 1,
+        created_at: a.created_at,
+        status: a.status
+      });
+    } else {
+      const existing = map.get(key);
+      existing.valorTotal += val;
+      existing.qtdContribuicoes += 1;
+      const dtA = a.created_at ? new Date(a.created_at) : null;
+      const dtE = existing.created_at ? new Date(existing.created_at) : null;
+      if (dtA && (!dtE || dtA > dtE)) {
+        existing.created_at = a.created_at;
+      }
+    }
+  });
+
+  const list = Array.from(map.values());
+  list.sort((a, b) => b.valorTotal - a.valorTotal);
+  return list;
+}
+
 window.App.initFinanceiro = async function() {
   await window.App.renderFinanceiroData();
 
@@ -408,7 +443,8 @@ window.App.renderFinanceiroData = async function() {
         const arrecadadoLiquido = arrecadado - taxaMP;
         const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
         const isConcluida = (camp.status === 'concluida') || (pct >= 100);
-        const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+        // Agrupa e soma contribuições por atleta caso um atleta tenha feito mais de 1 contribuição na mesma vaquinha
+        const apoiadores = agruparContribuicoesPorAtleta(camp.contribuicoes);
 
         let apoiadoresListHtml = "";
         if (apoiadores.length === 0) {
@@ -423,7 +459,7 @@ window.App.renderFinanceiroData = async function() {
               ${apoiadores.map((a, idx) => {
                 const nomeDisplay = a.apelido || a.nome || "Atleta";
                 const inicial = nomeDisplay.charAt(0).toUpperCase();
-                const valFmt = parseFloat(a.valor || 0).toFixed(2).replace('.', ',');
+                const valFmt = parseFloat(a.valorTotal || 0).toFixed(2).replace('.', ',');
                 const dt = a.created_at ? new Date(a.created_at) : null;
                 const horaFmt = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
                 const dataFmt = dt ? dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '';
@@ -432,15 +468,22 @@ window.App.renderFinanceiroData = async function() {
                   ? `<img src="${a.foto}" alt="${nomeDisplay}" style="width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1.5px solid #0284C7; flex-shrink: 0;">`
                   : `<div style="width: 26px; height: 26px; border-radius: 50%; background: #0284C7; color: #FFF; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${inicial}</div>`;
 
+                const subInfoStr = (a.qtdContribuicoes > 1)
+                  ? `${a.qtdContribuicoes} contribuições · 📅 Última: ${dataFmt} às ${horaFmt}`
+                  : (dataFmt && horaFmt ? `📅 ${dataFmt} às ${horaFmt}` : '');
+
                 return `
-                  <div style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px 12px; font-size: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                      <span style="font-weight: 700; color: #64748B; width: 18px; text-align: center; flex-shrink: 0;">${idx + 1}º</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; font-size: 13px;">
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                      <span style="font-weight: 800; color: #64748B; width: 20px; text-align: center; flex-shrink: 0; font-size: 12px;">${idx + 1}º</span>
                       ${avatarHtml}
-                      <strong style="color: #0F172A; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeDisplay}</strong>
+                      <div style="display: flex; flex-direction: column; min-width: 0;">
+                        <strong style="color: #0F172A; font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeDisplay}</strong>
+                        ${subInfoStr ? `<span style="font-size: 10px; color: #64748B; margin-top: 1px;">${subInfoStr}</span>` : ''}
+                      </div>
                     </div>
-                    <span style="font-weight: 800; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;">
-                      Apoiou ✅
+                    <span style="font-weight: 900; font-size: 13px; color: #047857; background: #ECFDF5; border: 1.5px solid #A7F3D0; padding: 4px 12px; border-radius: 12px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 1px 3px rgba(4, 120, 87, 0.1);">
+                      R$ ${valFmt} ✅
                     </span>
                   </div>
                 `;
@@ -515,10 +558,15 @@ window.App.renderFinanceiroData = async function() {
 
             <!-- SEÇÃO DE CONTRIBUINTES -->
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: #1E293B; display: flex; align-items: center; gap: 6px;">
                   👥 Lista dos Atletas que Contribuíram (${apoiadores.length})
                 </h4>
+                ${apoiadores.length > 0 ? `
+                  <span style="font-size: 11px; font-weight: 700; color: #0284C7; background: #F0F9FF; border: 1px solid #BAE6FD; padding: 3px 10px; border-radius: 12px;">
+                    📊 Média: R$ ${(arrecadado / apoiadores.length).toFixed(2).replace('.', ',')} / atleta
+                  </span>
+                ` : ''}
               </div>
               ${apoiadoresListHtml}
             </div>
@@ -1041,7 +1089,7 @@ window.App.exportVaquinhaWhatsApp = function(arrecadacaoId) {
   const taxaMP = arrecadado * 0.01;
   const arrecadadoLiquido = arrecadado - taxaMP;
   const pct = meta > 0 ? Math.min(100, Math.round((arrecadado / meta) * 100)) : 0;
-  const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+  const apoiadores = agruparContribuicoesPorAtleta(camp.contribuicoes);
 
   let text = `🏆 *RELATÓRIO DA VAQUINHA — ${camp.titulo.toUpperCase()}*\n`;
   if (camp.categoria) text += `📌 Categoria: ${camp.categoria}\n`;
@@ -1057,7 +1105,9 @@ window.App.exportVaquinhaWhatsApp = function(arrecadacaoId) {
     text += `👥 *LISTA DE CONTRIBUINTES QUE JÁ APOIARAM (${apoiadores.length}):*\n`;
     apoiadores.forEach((a, idx) => {
       const nomeDisplay = a.apelido || a.nome || "Atleta";
-      text += `${idx + 1}. ⚽ *${nomeDisplay}*\n`;
+      const valFmt = parseFloat(a.valorTotal || 0).toFixed(2).replace('.', ',');
+      const extraContribStr = a.qtdContribuicoes > 1 ? ` (${a.qtdContribuicoes}x)` : '';
+      text += `${idx + 1}. ⚽ *${nomeDisplay}* — R$ ${valFmt}${extraContribStr}\n`;
     });
   }
 
@@ -1087,7 +1137,7 @@ window.App.exportVaquinhaExcel = function(arrecadacaoId) {
     return;
   }
 
-  const apoiadores = Array.isArray(camp.contribuicoes) ? camp.contribuicoes : [];
+  const apoiadores = agruparContribuicoesPorAtleta(camp.contribuicoes);
 
   if (apoiadores.length === 0) {
     if (window.App.showToast) window.App.showToast("Nenhuma contribuição registrada para exportar nesta vaquinha.", "warning");
@@ -1096,16 +1146,17 @@ window.App.exportVaquinhaExcel = function(arrecadacaoId) {
 
   let csv = "\uFEFF"; // BOM para acentuação no Excel em PT-BR
   csv += `RELATÓRIO DA VAQUINHA: ${camp.titulo}\n`;
-  csv += `Meta: R$ ${parseFloat(camp.meta_valor || 0).toFixed(2)};Total Arrecadado: R$ ${parseFloat(camp.total_arrecadado || 0).toFixed(2)};Total Contribuições: ${apoiadores.length}\n\n`;
-  csv += "#;Nome do Atleta;Apelido;Status\n";
+  csv += `Meta: R$ ${parseFloat(camp.meta_valor || 0).toFixed(2)};Total Arrecadado: R$ ${parseFloat(camp.total_arrecadado || 0).toFixed(2)};Total Atletas Contribuintes: ${apoiadores.length}\n\n`;
+  csv += "#;Nome do Atleta;Apelido;Valor Total Contribuído (R$);Qtd Contribuições;Status\n";
 
   apoiadores.forEach((a, idx) => {
     const num = idx + 1;
     const nome = (a.nome || "").replace(/;/g, ",");
     const apelido = (a.apelido || "").replace(/;/g, ",");
+    const valFmt = parseFloat(a.valorTotal || 0).toFixed(2).replace('.', ',');
     const status = (a.status === 'approved' || a.status === 'aprovado') ? 'Aprovado' : (a.status || 'Confirmado');
 
-    csv += `${num};${nome};${apelido};${status}\n`;
+    csv += `${num};${nome};${apelido};R$ ${valFmt};${a.qtdContribuicoes};${status}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

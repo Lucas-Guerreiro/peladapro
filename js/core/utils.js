@@ -117,10 +117,13 @@ const Utils = {
       info: 'ℹ️'
     };
     const container = this._getContainer();
+    // Limpa avisos anteriores acumulados para exibir apenas 1 toast por vez
+    if (container) container.innerHTML = '';
+
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
     el.innerHTML = `<span>${icons[type] || '🔔'}</span><span>${msg}</span>`;
-    container.appendChild(el);
+    if (container) container.appendChild(el);
 
     setTimeout(() => {
       el.style.animation = 'none';

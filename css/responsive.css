@@ -4,24 +4,37 @@
    ========================================================================== */
 
 /* ==========================================================================
-   CONFIGURAÇÃO EXCLUSIVA PARA TABLETS (769px a 1200px)
+   CONFIGURAÇÃO EXCLUSIVA PARA TABLETS (600px a 1280px - Samsung Tab S6/S10 Lite, iPads, etc.)
    Ajusta proporcionalmente elementos, botões, grades e tipografia
-   sem alterar as experiências Web (Desktop > 1200px) nem Mobile (Smartphones <= 768px).
+   para ocupar 100% da tela com conforto e máxima usabilidade.
    ========================================================================== */
-@media (min-width: 769px) and (max-width: 1200px) {
-  /* Container e Margens Laterais Ajustadas para Tela de Tablet */
+@media (min-width: 600px) and (max-width: 1280px) {
+  /* Container e Margens Laterais Ajustadas para Tela Cheia de Tablet */
   .app-container,
   .gestor-web-body,
+  .acomp-web-body,
+  #main-view-container,
   main {
+    width: 100% !important;
     max-width: 100% !important;
-    padding-left: 24px !important;
-    padding-right: 24px !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
     padding-top: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .gestor-center-container,
+  .acomp-center-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    gap: 16px !important;
+    box-sizing: border-box !important;
   }
 
   /* Cabeçalho da Aplicação Otimizado para Tablet */
   .main-header {
-    padding: 16px 24px !important;
+    padding: 16px 20px !important;
   }
 
   .main-header .brand h1 {
@@ -31,14 +44,17 @@
   /* Abas de Navegação Ajustadas para Toque em Tablet */
   .tabs-navigation {
     gap: 8px !important;
+    flex-wrap: wrap !important;
   }
 
-  .tab-btn {
+  .tab-btn,
+  .gestor-nav-item-clear,
+  .acomp-nav-item-clear {
     padding: 10px 16px !important;
     font-size: 14px !important;
   }
 
-  /* Grades Adaptadas para Tablet (2 Colunas Perfeitamente Equilibradas) */
+  /* Grades Adaptadas para Tablet (2 Colunas Perfeitamente Equilibradas Aproveitando a Tela) */
   .grid-2,
   .grid-3,
   .grid-4 {
@@ -52,12 +68,16 @@
     gap: 16px !important;
   }
 
-  /* Cards e Contêineres de Informações */
+  /* Cards e Contêineres de Informações em Tela Cheia no Tablet */
   .card,
   .gestor-score-card,
-  .gestor-card-clear {
+  .gestor-card-clear,
+  .gestor-header-unified-card,
+  .acomp-header-unified-card {
     padding: 20px !important;
     border-radius: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Ajustes de Placar ao Vivo na Aba Partidas para Gestores no Campo com Tablet */
@@ -115,7 +135,7 @@
 
   .modal-content {
     width: 90% !important;
-    max-width: 620px !important;
+    max-width: 680px !important;
     max-height: 85vh !important;
     border-radius: 18px !important;
     padding: 28px 24px !important;
@@ -132,7 +152,7 @@
   /* Agenda de Jogos e Lista de Partidas Recentes */
   #tournament-matches-list,
   #recent-matches-container {
-    max-height: 420px !important;
+    max-height: 450px !important;
   }
 }
 

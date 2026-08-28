@@ -668,7 +668,6 @@ var Convocacao = {
             if (!confirmouFila) return;
 
             // ATLETA CONFIRMOU ENTRADA NA FILA — ENVIAR DIRETO SEM COBRAR PIX / SALDO AGORA
-            Utils.toast('Adicionando à fila de espera...', 'info');
             const resFila = await Api.entrarFilaEspera(Convocacao._selectedPeladaId);
             if (resFila.error) {
               Utils.toast(resFila.error, 'error');
