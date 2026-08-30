@@ -49,7 +49,8 @@
     box-sizing: border-box;
   }
 
-  @media (max-width: 768px) {
+  /* Ajuste responsivo para telas pequenas de smartphones */
+  @media (max-width: 600px) {
 
     .gestor-score-card,
     .gestor-card-clear {
@@ -61,53 +62,96 @@
     }
 
     .gestor-timer-wrapper {
-      padding: 12px 8px;
+      padding: 16px 10px;
     }
 
     .gestor-timer-time {
-      font-size: 36px;
+      font-size: 52px;
     }
 
     .gestor-score-num {
-      font-size: 32px;
+      font-size: 40px;
     }
 
     .gestor-team-title {
-      font-size: 12px !important;
+      font-size: 13px !important;
     }
 
     .btn-goal-trigger {
-      padding: 3px 6px;
-      font-size: 10px;
+      padding: 4px 8px;
+      font-size: 11px;
     }
 
     .btn-adjust-score {
-      width: 22px;
-      height: 22px;
-      font-size: 11px;
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
     }
 
     #emblem-team-a,
     #emblem-team-b {
-      width: 36px !important;
-      height: 40px !important;
+      width: 40px !important;
+      height: 44px !important;
     }
   }
 
-  @media (max-width: 480px) {
-    .gestor-score-num {
-      font-size: 28px;
+  /* OTIMIZAÇÃO DE ALTA VISIBILIDADE DO CRONÔMETRO PARA TABLETS (601px - 1280px) */
+  @media (min-width: 601px) and (max-width: 1280px) {
+    .gestor-timer-wrapper {
+      padding: 28px 24px !important;
+      border-radius: 20px !important;
+      border: 2px solid #94A3B8 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
     }
 
-    .btn-goal-trigger {
-      padding: 2px 5px;
-      font-size: 10px;
+    .gestor-timer-time,
+    #match-control-timer {
+      font-size: 96px !important;
+      font-weight: 900 !important;
+      letter-spacing: 2px !important;
+      line-height: 1 !important;
     }
 
-    .btn-adjust-score {
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
+    #btn-timer-minus,
+    #btn-timer-plus {
+      width: 56px !important;
+      height: 56px !important;
+      font-size: 22px !important;
+      font-weight: 900 !important;
+      border: 2.5px solid #64748B !important;
+    }
+
+    .gestor-progress-container {
+      height: 14px !important;
+      border-radius: 7px !important;
+      margin: 18px 0 22px !important;
+    }
+
+    .gestor-status-badge,
+    #gestor-timer-status-text {
+      font-size: 16px !important;
+      font-weight: 800 !important;
+    }
+
+    #gestor-timer-dot {
+      width: 14px !important;
+      height: 14px !important;
+    }
+
+    #btn-timer-toggle {
+      padding: 12px 32px !important;
+      font-size: 17px !important;
+      font-weight: 800 !important;
+      border-radius: 10px !important;
+      min-height: 50px !important;
+    }
+
+    #btn-timer-reset {
+      padding: 12px 24px !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      border-radius: 10px !important;
+      min-height: 50px !important;
     }
   }
 
@@ -115,9 +159,9 @@
     background: #D1FAE5;
     border: 1px solid #A7F3D0;
     color: #065F46;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 14px;
     border-radius: 100px;
     letter-spacing: 0.5px;
     display: inline-flex;
@@ -126,8 +170,8 @@
   }
 
   .gestor-live-tag span {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     background: #10B981;
     border-radius: 50%;
     display: inline-block;
@@ -135,27 +179,28 @@
 
   .gestor-timer-wrapper {
     background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 20px;
+    border: 2px solid #CBD5E1;
+    border-radius: 18px;
+    padding: 24px;
     text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   }
 
   .gestor-timer-time {
-    font-size: 48px;
-    font-weight: 800;
+    font-size: 80px;
+    font-weight: 900;
     color: #0F172A;
-    font-family: monospace, sans-serif;
-    letter-spacing: -1px;
+    font-family: 'Consolas', 'Courier New', monospace, sans-serif;
+    letter-spacing: 2px;
     line-height: 1;
   }
 
   .gestor-progress-container {
-    height: 6px;
+    height: 12px;
     background: #E2E8F0;
-    border-radius: 3px;
+    border-radius: 6px;
     overflow: hidden;
-    margin: 12px 0 16px;
+    margin: 16px 0 18px;
   }
 
   .gestor-progress-bar {
@@ -168,13 +213,13 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: #475569;
   }
 
   .gestor-team-title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: #0F172A;
     margin: 0;
@@ -183,39 +228,40 @@
   }
 
   .gestor-score-num {
-    font-size: 52px;
-    font-weight: 800;
+    font-size: 64px;
+    font-weight: 900;
     color: #0F172A;
     font-family: monospace, sans-serif;
     line-height: 1;
   }
 
   .gestor-score-divider {
-    font-size: 24px;
+    font-size: 32px;
     color: #94A3B8;
-    opacity: 0.5;
+    opacity: 0.6;
   }
 
   .btn-adjust-score {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    border: 1px solid #CBD5E1;
-    background: #F8FAFC;
+    border: 2px solid #94A3B8;
+    background: #FFFFFF;
     color: #0F172A;
-    font-weight: 800;
-    font-size: 14px;
+    font-weight: 900;
+    font-size: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     line-height: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     transition: all 0.2s;
   }
 
   .btn-adjust-score:hover {
     background: #E2E8F0;
-    border-color: #94A3B8;
+    border-color: #64748B;
   }
 
   .btn-goal-trigger {
@@ -223,9 +269,9 @@
     color: #FFFFFF;
     border: none;
     border-radius: 8px;
-    padding: 6px 14px;
-    font-weight: 700;
-    font-size: 12px;
+    padding: 8px 16px;
+    font-weight: 800;
+    font-size: 13px;
     cursor: pointer;
     letter-spacing: 0.5px;
     transition: background 0.2s;

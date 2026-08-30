@@ -100,38 +100,40 @@
 
   .gestor-timer-time,
   #match-control-timer {
-    font-size: 58px !important;
+    font-size: 96px !important;
     font-weight: 900 !important;
-    letter-spacing: 0px !important;
+    letter-spacing: 2px !important;
+    line-height: 1 !important;
   }
 
   .gestor-timer-wrapper {
-    padding: 24px 20px !important;
-    border-radius: 18px !important;
+    padding: 28px 24px !important;
+    border-radius: 20px !important;
+    border: 2px solid #94A3B8 !important;
   }
 
   .gestor-team-title,
   #match-control-team-a,
   #match-control-team-b {
-    font-size: 20px !important;
+    font-size: 22px !important;
     font-weight: 800 !important;
     letter-spacing: 0.5px !important;
   }
 
   #emblem-team-a,
   #emblem-team-b {
-    width: 56px !important;
-    height: 64px !important;
+    width: 60px !important;
+    height: 68px !important;
   }
 
   .btn-adjust-score,
   .btn-score-adjust,
   #btn-timer-minus,
   #btn-timer-plus {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 22px !important;
+    font-weight: 900 !important;
   }
 
   .btn-goal-trigger,

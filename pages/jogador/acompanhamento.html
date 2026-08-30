@@ -6,25 +6,26 @@
   .acomp-timer-wrapper-clear {
     align-items: center;
     text-align: center;
+    padding: 20px !important;
   }
 
   .acomp-timer-time-clear {
-    font-size: 44px;
-    font-weight: 300;
-    font-family: monospace, sans-serif;
+    font-size: 68px;
+    font-weight: 900;
+    font-family: 'Consolas', 'Courier New', monospace, sans-serif;
     color: #0F172A;
     letter-spacing: 2px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     line-height: 1;
   }
 
   .acomp-progress-container-clear {
     width: 100%;
-    height: 8px;
-    background: #F1F5F9;
+    height: 12px;
+    background: #E2E8F0;
     border-radius: 100px;
     overflow: hidden;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .acomp-progress-bar-clear {
@@ -38,9 +39,30 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
-    color: #64748B;
-    font-weight: 600;
+    font-size: 14px;
+    color: #475569;
+    font-weight: 700;
+  }
+
+  @media (min-width: 601px) and (max-width: 1280px) {
+    .acomp-timer-time-clear,
+    #acomp-timer-text {
+      font-size: 88px !important;
+      font-weight: 900 !important;
+      letter-spacing: 2px !important;
+      line-height: 1 !important;
+    }
+
+    .acomp-progress-container-clear {
+      height: 14px !important;
+      border-radius: 100px !important;
+    }
+
+    .acomp-status-badge-clear,
+    #acomp-timer-status {
+      font-size: 16px !important;
+      font-weight: 800 !important;
+    }
   }
 
   .acomp-pulse-dot-clear {
