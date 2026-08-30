@@ -1760,6 +1760,246 @@ window.App.closeFullscreenScoreboard = function () {
   document.body.classList.remove("fullscreen-mode-active");
 };
 
+function setupFullscreenDrawers() {
+  const btnQueue = document.getElementById("fs-btn-toggle-queue");
+  const btnStandings = document.getElementById("fs-btn-toggle-standings");
+  const btnScorers = document.getElementById("fs-btn-toggle-scorers");
+
+  const panelQueue = document.getElementById("fs-panel-queue");
+  const panelStandings = document.getElementById("fs-panel-standings");
+  const panelScorers = document.getElementById("fs-panel-scorers");
+
+  if (btnQueue && panelQueue) {
+    btnQueue.onclick = () => {
+      const isVisible = panelQueue.style.display === "block";
+      panelQueue.style.display = isVisible ? "none" : "block";
+      btnQueue.classList.toggle("active", !isVisible);
+      const arrow = btnQueue.querySelector(".fs-arrow");
+      if (arrow) arrow.textContent = isVisible ? "🔽" : "🔼";
+      if (!isVisible) renderFullscreenQueue();
+    };
+  }
+
+  if (btnStandings && panelStandings) {
+    btnStandings.onclick = () => {
+      const isVisible = panelStandings.style.display === "block";
+      panelStandings.style.display = isVisible ? "none" : "block";
+      btnStandings.classList.toggle("active", !isVisible);
+      const arrow = btnStandings.querySelector(".fs-arrow");
+      if (arrow) arrow.textContent = isVisible ? "🔽" : "🔼";
+      if (!isVisible) renderFullscreenStandings();
+    };
+  }
+
+  if (btnScorers && panelScorers) {
+    btnScorers.onclick = () => {
+      const isVisible = panelScorers.style.display === "block";
+      panelScorers.style.display = isVisible ? "none" : "block";
+      btnScorers.classList.toggle("active", !isVisible);
+      const arrow = btnScorers.querySelector(".fs-arrow");
+      if (arrow) arrow.textContent = isVisible ? "🔽" : "🔼";
+      if (!isVisible) renderFullscreenScorers();
+    };
+  }
+}
+
+function renderFullscreenQueue() {
+  const container = document.getElementById("fs-queue-content");
+  if (!container) return;
+
+  const queue = getAppWaitingQueue();
+  const liveMatch = window.App.liveMatch || {};
+
+  let html = "";
+  
+  // Jogo em Andamento
+  if (liveMatch.teamA && liveMatch.teamB) {
+    html += `
+      <div style="background: rgba(2, 132, 199, 0.2); border: 1px solid #0284C7; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+        <span style="font-weight: 800; color: #38BDF8;">🟢 EM ANDAMENTO</span>
+        <strong style="color: #FFF; font-size: 14px;">${liveMatch.teamA} <span style="color:#38BDF8;">${liveMatch.scoreA || 0} x ${liveMatch.scoreB || 0}</span> ${liveMatch.teamB}</strong>
+      </div>
+    `;
+  }
+
+  if (Array.isArray(queue) && queue.length > 0) {
+    html += `<div style="font-size: 11px; font-weight: 800; color: #94A3B8; margin-top: 6px; text-transform: uppercase;">📋 Próximos na Fila de Espera:</div>`;
+    queue.forEach((item, idx) => {
+      const posStr = idx === 0 ? "1º PRÓXIMO" : `${idx + 1}º NA FILA`;
+      const teamName = (typeof item === 'object' && item.nome) ? item.nome : String(item);
+      html += `
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+          <span style="font-weight: 800; color: ${idx === 0 ? '#FBBF24' : '#CBD5E1'};">${posStr}</span>
+          <strong style="color: #FFF; font-size: 14px;">${teamName}</strong>
+        </div>
+      `;
+    });
+  } else {
+    html += `<div style="font-size: 12px; color: #64748B; padding: 6px 0;">Nenhum time aguardando na fila.</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function renderFullscreenStandings() {
+  const container = document.getElementById("fs-standings-content");
+  if (!container) return;
+
+  let teams = getAppTeamsList();
+  let statsMap = {};
+  teams.forEach(t => {
+    statsMap[t.nome] = { nome: t.nome, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+  });
+
+  const matches = window.App.recentMatchesList || [];
+  matches.forEach(m => {
+    const tA = m.teamA;
+    const tB = m.teamB;
+    const sA = parseInt(m.scoreA || 0);
+    const sB = parseInt(m.scoreB || 0);
+
+    if (tA && !statsMap[tA]) statsMap[tA] = { nome: tA, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+    if (tB && !statsMap[tB]) statsMap[tB] = { nome: tB, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+
+    if (statsMap[tA]) {
+      statsMap[tA].j++;
+      statsMap[tA].gp += sA;
+      statsMap[tA].gc += sB;
+    }
+    if (statsMap[tB]) {
+      statsMap[tB].j++;
+      statsMap[tB].gp += sB;
+      statsMap[tB].gc += sA;
+    }
+
+    if (sA > sB) {
+      if (statsMap[tA]) { statsMap[tA].p += 3; statsMap[tA].v++; }
+      if (statsMap[tB]) { statsMap[tB].d++; }
+    } else if (sB > sA) {
+      if (statsMap[tB]) { statsMap[tB].p += 3; statsMap[tB].v++; }
+      if (statsMap[tA]) { statsMap[tA].d++; }
+    } else {
+      if (statsMap[tA]) { statsMap[tA].p += 1; statsMap[tA].e++; }
+      if (statsMap[tB]) { statsMap[tB].p += 1; statsMap[tB].e++; }
+    }
+  });
+
+  let list = Object.values(statsMap);
+  list.forEach(item => item.sg = item.gp - item.gc);
+  list.sort((a, b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
+
+  if (list.length === 0) {
+    container.innerHTML = `<div style="font-size: 12px; color: #64748B; padding: 8px 0;">Nenhuma partida contabilizada ainda.</div>`;
+    return;
+  }
+
+  let tableHtml = `
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; color: #F8FAFC;">
+      <thead>
+        <tr style="border-bottom: 2px solid rgba(255,255,255,0.2); color: #94A3B8; font-size: 11px; text-transform: uppercase;">
+          <th style="padding: 8px; text-align: left;"># Time</th>
+          <th style="padding: 8px; color: #FBBF24;">P</th>
+          <th style="padding: 8px;">J</th>
+          <th style="padding: 8px;">V</th>
+          <th style="padding: 8px;">E</th>
+          <th style="padding: 8px;">D</th>
+          <th style="padding: 8px;">GP</th>
+          <th style="padding: 8px;">GC</th>
+          <th style="padding: 8px;">SG</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  list.forEach((t, idx) => {
+    const badgeLider = idx === 0 ? '<span style="font-size: 10px; padding: 2px 6px; background: rgba(245,158,11,0.2); color: #FBBF24; border-radius: 6px; margin-left: 6px;">LÍDER</span>' : '';
+    tableHtml += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); background: ${idx === 0 ? 'rgba(245,158,11,0.08)' : 'transparent'};">
+        <td style="padding: 10px 8px; text-align: left; font-weight: 800; color: #FFF;">${idx + 1}º ${t.nome}${badgeLider}</td>
+        <td style="padding: 10px 8px; font-weight: 900; color: #FBBF24; font-size: 15px;">${t.p}</td>
+        <td style="padding: 10px 8px;">${t.j}</td>
+        <td style="padding: 10px 8px; color: #4ADE80;">${t.v}</td>
+        <td style="padding: 10px 8px; color: #94A3B8;">${t.e}</td>
+        <td style="padding: 10px 8px; color: #F87171;">${t.d}</td>
+        <td style="padding: 10px 8px;">${t.gp}</td>
+        <td style="padding: 10px 8px;">${t.gc}</td>
+        <td style="padding: 10px 8px; font-weight: 800; color: ${t.sg > 0 ? '#4ADE80' : (t.sg < 0 ? '#F87171' : '#94A3B8')};">${t.sg > 0 ? '+' + t.sg : t.sg}</td>
+      </tr>
+    `;
+  });
+
+  tableHtml += `</tbody></table>`;
+  container.innerHTML = tableHtml;
+}
+
+function renderFullscreenScorers() {
+  const container = document.getElementById("fs-scorers-content");
+  if (!container) return;
+
+  let goalsMap = {};
+  let assistsMap = {};
+
+  const matches = window.App.recentMatchesList || [];
+  const liveMatch = window.App.liveMatch || {};
+  const allMatches = [...matches];
+  if (liveMatch.goals && liveMatch.goals.length > 0) {
+    allMatches.push(liveMatch);
+  }
+
+  allMatches.forEach(m => {
+    const goals = m.goals || [];
+    goals.forEach(g => {
+      const author = g.autor || g.author || g.jogador;
+      const assist = g.assistencia || g.assist;
+
+      if (author && author !== 'Gol Contra' && author !== 'Auto Gol') {
+        goalsMap[author] = (goalsMap[author] || 0) + 1;
+      }
+      if (assist && assist !== 'Nenhuma' && assist !== 'Sem Assistência') {
+        assistsMap[assist] = (assistsMap[assist] || 0) + 1;
+      }
+    });
+  });
+
+  let topGoals = Object.entries(goalsMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val).slice(0, 5);
+  let topAssists = Object.entries(assistsMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val).slice(0, 5);
+
+  let goalsHtml = `<div style="font-weight: 800; font-size: 13px; color: #FBBF24; margin-bottom: 8px; text-transform: uppercase;">⚽ Artilharia (Gols)</div>`;
+  if (topGoals.length === 0) {
+    goalsHtml += `<div style="font-size: 12px; color: #64748B;">Nenhum gol lançado ainda.</div>`;
+  } else {
+    topGoals.forEach((item, idx) => {
+      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `${idx + 1}º`));
+      goalsHtml += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 13px;">
+          <span>${medal} <strong style="color: #FFF;">${item.name}</strong></span>
+          <strong style="color: #FBBF24; font-size: 14px;">${item.val} Gols</strong>
+        </div>
+      `;
+    });
+  }
+
+  let assistsHtml = `<div style="font-weight: 800; font-size: 13px; color: #38BDF8; margin-bottom: 8px; text-transform: uppercase;">👟 Assistências (Passes)</div>`;
+  if (topAssists.length === 0) {
+    assistsHtml += `<div style="font-size: 12px; color: #64748B;">Nenhuma assistência lançada ainda.</div>`;
+  } else {
+    topAssists.forEach((item, idx) => {
+      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `${idx + 1}º`));
+      assistsHtml += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 13px;">
+          <span>${medal} <strong style="color: #FFF;">${item.name}</strong></span>
+          <strong style="color: #38BDF8; font-size: 14px;">${item.val} Passes</strong>
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = `
+    <div>${goalsHtml}</div>
+    <div>${assistsHtml}</div>
+  `;
+}
+
 function syncFullscreenScoreboardUI() {
   const liveMatch = window.App.liveMatch || {};
   const scoreAEl = document.getElementById("fs-score-a");
@@ -1790,6 +2030,17 @@ function syncFullscreenScoreboardUI() {
   if (faseTitleEl && mainHeaderTitle) {
     faseTitleEl.textContent = mainHeaderTitle.textContent;
   }
+
+  setupFullscreenDrawers();
+
+  const panelQueue = document.getElementById("fs-panel-queue");
+  if (panelQueue && panelQueue.style.display === "block") renderFullscreenQueue();
+
+  const panelStandings = document.getElementById("fs-panel-standings");
+  if (panelStandings && panelStandings.style.display === "block") renderFullscreenStandings();
+
+  const panelScorers = document.getElementById("fs-panel-scorers");
+  if (panelScorers && panelScorers.style.display === "block") renderFullscreenScorers();
 
   updateTimerDisplay();
 }

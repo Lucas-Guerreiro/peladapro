@@ -397,6 +397,61 @@
     }
   }
 
+  /* --- PAINÉIS EXPANDÍVEIS DA TELA CHEIA (SEQUÊNCIA, CLASSIFICAÇÃO, ARTILHARIA) --- */
+  .fs-drawer-btn {
+    background: rgba(30, 41, 59, 0.95);
+    color: #F8FAFC;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .fs-drawer-btn:hover {
+    background: rgba(51, 65, 85, 0.95);
+    border-color: #38BDF8;
+    color: #38BDF8;
+    transform: translateY(-1px);
+  }
+
+  .fs-drawer-btn.active {
+    background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+    border-color: #38BDF8;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.5);
+  }
+
+  .fs-collapsible-panel {
+    display: none;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1.5px solid rgba(56, 189, 248, 0.4);
+    border-radius: 18px;
+    padding: 18px 24px;
+    margin: 12px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    max-height: 360px;
+    overflow-y: auto;
+    animation: fs-slide-down 0.25s ease-out forwards;
+  }
+
+  @keyframes fs-slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .gestor-score-divider {
     font-size: 32px;
     color: #94A3B8;
@@ -783,6 +838,58 @@
         <button id="fs-btn-timer-toggle" class="btn fs-ctrl-btn" style="background: #0284C7; color: #FFF; font-weight: 800;">Iniciar</button>
         <button id="fs-btn-timer-reset" class="btn fs-ctrl-btn" style="background: rgba(255,255,255,0.15); color: #F1F5F9; font-weight: 700; border: 1px solid rgba(255,255,255,0.3);">Reset</button>
       </div>
+    </div>
+  </div>
+
+  <!-- BARRA DE PAINÉIS EXPANDÍVEIS DA TELA CHEIA (SEQUÊNCIA, CLASSIFICAÇÃO, ARTILHARIA) -->
+  <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0;">
+    <button id="fs-btn-toggle-queue" class="fs-drawer-btn" title="Mostrar/Ocultar Sequência de Jogos e Fila">
+      🗓️ Sequência de Jogos <span class="fs-arrow">🔽</span>
+    </button>
+    <button id="fs-btn-toggle-standings" class="fs-drawer-btn" title="Mostrar/Ocultar Tabela de Classificação">
+      📊 Classificação <span class="fs-arrow">🔽</span>
+    </button>
+    <button id="fs-btn-toggle-scorers" class="fs-drawer-btn" title="Mostrar/Ocultar Ranking de Gols e Assistências">
+      ⚽ Artilharia <span class="fs-arrow">🔽</span>
+    </button>
+  </div>
+
+  <!-- PAINEL 1: SEQUÊNCIA DE JOGOS -->
+  <div id="fs-panel-queue" class="fs-collapsible-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 8px; margin-bottom: 12px;">
+      <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: #38BDF8; display: flex; align-items: center; gap: 8px;">
+        🗓️ Sequência de Jogos & Fila de Espera
+      </h4>
+      <span style="font-size: 11px; color: #94A3B8; font-weight: 600;">Ao Vivo</span>
+    </div>
+    <div id="fs-queue-content" style="display: flex; flex-direction: column; gap: 8px;">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- PAINEL 2: CLASSIFICAÇÃO DOS TIMES -->
+  <div id="fs-panel-standings" class="fs-collapsible-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 8px; margin-bottom: 12px;">
+      <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: #FBBF24; display: flex; align-items: center; gap: 8px;">
+        📊 Tabela de Classificação
+      </h4>
+      <span style="font-size: 11px; color: #94A3B8; font-weight: 600;">Pontuação Real</span>
+    </div>
+    <div id="fs-standings-content" style="overflow-x: auto;">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- PAINEL 3: ARTILHARIA E ASSISTÊNCIAS -->
+  <div id="fs-panel-scorers" class="fs-collapsible-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 8px; margin-bottom: 12px;">
+      <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: #4ADE80; display: flex; align-items: center; gap: 8px;">
+        ⚽ Artilharia & Garçons (Assistências)
+      </h4>
+      <span style="font-size: 11px; color: #94A3B8; font-weight: 600;">Ranking Geral</span>
+    </div>
+    <div id="fs-scorers-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <!-- Preenchido via JS -->
     </div>
   </div>
 
