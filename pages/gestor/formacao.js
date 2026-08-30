@@ -816,6 +816,8 @@ window.App.renderDrawnTeams = async function () {
     if (currentTeams) {
       localStorage.setItem(`teams_${activePelada.id}`, currentTeams);
     } else {
+      localStorage.removeItem(`teams_${activePelada.id}`);
+    }
   }
 };
 async function syncDrawnTeamsToCloud(showToastMessage) {
