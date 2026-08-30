@@ -793,7 +793,16 @@ const Api = {
     try {
       if (liveMatch) localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
       if (waitingQueue) localStorage.setItem("waitingQueue", JSON.stringify(waitingQueue));
-      if (cleanTeams && cleanTeams.length > 0) localStorage.setItem("teams", JSON.stringify(cleanTeams));
+      const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
+      if (Array.isArray(cleanTeams)) {
+        if (cleanTeams.length > 0) {
+          localStorage.setItem(teamsKey, JSON.stringify(cleanTeams));
+          localStorage.setItem("teams", JSON.stringify(cleanTeams));
+        } else {
+          localStorage.removeItem(teamsKey);
+          localStorage.removeItem("teams");
+        }
+      }
     } catch (e) {}
 
     // 1. Tenta via Supabase direto (JAMstack / Vercel)
@@ -887,7 +896,8 @@ const Api = {
     try {
       const lm = localStorage.getItem("liveMatch");
       const wq = localStorage.getItem("waitingQueue");
-      const tm = localStorage.getItem("teams");
+      const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
+      const tm = localStorage.getItem(teamsKey) || localStorage.getItem("teams");
       if (lm || tm) {
         return {
           state: {
