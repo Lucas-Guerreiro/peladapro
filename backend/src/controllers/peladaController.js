@@ -366,9 +366,15 @@ exports.atualizarLiveState = async (req, res) => {
   }
 
   try {
-    // Se for solicitação de reset, zera completamente o live_state da pelada no banco
+    // Se for solicitação de reset, zera completamente o live_state da pelada no banco e tabelas relacionais
     if (isReset) {
       await db.query('UPDATE peladas SET live_state = NULL WHERE id = $1', [id]);
+      await db.query(
+        'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
+        [id]
+      );
+      await db.query('DELETE FROM times WHERE pelada_id = $1', [id]);
+      liveStateMap.delete(String(id));
       return res.json({ message: 'Estado ao vivo zerado com sucesso no servidor.' });
     }
 

@@ -78,18 +78,37 @@ window.App.initFormacao = async function () {
       if (!confirmClear) return;
       try {
         const token = localStorage.getItem("token");
-        // Limpa no localStorage usando a chave com ID da pelada
         const teamsKey = getTeamsKey();
+        
+        // 1. Remove todas as chaves locais vinculadas a times e rodada
         localStorage.removeItem(teamsKey);
         localStorage.removeItem(`teams_${peladaId}`);
         localStorage.removeItem("teams");
+        localStorage.removeItem("waitingQueue");
+        localStorage.removeItem(`waitingQueue_${peladaId}`);
+        localStorage.removeItem("tournamentState");
+        localStorage.removeItem(`tournamentState_${peladaId}`);
+        localStorage.removeItem("liveMatch");
+        localStorage.removeItem(`liveMatch_${peladaId}`);
+
+        // 2. Reseta variaveis globais da memoria
         window.App.teams = [];
-        // Salva estado vazio na nuvem
+        window.App.waitingQueue = [];
+        window.App.liveMatch = {
+          teamA: 'Time A', teamB: 'Time B',
+          scoreA: 0, scoreB: 0,
+          timerSeconds: 0, isPlaying: false,
+          consecutiveWinsA: 0, consecutiveWinsB: 0,
+          goals: []
+        };
+
+        // 3. Salva estado zerado na nuvem passando isReset = true
         if (window.Api && window.Api.atualizarLiveState) {
-          await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, []);
+          await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, [], [], true);
         }
         window.App.showToast("Formação de times apagada com sucesso!", "success");
         window.App.renderDrawnTeams();
+        if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
       } catch (err) {
         console.error("[LimparTimes]", err);
         window.App.showToast("Erro ao apagar times na nuvem.", "error");
