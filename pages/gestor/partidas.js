@@ -1769,38 +1769,67 @@ function setupFullscreenDrawers() {
   const panelStandings = document.getElementById("fs-panel-standings");
   const panelScorers = document.getElementById("fs-panel-scorers");
 
+  if (panelQueue) panelQueue.associatedBtn = btnQueue;
+  if (panelStandings) panelStandings.associatedBtn = btnStandings;
+  if (panelScorers) panelScorers.associatedBtn = btnScorers;
+
+  const closeAllDrawersExcept = (targetPanel) => {
+    [panelQueue, panelStandings, panelScorers].forEach(p => {
+      if (p && p !== targetPanel) {
+        p.classList.remove("open");
+      }
+    });
+    [btnQueue, btnStandings, btnScorers].forEach(b => {
+      if (b && (!targetPanel || b !== targetPanel.associatedBtn)) {
+        b.classList.remove("active");
+      }
+    });
+  };
+
   if (btnQueue && panelQueue) {
     btnQueue.onclick = () => {
-      const isVisible = panelQueue.style.display === "block";
-      panelQueue.style.display = isVisible ? "none" : "block";
-      btnQueue.classList.toggle("active", !isVisible);
-      const arrow = btnQueue.querySelector(".fs-arrow");
-      if (arrow) arrow.textContent = isVisible ? "🔽" : "🔼";
-      if (!isVisible) renderFullscreenQueue();
+      const isOpen = panelQueue.classList.contains("open");
+      closeAllDrawersExcept(isOpen ? null : panelQueue);
+      panelQueue.classList.toggle("open", !isOpen);
+      btnQueue.classList.toggle("active", !isOpen);
+      if (!isOpen) renderFullscreenQueue();
     };
   }
 
   if (btnStandings && panelStandings) {
     btnStandings.onclick = () => {
-      const isVisible = panelStandings.style.display === "block";
-      panelStandings.style.display = isVisible ? "none" : "block";
-      btnStandings.classList.toggle("active", !isVisible);
-      const arrow = btnStandings.querySelector(".fs-arrow");
-      if (arrow) arrow.textContent = isVisible ? "🔽" : "🔼";
-      if (!isVisible) renderFullscreenStandings();
+      const isOpen = panelStandings.classList.contains("open");
+      closeAllDrawersExcept(isOpen ? null : panelStandings);
+      panelStandings.classList.toggle("open", !isOpen);
+      btnStandings.classList.toggle("active", !isOpen);
+      if (!isOpen) renderFullscreenStandings();
     };
   }
 
   if (btnScorers && panelScorers) {
     btnScorers.onclick = () => {
-      const isVisible = panelScorers.style.display === "block";
-      panelScorers.style.display = isVisible ? "none" : "block";
-      btnScorers.classList.toggle("active", !isVisible);
-      const arrow = btnScorers.querySelector(".fs-arrow");
-      if (arrow) arrow.textContent = isVisible ? "🔽" : "🔼";
-      if (!isVisible) renderFullscreenScorers();
+      const isOpen = panelScorers.classList.contains("open");
+      closeAllDrawersExcept(isOpen ? null : panelScorers);
+      panelScorers.classList.toggle("open", !isOpen);
+      btnScorers.classList.toggle("active", !isOpen);
+      if (!isOpen) renderFullscreenScorers();
     };
   }
+
+  // Configura fecho de cada gaveta pelos botões ❌
+  document.querySelectorAll(".fs-drawer-close-btn").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const targetId = btn.getAttribute("data-target");
+      if (targetId) {
+        const p = document.getElementById(targetId);
+        if (p) {
+          p.classList.remove("open");
+          if (p.associatedBtn) p.associatedBtn.classList.remove("active");
+        }
+      }
+    };
+  });
 }
 
 function renderFullscreenQueue() {
@@ -2034,13 +2063,13 @@ function syncFullscreenScoreboardUI() {
   setupFullscreenDrawers();
 
   const panelQueue = document.getElementById("fs-panel-queue");
-  if (panelQueue && panelQueue.style.display === "block") renderFullscreenQueue();
+  if (panelQueue && panelQueue.classList.contains("open")) renderFullscreenQueue();
 
   const panelStandings = document.getElementById("fs-panel-standings");
-  if (panelStandings && panelStandings.style.display === "block") renderFullscreenStandings();
+  if (panelStandings && panelStandings.classList.contains("open")) renderFullscreenStandings();
 
   const panelScorers = document.getElementById("fs-panel-scorers");
-  if (panelScorers && panelScorers.style.display === "block") renderFullscreenScorers();
+  if (panelScorers && panelScorers.classList.contains("open")) renderFullscreenScorers();
 
   updateTimerDisplay();
 }
