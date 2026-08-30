@@ -9,6 +9,18 @@ window.App.initModalReceita = async function() {
   const btnSave = document.getElementById("btn-save-income");
   if (btnSave) btnSave.onclick = handleSaveIncome;
 
+  const selectStatus = document.getElementById("income-status-select");
+  const partialContainer = document.getElementById("income-partial-container");
+  if (selectStatus && partialContainer) {
+    selectStatus.onchange = function() {
+      if (selectStatus.value === 'parcial') {
+        partialContainer.style.display = 'block';
+      } else {
+        partialContainer.style.display = 'none';
+      }
+    };
+  }
+
   // Carrega opções de peladas para vínculo opcional
   const selectPelada = document.getElementById("income-pelada-select");
   if (selectPelada) {
@@ -39,6 +51,8 @@ async function handleSaveIncome() {
   const val = parseFloat(document.getElementById("income-value").value);
   const categoria = document.getElementById("income-category") ? document.getElementById("income-category").value : "Aporte";
   const peladaVinculada = document.getElementById("income-pelada-select") ? document.getElementById("income-pelada-select").value : "";
+  const status = document.getElementById("income-status-select") ? document.getElementById("income-status-select").value : "efetivado";
+  const paidValInput = document.getElementById("income-paid-value");
 
   if (!motivo || isNaN(val) || val <= 0) {
     window.App.showToast("Informe o valor e o motivo da entrada de verba.", "warning");
@@ -48,6 +62,15 @@ async function handleSaveIncome() {
   let descricaoFinal = `Verba injetada - ${motivo}`;
   if (peladaVinculada) {
     descricaoFinal += ` (Pelada ${peladaVinculada})`;
+  }
+
+  if (status === "pendente") {
+    descricaoFinal += ` [NÃO EFETIVADO]`;
+  } else if (status === "parcial") {
+    let paidVal = parseFloat(paidValInput ? paidValInput.value : 0);
+    if (isNaN(paidVal) || paidVal < 0) paidVal = 0;
+    if (paidVal > val) paidVal = val;
+    descricaoFinal += ` [PAGO:${paidVal.toFixed(2)}/${val.toFixed(2)}]`;
   }
 
   let group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;

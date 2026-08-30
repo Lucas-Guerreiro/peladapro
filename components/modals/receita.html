@@ -38,6 +38,22 @@
       </div>
     </div>
 
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="income-status-select" class="form-label" style="font-weight: 700;">Status do Pagamento / Recebimento *</label>
+      <select id="income-status-select" class="form-control" style="font-size: 13px; font-weight: 700; border: 1.5px solid #CBD5E1;">
+        <option value="efetivado" selected>✅ Efetivado 100% (Totalmente Recebido)</option>
+        <option value="parcial">🌗 Parcialmente Efetivado (Recebido em Partes)</option>
+        <option value="pendente">⏳ Não Efetivado (A Receber / 0% Recebido)</option>
+      </select>
+    </div>
+
+    <!-- Campo de Valor Parcial (exibido apenas se parcial for selecionado) -->
+    <div class="form-group" id="income-partial-container" style="display: none; margin-bottom: 16px; background: #ECFDF5; border: 1.5px solid #047857; border-radius: 8px; padding: 12px;">
+      <label for="income-paid-value" class="form-label" style="font-weight: 800; color: #047857;">Valor Já Recebido / Efetivado (R$) *</label>
+      <input type="number" id="income-paid-value" class="form-control" placeholder="0.00" step="5.00" min="0" style="font-size: 15px; font-weight: 800; border: 1.5px solid #047857; background: #FFFFFF;">
+      <span style="font-size: 11px; color: #047857; display: block; margin-top: 4px;">Informe quanto do total da entrada já foi efetivamente pago/recebido no caixa.</span>
+    </div>
+
     <div class="form-group" style="margin-bottom: 24px;">
       <label for="income-description" class="form-label" style="font-weight: 700;">Motivo / Origem da Verba *</label>
       <input type="text" id="income-description" class="form-control" placeholder="Ex: Patrocínio Supermercado, Saldo Anterior">

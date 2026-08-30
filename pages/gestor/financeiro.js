@@ -110,7 +110,7 @@ window.App.initFinanceiro = async function() {
     window.App.openModal("editar_transacao", { transaction: tx });
   };
 
-  window.App.efetivarDespesaDireta = async function(txId) {
+  window.App.efetivarTransacaoDireta = async function(txId) {
     const isAthleteView = window.location.hash.startsWith('#/jogador') || (window.Auth && window.Auth.getUserRole && window.Auth.getUserRole() === 'jogador');
     if (isAthleteView) {
       if (window.App.showToast) window.App.showToast("Modo de visualização do atleta (apenas leitura).", "info");
@@ -128,26 +128,28 @@ window.App.initFinanceiro = async function() {
       .replace(/\s*\[PENDENTE\]/gi, "")
       .trim();
 
-    const confirmEfetivar = confirm(`Confirmar a EFETIVAÇÃO (100% PAGO) da despesa:\n\n"${descLimpa}"\nValor Total: R$ ${tx.valor.toFixed(2)}?`);
+    const tipoLabel = tx.isEntrada ? "da entrada/receita" : "da despesa";
+    const confirmEfetivar = confirm(`Confirmar a EFETIVAÇÃO (100% PAGO/RECEBIDO) ${tipoLabel}:\n\n"${descLimpa}"\nValor Total: R$ ${tx.valor.toFixed(2)}?`);
     if (!confirmEfetivar) return;
 
     try {
-      window.App.showToast("Efetivando despesa no caixa...", "info");
-      const res = await window.Api.editarTransacao(tx.id, tx.valor, tx.tipoOriginal || 'debito', descLimpa);
+      window.App.showToast("Efetivando lançamento no caixa...", "info");
+      const res = await window.Api.editarTransacao(tx.id, tx.valor, tx.tipoOriginal || (tx.isEntrada ? 'credito' : 'debito'), descLimpa);
       if (res && res.error) {
         window.App.showToast(res.error, "error");
         return;
       }
 
-      window.App.showToast("Despesa EFETIVADA com sucesso! ⚡✅", "success");
+      window.App.showToast("Lançamento EFETIVADO com sucesso! ⚡✅", "success");
       if (window.App.renderFinanceiroData) {
         await window.App.renderFinanceiroData();
       }
     } catch (err) {
-      console.error("[efetivarDespesaDireta] Erro:", err);
-      window.App.showToast("Erro ao efetivar a despesa.", "error");
+      console.error("[efetivarTransacaoDireta] Erro:", err);
+      window.App.showToast("Erro ao efetivar a transação.", "error");
     }
   };
+  window.App.efetivarDespesaDireta = window.App.efetivarTransacaoDireta;
 };
 
 // --- RENDERIZAÇÃO COMPLETA DO PAINEL FINANCEIRO REESTRUTURADO ---
@@ -302,14 +304,25 @@ window.App.renderFinanceiroData = async function() {
   // =========================================================================
   // NÍVEL 1: CÁLCULO E RENDERIZAÇÃO DOS CARTÕES DE RESUMO (KPIs)
   // =========================================================================
-  let totalArrecadado = 0;
+  let totalArrecadadoPrevisto = 0;
+  let totalArrecadadoConsolidado = 0;
+  let totalArrecadadoPendente = 0;
+
   let totalDespesasPrevistas = 0;
   let totalDespesasConsolidadas = 0;
   let totalDespesasPendentes = 0;
 
   filteredTx.forEach(t => {
     if (t.isEntrada) {
-      totalArrecadado += t.valor;
+      totalArrecadadoPrevisto += t.valor;
+      if (t.isEfetivado) {
+        totalArrecadadoConsolidado += t.valor;
+      } else if (t.isParcial) {
+        totalArrecadadoConsolidado += t.valPago;
+        totalArrecadadoPendente += t.valRestante;
+      } else {
+        totalArrecadadoPendente += t.valor;
+      }
     } else {
       totalDespesasPrevistas += t.valor;
       if (t.isEfetivado) {
@@ -324,10 +337,16 @@ window.App.renderFinanceiroData = async function() {
   });
 
   // Saldo geral acumulado de todas as transações da história (Caixa Real em Conta)
+  // IMPORTANTE: Entradas não efetivadas (0% pago) NÃO somam no Caixa Real nem no Saldo da Pelada!
   let caixaAtualTotal = 0;
   gestorTx.forEach(t => {
     if (t.isEntrada) {
-      caixaAtualTotal += t.valor;
+      if (t.isEfetivado) {
+        caixaAtualTotal += t.valor;
+      } else if (t.isParcial) {
+        caixaAtualTotal += t.valPago;
+      }
+      // Se não for efetivada (0% recebido), NÃO soma no caixa real em conta!
     } else {
       if (t.isEfetivado) {
         caixaAtualTotal -= t.valor;
@@ -353,6 +372,7 @@ window.App.renderFinanceiroData = async function() {
   // Atualiza elementos DOM dos 5 KPIs
   const elCaixa = document.getElementById("finances-kpi-caixa");
   const elArrecadado = document.getElementById("finances-kpi-arrecadado");
+  const elArrecadadoSub = document.getElementById("finances-kpi-arrecadado-sub");
   const elDespesas = document.getElementById("finances-kpi-despesas");
   const elDespesasSub = document.getElementById("finances-kpi-despesas-sub");
 
@@ -365,7 +385,8 @@ window.App.renderFinanceiroData = async function() {
   const elSaldoPeladaIcon = document.getElementById("finances-kpi-saldo-pelada-icon");
 
   if (elCaixa) elCaixa.textContent = formatCurrencyBRL(caixaAtualTotal);
-  if (elArrecadado) elArrecadado.textContent = formatCurrencyBRL(totalArrecadado);
+  if (elArrecadado) elArrecadado.textContent = formatCurrencyBRL(totalArrecadadoConsolidado);
+  if (elArrecadadoSub) elArrecadadoSub.textContent = `Previsto: ${formatCurrencyBRL(totalArrecadadoPrevisto)} · A Receber: ${formatCurrencyBRL(totalArrecadadoPendente)}`;
   
   if (elDespesas) elDespesas.textContent = formatCurrencyBRL(totalDespesasConsolidadas);
   if (elDespesasSub) elDespesasSub.textContent = `Previstas: ${formatCurrencyBRL(totalDespesasPrevistas)} · Pendente: ${formatCurrencyBRL(totalDespesasPendentes)}`;
@@ -581,9 +602,10 @@ window.App.renderFinanceiroData = async function() {
 
   // --- RENDERIZAR CARD DE CAIXA GERAL & LANÇAMENTOS AVULSOS (NÃO VINCULADOS A PELADAS) ---
   if (geralContainer) {
-    const totalGeraisEntradas = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
-    const totalGeraisDespesas = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
-    const saldoGerais = totalGeraisEntradas - totalGeraisDespesas;
+    const totalGeraisEntradasBruto = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
+    const totalGeraisEntradasConsolidadas = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + (t.isEfetivado ? t.valor : (t.isParcial ? t.valPago : 0)), 0);
+    const totalGeraisDespesasConsolidadas = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + (t.isEfetivado ? t.valor : (t.isParcial ? t.valPago : 0)), 0);
+    const totalGeraisDespesasBruto = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
 
     let entradasGeraisHtml = "";
     const entradasGeraisList = txGerais.filter(t => t.isEntrada);
@@ -594,15 +616,37 @@ window.App.renderFinanceiroData = async function() {
         const horaFmt = e.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
         const dataFmt = e.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
         const badgeIcon = e.subTipo === 'vaquinha' ? '🏆' : '💵';
+        const descLimpa = e.descricao.replace(/\s*\[PAGO:[\d.]+\/[\d.]+\]/gi, '').replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
+        
+        let badgeEfetivado = '';
+        let valExibicaoStr = '';
+        if (e.isParcial) {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(2, 132, 199, 0.15); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.4); margin-left: 6px;">🌗 Recebido ${formatCurrencyBRL(e.valPago)} de ${formatCurrencyBRL(e.valor)}</span>`;
+          valExibicaoStr = `+ ${formatCurrencyBRL(e.valPago)}`;
+        } else if (e.isEfetivado) {
+          valExibicaoStr = `+ ${formatCurrencyBRL(e.valor)}`;
+        } else {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
+          valExibicaoStr = `+ R$ 0,00 <span style="font-size:10px; color:#64748B;">(${formatCurrencyBRL(e.valor)})</span>`;
+        }
+
+        const btnEfetivar = (!e.isEfetivado && !isAthleteView)
+          ? `<button onclick="window.App.efetivarTransacaoDireta('${e.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta entrada como 100% EFETIVADA (Recebido)">⚡ Efetivar</button>`
+          : '';
+        const btnEditar = !isAthleteView
+          ? `<button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>`
+          : '';
+
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #E2E8F0; font-size: 13px;">
-            <div style="min-width: 0; flex: 1; padding-right: 8px;">
-              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${badgeIcon} <strong>${e.descricao}</strong></span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #E2E8F0; font-size: 13px; flex-wrap: wrap; gap: 6px;">
+            <div style="min-width: 140px; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">${badgeIcon} <strong>${descLimpa}</strong>${badgeEfetivado}</span>
               <span style="font-size: 10px; color: #64748B;">${e.categoria} · ${dataFmt} às ${horaFmt}</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 700; color: #0284C7; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
-              ${isAthleteView ? '' : `<button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#0284C7'" onmouseout="this.style.color='#94A3B8'">✏️</button>`}
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+              <span style="font-weight: 700; color: #0284C7; white-space: nowrap;">${valExibicaoStr}</span>
+              ${btnEfetivar}
+              ${btnEditar}
             </div>
           </div>
         `;
@@ -719,10 +763,8 @@ window.App.renderFinanceiroData = async function() {
       }).join('');
     }
 
-    const totalGeraisEntradasBruto = txGerais.filter(t => t.isEntrada).reduce((acc, t) => acc + t.valor, 0);
-    const taxaMPGerais = parseFloat((totalGeraisEntradasBruto * 0.01).toFixed(2));
-    const totalGeraisDespesasConsolidadas = txGerais.filter(t => !t.isEntrada).reduce((acc, t) => acc + (t.isEfetivado ? t.valor : (t.isParcial ? t.valPago : 0)), 0);
-    const saldoGeraisLiquido = totalGeraisEntradasBruto - taxaMPGerais - totalGeraisDespesasConsolidadas;
+    const taxaMPGerais = parseFloat((totalGeraisEntradasConsolidadas * 0.01).toFixed(2));
+    const saldoGeraisLiquido = totalGeraisEntradasConsolidadas - taxaMPGerais - totalGeraisDespesasConsolidadas;
 
     geralContainer.innerHTML = `
       <div class="card" style="padding: 18px 20px; border-left: 4px solid #0284C7; background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
@@ -864,7 +906,8 @@ window.App.renderFinanceiroData = async function() {
         dataPelada: peladaDataIdentificada,
         entradas: [],
         despesas: [],
-        totalEntradas: 0,
+        totalEntradasConsolidadas: 0,
+        totalEntradasPrevistas: 0,
         totalDespesasPrevistas: 0,
         totalDespesasConsolidadas: 0,
         dataMaisRecente: t.data
@@ -877,7 +920,12 @@ window.App.renderFinanceiroData = async function() {
 
     if (t.isEntrada) {
       groupsMap[groupKey].entradas.push(t);
-      groupsMap[groupKey].totalEntradas += t.valor;
+      groupsMap[groupKey].totalEntradasPrevistas += t.valor;
+      if (t.isEfetivado) {
+        groupsMap[groupKey].totalEntradasConsolidadas += t.valor;
+      } else if (t.isParcial) {
+        groupsMap[groupKey].totalEntradasConsolidadas += t.valPago;
+      }
     } else {
       groupsMap[groupKey].despesas.push(t);
       groupsMap[groupKey].totalDespesasPrevistas += t.valor;
@@ -904,7 +952,8 @@ window.App.renderFinanceiroData = async function() {
             dataPelada: diaMesAno,
             entradas: [],
             despesas: [],
-            totalEntradas: 0,
+            totalEntradasConsolidadas: 0,
+            totalEntradasPrevistas: 0,
             totalDespesasPrevistas: 0,
             totalDespesasConsolidadas: 0,
             dataMaisRecente: new Date(p.data)
@@ -942,8 +991,8 @@ window.App.renderFinanceiroData = async function() {
   let htmlCards = "";
 
   sortedGroups.forEach(grp => {
-    const saldoGrupoConsolidado = grp.totalEntradas - grp.totalDespesasConsolidadas;
-    const saldoGrupoPrevisto = grp.totalEntradas - grp.totalDespesasPrevistas;
+    const saldoGrupoConsolidado = grp.totalEntradasConsolidadas - grp.totalDespesasConsolidadas;
+    const saldoGrupoPrevisto = grp.totalEntradasPrevistas - grp.totalDespesasPrevistas;
     
     // Indicador visual: Verde (Lucro), Vermelho (Prejuízo), Cinza (Pendente/Neutro)
     let badgeStatusColor = "#10B981";
@@ -956,7 +1005,7 @@ window.App.renderFinanceiroData = async function() {
       badgeStatusBg = "#FEF2F2";
       badgeStatusText = "🔴 Prejuízo Real";
       borderAccent = "#EF4444";
-    } else if (saldoGrupoConsolidado === 0 && grp.totalEntradas === 0 && grp.totalDespesasConsolidadas === 0) {
+    } else if (saldoGrupoConsolidado === 0 && grp.totalEntradasConsolidadas === 0 && grp.totalDespesasConsolidadas === 0) {
       badgeStatusColor = "#64748B";
       badgeStatusBg = "#F1F5F9";
       badgeStatusText = "⚪ Neutro";
@@ -973,16 +1022,38 @@ window.App.renderFinanceiroData = async function() {
     } else {
       entradasHtml = grp.entradas.map(e => {
         const dataPagFmt = e.data ? `${e.data.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })} às ${e.data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}` : '';
-        const nomeOuDesc = e.atletaNome ? `⚽ <strong>${e.atletaNome}</strong> <span style="font-size:11px; color:var(--text-caption);">(${e.descricao})</span>` : e.descricao;
+        const descLimpa = e.descricao.replace(/\s*\[PAGO:[\d.]+\/[\d.]+\]/gi, '').replace(/\s*\[NÃO EFETIVADO\]/gi, '').replace(/\s*\[PENDENTE\]/gi, '');
+        const nomeOuDesc = e.atletaNome ? `⚽ <strong>${e.atletaNome}</strong> <span style="font-size:11px; color:var(--text-caption);">(${descLimpa})</span>` : descLimpa;
+        
+        let badgeEfetivado = '';
+        let valExibicaoStr = '';
+        if (e.isParcial) {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(2, 132, 199, 0.15); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.4); margin-left: 6px;">🌗 Recebido ${formatCurrencyBRL(e.valPago)} de ${formatCurrencyBRL(e.valor)}</span>`;
+          valExibicaoStr = `+ ${formatCurrencyBRL(e.valPago)}`;
+        } else if (e.isEfetivado) {
+          valExibicaoStr = `+ ${formatCurrencyBRL(e.valor)}`;
+        } else {
+          badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
+          valExibicaoStr = `+ R$ 0,00 <span style="font-size:10px; color:#64748B;">(${formatCurrencyBRL(e.valor)})</span>`;
+        }
+
+        const btnEfetivar = (!e.isEfetivado && !isAthleteView)
+          ? `<button onclick="window.App.efetivarTransacaoDireta('${e.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta entrada como 100% EFETIVADA (Recebido)">⚡ Efetivar</button>`
+          : '';
+        const btnEditar = !isAthleteView
+          ? `<button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>`
+          : '';
+
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px;">
-            <div style="min-width: 0; flex: 1; padding-right: 8px;">
-              <span style="color: #0F172A; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeOuDesc}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px; flex-wrap: wrap; gap: 6px;">
+            <div style="min-width: 140px; flex: 1; padding-right: 8px;">
+              <span style="color: #0F172A; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">${nomeOuDesc}${badgeEfetivado}</span>
               <span style="font-size: 10px; color: #64748B;">${e.categoria} · 📅 Pago em <strong>${dataPagFmt}</strong></span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 700; color: #059669; white-space: nowrap;">+ ${formatCurrencyBRL(e.valor)}</span>
-              ${isAthleteView ? '' : `<button onclick="window.App.abrirEditarTransacao('${e.id}')" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 12px; padding: 2px 4px; border-radius: 4px;" title="Editar lançamento" onmouseover="this.style.color='#059669'" onmouseout="this.style.color='#94A3B8'">✏️</button>`}
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+              <span style="font-weight: 700; color: #059669; white-space: nowrap;">${valExibicaoStr}</span>
+              ${btnEfetivar}
+              ${btnEditar}
             </div>
           </div>
         `;
@@ -1006,7 +1077,7 @@ window.App.renderFinanceiroData = async function() {
           badgeEfetivado = `<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); margin-left: 6px;">⏳ Não Efetivado</span>`;
         }
         const btnEfetivar = (!d.isEfetivado && !isAthleteView)
-          ? `<button onclick="window.App.efetivarDespesaDireta('${d.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta despesa como 100% EFETIVADA (Pago)">⚡ Efetivar</button>`
+          ? `<button onclick="window.App.efetivarTransacaoDireta('${d.id}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); white-space: nowrap;" title="Marcar esta despesa como 100% EFETIVADA (Pago)">⚡ Efetivar</button>`
           : '';
         const btnEditar = !isAthleteView
           ? `<button onclick="window.App.abrirEditarTransacao('${d.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; cursor: pointer; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Editar lançamento">✏️ Editar</button>`
@@ -1040,7 +1111,7 @@ window.App.renderFinanceiroData = async function() {
 
           <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
             <span style="font-size: 12px; color: #475569;">
-              Arrecadado: <strong style="color: #059669;">${formatCurrencyBRL(grp.totalEntradas)}</strong>
+              Arrecadado: <strong style="color: #059669;">${formatCurrencyBRL(grp.totalEntradasConsolidadas)}</strong> <span style="font-size: 10px; color: #64748B;">(Previsto: ${formatCurrencyBRL(grp.totalEntradasPrevistas)})</span>
             </span>
             <span style="font-size: 12px; color: #475569;">
               Despesas Pagas: <strong style="color: #DC2626;">${formatCurrencyBRL(grp.totalDespesasConsolidadas)}</strong> <span style="font-size: 10px; color: #64748B;">(Previstas: ${formatCurrencyBRL(grp.totalDespesasPrevistas)})</span>
@@ -1060,7 +1131,7 @@ window.App.renderFinanceiroData = async function() {
                 📥 Entradas (${grp.entradas.length})
               </span>
               <span style="font-size: 12px; font-weight: 800; color: #059669;">
-                ${formatCurrencyBRL(grp.totalEntradas)}
+                ${formatCurrencyBRL(grp.totalEntradasConsolidadas)}
               </span>
             </div>
             <div style="max-height: 220px; overflow-y: auto;">
