@@ -253,6 +253,15 @@ var Acompanhamento = {
     if (ruleCard) ruleCard.style.display = 'flex';
     if (infoCard) infoCard.style.display = 'none';
 
+    const btnToggleFS = document.getElementById("acomp-btn-toggle-fullscreen-scoreboard");
+    if (btnToggleFS) {
+      btnToggleFS.onclick = function () {
+        if (window.App && window.App.openFullscreenScoreboard) {
+          window.App.openFullscreenScoreboard();
+        }
+      };
+    }
+
     this.renderTimer();
     this.renderScore();
     this.renderQueue();

@@ -333,6 +333,49 @@ window.App.initPartidas = async function () {
     const btnFinishDay = document.getElementById("btn-finish-pelada-day");
     if (btnFinishDay) btnFinishDay.onclick = handleFinishPeladaDay;
 
+    // Vinculação do Modo Tela Cheia (Fullscreen Scoreboard & Cronômetro)
+    const btnToggleFS = document.getElementById("btn-toggle-fullscreen-scoreboard");
+    if (btnToggleFS) {
+      btnToggleFS.onclick = () => window.App.openFullscreenScoreboard();
+    }
+    const btnExitFS = document.getElementById("btn-exit-fullscreen");
+    if (btnExitFS) {
+      btnExitFS.onclick = () => window.App.closeFullscreenScoreboard();
+    }
+
+    // Botões dentro do Overlay de Tela Cheia
+    const fsBtnToggle = document.getElementById("fs-btn-timer-toggle");
+    if (fsBtnToggle) fsBtnToggle.onclick = toggleLiveTimer;
+
+    const fsBtnReset = document.getElementById("fs-btn-timer-reset");
+    if (fsBtnReset) fsBtnReset.onclick = resetLiveTimer;
+
+    const fsBtnGoalA = document.getElementById("fs-btn-goal-a");
+    if (fsBtnGoalA) fsBtnGoalA.onclick = () => updateLiveScore("a", 1);
+
+    const fsBtnGoalB = document.getElementById("fs-btn-goal-b");
+    if (fsBtnGoalB) fsBtnGoalB.onclick = () => updateLiveScore("b", 1);
+
+    const fsBtnMinus = document.getElementById("fs-btn-timer-minus");
+    if (fsBtnMinus) {
+      fsBtnMinus.onclick = () => {
+        window.App.liveMatch.timerSeconds = Math.max(0, (window.App.liveMatch.timerSeconds || 0) - 60);
+        saveLiveMatchState();
+        updateTimerDisplay();
+        renderLiveMatchUI();
+      };
+    }
+
+    const fsBtnPlus = document.getElementById("fs-btn-timer-plus");
+    if (fsBtnPlus) {
+      fsBtnPlus.onclick = () => {
+        window.App.liveMatch.timerSeconds = (window.App.liveMatch.timerSeconds || 0) + 60;
+        saveLiveMatchState();
+        updateTimerDisplay();
+        renderLiveMatchUI();
+      };
+    }
+
     // Configuração dos botões de ajuste de minutos (+1 / -1)
     const btnTimerMinus = document.getElementById("btn-timer-minus");
     const btnTimerPlus = document.getElementById("btn-timer-plus");
@@ -1602,6 +1645,9 @@ function updateTimerDisplay() {
   const controlTimer = document.getElementById("match-control-timer");
   if (controlTimer) controlTimer.textContent = text;
 
+  const fsTimerDisplay = document.getElementById("fs-timer-display");
+  if (fsTimerDisplay) fsTimerDisplay.textContent = text;
+
   // Atualiza barra de progresso e badges de status do gestor (unificado com o atleta)
   const group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
   const configs = (window.Api && window.Api.getConfigs) ? window.Api.getConfigs() : [];
@@ -1609,23 +1655,49 @@ function updateTimerDisplay() {
   const totalSecs = (config && config.tempo_partida) ? config.tempo_partida * 60 : 480;
 
   const elapsed = Math.max(0, totalSecs - s);
+  const pctProgress = `${Math.min(100, Math.max(0, (elapsed / totalSecs) * 100))}%`;
+
   const progressBar = document.getElementById("gestor-timer-progress");
-  if (progressBar) {
-    progressBar.style.width = `${Math.min(100, Math.max(0, (elapsed / totalSecs) * 100))}%`;
-  }
+  if (progressBar) progressBar.style.width = pctProgress;
+
+  const fsProgressBar = document.getElementById("fs-timer-progress");
+  if (fsProgressBar) fsProgressBar.style.width = pctProgress;
 
   const timerDot = document.getElementById("gestor-timer-dot");
   const timerStatusText = document.getElementById("gestor-timer-status-text");
+
+  const fsTimerDot = document.getElementById("fs-timer-dot");
+  const fsTimerStatus = document.getElementById("fs-timer-status");
+  const fsBtnToggle = document.getElementById("fs-btn-timer-toggle");
+
   if (timerStatusText) {
     if (window.App && window.App.liveMatch && window.App.liveMatch.isPlaying) {
       timerStatusText.textContent = "EM ANDAMENTO";
       if (timerDot) timerDot.className = "gestor-pulse-dot";
+      if (fsTimerStatus) fsTimerStatus.textContent = "EM ANDAMENTO";
+      if (fsTimerDot) fsTimerDot.className = "gestor-pulse-dot";
+      if (fsBtnToggle) {
+        fsBtnToggle.textContent = "Pausar";
+        fsBtnToggle.style.background = "rgba(239, 68, 68, 0.9)";
+      }
     } else if (s > 0 && s < totalSecs) {
       timerStatusText.textContent = "PAUSADO";
       if (timerDot) timerDot.className = "gestor-pulse-dot paused";
+      if (fsTimerStatus) fsTimerStatus.textContent = "PAUSADO";
+      if (fsTimerDot) fsTimerDot.className = "gestor-pulse-dot paused";
+      if (fsBtnToggle) {
+        fsBtnToggle.textContent = "Continuar";
+        fsBtnToggle.style.background = "#0284C7";
+      }
     } else {
       timerStatusText.textContent = "PRONTO PARA INICIAR";
       if (timerDot) timerDot.className = "gestor-pulse-dot paused";
+      if (fsTimerStatus) fsTimerStatus.textContent = "PRONTO PARA INICIAR";
+      if (fsTimerDot) fsTimerDot.className = "gestor-pulse-dot paused";
+      if (fsBtnToggle) {
+        fsBtnToggle.textContent = "Iniciar";
+        fsBtnToggle.style.background = "#0284C7";
+      }
     }
   }
 }
@@ -1639,10 +1711,14 @@ function updateLiveScore(team, diff) {
     window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) + diff);
     const scoreAEl = document.getElementById("match-control-score-a");
     if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
+    const fsScoreA = document.getElementById("fs-score-a");
+    if (fsScoreA) fsScoreA.textContent = window.App.liveMatch.scoreA;
   } else {
     window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) + diff);
     const scoreBEl = document.getElementById("match-control-score-b");
     if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
+    const fsScoreB = document.getElementById("fs-score-b");
+    if (fsScoreB) fsScoreB.textContent = window.App.liveMatch.scoreB;
   }
 
   safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
@@ -1658,6 +1734,62 @@ function updateLiveScore(team, diff) {
 
   window.App.updateAcompanhamentoUI();
 }
+
+// --- FUNÇÕES E LÓGICA DO MODO TELA CHEIA (FULLSCREEN SCOREBOARD) ---
+window.App.openFullscreenScoreboard = function () {
+  const overlay = document.getElementById("fullscreen-scoreboard-overlay");
+  if (!overlay) return;
+  overlay.style.display = "flex";
+  document.body.classList.add("fullscreen-mode-active");
+  syncFullscreenScoreboardUI();
+};
+
+window.App.closeFullscreenScoreboard = function () {
+  const overlay = document.getElementById("fullscreen-scoreboard-overlay");
+  if (!overlay) return;
+  overlay.style.display = "none";
+  document.body.classList.remove("fullscreen-mode-active");
+};
+
+function syncFullscreenScoreboardUI() {
+  const liveMatch = window.App.liveMatch || {};
+  const scoreAEl = document.getElementById("fs-score-a");
+  const scoreBEl = document.getElementById("fs-score-b");
+  const teamANameEl = document.getElementById("fs-team-a-name");
+  const teamBNameEl = document.getElementById("fs-team-b-name");
+  const emblemAEl = document.getElementById("fs-emblem-a");
+  const emblemBEl = document.getElementById("fs-emblem-b");
+  const faseTitleEl = document.getElementById("fs-fase-title");
+
+  if (scoreAEl) scoreAEl.textContent = liveMatch.scoreA || 0;
+  if (scoreBEl) scoreBEl.textContent = liveMatch.scoreB || 0;
+  if (teamANameEl) teamANameEl.textContent = liveMatch.teamA || "TIME A";
+  if (teamBNameEl) teamBNameEl.textContent = liveMatch.teamB || "TIME B";
+
+  const mainEmblemA = document.getElementById("emblem-team-a");
+  const mainEmblemB = document.getElementById("emblem-team-b");
+  if (emblemAEl && mainEmblemA) {
+    emblemAEl.src = mainEmblemA.src;
+    emblemAEl.style.display = mainEmblemA.style.display;
+  }
+  if (emblemBEl && mainEmblemB) {
+    emblemBEl.src = mainEmblemB.src;
+    emblemBEl.style.display = mainEmblemB.style.display;
+  }
+
+  const mainHeaderTitle = document.getElementById("gestor-phase-header-title");
+  if (faseTitleEl && mainHeaderTitle) {
+    faseTitleEl.textContent = mainHeaderTitle.textContent;
+  }
+
+  updateTimerDisplay();
+}
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    window.App.closeFullscreenScoreboard();
+  }
+});
 
 async function handleFinishMatch() {
   window.App.isFinishingMatch = true;
