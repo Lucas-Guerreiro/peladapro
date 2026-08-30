@@ -750,7 +750,10 @@ const Api = {
         } catch (eSupabase) { }
       }
 
-      const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+      const token = (window.Auth && window.Auth.getToken && window.Auth.getToken()) ||
+                    localStorage.getItem('token') ||
+                    localStorage.getItem('pelada_token') ||
+                    localStorage.getItem('authToken');
       if (token) {
         try {
           await fetch(`/api/peladas/${peladaId}/live`, {
@@ -759,7 +762,7 @@ const Api = {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ isReset: true })
+            body: JSON.stringify({ isReset: true, teams: [], waitingQueue: [] })
           });
         } catch(e) {}
       }

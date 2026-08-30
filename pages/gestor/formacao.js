@@ -95,22 +95,6 @@ window.App.initFormacao = async function () {
           await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, [], [], true);
         }
 
-        // 4. RE-VERIFICA: busca de novo do servidor para garantir que não voltou
-        if (window.Api && window.Api.obterLiveState) {
-          const res = await window.Api.obterLiveState(peladaId);
-          const state = res && res.state ? res.state : null;
-          const serverTeams = (state && Array.isArray(state.teams)) ? state.teams : [];
-          if (serverTeams.length > 0) {
-            // A nuvem NÃO apagou de verdade — o problema está no backend
-            window.App.showToast("Atenção: os times voltaram do servidor. O backend não está apagando a tabela de times.", "error");
-            window.App.teams = serverTeams;
-            localStorage.setItem(teamsKey, JSON.stringify(serverTeams));
-            localStorage.setItem("teams", JSON.stringify(serverTeams));
-            window.App.renderDrawnTeams();
-            return;
-          }
-        }
-
         window.App.showToast("Formação de times apagada com sucesso!", "success");
         window.App.renderDrawnTeams();
         if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
@@ -832,12 +816,6 @@ window.App.renderDrawnTeams = async function () {
     if (currentTeams) {
       localStorage.setItem(`teams_${activePelada.id}`, currentTeams);
     } else {
-      localStorage.removeItem(`teams_${activePelada.id}`);
-    }
-  }
-  // Tenta salvar/sincronizar no banco em segundo plano se houver times locais
-  if (teams.length > 0) {
-    syncDrawnTeamsToCloud(false);
   }
 };
 async function syncDrawnTeamsToCloud(showToastMessage) {

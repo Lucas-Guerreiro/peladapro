@@ -366,8 +366,8 @@ exports.atualizarLiveState = async (req, res) => {
   }
 
   try {
-    // Se for solicitação de reset, zera completamente o live_state da pelada no banco e tabelas relacionais
-    if (isReset) {
+    // Se for solicitação de reset OU se os times forem um array vazio, zera completamente o live_state da pelada no banco e tabelas relacionais
+    if (isReset || (Array.isArray(teams) && teams.length === 0 && Array.isArray(waitingQueue) && waitingQueue.length === 0)) {
       await db.query('UPDATE peladas SET live_state = NULL WHERE id = $1', [id]);
       await db.query(
         'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
