@@ -865,29 +865,30 @@ window.App.carregarTimesDoServidor = async function (peladaId) {
     if (!window.Api || !window.Api.obterLiveState) return;
     const res = await window.Api.obterLiveState(peladaId);
     const state = res && res.state ? res.state : null;
-    if (!state) return;
-
-    const teamsServidor = Array.isArray(state.teams) ? state.teams : [];
-    if (teamsServidor.length === 0) return;
-
-    // Só sobrescreve o local se o local estiver vazio (o gestor pode estar editando)
     const teamsKey = `teams_${peladaId}`;
-    let localTeams = [];
-    try { localTeams = JSON.parse(localStorage.getItem(teamsKey)) || []; } catch (e) { }
 
-    if (localTeams.length === 0 && teamsServidor.length > 0) {
-      localStorage.setItem(teamsKey, JSON.stringify(teamsServidor));
-      localStorage.setItem("teams", JSON.stringify(teamsServidor));
-      // Restaura também o jogo ao vivo e a fila
-      if (state.liveMatch && window.App.liveMatch) {
-        window.App.liveMatch = { ...window.App.liveMatch, ...state.liveMatch };
-      }
-      if (Array.isArray(state.waitingQueue)) {
-        window.App.waitingQueue = state.waitingQueue;
-      }
+    const teamsServidor = (state && Array.isArray(state.teams)) ? state.teams : [];
+
+    if (teamsServidor.length === 0) {
+      window.App.teams = [];
+      localStorage.removeItem(teamsKey);
+      localStorage.removeItem("teams");
       window.App.renderDrawnTeams();
-      window.App.updateAcompanhamentoUI();
+      return;
     }
+
+    localStorage.setItem(teamsKey, JSON.stringify(teamsServidor));
+    localStorage.setItem("teams", JSON.stringify(teamsServidor));
+    window.App.teams = teamsServidor;
+
+    if (state.liveMatch && window.App.liveMatch) {
+      window.App.liveMatch = { ...window.App.liveMatch, ...state.liveMatch };
+    }
+    if (Array.isArray(state.waitingQueue)) {
+      window.App.waitingQueue = state.waitingQueue;
+    }
+    window.App.renderDrawnTeams();
+    window.App.updateAcompanhamentoUI();
   } catch (e) {
     console.warn("[carregarTimesDoServidor]", e);
   }
