@@ -612,15 +612,16 @@ function startGestorPolling() {
               localStorage.setItem("liveMatch", JSON.stringify(serverMatch));
             }
           }
-          if (res.state.teams) {
-            localStorage.setItem("teams", JSON.stringify(res.state.teams));
+          if (Array.isArray(res.state.teams)) {
+            if (res.state.teams.length > 0) {
+              localStorage.setItem("teams", JSON.stringify(res.state.teams));
+            } else {
+              localStorage.removeItem("teams");
+            }
           }
 
           let currentQueue = res.state.waitingQueue || [];
-          let currentTeams = res.state.teams || [];
-          if (!currentTeams || currentTeams.length === 0) {
-            try { currentTeams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
-          }
+          let currentTeams = Array.isArray(res.state.teams) ? res.state.teams : [];
 
           if ((!currentQueue || currentQueue.length === 0) && Array.isArray(currentTeams) && currentTeams.length > 2) {
             const tA = (res.state.liveMatch && res.state.liveMatch.teamA) ? String(res.state.liveMatch.teamA).toLowerCase().trim() : '';

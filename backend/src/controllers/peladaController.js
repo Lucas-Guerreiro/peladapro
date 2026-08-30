@@ -380,7 +380,7 @@ exports.atualizarLiveState = async (req, res) => {
     }
 
     const currentMatch = liveMatch !== undefined ? liveMatch : (existing.liveMatch || {});
-    const currentTeams = (teams && Array.isArray(teams) && teams.length > 0) ? teams : (existing.teams || []);
+    const currentTeams = (teams !== undefined && Array.isArray(teams)) ? teams : (existing.teams || []);
     let currentQueue = waitingQueue !== undefined ? waitingQueue : (existing.waitingQueue || []);
 
     // Reconstrói a fila de espera se estiver vazia mas existirem mais de 2 times sorteados
@@ -412,57 +412,55 @@ exports.atualizarLiveState = async (req, res) => {
     liveStateMap.set(String(id), updatedState);
 
     // ===== Persistência relacional: tabelas times e times_jogadores =====
-    // Melhor esforço usando apenas db.query (o wrapper do projeto não expõe db.connect).
-    // Fluxo idempotente: a próxima sincronização apaga e recria — falha parcial se autocorrige.
-    // Nunca derruba o live_state (erro só é logado).
     try {
-      if (Array.isArray(currentTeams) && currentTeams.length > 0) {
-        // Garantia de unicidade de nomes de times para a pelada
-        const seenTeamNames = new Set();
-        const uniqueCurrentTeams = [];
-
-        for (let i = 0; i < currentTeams.length; i++) {
-          const t = currentTeams[i];
-          let baseName = (t.nome || t.name || `Time ${String.fromCharCode(65 + i)}`).trim();
-          let name = baseName;
-          let counter = 2;
-          while (seenTeamNames.has(name.toLowerCase())) {
-            name = `${baseName} ${counter}`;
-            counter++;
-          }
-          seenTeamNames.add(name.toLowerCase());
-          t.nome = name;
-          t.name = name;
-          uniqueCurrentTeams.push(t);
-        }
-
-        // 1. Remove registros anteriores da pelada (evita duplicação)
+      if (Array.isArray(currentTeams)) {
+        // 1. Remove registros anteriores da pelada (evita duplicação ou limpa se estiver vazio)
         await db.query(
           'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
           [id]
         );
         await db.query('DELETE FROM times WHERE pelada_id = $1', [id]);
 
-        // 2. Insere cada time único e seus jogadores
-        for (const [i, t] of uniqueCurrentTeams.entries()) {
-          const timeRes = await db.query(
-            `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
-             VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
-             ON CONFLICT (pelada_id, LOWER(TRIM(nome))) DO UPDATE SET 
-               cor = EXCLUDED.cor, 
-               emblema = EXCLUDED.emblema, 
-               emblema_url = EXCLUDED.emblema_url
-             RETURNING id`,
-            [id, t.nome, t.cor || null, t.emblema ?? null, t.emblema_url || null]
-          );
-          const timeId = timeRes.rows[0].id;
+        // 2. Insere cada time único e seus jogadores se existirem
+        if (currentTeams.length > 0) {
+          const seenTeamNames = new Set();
+          const uniqueCurrentTeams = [];
 
-          for (const p of (t.players || [])) {
-            if (p.id == null) continue;
-            await db.query(
-              'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-              [timeId, p.id]
+          for (let i = 0; i < currentTeams.length; i++) {
+            const t = currentTeams[i];
+            let baseName = (t.nome || t.name || `Time ${String.fromCharCode(65 + i)}`).trim();
+            let name = baseName;
+            let counter = 2;
+            while (seenTeamNames.has(name.toLowerCase())) {
+              name = `${baseName} ${counter}`;
+              counter++;
+            }
+            seenTeamNames.add(name.toLowerCase());
+            t.nome = name;
+            t.name = name;
+            uniqueCurrentTeams.push(t);
+          }
+
+          for (const [i, t] of uniqueCurrentTeams.entries()) {
+            const timeRes = await db.query(
+              `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
+               VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
+               ON CONFLICT (pelada_id, LOWER(TRIM(nome))) DO UPDATE SET 
+                 cor = EXCLUDED.cor, 
+                 emblema = EXCLUDED.emblema, 
+                 emblema_url = EXCLUDED.emblema_url
+               RETURNING id`,
+              [id, t.nome, t.cor || null, t.emblema ?? null, t.emblema_url || null]
             );
+            const timeId = timeRes.rows[0].id;
+
+            for (const p of (t.players || [])) {
+              if (p.id == null) continue;
+              await db.query(
+                'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                [timeId, p.id]
+              );
+            }
           }
         }
       }

@@ -13,11 +13,19 @@ window.App.initFormacao = async function () {
   if (peladaId && window.Api && window.Api.obterLiveState) {
     try {
       const res = await window.Api.obterLiveState(peladaId);
-      if (res && res.state && res.state.teams && Array.isArray(res.state.teams) && res.state.teams.length > 0) {
-        window.App.teams = res.state.teams;
+      if (res && res.state) {
         const teamsKey = `teams_${peladaId}`;
-        localStorage.setItem(teamsKey, JSON.stringify(res.state.teams));
-        localStorage.setItem("teams", JSON.stringify(res.state.teams));
+        const serverTeams = Array.isArray(res.state.teams) ? res.state.teams : [];
+        if (serverTeams.length > 0) {
+          window.App.teams = serverTeams;
+          localStorage.setItem(teamsKey, JSON.stringify(serverTeams));
+          localStorage.setItem("teams", JSON.stringify(serverTeams));
+        } else {
+          // Se o servidor retornar 0 times para a pelada, limpa o estado local
+          window.App.teams = [];
+          localStorage.removeItem(teamsKey);
+          localStorage.removeItem("teams");
+        }
       }
     } catch(e) {}
   }
