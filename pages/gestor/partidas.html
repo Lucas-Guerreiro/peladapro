@@ -253,7 +253,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 999999;
+    z-index: 9000;
     background: #070B14;
     color: #FFFFFF;
     display: flex;
@@ -262,6 +262,14 @@
     padding: 24px 32px;
     box-sizing: border-box;
     overflow-y: auto;
+  }
+
+  body.fullscreen-mode-active .modal-backdrop {
+    z-index: 9500 !important;
+  }
+
+  body.fullscreen-mode-active .toast-container {
+    z-index: 9900 !important;
   }
 
   .fs-header {
@@ -786,8 +794,14 @@
         <img id="fs-emblem-a" src="" alt="Time A" style="width: 60px; height: 68px; object-fit: contain; display: none;">
         <span id="fs-team-a-name" class="fs-team-name" style="color: #FBBF24;">TIME A</span>
       </div>
-      <div id="fs-score-a" class="fs-score-num">0</div>
-      <button id="fs-btn-goal-a" class="btn-goal-trigger fs-goal-btn" style="background: #10B981;">⚽ +1 GOL TIME A</button>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0;">
+        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="a" data-diff="-1" title="Subtrair 1 Gol">-</button>
+        <div id="fs-score-a" class="fs-score-num">0</div>
+        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" title="Adicionar 1 Gol Sem Atleta">+</button>
+      </div>
+      <button id="fs-btn-goal-a" class="btn-goal-trigger fs-goal-btn" data-team="a" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; font-weight: 800; font-size: 15px; border-radius: 12px; padding: 12px 20px; border: none; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" title="Lançar Gol e Selecionar Autor e Assistência">
+        ⚽ Atribuir Gol & Assistência
+      </button>
     </div>
 
     <!-- Divisor VS -->
@@ -799,8 +813,14 @@
         <img id="fs-emblem-b" src="" alt="Time B" style="width: 60px; height: 68px; object-fit: contain; display: none;">
         <span id="fs-team-b-name" class="fs-team-name" style="color: #60A5FA;">TIME B</span>
       </div>
-      <div id="fs-score-b" class="fs-score-num">0</div>
-      <button id="fs-btn-goal-b" class="btn-goal-trigger fs-goal-btn" style="background: #10B981;">⚽ +1 GOL TIME B</button>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0;">
+        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="b" data-diff="-1" title="Subtrair 1 Gol">-</button>
+        <div id="fs-score-b" class="fs-score-num">0</div>
+        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" title="Adicionar 1 Gol Sem Atleta">+</button>
+      </div>
+      <button id="fs-btn-goal-b" class="btn-goal-trigger fs-goal-btn" data-team="b" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; font-weight: 800; font-size: 15px; border-radius: 12px; padding: 12px 20px; border: none; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" title="Lançar Gol e Selecionar Autor e Assistência">
+        ⚽ Atribuir Gol & Assistência
+      </button>
     </div>
   </div>
 

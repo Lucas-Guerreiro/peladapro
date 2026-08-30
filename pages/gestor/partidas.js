@@ -350,11 +350,20 @@ window.App.initPartidas = async function () {
     const fsBtnReset = document.getElementById("fs-btn-timer-reset");
     if (fsBtnReset) fsBtnReset.onclick = resetLiveTimer;
 
+    const handleOpenGoalModal = (teamKey) => {
+      const isA = teamKey === 'a';
+      const targetName = isA 
+        ? (window.App.liveMatch ? window.App.liveMatch.teamA : 'Time A')
+        : (window.App.liveMatch ? window.App.liveMatch.teamB : 'Time B');
+      const teamObj = resolveTeamObj(targetName);
+      window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: teamKey, players: teamObj.players });
+    };
+
     const fsBtnGoalA = document.getElementById("fs-btn-goal-a");
-    if (fsBtnGoalA) fsBtnGoalA.onclick = () => updateLiveScore("a", 1);
+    if (fsBtnGoalA) fsBtnGoalA.onclick = () => handleOpenGoalModal("a");
 
     const fsBtnGoalB = document.getElementById("fs-btn-goal-b");
-    if (fsBtnGoalB) fsBtnGoalB.onclick = () => updateLiveScore("b", 1);
+    if (fsBtnGoalB) fsBtnGoalB.onclick = () => handleOpenGoalModal("b");
 
     const fsBtnMinus = document.getElementById("fs-btn-timer-minus");
     if (fsBtnMinus) {
