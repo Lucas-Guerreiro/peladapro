@@ -2,8 +2,8 @@
 // MODAL: PAGAMENTO (pagamento.js)
 // ==========================================================================
 
-let localPelada = null;
-let pollingInterval = null;
+var localPelada = null;
+var pollingInterval = null;
 
 window.App.initModalPagamento = function (pelada) {
   localPelada = pelada;

@@ -459,7 +459,7 @@ const Router = {
 
   // --- loadScript ---------------------------------------------------------
   _loadScript(src, callback) {
-    const existing = document.querySelector(`script[src="${src}"]`);
+    const existing = document.querySelector(`script[src^="${src}"]`);
     if (existing) existing.remove();
 
     const script = document.createElement('script');

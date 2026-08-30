@@ -27,7 +27,7 @@ window.App.initFormacao = async function () {
           localStorage.removeItem("teams");
         }
       }
-    } catch(e) {}
+    } catch (e) { }
   }
   await renderManagerCheckin(peladaId);
   const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
@@ -70,17 +70,11 @@ window.App.initFormacao = async function () {
   if (btnClearTeams) {
     btnClearTeams.onclick = async () => {
       const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-      if (!peladaId) {
-        window.App.showToast("Selecione uma pelada primeiro.", "warning");
-        return;
-      }
-      const confirmClear = confirm("Tem certeza que deseja apagar a formação de times deste dia localmente e na nuvem?");
-      if (!confirmClear) return;
+      if (!peladaId) { window.App.showToast("Selecione uma pelada primeiro.", "warning"); return; }
+      if (!confirm("Tem certeza que deseja apagar a formação de times deste dia localmente e na nuvem?")) return;
       try {
-        const token = localStorage.getItem("token");
         const teamsKey = getTeamsKey();
-        
-        // 1. Remove todas as chaves locais vinculadas a times e rodada
+        // 1. Limpa localStorage
         localStorage.removeItem(teamsKey);
         localStorage.removeItem(`teams_${peladaId}`);
         localStorage.removeItem("teams");
@@ -91,21 +85,32 @@ window.App.initFormacao = async function () {
         localStorage.removeItem("liveMatch");
         localStorage.removeItem(`liveMatch_${peladaId}`);
 
-        // 2. Reseta variaveis globais da memoria
+        // 2. Reseta memória
         window.App.teams = [];
         window.App.waitingQueue = [];
-        window.App.liveMatch = {
-          teamA: 'Time A', teamB: 'Time B',
-          scoreA: 0, scoreB: 0,
-          timerSeconds: 0, isPlaying: false,
-          consecutiveWinsA: 0, consecutiveWinsB: 0,
-          goals: []
-        };
+        window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, timerSeconds: 0, isPlaying: false, consecutiveWinsA: 0, consecutiveWinsB: 0, goals: [] };
 
-        // 3. Salva estado zerado na nuvem passando isReset = true
+        // 3. Limpa na nuvem (isReset = true)
         if (window.Api && window.Api.atualizarLiveState) {
           await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, [], [], true);
         }
+
+        // 4. RE-VERIFICA: busca de novo do servidor para garantir que não voltou
+        if (window.Api && window.Api.obterLiveState) {
+          const res = await window.Api.obterLiveState(peladaId);
+          const state = res && res.state ? res.state : null;
+          const serverTeams = (state && Array.isArray(state.teams)) ? state.teams : [];
+          if (serverTeams.length > 0) {
+            // A nuvem NÃO apagou de verdade — o problema está no backend
+            window.App.showToast("Atenção: os times voltaram do servidor. O backend não está apagando a tabela de times.", "error");
+            window.App.teams = serverTeams;
+            localStorage.setItem(teamsKey, JSON.stringify(serverTeams));
+            localStorage.setItem("teams", JSON.stringify(serverTeams));
+            window.App.renderDrawnTeams();
+            return;
+          }
+        }
+
         window.App.showToast("Formação de times apagada com sucesso!", "success");
         window.App.renderDrawnTeams();
         if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
@@ -114,6 +119,7 @@ window.App.initFormacao = async function () {
         window.App.showToast("Erro ao apagar times na nuvem.", "error");
       }
     };
+
   }
   const btnAddTeam = document.getElementById("btn-add-team-manual");
   if (btnAddTeam) {
@@ -347,13 +353,13 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           let liveMatch = window.App.liveMatch || {};
           let tState = liveMatch.tournamentState || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null);
           let teams = window.App.teams || [];
-          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e){}
+          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
           if (teams && teams.length > 0 && window.TournamentEngine && tState) {
             tState.turno = newTurno;
             // Regenera a tabela mista com o novo turno
             const newMatches = window.TournamentEngine.generateGroupSchedule(teams, newTurno);
-            
+
             // Preserva o placar de partidas que já haviam sido finalizadas
             if (Array.isArray(tState.matches)) {
               tState.matches.forEach(oldM => {
@@ -373,7 +379,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
             liveMatch.tournamentState = tState;
             window.App.liveMatch = liveMatch;
-            
+
             localStorage.setItem("tournamentState", JSON.stringify(tState));
             localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
             localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
@@ -383,8 +389,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             }
           }
 
-          const desc = newTurno === 'ida_volta' 
-            ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno) — 12 partidas geradas!" 
+          const desc = newTurno === 'ida_volta'
+            ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno) — 12 partidas geradas!"
             : "🔁 Fase de Grupos definida como Somente Ida — 6 partidas geradas!";
           window.App.showToast(desc, "success");
         } catch (err) {
@@ -506,9 +512,9 @@ async function updateCheckinPlayersList(peladaId) {
             <span class="toggle-label"></span>
           </label>
           ${(!c.presenca && c.forma_pagamento === 'saldo' && !c.saldo_estornado)
-            ? `<button title="Estornar saldo" onclick="estornarSaldoAtleta('${c.id}', '${nameStr}')" style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; cursor:pointer; color:#16a34a; font-size:12px; padding:3px 7px; font-weight:700; white-space:nowrap; line-height:1.4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">💰 Estornar</button>`
-            : (c.saldo_estornado ? `<span style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; color:#16a34a; font-size:11px; padding:3px 7px; font-weight:700;">✓ Estornado</span>` : '')
-          }
+          ? `<button title="Estornar saldo" onclick="estornarSaldoAtleta('${c.id}', '${nameStr}')" style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; cursor:pointer; color:#16a34a; font-size:12px; padding:3px 7px; font-weight:700; white-space:nowrap; line-height:1.4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">💰 Estornar</button>`
+          : (c.saldo_estornado ? `<span style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; color:#16a34a; font-size:11px; padding:3px 7px; font-weight:700;">✓ Estornado</span>` : '')
+        }
           <button title="Desconvocar atleta" onclick="desconvocarAtleta('${c.id}', '${nameStr}')" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
         </div>
       `;
@@ -517,7 +523,7 @@ async function updateCheckinPlayersList(peladaId) {
 
     try {
       localStorage.setItem("players", JSON.stringify(playersLocais));
-    } catch (e) {}
+    } catch (e) { }
     atualizarContadorPresencas();
 
     // Renderizar Fila de Espera para o Gestor
@@ -1465,14 +1471,14 @@ async function removerDaFilaGestor(peladaId, usuarioId, atletaNome) {
   }
 }
 
-window.App.abrirModalNomesTimes = function() {
+window.App.abrirModalNomesTimes = function () {
   const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   const groupId = currentGroup ? currentGroup.id : null;
-  
+
   let currentCustom = [];
   try {
     currentCustom = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
-  } catch(e) {}
+  } catch (e) { }
 
   const rawInput = prompt(
     `Cadastre os nomes personalizados dos times da pelada (separados por vírgula):\n\nExemplo: Flamengo, Vasco, Corinthians, Palmeiras\n\n(Deixe em branco para voltar aos nomes padrão: Time A, Time B...)`,
@@ -1485,7 +1491,7 @@ window.App.abrirModalNomesTimes = function() {
   try {
     if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(newNames));
     localStorage.setItem('customTeamNames', JSON.stringify(newNames));
-  } catch(e) {}
+  } catch (e) { }
 
   // Se já existirem times sorteados na tela, atualiza o nome de cada time!
   const drawnTeams = window.App.teams || [];
@@ -1500,7 +1506,7 @@ window.App.abrirModalNomesTimes = function() {
     try {
       localStorage.setItem(teamsKey, JSON.stringify(drawnTeams));
       localStorage.setItem('teams', JSON.stringify(drawnTeams));
-    } catch(e) {}
+    } catch (e) { }
 
     // Sincroniza tState do torneio ativo com os novos nomes
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
@@ -1604,7 +1610,7 @@ function renderFormacaoTournamentUI() {
 
     const isNight = document.body.classList.contains('modo-noturno-ativo');
     let teamsList = [];
-    try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch(e){}
+    try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch (e) { }
 
     if (matches.length === 0) {
       matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:${isNight ? '#CBD5E1' : '#64748B'}; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
@@ -1699,7 +1705,7 @@ window.App.exportTeamsWhatsApp = function () {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(texto).then(() => {
       window.App.showToast("Escalação dos times com fotos copiada para a área de transferência! Abrindo WhatsApp...", "success");
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   const encoded = encodeURIComponent(texto);
@@ -1741,7 +1747,7 @@ window.App.notificarAtletasSorteados = async function (drawnTeams) {
           data: new Date().toISOString()
         };
         localStorage.setItem(keyNotif, JSON.stringify([nova, ...prev].slice(0, 20)));
-      } catch(e) {}
+      } catch (e) { }
 
       // 2. Envio de Push Notification via backend API
       try {
@@ -1758,8 +1764,8 @@ window.App.notificarAtletasSorteados = async function (drawnTeams) {
             url: '/#/jogador/formacao',
             payload: { type: 'sorteio_realizado', team: nomeTime }
           })
-        }).catch(() => {});
-      } catch(e) {}
+        }).catch(() => { });
+      } catch (e) { }
 
       countNotificados++;
     }

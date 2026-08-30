@@ -2,7 +2,7 @@
 // PÁGINA: GESTOR - CONFIGURAÇÕES (config.js)
 // ==========================================================================
 
-let pushSelectedAthletes = [];
+var pushSelectedAthletes = window.pushSelectedAthletes || [];
 
 window.App.initConfig = function () {
   pushSelectedAthletes = [];
