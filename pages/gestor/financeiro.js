@@ -42,9 +42,7 @@ function agruparContribuicoesPorAtleta(contribuicoesList) {
 }
 
 window.App.initFinanceiro = async function() {
-  await window.App.renderFinanceiroData();
-
-  // 1. Botões de Ação do Nível 3
+  // 1. Botões de Ação do Nível 3 (Vincula imediatamente)
   const btnExpense = document.getElementById("btn-open-expense-modal");
   if (btnExpense) {
     btnExpense.onclick = () => window.App.openModal("despesa");
@@ -63,6 +61,12 @@ window.App.initFinanceiro = async function() {
   const btnCriarArr = document.getElementById("btn-open-criar-arrecadacao-modal");
   if (btnCriarArr) {
     btnCriarArr.onclick = () => window.App.openModal("criar_arrecadacao");
+  }
+
+  try {
+    await window.App.renderFinanceiroData();
+  } catch (err) {
+    console.error("[Financeiro] Erro ao renderizar dados do financeiro:", err);
   }
 
   // 2. Select de Filtragem por Pelada Específica

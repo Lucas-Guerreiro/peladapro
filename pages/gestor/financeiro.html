@@ -85,16 +85,16 @@
 
     <!-- Botões de Ação Principal -->
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-      <button id="btn-open-criar-arrecadacao-modal" class="btn btn-sm" style="background: #F0F9FF; color: #0284C7; border: 1.5px solid #BAE6FD; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+      <button id="btn-open-criar-arrecadacao-modal" onclick="window.App.openModal('criar_arrecadacao')" class="btn btn-sm" style="background: #F0F9FF; color: #0284C7; border: 1.5px solid #BAE6FD; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
         <i data-feather="target" style="width: 14px; height: 14px;"></i> Nova Vaquinha
       </button>
-      <button id="btn-open-saldos-modal" class="btn btn-sm" style="background: #EEF2FF; color: #4338CA; border: 1.5px solid #C7D2FE; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+      <button id="btn-open-saldos-modal" onclick="window.App.openModal('saldos')" class="btn btn-sm" style="background: #EEF2FF; color: #4338CA; border: 1.5px solid #C7D2FE; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
         <i data-feather="users" style="width: 14px; height: 14px;"></i> Situação de Saldos
       </button>
-      <button id="btn-open-income-modal" class="btn btn-sm" style="background: #ECFDF5; color: #047857; border: 1.5px solid #A7F3D0; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+      <button id="btn-open-income-modal" onclick="window.App.openModal('receita')" class="btn btn-sm" style="background: #ECFDF5; color: #047857; border: 1.5px solid #A7F3D0; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
         <i data-feather="plus" style="width: 14px; height: 14px;"></i> Injetar Verba
       </button>
-      <button id="btn-open-expense-modal" class="btn btn-sm btn-danger" style="background: #FEF2F2; color: #DC2626; border: 1.5px solid #FECACA; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+      <button id="btn-open-expense-modal" onclick="window.App.openModal('despesa')" class="btn btn-sm btn-danger" style="background: #FEF2F2; color: #DC2626; border: 1.5px solid #FECACA; font-weight: 700; border-radius: 6px; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
         <i data-feather="minus" style="width: 14px; height: 14px;"></i> Registrar Despesa
       </button>
     </div>
