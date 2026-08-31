@@ -70,9 +70,10 @@
       <p class="text-inter" style="font-size: 12px; color: var(--text-caption); margin: 0; text-transform: uppercase; font-weight: 600;">Meu Saldo</p>
       <div style="display: flex; align-items: center; gap: 10px;">
         <span id="my-balance-conv" class="sports-font" style="font-size: 22px; color: #059669; font-weight: 800;">R$ 0,00</span>
-        <button type="button" class="btn btn-sm" onclick="Router.openModal('recarga')" style="background: #0284C7; color: #FFFFFF; font-weight: 700; border: none; border-radius: 8px; padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-size: 11px;" title="Adicionar saldo via Pix">
-          <i data-feather="plus-circle" style="width: 13px; height: 13px;"></i> Recarregar
-        </button>
+        <!-- Recarga temporariamente desabilitada -->
+        <span title="Recarga de saldo temporariamente indisponível" style="background: #F1F5F9; color: #94A3B8; font-weight: 700; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 5px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; cursor: not-allowed;">
+          <i data-feather="lock" style="width: 12px; height: 12px;"></i> Recarga indisponível
+        </span>
       </div>
     </div>
   </div>
