@@ -24,11 +24,17 @@ window.App.initModalAtleta = function (data = {}) {
   let photoBase64 = "";
   let isNewPhotoUploaded = false;
 
-  // O seletor de estrelas só deve ser exibido quando acessado pelo perfil de GESTOR
+  // O seletor de estrelas e tipo de vínculo só devem ser exibidos quando acessado pelo perfil de GESTOR
   const ratingContainer = document.getElementById("athlete-rating-container");
+  const tipoContainer = document.getElementById("athlete-tipo-container");
+  const tipoSelect = document.getElementById("athlete-tipo");
   const isGestor = (window.Auth && (window.Auth._selectedRole === 'gestor' || (window.Auth.currentUser && window.Auth.currentUser.gestor)));
+  
   if (ratingContainer) {
     ratingContainer.style.display = isGestor ? "block" : "none";
+  }
+  if (tipoContainer) {
+    tipoContainer.style.display = isGestor ? "block" : "none";
   }
 
   if (password) password.value = "";
@@ -106,6 +112,7 @@ window.App.initModalAtleta = function (data = {}) {
       if (whatsapp) whatsapp.value = p.whatsapp || "";
       if (isGk) isGk.checked = !!p.goleiro;
       if (teamEl) teamEl.value = p.time_coracao || "";
+      if (tipoSelect) tipoSelect.value = (p.tipo === 'convidado') ? 'convidado' : 'jogador';
 
       const rating = p.autoavaliacao || 0;
       if (starSelector) starSelector.dataset.value = rating;
@@ -146,6 +153,7 @@ window.App.initModalAtleta = function (data = {}) {
     if (whatsapp) whatsapp.value = "";
     if (isGk) isGk.checked = false;
     if (teamEl) teamEl.value = "";
+    if (tipoSelect) tipoSelect.value = "jogador";
     if (starSelector) starSelector.dataset.value = 0;
     if (stars) stars.forEach(s => s.style.color = "#ccc");
     if (photoPreview) photoPreview.style.backgroundImage = `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80')`;
@@ -202,6 +210,8 @@ async function handleSaveAthlete(isNewPhotoUploaded, photoBase64) {
   const isGk = isGkEl ? isGkEl.checked : false;
   const teamEl = document.getElementById("athlete-team");
   const teamVal = teamEl ? teamEl.value : "";
+  const tipoEl = document.getElementById("athlete-tipo");
+  const tipoVal = tipoEl ? tipoEl.value : undefined;
   const starSelector = document.getElementById("athlete-stars-selector");
   const rating = (starSelector && starSelector.dataset.value) ? parseInt(starSelector.dataset.value) : 0;
 
@@ -307,7 +317,8 @@ async function handleSaveAthlete(isNewPhotoUploaded, photoBase64) {
           goleiro: isGk,
           autoavaliacao: rating,
           foto: photoVal || undefined,
-          time_coracao: teamVal
+          time_coracao: teamVal,
+          tipo: tipoVal
         })
       });
 
@@ -357,7 +368,8 @@ async function handleSaveAthlete(isNewPhotoUploaded, photoBase64) {
           goleiro: isGk,
           autoavaliacao: rating,
           foto: photoVal || undefined,
-          time_coracao: teamVal
+          time_coracao: teamVal,
+          tipo: tipoVal
         })
       });
 

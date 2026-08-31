@@ -98,6 +98,18 @@
       </select>
     </div>
 
+    <!-- TIPO DE VÍNCULO (Visível apenas para o Gestor) -->
+    <div class="form-group" id="athlete-tipo-container" style="display: none;">
+      <label for="athlete-tipo" class="form-label">Tipo de Vínculo no Grupo</label>
+      <select id="athlete-tipo" class="form-control" style="font-weight: 700; color: #0F172A;">
+        <option value="jogador">⚽ Atleta da Pelada (Mensalista / Fixo)</option>
+        <option value="convidado">🎟️ Convidado (Diarista / Avulso)</option>
+      </select>
+      <span style="font-size: 11px; color: var(--text-caption); display: block; margin-top: 4px;">
+        Convidados não recebem convocação automática em todas as semanas.
+      </span>
+    </div>
+
     <!-- GOLEIRO -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <span class="form-label" style="margin-bottom: 0;">Posição: Goleiro?</span>

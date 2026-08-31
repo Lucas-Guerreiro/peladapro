@@ -153,6 +153,8 @@ exports.obterDetalhes = async (req, res) => {
 exports.aprovarAtleta = async (req, res) => {
   const gestorTipo = req.usuarioTipo;
   const { id } = req.params;
+  const { tipo } = req.body || {};
+  const tipoFinal = (tipo === 'convidado') ? 'convidado' : 'jogador';
 
   if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem aprovar atletas.' });
@@ -160,28 +162,29 @@ exports.aprovarAtleta = async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE usuarios SET verificado = true, ativo = true WHERE id = $1 RETURNING id, nome, email',
-      [id]
+      'UPDATE usuarios SET verificado = true, ativo = true, tipo = $2 WHERE id = $1 RETURNING id, nome, email, tipo',
+      [id, tipoFinal]
     );
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Atleta não encontrado.' });
     }
 
-    console.log(`✅ [Gestor] Atleta aprovado com sucesso: ${rows[0].email}`);
+    const tipoLabel = tipoFinal === 'convidado' ? 'Convidado' : 'Atleta da Pelada';
+    console.log(`✅ [Gestor] Cadastro aprovado como ${tipoLabel}: ${rows[0].email}`);
 
     // Notifica o atleta que o cadastro dele foi aprovado
     try {
       const { sendNotificationInternal } = require('./pushController');
       sendNotificationInternal({
         title: '🎉 Cadastro Aprovado!',
-        body: 'Seu acesso ao PeladaPro foi aprovado pelo gestor. Entre no app para ver os detalhes!',
+        body: `Seu acesso ao PeladaPro foi aprovado pelo gestor como ${tipoLabel}. Entre no app para conferir!`,
         url: '/#/login',
         usuarioId: id
       }).catch(e => console.warn('[Push] Erro ao disparar push de aprovacao para o atleta:', e.message));
     } catch(e) {}
 
-    res.json({ message: 'Atleta aprovado com sucesso!', atleta: rows[0] });
+    res.json({ message: `Cadastro aprovado com sucesso como ${tipoLabel}!`, atleta: rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao aprovar atleta.', detail: err.message });
   }
@@ -265,7 +268,8 @@ exports.criarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem cadastrar atletas.' });
   }
 
-  const { nome, apelido, email, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao } = req.body;
+  const { nome, apelido, email, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao, tipo } = req.body;
+  const tipoFinal = (tipo === 'convidado') ? 'convidado' : 'jogador';
 
   if (!nome || !email) {
     return res.status(400).json({ error: 'Nome e e-mail são campos obrigatórios.' });
@@ -320,7 +324,7 @@ exports.criarPorGestor = async (req, res) => {
 
     const query = `
       INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, foto, verificado, ativo, gols, partidas, avaliacao_media, time_coracao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, 0.00, $9, $10, true, true, 0, 0, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0.00, $10, $11, true, true, 0, 0, $12, $13)
       RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao`;
 
     const { rows } = await db.query(query, [
@@ -331,6 +335,7 @@ exports.criarPorGestor = async (req, res) => {
       whatsapp || null,
       hash,
       autoavaliacao !== undefined ? parseInt(autoavaliacao) : 3,
+      tipoFinal,
       !!goleiro,
       apelido ? apelido.trim() : nome.split(' ')[0],
       foto || null,
@@ -353,7 +358,7 @@ exports.atualizarPorGestor = async (req, res) => {
     return res.status(403).json({ error: 'Apenas gestores podem atualizar outros atletas.' });
   }
 
-  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao, vip, premium, card_ultimate, plano } = req.body;
+  const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao, vip, premium, card_ultimate, plano, tipo } = req.body;
 
   try {
     const bcrypt = require('bcrypt');
@@ -412,8 +417,9 @@ exports.atualizarPorGestor = async (req, res) => {
           vip = COALESCE($13, vip),
           premium = COALESCE($14, premium),
           card_ultimate = COALESCE($15, card_ultimate),
-          plano = COALESCE($16, plano)
-      WHERE id = $17
+          plano = COALESCE($16, plano),
+          tipo = COALESCE($17, tipo)
+      WHERE id = $18
       RETURNING id, nome, apelido, email, cpf, data_nascimento, whatsapp, autoavaliacao, tipo, goleiro, saldo, gols, partidas, avaliacao_media, ativo, verificado, time_coracao, vip, premium, card_ultimate, plano`;
 
     const { rows } = await db.query(query, [
@@ -433,6 +439,7 @@ exports.atualizarPorGestor = async (req, res) => {
       premium !== undefined ? !!premium : null,
       card_ultimate !== undefined ? !!card_ultimate : null,
       plano !== undefined ? plano : null,
+      tipo !== undefined && (tipo === 'jogador' || tipo === 'convidado') ? tipo : null,
       id
     ]);
 

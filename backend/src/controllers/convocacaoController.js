@@ -619,7 +619,7 @@ exports.adicionarPorGestor = async (req, res) => {
       // Inserir na tabela usuarios
       const insertUserQuery = `
         INSERT INTO usuarios (nome, email, senha_hash, autoavaliacao, tipo, goleiro, verificado, ativo, saldo, gols, partidas, avaliacao_media)
-        VALUES ($1, $2, $3, $4, 'jogador', $5, true, true, 0.00, 0, 0, $6)
+        VALUES ($1, $2, $3, $4, 'convidado', $5, true, true, 0.00, 0, 0, $6)
         RETURNING id`;
 
       const { rows: userInserted } = await db.query(insertUserQuery, [
