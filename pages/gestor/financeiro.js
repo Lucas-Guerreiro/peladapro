@@ -176,18 +176,28 @@ window.App.renderFinanceiroData = async function() {
       try { group = JSON.parse(localStorage.getItem("currentGroup")); } catch (e) {}
     }
 
-    if (group && group.id && window.Api) {
-      // 1. Busca transações do grupo
-      if (window.Api.listarTransacoesDoGrupo) {
-        try {
-          const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
-          if (Array.isArray(dbTx)) rawTransactions = dbTx;
-        } catch (e) {
-          console.error("[Financeiro] Erro ao carregar transações:", e);
+    const allTxMap = new Map();
+
+    // 1. Inicia com transações do LocalStorage se existirem
+    if (window.Api && window.Api.getTransactions) {
+      try {
+        const localTxs = window.Api.getTransactions() || [];
+        localTxs.forEach(t => { if (t && t.id != null) allTxMap.set(String(t.id), t); });
+      } catch (e) {}
+    }
+
+    // 2. Mescla com transações do Backend se disponível
+    if (group && group.id && window.Api && window.Api.listarTransacoesDoGrupo) {
+      try {
+        const dbTx = await window.Api.listarTransacoesDoGrupo(group.id);
+        if (Array.isArray(dbTx)) {
+          dbTx.forEach(t => { if (t && t.id != null) allTxMap.set(String(t.id), t); });
         }
+      } catch (e) {
+        console.error("[Financeiro] Erro ao carregar transações do backend:", e);
       }
 
-      // 2. Busca datas/peladas cadastradas do grupo
+      // 2.1 Busca datas/peladas cadastradas do grupo
       if (window.Api.listarDatasDoGrupo) {
         try {
           const peladas = await window.Api.listarDatasDoGrupo(group.id);
@@ -195,7 +205,7 @@ window.App.renderFinanceiroData = async function() {
         } catch (e) {}
       }
 
-      // 2.1 Busca campanhas de arrecadação/vaquinha do grupo
+      // 2.2 Busca campanhas de arrecadação/vaquinha do grupo
       if (window.Api.listarArrecadacoes) {
         try {
           const groupId = (group && (group.id || group.grupo_id)) ? (group.id || group.grupo_id) : 'me';
@@ -212,6 +222,8 @@ window.App.renderFinanceiroData = async function() {
         } catch (e) {}
       }
     }
+
+    rawTransactions = Array.from(allTxMap.values());
   } catch (err) {
     console.error("[Financeiro] Erro geral ao sincronizar:", err);
   }
@@ -221,12 +233,12 @@ window.App.renderFinanceiroData = async function() {
     const rawVal = parseFloat(t.valor || 0);
     const atletaNome = t.usuario_apelido || t.usuario_nome || "";
     const desc = t.descricao || "";
+    const tipoLower = String(t.tipo || '').toLowerCase();
     
     let categoriaExibicao = "Entrada";
-    let isEntrada = (t.tipo === "credito");
+    let isEntrada = (tipoLower === "credito" || tipoLower === "entrada" || tipoLower === "receita");
 
-    if (t.tipo === "credito") {
-      isEntrada = true;
+    if (isEntrada) {
       if (!t.usuario_id) {
         categoriaExibicao = "Verba / Receita";
       } else if (desc.startsWith("Pagamento Pix")) {
@@ -235,7 +247,6 @@ window.App.renderFinanceiroData = async function() {
         categoriaExibicao = "Crédito Carteira";
       }
     } else {
-      isEntrada = false;
       if (!t.usuario_id) {
         categoriaExibicao = "Despesa";
       } else if (desc.startsWith("Presença de")) {
@@ -296,9 +307,9 @@ window.App.renderFinanceiroData = async function() {
 
   const isAthleteView = window.location.hash.startsWith('#/jogador') || (window.Auth && window.Auth.getUserRole && window.Auth.getUserRole() === 'jogador');
 
-  // Filtra por período selecionado
+  // Filtra por período selecionado com fallback automático para "tudo" se o mês atual for vazio
   const agora = new Date();
-  const filtro = window.App._financeiroFilter || "este_mes";
+  let filtro = window.App._financeiroFilter || "este_mes";
 
   let filteredTx = gestorTx.filter(t => {
     if (filtro === "tudo") return true;
@@ -311,6 +322,28 @@ window.App.renderFinanceiroData = async function() {
       return txDate >= trintaDiasAtras;
     }
     return true;
+  });
+
+  if (filteredTx.length === 0 && gestorTx.length > 0 && filtro === "este_mes") {
+    filtro = "tudo";
+    window.App._financeiroFilter = "tudo";
+    filteredTx = gestorTx;
+  }
+
+  // Atualiza destaque estético dos chips de filtro no DOM
+  document.querySelectorAll(".finance-filter-chip").forEach(b => {
+    const f = b.getAttribute("data-filter");
+    if (f === filtro) {
+      b.classList.add("active");
+      b.style.background = "var(--primary)";
+      b.style.color = "#FFF";
+      b.style.border = "1.5px solid var(--primary)";
+    } else {
+      b.classList.remove("active");
+      b.style.background = "#F8FAFC";
+      b.style.color = "#475569";
+      b.style.border = "1.5px solid #CBD5E1";
+    }
   });
 
   // =========================================================================
