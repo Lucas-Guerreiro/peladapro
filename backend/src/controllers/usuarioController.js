@@ -35,7 +35,7 @@ exports.atualizarPerfil = async (req, res) => {
   const { nome, apelido, email, senha, whatsapp, foto, goleiro, cpf, data_nascimento, autoavaliacao, time_coracao, vip, premium, card_ultimate, plano } = req.body;
 
   try {
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
 
     // 1. Obter usuário atual
     const { rows: userCheck } = await db.query('SELECT id, email, senha_hash FROM usuarios WHERE id = $1', [usuario_id]);
@@ -319,7 +319,7 @@ exports.criarPorGestor = async (req, res) => {
     }
 
     // 4. Inserir localmente na tabela de usuarios
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
     const hash = await bcrypt.hash('123456', 10);
 
     const query = `
@@ -361,7 +361,7 @@ exports.atualizarPorGestor = async (req, res) => {
   const { nome, apelido, email, senha, cpf, data_nascimento, whatsapp, goleiro, autoavaliacao, foto, time_coracao, vip, premium, card_ultimate, plano, tipo } = req.body;
 
   try {
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
 
     // 1. Verificar se o atleta existe
     const { rows: userCheck } = await db.query('SELECT id, email, nome FROM usuarios WHERE id = $1', [id]);

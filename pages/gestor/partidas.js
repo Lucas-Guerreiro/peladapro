@@ -1298,6 +1298,7 @@ function renderLiveMatchUI() {
   updateTimerDisplay();
   renderTournamentUI();
   applyAthleteTeamStyleToPartidasCards();
+  syncFullscreenScoreboardUI();
 }
 
 window.App.zerarDadosPelada = async function(peladaId) {
@@ -2034,6 +2035,9 @@ function renderFullscreenScorers() {
 
 function syncFullscreenScoreboardUI() {
   const liveMatch = window.App.liveMatch || {};
+  const teamA = liveMatch.teamA || "TIME A";
+  const teamB = liveMatch.teamB || "TIME B";
+
   const scoreAEl = document.getElementById("fs-score-a");
   const scoreBEl = document.getElementById("fs-score-b");
   const teamANameEl = document.getElementById("fs-team-a-name");
@@ -2042,25 +2046,64 @@ function syncFullscreenScoreboardUI() {
   const emblemBEl = document.getElementById("fs-emblem-b");
   const faseTitleEl = document.getElementById("fs-fase-title");
 
-  if (scoreAEl) scoreAEl.textContent = liveMatch.scoreA || 0;
-  if (scoreBEl) scoreBEl.textContent = liveMatch.scoreB || 0;
-  if (teamANameEl) teamANameEl.textContent = liveMatch.teamA || "TIME A";
-  if (teamBNameEl) teamBNameEl.textContent = liveMatch.teamB || "TIME B";
+  if (scoreAEl) scoreAEl.textContent = liveMatch.scoreA !== undefined ? liveMatch.scoreA : 0;
+  if (scoreBEl) scoreBEl.textContent = liveMatch.scoreB !== undefined ? liveMatch.scoreB : 0;
+  if (teamANameEl) teamANameEl.textContent = teamA;
+  if (teamBNameEl) teamBNameEl.textContent = teamB;
 
-  const mainEmblemA = document.getElementById("emblem-team-a");
-  const mainEmblemB = document.getElementById("emblem-team-b");
-  if (emblemAEl && mainEmblemA) {
-    emblemAEl.src = mainEmblemA.src;
-    emblemAEl.style.display = mainEmblemA.style.display;
-  }
-  if (emblemBEl && mainEmblemB) {
-    emblemBEl.src = mainEmblemB.src;
-    emblemBEl.style.display = mainEmblemB.style.display;
+  if (window.TeamEmblems) {
+    let teams = getAppTeamsList();
+    const tA = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (teamA || '').toLowerCase().trim()) || teams[0];
+    const tB = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (teamB || '').toLowerCase().trim()) || teams[1];
+
+    if (emblemAEl) {
+      emblemAEl.innerHTML = window.TeamEmblems.forTeam(tA || { emblema: 0 });
+      emblemAEl.style.display = "inline-flex";
+    }
+    if (emblemBEl) {
+      emblemBEl.innerHTML = window.TeamEmblems.forTeam(tB || { emblema: 1 });
+      emblemBEl.style.display = "inline-flex";
+    }
   }
 
   const mainHeaderTitle = document.getElementById("gestor-phase-header-title");
   if (faseTitleEl && mainHeaderTitle) {
     faseTitleEl.textContent = mainHeaderTitle.textContent;
+  }
+
+  // Renderiza autores dos gols no Modo Tela Cheia
+  const fsGoalsAEl = document.getElementById("fs-team-a-goals");
+  if (fsGoalsAEl) {
+    const goalsA = (liveMatch.goals || []).filter(g => g.teamKey === 'a' || (g.teamName && teamA && g.teamName.toLowerCase() === teamA.toLowerCase()));
+    if (goalsA.length === 0) {
+      fsGoalsAEl.innerHTML = "";
+    } else {
+      fsGoalsAEl.innerHTML = goalsA.map((g, idx) => `
+        <div style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); padding:3px 10px; border-radius:6px;">
+          <span style="color:#34D399;">⚽</span>
+          <span style="color:#FFF;">${g.autorNome || 'Jogador'}</span>
+          ${g.assistNome ? `<span style="font-size:11px; color:#94A3B8;">(${g.assistNome} 👟)</span>` : ''}
+          <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="a" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.3); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold; margin-left:4px;">✕</button>
+        </div>
+      `).join('');
+    }
+  }
+
+  const fsGoalsBEl = document.getElementById("fs-team-b-goals");
+  if (fsGoalsBEl) {
+    const goalsB = (liveMatch.goals || []).filter(g => g.teamKey === 'b' || (g.teamName && teamB && g.teamName.toLowerCase() === teamB.toLowerCase()));
+    if (goalsB.length === 0) {
+      fsGoalsBEl.innerHTML = "";
+    } else {
+      fsGoalsBEl.innerHTML = goalsB.map((g, idx) => `
+        <div style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); padding:3px 10px; border-radius:6px;">
+          <span style="color:#34D399;">⚽</span>
+          <span style="color:#FFF;">${g.autorNome || 'Jogador'}</span>
+          ${g.assistNome ? `<span style="font-size:11px; color:#94A3B8;">(${g.assistNome} 👟)</span>` : ''}
+          <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="b" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.3); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold; margin-left:4px;">✕</button>
+        </div>
+      `).join('');
+    }
   }
 
   setupFullscreenDrawers();
@@ -2076,6 +2119,7 @@ function syncFullscreenScoreboardUI() {
 
   updateTimerDisplay();
 }
+window.App.syncFullscreenScoreboardUI = syncFullscreenScoreboardUI;
 
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") {

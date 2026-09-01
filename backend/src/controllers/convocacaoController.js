@@ -611,7 +611,7 @@ exports.adicionarPorGestor = async (req, res) => {
 
     // Se for um novo convidado
     if (convidado && convidado.nome) {
-      const bcrypt = require('bcrypt');
+      const bcrypt = require('bcryptjs');
       const hash = await bcrypt.hash('123456', 10);
       const emailFicticio = `convidado_${Date.now()}_${Math.floor(Math.random() * 1000)}@convidado.com`;
       const autoRating = convidado.autoavaliacao !== undefined ? parseInt(convidado.autoavaliacao) : 3;

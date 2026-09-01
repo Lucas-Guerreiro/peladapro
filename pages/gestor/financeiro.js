@@ -3,6 +3,14 @@
 // Reestruturação em 3 Níveis: KPIs, Demonstrativo Agrupado por Pelada e Ações/Filtros
 // ==========================================================================
 
+function parseSafeDate(d) {
+  if (!d) return new Date();
+  if (d instanceof Date) return isNaN(d.getTime()) ? new Date() : d;
+  const str = String(d).replace(' ', 'T');
+  const dt = new Date(str);
+  return isNaN(dt.getTime()) ? new Date() : dt;
+}
+
 window.App._financeiroFilter = "este_mes"; // "este_mes" | "ultimos_30" | "tudo"
 window.App._financeiroPeladaFilter = "todas"; // "todas" | "Pelada_24/08" etc.
 
@@ -268,7 +276,7 @@ window.App.renderFinanceiroData = async function() {
       valRestante: valRestante,
       categoria: categoriaExibicao,
       descricao: desc,
-      data: t.data ? new Date(t.data) : new Date()
+      data: parseSafeDate(t.data)
     };
     if (!window._financeiroTransactionsMap) window._financeiroTransactionsMap = {};
     window._financeiroTransactionsMap[String(t.id)] = txObj;
@@ -810,7 +818,7 @@ window.App.renderFinanceiroData = async function() {
                 📥 Entradas / Apoios (${entradasGeraisList.length})
               </span>
               <span style="font-size: 12px; font-weight: 800; color: #0284C7;">
-                ${formatCurrencyBRL(totalGeraisEntradas)}
+                ${formatCurrencyBRL(totalGeraisEntradasConsolidadas)}
               </span>
             </div>
             <div style="max-height: 600px; overflow-y: auto;">
@@ -825,7 +833,7 @@ window.App.renderFinanceiroData = async function() {
                 📤 Saídas / Compras (${despesasGeraisList.length})
               </span>
               <span style="font-size: 12px; font-weight: 800; color: #DC2626;">
-                ${formatCurrencyBRL(totalGeraisDespesas)}
+                ${formatCurrencyBRL(totalGeraisDespesasConsolidadas)}
               </span>
             </div>
             <div style="max-height: 600px; overflow-y: auto;">
@@ -1150,7 +1158,7 @@ window.App.renderFinanceiroData = async function() {
                 📤 Despesas (${grp.despesas.length})
               </span>
               <span style="font-size: 12px; font-weight: 800; color: #DC2626;">
-                ${formatCurrencyBRL(grp.totalDespesas)}
+                ${formatCurrencyBRL(grp.totalDespesasConsolidadas)}
               </span>
             </div>
             <div style="max-height: 220px; overflow-y: auto;">

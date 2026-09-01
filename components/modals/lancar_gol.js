@@ -144,11 +144,16 @@ window.App.initModalLancar_gol = function(data) {
         // 5. Fecha o modal
         window.App.closeModal();
 
-        // 6. Atualiza a UI do placar na aba de Partidas e no Acompanhamento
+        // 6. Atualiza a UI do placar na aba de Partidas, no Acompanhamento e na Tela Cheia
         const scoreAEl = document.getElementById("match-control-score-a");
         const scoreBEl = document.getElementById("match-control-score-b");
         if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
         if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
+
+        const fsScoreA = document.getElementById("fs-score-a");
+        const fsScoreB = document.getElementById("fs-score-b");
+        if (fsScoreA) fsScoreA.textContent = window.App.liveMatch.scoreA;
+        if (fsScoreB) fsScoreB.textContent = window.App.liveMatch.scoreB;
 
         if (window.App.updateAcompanhamentoUI) {
           window.App.updateAcompanhamentoUI();
@@ -161,6 +166,9 @@ window.App.initModalLancar_gol = function(data) {
         }
         if (window.App.renderLiveMatchUI) {
           window.App.renderLiveMatchUI();
+        }
+        if (window.App.syncFullscreenScoreboardUI) {
+          window.App.syncFullscreenScoreboardUI();
         }
 
       } catch (err) {

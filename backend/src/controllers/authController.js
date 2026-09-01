@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // --- Registrar Novo Usuário (Jogador) com Verificação OTP via Supabase Auth ------

@@ -465,7 +465,10 @@ const Router = {
     const script = document.createElement('script');
     script.src = `${src}?v=${Date.now()}`;
     script.onload = callback || (() => {});
-    script.onerror = () => console.error('[Router] Falha ao carregar script:', src);
+    script.onerror = () => {
+      // Caso o script da página seja opcional/não exista (ex: login.js), executa a callback sem interromper o fluxo
+      if (typeof callback === 'function') callback();
+    };
     document.head.appendChild(script);
   }
 };

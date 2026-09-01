@@ -1,16 +1,19 @@
-// Interceptador para redirecionar chamadas de API locais em produção
+// Interceptador para redirecionar chamadas de API locais para o servidor backend Node.js (porta 3000)
 (function () {
   const originalFetch = window.fetch;
   window.fetch = function (input, init) {
-    if (typeof input === 'string' && input.startsWith('http://localhost:3000/api')) {
+    if (typeof input === 'string') {
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (!isLocal) {
-        input = input.replace('/api', '/api');
+      if (isLocal && window.location.port !== '3000') {
+        if (input.startsWith('/api')) {
+          input = `http://${window.location.hostname}:3000${input}`;
+        }
       }
     }
     return originalFetch(input, init);
   };
 })();
+
 
 const Utils = {
 
