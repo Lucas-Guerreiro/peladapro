@@ -11,6 +11,30 @@ function parseSafeDate(d) {
   return isNaN(dt.getTime()) ? new Date() : dt;
 }
 
+function formatDateKey(d) {
+  if (!d) return null;
+  let str = String(d).trim();
+  if (str.includes("T")) str = str.split("T")[0];
+  if (str.includes(" ")) str = str.split(" ")[0];
+
+  const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymd) {
+    return `${ymd[3]}/${ymd[2]}/${ymd[1]}`;
+  }
+  const dmy = str.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
+  if (dmy) {
+    const dia = dmy[1].padStart(2, '0');
+    const mes = dmy[2].padStart(2, '0');
+    const ano = dmy[3] || new Date().getFullYear();
+    return `${dia}/${mes}/${ano}`;
+  }
+  const dt = parseSafeDate(d);
+  const dia = String(dt.getDate()).padStart(2, '0');
+  const mes = String(dt.getMonth() + 1).padStart(2, '0');
+  const ano = dt.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
+
 window.App._financeiroFilter = "este_mes"; // "este_mes" | "ultimos_30" | "tudo"
 window.App._financeiroPeladaFilter = "todas"; // "todas" | "Pelada_24/08" etc.
 
@@ -498,26 +522,22 @@ window.App.renderFinanceiroData = async function() {
   const countBadge = document.getElementById("finances-count-badge");
 
   // 1. Separar transações em dois universos:
-  // - Transações de Pelada: pagamentos Pix de convocação ("Presença de", "Pagamento Pix Convocação") ou despesas/verbas com "(Pelada DD/MM...)"
-  // - Transações Gerais/Vaquinha: Arrecadações ("Arrecadação:"), Verbas avulsas sem vínculo e Despesas avulsas sem vínculo
+  // - Transações Gerais/Vaquinha: Arrecadações ("Arrecadação:") e Verbas Gestor ("Verba Gestor")
+  // - Transações de Pelada: TODAS as entradas e saídas de partidas (presenças, convocações, pix, quadra, coletes, arbitragem, etc.)
   const txPeladas = [];
   const txGerais = [];
 
   filteredTx.forEach(t => {
     const desc = t.descricao || "";
     const isVaquinha = desc.startsWith("Arrecadação:") || desc.toLowerCase().includes("vaquinha");
-    const hasPeladaVinculada = desc.match(/(?:dia|pelada)\s+\d{2}\/\d{2}/i) || 
-                               desc.match(/\(\s*Pelada\s+\d{2}\/\d{2}/i) || 
-                               desc.includes("Convocação") || 
-                               desc.startsWith("Presença de") || 
-                               desc.toLowerCase().includes("mensalidade");
+    const isAporteGeral = desc.startsWith("Verba Gestor") || desc.includes("Aporte Inicial") || desc.includes("Caixa Geral");
 
     if (isVaquinha) {
       txGerais.push({ ...t, subTipo: 'vaquinha' });
-    } else if (hasPeladaVinculada) {
-      txPeladas.push(t);
-    } else {
+    } else if (isAporteGeral) {
       txGerais.push({ ...t, subTipo: 'avulso' });
+    } else {
+      txPeladas.push(t);
     }
   });
 
@@ -928,35 +948,37 @@ window.App.renderFinanceiroData = async function() {
     return;
   }
 
-  // Agrupar transações vinculadas estritamente à data de cada Pelada
+  // Agrupar transações vinculadas à data de cada Pelada
   const groupsMap = {};
 
   const ultimaPeladaCadastrada = peladasList && peladasList.length > 0 ? peladasList[0] : null;
-  let defaultDataPelada = "24/08/2026";
+  let defaultDataPelada = formatDateKey(new Date());
   if (ultimaPeladaCadastrada && ultimaPeladaCadastrada.data) {
-    const pD = String(ultimaPeladaCadastrada.data).split("T")[0].split("-");
-    if (pD.length === 3) defaultDataPelada = `${pD[2]}/${pD[1]}/${pD[0]}`;
+    defaultDataPelada = formatDateKey(ultimaPeladaCadastrada.data);
   }
 
   txPeladas.forEach(t => {
     let peladaDataIdentificada = null;
 
-    // 1. Busca por datas explícitas na descrição (ex: "dia 24/08", "Pelada 24/08/2026", "24/08", etc)
-    const matchDia = t.descricao.match(/(?:dia|pelada)?\s*(\d{2}\/\d{2}(?:\/\d{4})?)/i) || 
-                     t.descricao.match(/(\d{2}\/\d{2}(?:\/\d{4})?)/);
+    // 1. Busca por datas explícitas na descrição (ex: "dia 24/08", "Pelada 24/08/2026", "24/08", "05/09", etc)
+    const matchDia = t.descricao.match(/(?:dia|pelada)?\s*(\d{1,2}\/\d{1,2}(?:\/\d{4})?)/i) || 
+                     t.descricao.match(/(\d{1,2}\/\d{1,2}(?:\/\d{4})?)/);
 
     if (matchDia && matchDia[1]) {
       const encontrada = matchDia[1];
-      if (encontrada.length === 5) peladaDataIdentificada = `${encontrada}/2026`;
-      else peladaDataIdentificada = encontrada;
+      const parts = encontrada.split('/');
+      const dia = parts[0].padStart(2, '0');
+      const mes = parts[1].padStart(2, '0');
+      const ano = parts[2] || (t.data ? t.data.getFullYear() : new Date().getFullYear());
+      peladaDataIdentificada = `${dia}/${mes}/${ano}`;
     } else {
-      // 2. Se a descrição não tiver data explicita, associa com a pelada cuja data é mais próxima da data de lançamento da transação (t.data)
+      // 2. Se a descrição não tiver data explícita, associa com a pelada cuja data é mais próxima
       let peladaMaisProxima = null;
       let menorDiferenca = Infinity;
 
       (peladasList || []).forEach(p => {
         if (p.data) {
-          const pDate = new Date(p.data);
+          const pDate = parseSafeDate(p.data);
           const diff = Math.abs(t.data.getTime() - pDate.getTime());
           if (diff < menorDiferenca) {
             menorDiferenca = diff;
@@ -966,12 +988,11 @@ window.App.renderFinanceiroData = async function() {
       });
 
       if (peladaMaisProxima && peladaMaisProxima.data) {
-        const parts = String(peladaMaisProxima.data).split("T")[0].split("-");
-        if (parts.length === 3) peladaDataIdentificada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        peladaDataIdentificada = formatDateKey(peladaMaisProxima.data);
       }
 
       if (!peladaDataIdentificada) {
-        peladaDataIdentificada = defaultDataPelada;
+        peladaDataIdentificada = formatDateKey(t.data) || defaultDataPelada;
       }
     }
 
@@ -1016,28 +1037,24 @@ window.App.renderFinanceiroData = async function() {
     }
   });
 
-  // Também garante que peladas cadastradas sem movimentação ainda apareçam no select
+  // Também garante que peladas cadastradas sem movimentação ainda apareçam no select e no demonstrativo
   (peladasList || []).forEach(p => {
-    const rawDate = p.data ? String(p.data).split("T")[0] : "";
-    if (rawDate) {
-      const parts = rawDate.split("-");
-      if (parts.length === 3) {
-        const diaMesAno = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        const gKey = `Pelada_${diaMesAno.replace(/\//g, '-')}`;
-        if (!groupsMap[gKey]) {
-          groupsMap[gKey] = {
-            key: gKey,
-            title: `Pelada do dia ${diaMesAno}`,
-            dataPelada: diaMesAno,
-            entradas: [],
-            despesas: [],
-            totalEntradasConsolidadas: 0,
-            totalEntradasPrevistas: 0,
-            totalDespesasPrevistas: 0,
-            totalDespesasConsolidadas: 0,
-            dataMaisRecente: new Date(p.data)
-          };
-        }
+    const diaMesAno = formatDateKey(p.data);
+    if (diaMesAno) {
+      const gKey = `Pelada_${diaMesAno.replace(/\//g, '-')}`;
+      if (!groupsMap[gKey]) {
+        groupsMap[gKey] = {
+          key: gKey,
+          title: `Pelada do dia ${diaMesAno}`,
+          dataPelada: diaMesAno,
+          entradas: [],
+          despesas: [],
+          totalEntradasConsolidadas: 0,
+          totalEntradasPrevistas: 0,
+          totalDespesasPrevistas: 0,
+          totalDespesasConsolidadas: 0,
+          dataMaisRecente: parseSafeDate(p.data)
+        };
       }
     }
   });
