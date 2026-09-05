@@ -3044,6 +3044,48 @@ async function initPartidasPeladaSelect() {
       };
     }
 
+    const updateBtnLiberarConvidados = () => {
+      const btnLiberar = document.getElementById("btn-toggle-liberar-convidados");
+      if (!btnLiberar) return;
+      const curPelada = window.App.activePelada || activePelada;
+      const isLiberado = !!(curPelada && curPelada.liberar_convidados);
+      btnLiberar.textContent = isLiberado ? "🔓 Convidados Liberados" : "🔒 Convidados Bloqueados";
+      btnLiberar.style.background = isLiberado ? "#D1FAE5" : "#FEE2E2";
+      btnLiberar.style.color = isLiberado ? "#065F46" : "#991B1B";
+      btnLiberar.style.borderColor = isLiberado ? "#A7F3D0" : "#FCA5A5";
+
+      btnLiberar.onclick = async () => {
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) return;
+        const novoState = !(window.App.activePelada && window.App.activePelada.liberar_convidados);
+        try {
+          const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+          const res = await fetch(`/api/peladas/${peladaId}/liberar-convidados`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ liberar_convidados: novoState })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            window.App.activePelada.liberar_convidados = novoState;
+            localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+            window.App.showToast(data.message || (novoState ? "Convocação liberada para convidados!" : "Convocação bloqueada para convidados."), "success");
+            updateBtnLiberarConvidados();
+          } else {
+            window.App.showToast(data.error || "Erro ao alterar liberação de convidados.", "error");
+          }
+        } catch (e) {
+          console.error('[liberarConvidados]', e);
+          window.App.showToast("Erro ao comunicar com o servidor.", "error");
+        }
+      };
+    };
+
+    updateBtnLiberarConvidados();
+
     await carregarLiveStateDaPelada(activePelada.id);
     await renderRecentMatches();
 
@@ -3068,6 +3110,7 @@ async function initPartidasPeladaSelect() {
         }
         localStorage.setItem("activePelada", JSON.stringify(found));
 
+        updateBtnLiberarConvidados();
         await carregarLiveStateDaPelada(found.id);
 
         renderLiveMatchUI();

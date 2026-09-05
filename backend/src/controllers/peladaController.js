@@ -193,16 +193,48 @@ exports.deletarData = async (req, res) => {
   }
 };
 
+async function resolveGrupoIdHelper(inputGrupoId, req) {
+  let grupoId = inputGrupoId;
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    try {
+      if (req && req.usuarioId) {
+        const userRes = await db.query(`SELECT grupo_id FROM usuarios WHERE id = $1`, [req.usuarioId]);
+        if (userRes.rows.length > 0 && userRes.rows[0].grupo_id) {
+          grupoId = userRes.rows[0].grupo_id;
+        }
+      }
+    } catch (e) {}
+  }
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    try {
+      const firstGroupRes = await db.query(`SELECT id FROM grupos ORDER BY id ASC LIMIT 1`);
+      if (firstGroupRes.rows.length > 0) {
+        grupoId = firstGroupRes.rows[0].id;
+      }
+    } catch (e) {}
+  }
+  if (typeof grupoId === 'string' && /^g\d+/i.test(grupoId)) {
+    grupoId = grupoId.replace(/^g/i, '');
+  }
+  const parsed = parseInt(grupoId, 10);
+  return isNaN(parsed) ? null : parsed;
+}
+
 // --- Listar datas (peladas) de um grupo específico ------------------------
 exports.listarDatasDoGrupo = async (req, res) => {
-  const { grupoId } = req.params;
+  const grupoId = await resolveGrupoIdHelper(req.params.grupoId, req);
   const gestor_id = req.usuarioId;
   const tipo = req.usuarioTipo;
 
+  if (!grupoId) {
+    return res.json([]);
+  }
+
   try {
-    // Garante que a coluna modo e turno_torneio existem na tabela peladas (idempotente)
+    // Garante que as colunas necessárias existem na tabela peladas (idempotente)
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS liberar_convidados BOOLEAN DEFAULT FALSE");
 
     // Valida se o gestor é dono do grupo apenas se for gestor
     if (tipo === 'gestor') {
@@ -217,6 +249,7 @@ exports.listarDatasDoGrupo = async (req, res) => {
       SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.limite_atletas, p.chave_pix, p.chave_pix_nome,
              COALESCE(p.modo, 'normal') as modo,
              COALESCE(p.turno_torneio, 'ida') as turno_torneio,
+             COALESCE(p.liberar_convidados, false) as liberar_convidados,
              COALESCE(p.criterio_empate, c.criterio_empate, 'ambos_permanecem') as criterio_empate,
              COALESCE(p.vitorias_para_sair, c.vitorias_para_sair, 2) as vitorias_para_sair,
              COALESCE(p.jogadores_por_time, c.jogadores_por_time, 7) as jogadores_por_time,
@@ -239,7 +272,7 @@ exports.atualizarConfigPartida = async (req, res) => {
   const { id } = req.params;
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
-  const { modo, turno_torneio, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
+  const { modo, turno_torneio, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas, liberar_convidados } = req.body;
 
   if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
@@ -249,6 +282,7 @@ exports.atualizarConfigPartida = async (req, res) => {
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(50) DEFAULT 'normal'");
     await db.query("ALTER TABLE peladas ALTER COLUMN modo TYPE VARCHAR(50)");
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS liberar_convidados BOOLEAN DEFAULT FALSE");
 
     // Validar se a pelada pertence a um grupo do gestor
     const queryCheck = `
@@ -273,9 +307,10 @@ exports.atualizarConfigPartida = async (req, res) => {
           chave_pix = COALESCE($9, chave_pix),
           chave_pix_nome = COALESCE($10, chave_pix_nome),
           limite_atletas = COALESCE($11, limite_atletas),
-          max_jogadores = COALESCE($11, max_jogadores)
-      WHERE id = $12 RETURNING id, modo, turno_torneio`;
-    await db.query(queryUpdate, [
+          max_jogadores = COALESCE($11, max_jogadores),
+          liberar_convidados = COALESCE($12, liberar_convidados, false)
+      WHERE id = $13 RETURNING id, modo, turno_torneio, liberar_convidados`;
+    const { rows } = await db.query(queryUpdate, [
       modo || null,
       turno_torneio || null,
       criterio_empate || null,
@@ -287,12 +322,62 @@ exports.atualizarConfigPartida = async (req, res) => {
       chave_pix !== undefined ? chave_pix : null,
       chave_pix_nome !== undefined ? chave_pix_nome : null,
       (limite_atletas !== undefined && limite_atletas !== null) ? parseInt(limite_atletas) : null,
+      liberar_convidados !== undefined ? !!liberar_convidados : null,
       id
     ]);
 
-    res.json({ message: 'Configurações da partida atualizadas com sucesso!' });
+    res.json({ message: 'Configurações da partida atualizadas com sucesso!', pelada: rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao atualizar configurações da partida', detail: err.message });
+  }
+};
+
+exports.alternarLiberarConvidados = async (req, res) => {
+  const { id } = req.params;
+  const { liberar_convidados } = req.body;
+  const gestorId = req.usuarioId;
+  const tipo = req.usuarioTipo;
+
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem alterar a liberação de convidados.' });
+  }
+
+  try {
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS liberar_convidados BOOLEAN DEFAULT FALSE");
+
+    const queryCheck = `
+      SELECT p.id FROM peladas p
+      JOIN grupos g ON p.grupo_id = g.id
+      WHERE p.id = $1 AND g.gestor_id = $2`;
+    const checkRes = await db.query(queryCheck, [id, gestorId]);
+    if (checkRes.rows.length === 0) {
+      return res.status(403).json({ error: 'Você não tem permissão para alterar esta partida.' });
+    }
+
+    const estadoFinal = !!liberar_convidados;
+    const { rows } = await db.query(
+      "UPDATE peladas SET liberar_convidados = $1 WHERE id = $2 RETURNING id, liberar_convidados",
+      [estadoFinal, id]
+    );
+
+    // Se liberou convidados, pode disparar notificação push para convidados
+    if (estadoFinal) {
+      try {
+        const { sendNotificationInternal } = require('./pushController');
+        sendNotificationInternal({
+          title: '🔓 Convocação Aberta para Convidados!',
+          body: 'O gestor liberou a convocação para atletas convidados nesta pelada! Acesse o app e confirme sua presença.',
+          url: '/#/jogador/convocacao'
+        }).catch(e => console.warn('[Push] Erro push convidado:', e.message));
+      } catch (e) {}
+    }
+
+    res.json({
+      message: estadoFinal ? 'Convocação liberada para convidados!' : 'Convocação bloqueada para convidados.',
+      pelada: rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao alterar liberação de convidados.', detail: err.message });
   }
 };
 
@@ -526,9 +611,9 @@ exports.obterLiveState = async (req, res) => {
 };
 
 exports.listarTransacoesDoGrupo = async (req, res) => {
-  const { grupoId } = req.params;
+  const grupoId = await resolveGrupoIdHelper(req.params.grupoId, req);
   if (!grupoId) {
-    return res.status(400).json({ error: 'grupoId é obrigatório' });
+    return res.json([]);
   }
 
   try {
@@ -549,7 +634,7 @@ exports.listarTransacoesDoGrupo = async (req, res) => {
 };
 
 exports.criarTransacaoManual = async (req, res) => {
-  const { grupoId } = req.params;
+  const grupoId = await resolveGrupoIdHelper(req.params.grupoId, req);
   const { valor, tipo, descricao } = req.body;
   const gestorTipo = req.usuarioTipo;
 

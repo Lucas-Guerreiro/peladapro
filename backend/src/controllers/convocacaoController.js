@@ -39,6 +39,7 @@ exports.confirmar = async (req, res) => {
       SELECT p.grupo_id,
              p.data,
              p.limite_atletas,
+             COALESCE(p.liberar_convidados, false) as liberar_convidados,
              COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo,
              c.limite_saldo_negativo
       FROM peladas p
@@ -50,7 +51,14 @@ exports.confirmar = async (req, res) => {
       throw new Error('Configuração do grupo/pelada não encontrada');
     }
 
-    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada, limite_atletas } = configRes.rows[0];
+    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada, limite_atletas, liberar_convidados } = configRes.rows[0];
+
+    // Verificar se o usuário é convidado e se a convocação para convidados está liberada pelo gestor
+    const userTipoRes = await client.query('SELECT tipo FROM usuarios WHERE id = $1', [usuario_id]);
+    const userTipo = (userTipoRes.rows[0] && userTipoRes.rows[0].tipo) || req.usuarioTipo;
+    if (userTipo === 'convidado' && !liberar_convidados) {
+      throw new Error('A convocação para convidados nesta pelada ainda não foi liberada pelo gestor.');
+    }
     const valorCusto = parseFloat(custo || 0);
     const limiteNegativo = parseFloat(limite_saldo_negativo || 0);
     const limiteMaxAtletas = limite_atletas || 20; // fallback se limite_atletas for null
@@ -195,7 +203,7 @@ exports.entrarFila = async (req, res) => {
 
     // 1. Obter informações da pelada
     const queryConfig = `
-      SELECT p.grupo_id, p.data
+      SELECT p.grupo_id, p.data, COALESCE(p.liberar_convidados, false) as liberar_convidados
       FROM peladas p
       WHERE p.id = $1`;
     const configRes = await client.query(queryConfig, [pelada_id]);
@@ -204,10 +212,14 @@ exports.entrarFila = async (req, res) => {
       throw new Error('Pelada não encontrada');
     }
 
-    const { grupo_id, data: dataPelada } = configRes.rows[0];
+    const { grupo_id, data: dataPelada, liberar_convidados } = configRes.rows[0];
 
     // 2. Buscar dados do usuário
-    const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    const userRes = await client.query('SELECT tipo, nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    const userTipo = (userRes.rows[0] && userRes.rows[0].tipo) || req.usuarioTipo;
+    if (userTipo === 'convidado' && !liberar_convidados) {
+      throw new Error('A convocação para convidados nesta pelada ainda não foi liberada pelo gestor.');
+    }
     const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
     const dataFmt = formatarDataDDMM(dataPelada);
 

@@ -96,9 +96,16 @@ const Router = {
         return this.navigate('#/login');
       }
 
-      // Bloquear acesso à área de gestor se o usuário for apenas um jogador
+      const userType = Auth.currentUser ? Auth.currentUser.tipo : null;
+
+      // Bloquear abas financeiras para convidados
+      if (userType === 'convidado' && (targetHash === '#/jogador/financeiro' || targetHash === '#/jogador/arrecadacao')) {
+        Utils.toast('Acesso restrito para convidados.', 'warning');
+        return this.navigate('#/jogador/dashboard');
+      }
+
+      // Bloquear acesso à área de gestor se o usuário for apenas um jogador/convidado
       if (route.page.startsWith('gestor/') || route.permission === 'gestor') {
-        const userType = Auth.currentUser ? Auth.currentUser.tipo : null;
         const canAccessGestor = (userType === 'gestor' || userType === 'ambos' || userType === 'admin');
         if (!canAccessGestor) {
           Utils.toast('Acesso restrito: Sua conta é de Atleta.', 'warning');
@@ -318,6 +325,13 @@ const Router = {
 
     // Bind das abas de navegação
     this._bindTabButtons(role);
+
+    // Esconde abas financeiras no menu de navegação para usuários do tipo convidado
+    if (Auth.currentUser && Auth.currentUser.tipo === 'convidado') {
+      document.querySelectorAll('.tab-btn[data-name="financeiro"], .tab-btn[data-name="arrecadacao"]').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    }
   },
 
   _openMobileSidebar() {

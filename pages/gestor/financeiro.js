@@ -175,6 +175,17 @@ window.App.renderFinanceiroData = async function() {
     if (!group || !group.id) {
       try { group = JSON.parse(localStorage.getItem("currentGroup")); } catch (e) {}
     }
+    if ((!group || !group.id) && window.Api && window.Api.listarGrupos) {
+      try {
+        const grupos = await window.Api.listarGrupos();
+        if (Array.isArray(grupos) && grupos.length > 0) {
+          group = grupos[0];
+          if (window.Auth) window.Auth.currentGroup = group;
+          if (window.App) window.App.currentGroup = group;
+          try { localStorage.setItem("currentGroup", JSON.stringify(group)); } catch (e) {}
+        }
+      } catch (e) {}
+    }
 
     const allTxMap = new Map();
 
@@ -215,7 +226,19 @@ window.App.renderFinanceiroData = async function() {
       }
 
       // 3. Busca atletas para saldo
-      if (window.Api.getPlayers) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const resUsers = await fetch('/api/usuarios', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (resUsers.ok) {
+            const dbUsers = await resUsers.json();
+            if (Array.isArray(dbUsers) && dbUsers.length > 0) {
+              playersList = dbUsers;
+            }
+          }
+        } catch (e) {}
+      }
+      if ((!playersList || playersList.length === 0) && window.Api.getPlayers) {
         try {
           const players = await window.Api.getPlayers();
           if (Array.isArray(players)) playersList = players;
@@ -228,35 +251,41 @@ window.App.renderFinanceiroData = async function() {
     console.error("[Financeiro] Erro geral ao sincronizar:", err);
   }
 
-  // Normaliza transações considerando estritamente créditos como Entradas e débitos como Despesas
+  // Normaliza transações considerando presenças/convocações como entradas/receitas da pelada
   let normalizedTx = rawTransactions.map(t => {
     const rawVal = parseFloat(t.valor || 0);
     const atletaNome = t.usuario_apelido || t.usuario_nome || "";
     const desc = t.descricao || "";
     const tipoLower = String(t.tipo || '').toLowerCase();
-    
+    const descLower = desc.toLowerCase();
+
+    const isPresencaOuConvocacao = desc.startsWith("Presença de") || descLower.includes("mensalidade") || descLower.includes("convocação");
+    const isEstorno = desc.startsWith("Estorno") || descLower.includes("estorno");
+
+    let isEntrada = (tipoLower === "credito" || tipoLower === "entrada" || tipoLower === "receita" || isPresencaOuConvocacao) && !isEstorno;
+
     let categoriaExibicao = "Entrada";
-    let isEntrada = (tipoLower === "credito" || tipoLower === "entrada" || tipoLower === "receita");
 
     if (isEntrada) {
       if (!t.usuario_id) {
         categoriaExibicao = "Verba / Receita";
       } else if (desc.startsWith("Pagamento Pix")) {
         categoriaExibicao = "Pix Atleta";
+      } else if (desc.startsWith("Presença de") || descLower.includes("convocação")) {
+        categoriaExibicao = "Pagamento Pelada";
       } else {
         categoriaExibicao = "Crédito Carteira";
       }
     } else {
       if (!t.usuario_id) {
-        categoriaExibicao = "Despesa";
-      } else if (desc.startsWith("Presença de")) {
-        categoriaExibicao = "Débito Presença";
+        categoriaExibicao = "Despesa Quadra/Grupo";
+      } else if (isEstorno) {
+        categoriaExibicao = "Estorno Atleta";
       } else {
         categoriaExibicao = "Saída";
       }
     }
 
-    const descLower = desc.toLowerCase();
     const matchParcial = desc.match(/\[PAGO:([\d.]+)\/([\d.]+)\]/i);
     let isEfetivado = !(desc.includes('[NÃO EFETIVADO]') || desc.includes('[PENDENTE]') || descLower.includes('não efetivado'));
     let isParcial = false;
@@ -295,13 +324,10 @@ window.App.renderFinanceiroData = async function() {
   });
 
   // Para o painel financeiro do gestor:
-  // As entradas são os créditos reais (Pix pago, verbas injetadas)
-  // As despesas são os débitos manuais lançados pelo gestor (quadra, coletes, etc.)
+  // Exibe todas as entradas (Pix, presenças de atletas, vaquinhas, verbas) e despesas do grupo/estornos
   const gestorTx = normalizedTx.filter(t => {
-    // Se for crédito: exibe todos (Pix dos atletas + verbas do gestor)
     if (t.isEntrada) return true;
-    // Se for débito: exibe apenas despesas do grupo (usuario_id null ou estorno de presença)
-    if (!t.usuario_id || t.descricao.startsWith("Estorno")) return true;
+    if (!t.usuario_id || t.descricao.startsWith("Estorno") || t.descricao.toLowerCase().includes("estorno")) return true;
     return false;
   });
 
@@ -385,20 +411,24 @@ window.App.renderFinanceiroData = async function() {
   // IMPORTANTE: Entradas não efetivadas (0% pago) NÃO somam no Caixa Real nem no Saldo da Pelada!
   let caixaAtualTotal = 0;
   gestorTx.forEach(t => {
+    // Pagamentos de presença em pelada efetuados via saldo interno não adicionam dinheiro físico novo na conta bancária,
+    // apenas transferem fundos da carteira do atleta para o saldo da pelada.
+    const isPagamentoSaldoInterno = t.isEntrada && t.usuario_id && t.descricao.startsWith("Presença de");
+
     if (t.isEntrada) {
-      if (t.isEfetivado) {
-        caixaAtualTotal += t.valor;
-      } else if (t.isParcial) {
-        caixaAtualTotal += t.valPago;
+      if (!isPagamentoSaldoInterno) {
+        if (t.isEfetivado) {
+          caixaAtualTotal += t.valor;
+        } else if (t.isParcial) {
+          caixaAtualTotal += t.valPago;
+        }
       }
-      // Se não for efetivada (0% recebido), NÃO soma no caixa real em conta!
     } else {
       if (t.isEfetivado) {
         caixaAtualTotal -= t.valor;
       } else if (t.isParcial) {
         caixaAtualTotal -= t.valPago;
       }
-      // Se não for efetivado (0% pago), não subtrai do caixa real em conta!
     }
   });
 
@@ -476,7 +506,11 @@ window.App.renderFinanceiroData = async function() {
   filteredTx.forEach(t => {
     const desc = t.descricao || "";
     const isVaquinha = desc.startsWith("Arrecadação:") || desc.toLowerCase().includes("vaquinha");
-    const hasPeladaVinculada = desc.match(/(?:dia|pelada)\s+\d{2}\/\d{2}/i) || desc.match(/\(\s*Pelada\s+\d{2}\/\d{2}/i) || desc.includes("Convocação");
+    const hasPeladaVinculada = desc.match(/(?:dia|pelada)\s+\d{2}\/\d{2}/i) || 
+                               desc.match(/\(\s*Pelada\s+\d{2}\/\d{2}/i) || 
+                               desc.includes("Convocação") || 
+                               desc.startsWith("Presença de") || 
+                               desc.toLowerCase().includes("mensalidade");
 
     if (isVaquinha) {
       txGerais.push({ ...t, subTipo: 'vaquinha' });

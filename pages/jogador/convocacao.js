@@ -116,6 +116,7 @@ var Convocacao = {
           horario: p.horario,
           local: p.local,
           status: p.status,
+          liberar_convidados: !!p.liberar_convidados,
           max_jogadores: p.max_jogadores,
           valor_convocacao: p.valor_convocacao,
           chave_pix: p.chave_pix,
@@ -408,8 +409,16 @@ var Convocacao = {
     var confirmedList = (this._lastConvocados || []).filter(c => c.status === 'confirmado');
     var temVagaLiberada = confirmedList.length < maxVagas;
 
+    const isConvidado = user && user.tipo === 'convidado';
+    const isLiberadoParaConvidados = peladaObj ? !!peladaObj.liberar_convidados : false;
+
     if (waitlistAlert && waitlistAlertText) {
-      if (isWaiting && Convocacao._selectedPeladaId) {
+      if (isConvidado && !isLiberadoParaConvidados && Convocacao._selectedPeladaId) {
+        waitlistAlert.style.display = 'flex';
+        waitlistAlert.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+        waitlistAlert.style.border = '1.5px solid rgba(239, 68, 68, 0.3)';
+        waitlistAlertText.innerHTML = `🔒 <b>Convocação de Convidados Bloqueada:</b> O gestor ainda não liberou a convocação para convidados nesta pelada. A liberação ocorre normalmente algumas horas antes do horário do futebol.`;
+      } else if (isWaiting && Convocacao._selectedPeladaId) {
         if (temVagaLiberada) {
           waitlistAlert.style.display = 'flex';
           waitlistAlert.style.backgroundColor = 'rgba(0, 200, 83, 0.15)';
@@ -428,7 +437,13 @@ var Convocacao = {
 
     // Habilita/Desabilita os botões de ação dinamicamente
     if (btnAdd) {
-      if (!hasSelected || isConfirmed || (isWaiting && !temVagaLiberada)) {
+      if (isConvidado && !isLiberadoParaConvidados) {
+        btnAdd.disabled = true;
+        btnAdd.style.opacity = "0.55";
+        btnAdd.style.cursor = "not-allowed";
+        btnAdd.innerHTML = '<span>🔒 Aguardando Liberação do Gestor</span>';
+        btnAdd.style.background = '#64748B';
+      } else if (!hasSelected || isConfirmed || (isWaiting && !temVagaLiberada)) {
         btnAdd.disabled = true;
         btnAdd.style.opacity = "0.5";
         btnAdd.style.cursor = "not-allowed";
@@ -624,6 +639,13 @@ var Convocacao = {
           } catch (e) {
             console.warn('[Convocacao] Erro ao buscar pelada atualizada:', e);
           }
+        }
+
+        // Validação de segurança para convidados
+        const curUser = Auth.currentUser;
+        if (curUser && curUser.tipo === 'convidado' && pelada && !pelada.liberar_convidados) {
+          Utils.toast('A convocação para convidados nesta pelada ainda não foi liberada pelo gestor.', 'warning');
+          return;
         }
 
         // Checagem de capacidade: verificar se a lista oficial de confirmados já lotou
