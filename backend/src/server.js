@@ -25,6 +25,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 // 1. HELMET — Cabeçalhos HTTP de segurança
 // ============================================================
 app.use(helmet({
+  contentSecurityPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
@@ -118,14 +119,29 @@ if (!isProduction) {
   console.log('⚠️  Rota /api/seed ATIVA (modo desenvolvimento)');
 }
 
+const path = require('path');
+const rootDir = path.resolve(__dirname, '../../');
+
 // ============================================================
-// 6. HEALTH CHECK — Sem vazar informações sensíveis
+// 6. FRONTEND ESTÁTICO & HEALTH CHECK
 // ============================================================
-app.get('/', (req, res) => {
+app.use(express.static(rootDir));
+
+app.get('/api', (req, res) => {
   res.json({
     message: 'PeladaPro API Online',
     status: 'ok'
   });
+});
+
+app.get('/', (req, res) => {
+  if (req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html')) {
+    return res.json({
+      message: 'PeladaPro API Online',
+      status: 'ok'
+    });
+  }
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 
 // ============================================================

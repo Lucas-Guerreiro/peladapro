@@ -67,6 +67,29 @@ function getAppTeamsList() {
     }
   } catch(e) {}
 
+  if (window.App && window.App.liveMatch && window.App.liveMatch.tournamentState && Array.isArray(window.App.liveMatch.tournamentState.teams)) {
+    return window.App.liveMatch.tournamentState.teams;
+  }
+
+  // Extrai dos confrontos salvos da pelada se os times não estiverem em memória
+  if (window.App && Array.isArray(window.App.recentMatchesList) && window.App.recentMatchesList.length > 0) {
+    const uniqueNames = new Set();
+    window.App.recentMatchesList.forEach(m => {
+      if (m.time_a_nome) uniqueNames.add(m.time_a_nome.trim());
+      if (m.time_b_nome) uniqueNames.add(m.time_b_nome.trim());
+    });
+    if (uniqueNames.size > 0) {
+      const defaultColors = ['#2196F3', '#FFC107', '#FF1744', '#00C853', '#9C27B0', '#FF9800'];
+      return Array.from(uniqueNames).map((name, i) => ({
+        id: `team_${i+1}`,
+        nome: name,
+        name: name,
+        emblema: i,
+        cor: defaultColors[i % defaultColors.length]
+      }));
+    }
+  }
+
   return [];
 }
 
@@ -505,6 +528,30 @@ window.App.initPartidas = async function () {
             try { localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada)); } catch(err) {}
             window.App.initPartidas();
             window.App.showToast("Rodada reaberta para Jogo ao Vivo!");
+          }
+          return;
+        }
+
+        // 5. Botão Excluir Gol (.btn-delete-live-goal) na tela normal ou na tela cheia
+        const delGoalBtn = e.target.closest('.btn-delete-live-goal');
+        if (delGoalBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const goalId = delGoalBtn.getAttribute('data-goal-id');
+          const teamKey = delGoalBtn.getAttribute('data-team-key');
+          if (typeof deleteLiveGoal === 'function') {
+            deleteLiveGoal(goalId, teamKey);
+          }
+          return;
+        }
+
+        // 6. Botão Lançar Resultado em Tela Cheia (#fs-btn-finish-match)
+        const fsFinishBtn = e.target.closest('#fs-btn-finish-match');
+        if (fsFinishBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof handleFinishMatch === 'function') {
+            handleFinishMatch();
           }
           return;
         }
@@ -996,30 +1043,173 @@ function applyAthleteTeamStyleToPartidasCards() {
     badgeEl.style.setProperty('font-weight', '600', 'important');
   }
 }
-window.App = window.App || {};
-window.App.applyAthleteTeamStyleToPartidasCards = applyAthleteTeamStyleToPartidasCards;
+function deleteLiveGoal(goalId, teamKey) {
+  if (!window.App || !window.App.liveMatch) return;
+  let goals = window.App.liveMatch.goals || [];
+  let removedGoal = null;
+
+  const matchIdx = goals.findIndex(g => String(g.id || '') === String(goalId));
+  if (matchIdx !== -1) {
+    removedGoal = goals.splice(matchIdx, 1)[0];
+  } else {
+    const teamGoals = goals.filter(g => g.teamKey === teamKey);
+    const gToRemove = teamGoals[parseInt(goalId)];
+    if (gToRemove) {
+      removedGoal = gToRemove;
+      goals = goals.filter(g => g !== gToRemove);
+    }
+  }
+
+  window.App.liveMatch.goals = goals;
+
+  // Atualiza placar
+  const tk = teamKey || (removedGoal ? removedGoal.teamKey : null);
+  if (tk === 'a') {
+    window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) - 1);
+  } else if (tk === 'b') {
+    window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) - 1);
+  }
+
+  if (typeof saveLiveMatchState === "function") {
+    saveLiveMatchState();
+  }
+
+  renderLiveMatchUI();
+  if (window.App.syncFullscreenScoreboardUI) {
+    window.App.syncFullscreenScoreboardUI();
+  }
+  if (window.App.updateAcompanhamentoUI) {
+    window.App.updateAcompanhamentoUI();
+  }
+
+  const autor = removedGoal ? (removedGoal.autorNome || 'Atleta') : 'Atleta';
+  if (window.App.showToast) {
+    window.App.showToast(`Gol de ${autor} excluído com sucesso. Placar atualizado!`, "info");
+  }
+}
+window.App.deleteLiveGoal = deleteLiveGoal;
 
 function renderLiveMatchUI() {
-  // Se a pelada ativa estiver finalizada, não renderiza o confronto ao vivo
   const activePelada = window.App.activePelada || {};
-  if (activePelada.status === "finalizada") {
-    const timerCont = document.getElementById("gestor-timer-container");
-    const scoreCont = document.getElementById("gestor-scoreboard-container");
-    const finishCont = document.getElementById("gestor-finish-container");
-    const queueCard = document.getElementById("gestor-queue-card");
-    if (timerCont) timerCont.style.display = "none";
-    if (scoreCont) scoreCont.style.display = "none";
-    if (finishCont) finishCont.style.display = "none";
-    if (queueCard) queueCard.style.display = "none";
-    return;
-  }
-  // Verificar se existem times sorteados usando a função auxiliar segura
-  let teamsList = getAppTeamsList();
+  const isFinalizada = activePelada.status === "finalizada";
 
   const timerCont = document.getElementById("gestor-timer-container");
   const scoreCont = document.getElementById("gestor-scoreboard-container");
   const finishCont = document.getElementById("gestor-finish-container");
   const queueCard = document.getElementById("gestor-queue-card");
+  const btnFinish = document.getElementById("btn-finish-match");
+  const msgArchived = document.getElementById("gestor-finish-archived-msg");
+  const badgeEl = document.getElementById("match-live-status-badge");
+
+  // Se a pelada ativa estiver finalizada, exibe o resumo oficial arquivado e desativa controles de edição
+  if (isFinalizada) {
+    if (badgeEl) {
+      badgeEl.textContent = "RODADA FINALIZADA";
+      badgeEl.style.background = "#D1FAE5";
+      badgeEl.style.color = "#065F46";
+      badgeEl.style.border = "1px solid #A7F3D0";
+      badgeEl.style.fontWeight = "800";
+    }
+
+    if (timerCont) {
+      timerCont.style.display = "block";
+      const timerTime = document.getElementById("match-control-timer");
+      if (timerTime) timerTime.textContent = "00:00";
+      const timerStatus = document.getElementById("gestor-timer-status-text");
+      if (timerStatus) timerStatus.textContent = "Rodada Encerrada";
+      const timerDot = document.getElementById("gestor-timer-dot");
+      if (timerDot) timerDot.className = "gestor-pulse-dot paused";
+      const timerProgress = document.getElementById("gestor-timer-progress");
+      if (timerProgress) timerProgress.style.width = "100%";
+      ["btn-timer-toggle", "btn-timer-reset", "btn-timer-minus", "btn-timer-plus"].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.style.display = "none";
+      });
+    }
+
+    if (scoreCont) {
+      scoreCont.style.display = "block";
+      document.querySelectorAll(".btn-score-adjust, .btn-goal-trigger").forEach(b => {
+        b.style.display = "none";
+      });
+
+      const recent = window.App.recentMatchesList || [];
+      if (recent.length > 0) {
+        const lastM = recent[0]; // mais recente
+        const tAEl = document.getElementById("match-control-team-a");
+        const tBEl = document.getElementById("match-control-team-b");
+        const sAEl = document.getElementById("match-control-score-a");
+        const sBEl = document.getElementById("match-control-score-b");
+        if (tAEl) tAEl.textContent = lastM.time_a_nome || "Time A";
+        if (tBEl) tBEl.textContent = lastM.time_b_nome || "Time B";
+        if (sAEl) sAEl.textContent = lastM.gols_time_a !== undefined ? lastM.gols_time_a : 0;
+        if (sBEl) sBEl.textContent = lastM.gols_time_b !== undefined ? lastM.gols_time_b : 0;
+
+        if (window.TeamEmblems) {
+          let teams = getAppTeamsList();
+          const tA = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (lastM.time_a_nome || '').toLowerCase().trim()) || { nome: lastM.time_a_nome };
+          const tB = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (lastM.time_b_nome || '').toLowerCase().trim()) || { nome: lastM.time_b_nome };
+          const embAEl = document.getElementById("emblem-team-a");
+          const embBEl = document.getElementById("emblem-team-b");
+          if (embAEl) embAEl.innerHTML = window.TeamEmblems.forTeam(tA);
+          if (embBEl) embBEl.innerHTML = window.TeamEmblems.forTeam(tB);
+        }
+
+        const goalsAEl = document.getElementById("match-control-team-a-goals");
+        const goalsBEl = document.getElementById("match-control-team-b-goals");
+        let gList = [];
+        try {
+          if (typeof lastM.autores_gols === "string") gList = JSON.parse(lastM.autores_gols || "[]");
+          else if (Array.isArray(lastM.autores_gols)) gList = lastM.autores_gols;
+        } catch(e) {}
+
+        if (goalsAEl) {
+          const gA = gList.filter(g => g.teamKey === 'a' || (g.teamName && lastM.time_a_nome && g.teamName.toLowerCase() === lastM.time_a_nome.toLowerCase()));
+          goalsAEl.innerHTML = gA.map(g => `<div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;">${g.assistNome ? `<span style="font-size:11px; color:#64748B;">(${g.assistNome} 👟)</span>` : ''}<span>${g.autorNome || 'Jogador'}</span><span>⚽</span></div>`).join('');
+        }
+        if (goalsBEl) {
+          const gB = gList.filter(g => g.teamKey === 'b' || (g.teamName && lastM.time_b_nome && g.teamName.toLowerCase() === lastM.time_b_nome.toLowerCase()));
+          goalsBEl.innerHTML = gB.map(g => `<div style="display:flex; align-items:center; justify-content:flex-start; gap:4px;"><span>⚽</span><span>${g.autorNome || 'Jogador'}</span>${g.assistNome ? `<span style="font-size:11px; color:#64748B;">(${g.assistNome} 👟)</span>` : ''}</div>`).join('');
+        }
+      }
+
+      const phaseBanner = document.getElementById("gestor-phase-header-banner");
+      const phaseTitle = document.getElementById("gestor-phase-header-title");
+      const phaseSub = document.getElementById("gestor-phase-header-sub");
+      if (phaseBanner && phaseTitle) {
+        phaseBanner.style.display = "block";
+        phaseBanner.style.background = "#D1FAE5";
+        phaseBanner.style.border = "1px solid #A7F3D0";
+        phaseTitle.textContent = "🏁 RODADA FINALIZADA · RESULTADO DA ÚLTIMA PARTIDA";
+        phaseTitle.style.color = "#065F46";
+        if (phaseSub) {
+          phaseSub.textContent = "Todas as partidas desta pelada foram concluídas";
+          phaseSub.style.color = "#047857";
+        }
+      }
+    }
+
+    if (finishCont) finishCont.style.display = "flex";
+    if (btnFinish) btnFinish.style.display = "none";
+    if (msgArchived) msgArchived.style.display = "block";
+    if (queueCard) queueCard.style.display = "none";
+    return;
+  }
+
+  // Pelada Ativa: restaura botões de controle
+  ["btn-timer-toggle", "btn-timer-reset", "btn-timer-minus", "btn-timer-plus"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.style.display = "";
+  });
+  document.querySelectorAll(".btn-score-adjust, .btn-goal-trigger").forEach(b => {
+    b.style.display = "";
+  });
+  if (btnFinish) btnFinish.style.display = "flex";
+  if (msgArchived) msgArchived.style.display = "none";
+
+  // Verificar se existem times sorteados usando a função auxiliar segura
+  let teamsList = getAppTeamsList();
+
   let infoCard = document.getElementById("gestor-no-teams-card");
 
   // Garante que o cronômetro, placar e controles da partida fiquem SEMPRE VISÍVEIS durante a rodada ativa
@@ -1064,7 +1254,6 @@ function renderLiveMatchUI() {
   const teamBEl = document.getElementById("match-control-team-b");
   const scoreAEl = document.getElementById("match-control-score-a");
   const scoreBEl = document.getElementById("match-control-score-b");
-  const badgeEl = document.getElementById("match-live-status-badge");
 
   if (teamAEl) teamAEl.textContent = teamA;
   if (teamBEl) teamBEl.textContent = teamB;
@@ -1247,35 +1436,13 @@ function renderLiveMatchUI() {
   }
 
   // Bind dos cliques nos botões ✕ para excluir gol lançado acidentalmente
-  document.querySelectorAll(".btn-delete-live-goal").forEach(btn => {
+  document.querySelectorAll("#gestor-scoreboard-container .btn-delete-live-goal").forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
+      e.preventDefault();
       const goalId = btn.getAttribute("data-goal-id");
       const teamKey = btn.getAttribute("data-team-key");
-
-      let goals = window.App.liveMatch.goals || [];
-      const matchIdx = goals.findIndex(g => String(g.id || '') === String(goalId));
-      if (matchIdx !== -1) {
-        goals.splice(matchIdx, 1);
-      } else {
-        const teamGoals = goals.filter(g => g.teamKey === teamKey);
-        const gToRemove = teamGoals[parseInt(goalId)];
-        if (gToRemove) {
-          goals = goals.filter(g => g !== gToRemove);
-        }
-      }
-
-      window.App.liveMatch.goals = goals;
-      if (teamKey === 'a') {
-        window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) - 1);
-      } else {
-        window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) - 1);
-      }
-
-      if (window.App.updateAcompanhamentoUI) {
-        window.App.updateAcompanhamentoUI();
-      }
-      renderLiveMatchUI();
+      deleteLiveGoal(goalId, teamKey);
     };
   });
 
@@ -1762,7 +1929,79 @@ window.App.closeFullscreenScoreboard = function () {
   if (!overlay) return;
   overlay.style.display = "none";
   document.body.classList.remove("fullscreen-mode-active");
+  // Fechar gavetas abertas e desmarcar botões laterais ativos
+  document.querySelectorAll(".fs-side-drawer.open").forEach(p => p.classList.remove("open"));
+  document.querySelectorAll(".fs-side-tab-btn.active").forEach(b => b.classList.remove("active"));
 };
+
+// --- HELPERS PARA OBTENÇÃO DA PELADA ATIVA E PARTIDAS ---
+async function getActivePeladaId() {
+  if (window.App && window.App.activePelada && window.App.activePelada.id) {
+    return window.App.activePelada.id;
+  }
+  const select = document.getElementById("partidas-select-pelada-date");
+  if (select && select.value) {
+    return select.value;
+  }
+  try {
+    const raw = localStorage.getItem("activePelada");
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (obj && obj.id) return obj.id;
+    }
+  } catch (e) {}
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+  if (currentGroup && currentGroup.id && window.Api && window.Api.listarDatasDoGrupo) {
+    try {
+      const peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+      if (Array.isArray(peladas) && peladas.length > 0) {
+        const active = peladas.find(p => p.status !== 'finalizada') || peladas[0];
+        if (active) {
+          window.App.activePelada = active;
+          localStorage.setItem("activePelada", JSON.stringify(active));
+          return active.id;
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function getPeladaMatchesList(peladaId, forceRefresh = false) {
+  if (!forceRefresh && Array.isArray(window.App.recentMatchesList) && window.App.recentMatchesList.length > 0) {
+    return window.App.recentMatchesList;
+  }
+  const pId = peladaId || (await getActivePeladaId());
+  if (pId && window.Api && window.Api.listarPartidas) {
+    try {
+      const list = await Api.listarPartidas(pId);
+      if (Array.isArray(list)) {
+        window.App.recentMatchesList = list;
+        return list;
+      }
+    } catch (e) {
+      console.warn("[getPeladaMatchesList] Erro ao buscar da API:", e);
+    }
+  }
+  if (pId) {
+    try {
+      const local = JSON.parse(localStorage.getItem(`partidas_${pId}`)) || JSON.parse(localStorage.getItem(`recentMatches_${pId}`));
+      if (Array.isArray(local) && local.length > 0) {
+        window.App.recentMatchesList = local;
+        return local;
+      }
+    } catch (e) {}
+  }
+  try {
+    const generic = JSON.parse(localStorage.getItem("recentMatches")) || JSON.parse(localStorage.getItem("partidas"));
+    if (Array.isArray(generic) && generic.length > 0) {
+      window.App.recentMatchesList = generic;
+      return generic;
+    }
+  } catch (e) {}
+
+  return window.App.recentMatchesList || [];
+}
 
 function setupFullscreenDrawers() {
   const btnQueue = document.getElementById("fs-btn-toggle-queue");
@@ -1836,93 +2075,261 @@ function setupFullscreenDrawers() {
   });
 }
 
-function renderFullscreenQueue() {
+async function renderFullscreenQueue() {
   const container = document.getElementById("fs-queue-content");
   if (!container) return;
 
-  const queue = getAppWaitingQueue();
+  const peladaId = await getActivePeladaId();
+  const peladaAtiva = window.App.activePelada || {};
+  let tState = (window.App.liveMatch && window.App.liveMatch.tournamentState) || null;
+  if (!tState && peladaId) {
+    try {
+      tState = JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`));
+    } catch (e) {}
+  }
+  if (!tState) {
+    try {
+      tState = JSON.parse(localStorage.getItem("tournamentState"));
+    } catch (e) {}
+  }
+
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
+
   const liveMatch = window.App.liveMatch || {};
+  let teams = getAppTeamsList();
 
   let html = "";
-  
-  // Jogo em Andamento
+
+  // 1. JOGO AO VIVO EM ANDAMENTO
   if (liveMatch.teamA && liveMatch.teamB) {
+    let embA = "", embB = "";
+    if (window.TeamEmblems && teams.length > 0) {
+      const tAObj = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (liveMatch.teamA || '').toLowerCase().trim());
+      const tBObj = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (liveMatch.teamB || '').toLowerCase().trim());
+      if (tAObj) embA = window.TeamEmblems.forTeam(tAObj);
+      if (tBObj) embB = window.TeamEmblems.forTeam(tBObj);
+    }
     html += `
-      <div style="background: rgba(2, 132, 199, 0.2); border: 1px solid #0284C7; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-        <span style="font-weight: 800; color: #38BDF8;">🟢 EM ANDAMENTO</span>
-        <strong style="color: #FFF; font-size: 14px;">${liveMatch.teamA} <span style="color:#38BDF8;">${liveMatch.scoreA || 0} x ${liveMatch.scoreB || 0}</span> ${liveMatch.teamB}</strong>
+      <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.25) 0%, rgba(15, 23, 42, 0.8) 100%); border: 1.5px solid #0284C7; border-radius: 12px; padding: 12px 14px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25); margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 11px; font-weight: 900; color: #38BDF8; display: flex; align-items: center; gap: 6px;">
+            <span class="gestor-pulse-dot" style="width: 8px; height: 8px;"></span> EM ANDAMENTO
+          </span>
+          <span style="font-size: 11px; font-weight: 700; color: #94A3B8;">${liveMatch.fase || 'Partida Atual'}</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+            ${embA ? `<div style="width: 20px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embA}</div>` : ''}
+            <span style="font-weight: 800; color: #FFF; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${liveMatch.teamA}</span>
+          </div>
+          <div style="background: #0F172A; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 10px; padding: 4px 12px; font-size: 15px; font-weight: 900; color: #38BDF8; font-family: monospace; letter-spacing: 1px; flex-shrink: 0;">
+            ${liveMatch.scoreA !== undefined ? liveMatch.scoreA : 0} x ${liveMatch.scoreB !== undefined ? liveMatch.scoreB : 0}
+          </div>
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 1; min-width: 0;">
+            <span style="font-weight: 800; color: #FFF; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;">${liveMatch.teamB}</span>
+            ${embB ? `<div style="width: 20px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embB}</div>` : ''}
+          </div>
+        </div>
       </div>
     `;
   }
 
+  // 2. SE FOR MODO TORNEIO -> EXIBIR A SEQUÊNCIA DE JOGOS DO TORNEIO!
+  if (isTorneio && tState) {
+    let allMatches = [];
+    if (Array.isArray(tState.matches)) {
+      const optGroup = (tState.manualOrder !== true && window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence)
+        ? window.TournamentEngine.optimizeMatchSequence(tState.matches)
+        : tState.matches;
+      allMatches.push(...optGroup);
+    }
+    if (Array.isArray(tState.knockoutMatches)) allMatches.push(...tState.knockoutMatches);
+    if (Array.isArray(tState.finalsMatches)) allMatches.push(...tState.finalsMatches);
+
+    if (allMatches.length > 0) {
+      html += `<div style="font-size: 11px; font-weight: 800; color: #94A3B8; margin-top: 10px; margin-bottom: 6px; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+        <span>🏆 Ordem dos Confrontos (${allMatches.length}):</span>
+      </div>`;
+
+      allMatches.forEach((m, idx) => {
+        const isCurrent = m.id === liveMatch.tournamentMatchId || m.status === 'em_andamento';
+        const isDone = m.status === 'encerrado';
+
+        let embA = "", embB = "";
+        if (window.TeamEmblems && teams.length > 0) {
+          const tA = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim());
+          const tB = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim());
+          if (tA) embA = window.TeamEmblems.forTeam(tA);
+          if (tB) embB = window.TeamEmblems.forTeam(tB);
+        }
+
+        const penText = (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined)
+          ? ` <small style="font-size: 9px; opacity: 0.85;">(${m.penaltisA}x${m.penaltisB}🎯)</small>`
+          : '';
+
+        const statusBadge = isDone
+          ? `<span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; font-family: monospace;">${m.golsA} x ${m.golsB}${penText}</span>`
+          : (isCurrent
+            ? `<span style="background: rgba(245, 158, 11, 0.25); color: #FBBF24; border: 1px solid #F59E0B; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px;">AGORA</span>`
+            : `<span style="background: rgba(255, 255, 255, 0.08); color: #94A3B8; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px;">A JOGAR</span>`);
+
+        html += `
+          <div style="background: ${isCurrent ? 'rgba(245, 158, 11, 0.12)' : (isDone ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)')}; border: 1px solid ${isCurrent ? '#F59E0B' : (isDone ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.14)')}; border-left: 3px solid ${isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')}; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+              <span style="font-size: 10px; color: #94A3B8; font-weight: 800;">#${idx + 1}</span>
+              ${embA ? `<div style="width: 16px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embA}</div>` : ''}
+              <span style="font-weight: 700; color: ${isDone ? '#CBD5E1' : '#FFF'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.teamA}</span>
+            </div>
+            <div style="flex-shrink: 0;">${statusBadge}</div>
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 1; min-width: 0;">
+              <span style="font-weight: 700; color: ${isDone ? '#CBD5E1' : '#FFF'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;">${m.teamB}</span>
+              ${embB ? `<div style="width: 16px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${embB}</div>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  // 3. FILA DE ESPERA (REINA CAMPO OU QUANDO HOUVER FILA)
+  let queue = getAppWaitingQueue();
+
+  // Failsafe: se fila estiver vazia mas houver mais de 2 times cadastrados, reconstrói com quem não está em campo
+  if ((!queue || queue.length === 0) && Array.isArray(teams) && teams.length > 2) {
+    const tA = liveMatch.teamA ? String(liveMatch.teamA).toLowerCase().trim() : '';
+    const tB = liveMatch.teamB ? String(liveMatch.teamB).toLowerCase().trim() : '';
+    queue = teams
+      .map(t => t.nome || t.name)
+      .filter(n => {
+        if (!n) return false;
+        const low = String(n).toLowerCase().trim();
+        return low !== tA && low !== tB;
+      });
+  }
+
   if (Array.isArray(queue) && queue.length > 0) {
-    html += `<div style="font-size: 11px; font-weight: 800; color: #94A3B8; margin-top: 6px; text-transform: uppercase;">📋 Próximos na Fila de Espera:</div>`;
+    html += `<div style="font-size: 11px; font-weight: 800; color: #FBBF24; margin-top: 10px; margin-bottom: 6px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+      <span>⏳ Fila de Espera (${queue.length} ${queue.length === 1 ? 'time' : 'times'}):</span>
+    </div>`;
+
     queue.forEach((item, idx) => {
       const posStr = idx === 0 ? "1º PRÓXIMO" : `${idx + 1}º NA FILA`;
-      const teamName = (typeof item === 'object' && item.nome) ? item.nome : String(item);
+      const teamName = (typeof item === 'object' && (item.nome || item.name)) ? (item.nome || item.name) : String(item);
+      const teamObj = teams.find(t => (t.nome || t.name || '').toLowerCase().trim() === teamName.toLowerCase().trim());
+      let emb = "";
+      if (window.TeamEmblems && teamObj) {
+        emb = window.TeamEmblems.forTeam(teamObj);
+      }
+
       html += `
-        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-          <span style="font-weight: 800; color: ${idx === 0 ? '#FBBF24' : '#CBD5E1'};">${posStr}</span>
-          <strong style="color: #FFF; font-size: 14px;">${teamName}</strong>
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-left: 3px solid ${idx === 0 ? '#FBBF24' : '#64748B'}; border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${emb ? `<div style="width: 20px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">${emb}</div>` : ''}
+            <strong style="color: #FFF; font-size: 14px;">${teamName}</strong>
+          </div>
+          <span style="font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: ${idx === 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.08)'}; color: ${idx === 0 ? '#FBBF24' : '#CBD5E1'};">${posStr}</span>
         </div>
       `;
     });
-  } else {
-    html += `<div style="font-size: 12px; color: #64748B; padding: 6px 0;">Nenhum time aguardando na fila.</div>`;
+  } else if (!isTorneio) {
+    if (teams && teams.length <= 2 && teams.length > 0) {
+      html += `<div style="font-size: 12px; color: #94A3B8; padding: 10px 0; text-align: center;">⚔️ Apenas 2 times cadastrados (confronto direto).</div>`;
+    } else {
+      html += `<div style="font-size: 12px; color: #64748B; padding: 10px 0; text-align: center;">Nenhum time aguardando na fila.</div>`;
+    }
   }
 
   container.innerHTML = html;
 }
+window.App.renderFullscreenQueue = renderFullscreenQueue;
 
-function renderFullscreenStandings() {
+async function renderFullscreenStandings() {
   const container = document.getElementById("fs-standings-content");
   if (!container) return;
 
+  container.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; gap:8px; padding:24px 0; color:#94A3B8; font-size:13px;"><span class="gestor-pulse-dot" style="width:8px; height:8px;"></span> Carregando tabela de classificação...</div>`;
+
+  const peladaId = await getActivePeladaId();
+  const peladaAtiva = window.App.activePelada || {};
+  let tState = (window.App.liveMatch && window.App.liveMatch.tournamentState) || null;
+  if (!tState && peladaId) {
+    try {
+      tState = JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`));
+    } catch (e) {}
+  }
+  if (!tState) {
+    try {
+      tState = JSON.parse(localStorage.getItem("tournamentState"));
+    } catch (e) {}
+  }
+
   let teams = getAppTeamsList();
-  let statsMap = {};
-  teams.forEach(t => {
-    statsMap[t.nome] = { nome: t.nome, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
-  });
+  let list = [];
 
-  const matches = window.App.recentMatchesList || [];
-  matches.forEach(m => {
-    const tA = m.teamA;
-    const tB = m.teamB;
-    const sA = parseInt(m.scoreA || 0);
-    const sB = parseInt(m.scoreB || 0);
+  // 1. SE FOR MODO TORNEIO E TIVER STANDINGS COMPUTADOS
+  if (tState && Array.isArray(tState.standings) && tState.standings.length > 0) {
+    list = tState.standings.map((st, idx) => ({
+      nome: st.nome || st.name || `Time ${idx + 1}`,
+      p: st.pontos !== undefined ? st.pontos : 0,
+      j: st.jogos !== undefined ? st.jogos : 0,
+      v: st.vitorias !== undefined ? st.vitorias : 0,
+      e: st.empates !== undefined ? st.empates : 0,
+      d: st.derrotas !== undefined ? st.derrotas : 0,
+      gp: st.golsPro !== undefined ? st.golsPro : (st.gp || 0),
+      gc: st.golsContra !== undefined ? st.golsContra : (st.gc || 0),
+      sg: st.saldoGols !== undefined ? st.saldoGols : ((st.golsPro || 0) - (st.golsContra || 0))
+    }));
+  } else {
+    // 2. MODO NORMAL / REINA CAMPO: CALCULA A PARTIR DAS PARTIDAS FINALIZADAS
+    const matches = await getPeladaMatchesList(peladaId);
+    let statsMap = {};
 
-    if (tA && !statsMap[tA]) statsMap[tA] = { nome: tA, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
-    if (tB && !statsMap[tB]) statsMap[tB] = { nome: tB, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+    teams.forEach(t => {
+      const tName = t.nome || t.name;
+      if (tName) {
+        statsMap[tName] = { nome: tName, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+      }
+    });
 
-    if (statsMap[tA]) {
-      statsMap[tA].j++;
-      statsMap[tA].gp += sA;
-      statsMap[tA].gc += sB;
-    }
-    if (statsMap[tB]) {
-      statsMap[tB].j++;
-      statsMap[tB].gp += sB;
-      statsMap[tB].gc += sA;
-    }
+    matches.forEach(m => {
+      const tA = m.time_a_nome || m.teamA;
+      const tB = m.time_b_nome || m.teamB;
+      const sA = parseInt(m.gols_time_a !== undefined ? m.gols_time_a : (m.scoreA !== undefined ? m.scoreA : (m.golsA !== undefined ? m.golsA : 0))) || 0;
+      const sB = parseInt(m.gols_time_b !== undefined ? m.gols_time_b : (m.scoreB !== undefined ? m.scoreB : (m.golsB !== undefined ? m.golsB : 0))) || 0;
 
-    if (sA > sB) {
-      if (statsMap[tA]) { statsMap[tA].p += 3; statsMap[tA].v++; }
-      if (statsMap[tB]) { statsMap[tB].d++; }
-    } else if (sB > sA) {
-      if (statsMap[tB]) { statsMap[tB].p += 3; statsMap[tB].v++; }
-      if (statsMap[tA]) { statsMap[tA].d++; }
-    } else {
-      if (statsMap[tA]) { statsMap[tA].p += 1; statsMap[tA].e++; }
-      if (statsMap[tB]) { statsMap[tB].p += 1; statsMap[tB].e++; }
-    }
-  });
+      if (tA && !statsMap[tA]) statsMap[tA] = { nome: tA, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+      if (tB && !statsMap[tB]) statsMap[tB] = { nome: tB, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
 
-  let list = Object.values(statsMap);
-  list.forEach(item => item.sg = item.gp - item.gc);
-  list.sort((a, b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
+      if (statsMap[tA]) {
+        statsMap[tA].j++;
+        statsMap[tA].gp += sA;
+        statsMap[tA].gc += sB;
+      }
+      if (statsMap[tB]) {
+        statsMap[tB].j++;
+        statsMap[tB].gp += sB;
+        statsMap[tB].gc += sA;
+      }
+
+      if (sA > sB) {
+        if (statsMap[tA]) { statsMap[tA].p += 3; statsMap[tA].v++; }
+        if (statsMap[tB]) { statsMap[tB].d++; }
+      } else if (sB > sA) {
+        if (statsMap[tB]) { statsMap[tB].p += 3; statsMap[tB].v++; }
+        if (statsMap[tA]) { statsMap[tA].d++; }
+      } else {
+        if (statsMap[tA]) { statsMap[tA].p += 1; statsMap[tA].e++; }
+        if (statsMap[tB]) { statsMap[tB].p += 1; statsMap[tB].e++; }
+      }
+    });
+
+    list = Object.values(statsMap);
+    list.forEach(item => item.sg = item.gp - item.gc);
+    list.sort((a, b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp || b.v - a.v);
+  }
 
   if (list.length === 0) {
-    container.innerHTML = `<div style="font-size: 12px; color: #64748B; padding: 8px 0;">Nenhuma partida contabilizada ainda.</div>`;
+    container.innerHTML = `<div style="font-size: 13px; color: #94A3B8; text-align: center; padding: 24px 8px;">Nenhuma partida contabilizada ainda nesta pelada.</div>`;
     return;
   }
 
@@ -1930,28 +2337,37 @@ function renderFullscreenStandings() {
     <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; color: #F8FAFC;">
       <thead>
         <tr style="border-bottom: 2px solid rgba(255,255,255,0.2); color: #94A3B8; font-size: 11px; text-transform: uppercase;">
-          <th style="padding: 8px; text-align: left;"># Time</th>
-          <th style="padding: 8px; color: #FBBF24;">P</th>
-          <th style="padding: 8px;">J</th>
-          <th style="padding: 8px;">V</th>
-          <th style="padding: 8px;">E</th>
-          <th style="padding: 8px;">D</th>
-          <th style="padding: 8px;">GP</th>
-          <th style="padding: 8px;">GC</th>
-          <th style="padding: 8px;">SG</th>
+          <th style="padding: 10px 8px; text-align: left;">Time</th>
+          <th style="padding: 10px 8px; color: #FBBF24;">P</th>
+          <th style="padding: 10px 8px;">J</th>
+          <th style="padding: 10px 8px; color: #4ADE80;">V</th>
+          <th style="padding: 10px 8px; color: #94A3B8;">E</th>
+          <th style="padding: 10px 8px; color: #F87171;">D</th>
+          <th style="padding: 10px 8px;">GP</th>
+          <th style="padding: 10px 8px;">GC</th>
+          <th style="padding: 10px 8px;">SG</th>
         </tr>
       </thead>
       <tbody>
   `;
 
   list.forEach((t, idx) => {
-    const badgeLider = idx === 0 ? '<span style="font-size: 10px; padding: 2px 6px; background: rgba(245,158,11,0.2); color: #FBBF24; border-radius: 6px; margin-left: 6px;">LÍDER</span>' : '';
+    const badgeLider = idx === 0 ? '<span style="font-size: 9px; font-weight: 900; padding: 2px 6px; background: rgba(245,158,11,0.25); color: #FBBF24; border: 1px solid #F59E0B; border-radius: 6px; margin-left: 6px;">LÍDER</span>' : '';
+    const teamObj = teams.find(tm => (tm.nome || tm.name || '').toLowerCase().trim() === t.nome.toLowerCase().trim());
+    let emb = "";
+    if (window.TeamEmblems && teamObj) {
+      emb = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">${window.TeamEmblems.forTeam(teamObj)}</span>`;
+    }
+
     tableHtml += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); background: ${idx === 0 ? 'rgba(245,158,11,0.08)' : 'transparent'};">
-        <td style="padding: 10px 8px; text-align: left; font-weight: 800; color: #FFF;">${idx + 1}º ${t.nome}${badgeLider}</td>
+        <td style="padding: 10px 8px; text-align: left; font-weight: 800; color: #FFF; white-space: nowrap;">
+          <span style="color: #94A3B8; font-size: 11px; margin-right: 4px;">${idx + 1}º</span>
+          ${emb}${t.nome}${badgeLider}
+        </td>
         <td style="padding: 10px 8px; font-weight: 900; color: #FBBF24; font-size: 15px;">${t.p}</td>
-        <td style="padding: 10px 8px;">${t.j}</td>
-        <td style="padding: 10px 8px; color: #4ADE80;">${t.v}</td>
+        <td style="padding: 10px 8px; font-weight: 700;">${t.j}</td>
+        <td style="padding: 10px 8px; color: #4ADE80; font-weight: 700;">${t.v}</td>
         <td style="padding: 10px 8px; color: #94A3B8;">${t.e}</td>
         <td style="padding: 10px 8px; color: #F87171;">${t.d}</td>
         <td style="padding: 10px 8px;">${t.gp}</td>
@@ -1964,74 +2380,161 @@ function renderFullscreenStandings() {
   tableHtml += `</tbody></table>`;
   container.innerHTML = tableHtml;
 }
+window.App.renderFullscreenStandings = renderFullscreenStandings;
 
-function renderFullscreenScorers() {
+async function renderFullscreenScorers() {
   const container = document.getElementById("fs-scorers-content");
   if (!container) return;
+
+  container.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; gap:8px; padding:24px 0; color:#94A3B8; font-size:13px;"><span class="gestor-pulse-dot" style="width:8px; height:8px;"></span> Carregando artilharia e assistências...</div>`;
+
+  const peladaId = await getActivePeladaId();
+  const matches = await getPeladaMatchesList(peladaId);
+  const liveMatch = window.App.liveMatch || {};
+  let teams = getAppTeamsList();
+
+  // Mapeamento de atleta -> time para identificação visual elegante
+  const playerTeamMap = {};
+  teams.forEach(t => {
+    const pList = t.jogadores || t.players || [];
+    pList.forEach(p => {
+      const pApelido = (p.apelido || '').trim().toLowerCase();
+      const pNome = (p.nome || '').trim().toLowerCase();
+      const teamLabel = t.nome || t.name;
+      if (pApelido) playerTeamMap[pApelido] = teamLabel;
+      if (pNome) playerTeamMap[pNome] = teamLabel;
+    });
+  });
 
   let goalsMap = {};
   let assistsMap = {};
 
-  const matches = window.App.recentMatchesList || [];
-  const liveMatch = window.App.liveMatch || {};
-  const allMatches = [...matches];
-  if (liveMatch.goals && liveMatch.goals.length > 0) {
-    allMatches.push(liveMatch);
-  }
+  const processGoal = (g, defaultTeam) => {
+    if (!g) return;
+    const author = (g.autorNome || g.autor || g.author || g.jogador || g.nome || '').trim();
+    const assist = (g.assistNome || g.assistencia || g.assist || '').trim();
+    const teamName = g.teamName || defaultTeam || (g.teamKey === 'a' ? liveMatch.teamA : (g.teamKey === 'b' ? liveMatch.teamB : null));
 
-  allMatches.forEach(m => {
-    const goals = m.goals || [];
-    goals.forEach(g => {
-      const author = g.autor || g.author || g.jogador;
-      const assist = g.assistencia || g.assist;
+    if (author && author !== 'Gol Contra' && author !== 'Auto Gol' && author !== 'Sem Autor') {
+      if (!goalsMap[author]) {
+        goalsMap[author] = {
+          name: author,
+          val: 0,
+          team: teamName || playerTeamMap[author.toLowerCase()] || ''
+        };
+      }
+      goalsMap[author].val++;
+      if (teamName && !goalsMap[author].team) goalsMap[author].team = teamName;
+    }
 
-      if (author && author !== 'Gol Contra' && author !== 'Auto Gol') {
-        goalsMap[author] = (goalsMap[author] || 0) + 1;
+    if (assist && assist !== 'Nenhuma' && assist !== 'Sem Assistência' && assist !== 'Sem Assist') {
+      if (!assistsMap[assist]) {
+        assistsMap[assist] = {
+          name: assist,
+          val: 0,
+          team: teamName || playerTeamMap[assist.toLowerCase()] || ''
+        };
       }
-      if (assist && assist !== 'Nenhuma' && assist !== 'Sem Assistência') {
-        assistsMap[assist] = (assistsMap[assist] || 0) + 1;
-      }
-    });
+      assistsMap[assist].val++;
+      if (teamName && !assistsMap[assist].team) assistsMap[assist].team = teamName;
+    }
+  };
+
+  // 1. Gols das partidas finalizadas no banco de dados
+  matches.forEach(m => {
+    let goalsList = [];
+    if (m.autores_gols) {
+      try {
+        goalsList = typeof m.autores_gols === 'string' ? JSON.parse(m.autores_gols) : m.autores_gols;
+      } catch (e) {}
+    } else if (Array.isArray(m.goals)) {
+      goalsList = m.goals;
+    }
+    if (Array.isArray(goalsList)) {
+      goalsList.forEach(g => processGoal(g, g.teamName));
+    }
   });
 
-  let topGoals = Object.entries(goalsMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val).slice(0, 5);
-  let topAssists = Object.entries(assistsMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val).slice(0, 5);
+  // 2. Gols da partida ao vivo em andamento
+  if (Array.isArray(liveMatch.goals) && liveMatch.goals.length > 0) {
+    liveMatch.goals.forEach(g => {
+      const defT = g.teamKey === 'a' ? liveMatch.teamA : (g.teamKey === 'b' ? liveMatch.teamB : null);
+      processGoal(g, defT);
+    });
+  }
 
-  let goalsHtml = `<div style="font-weight: 800; font-size: 13px; color: #FBBF24; margin-bottom: 8px; text-transform: uppercase;">⚽ Artilharia (Gols)</div>`;
+  let topGoals = Object.values(goalsMap).sort((a, b) => b.val - a.val);
+  let topAssists = Object.values(assistsMap).sort((a, b) => b.val - a.val);
+
+  let totalGols = topGoals.reduce((acc, curr) => acc + curr.val, 0);
+  let totalAssists = topAssists.reduce((acc, curr) => acc + curr.val, 0);
+
+  let goalsHtml = `
+    <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px;">
+        <span style="font-weight: 900; font-size: 14px; color: #FBBF24; display: flex; align-items: center; gap: 6px;">
+          ⚽ Artilharia (Gols)
+        </span>
+        <span style="font-size: 11px; font-weight: 800; color: #FDE68A; background: rgba(245, 158, 11, 0.2); padding: 2px 8px; border-radius: 6px;">${totalGols} ${totalGols === 1 ? 'Gol' : 'Gols'}</span>
+      </div>
+  `;
+
   if (topGoals.length === 0) {
-    goalsHtml += `<div style="font-size: 12px; color: #64748B;">Nenhum gol lançado ainda.</div>`;
+    goalsHtml += `<div style="font-size: 12px; color: #64748B; text-align: center; padding: 10px 0;">Nenhum gol registrado nesta pelada ainda.</div>`;
   } else {
     topGoals.forEach((item, idx) => {
-      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `${idx + 1}º`));
+      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `<span style="color:#94A3B8; font-size:11px; margin-right:4px;">${idx + 1}º</span>`));
+      const teamBadge = item.team ? `<span style="font-size:10px; font-weight:700; color:#94A3B8; background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px;">${item.team}</span>` : '';
       goalsHtml += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 13px;">
-          <span>${medal} <strong style="color: #FFF;">${item.name}</strong></span>
-          <strong style="color: #FBBF24; font-size: 14px;">${item.val} Gols</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); font-size: 13px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+            <span style="font-size: 15px; flex-shrink: 0;">${medal}</span>
+            <strong style="color: #FFF; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</strong>
+            ${teamBadge}
+          </div>
+          <strong style="color: #FBBF24; font-size: 14px; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 6px; flex-shrink: 0;">${item.val} ${item.val === 1 ? 'Gol' : 'Gols'}</strong>
         </div>
       `;
     });
   }
+  goalsHtml += `</div>`;
 
-  let assistsHtml = `<div style="font-weight: 800; font-size: 13px; color: #38BDF8; margin-bottom: 8px; text-transform: uppercase;">👟 Assistências (Passes)</div>`;
+  let assistsHtml = `
+    <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px;">
+        <span style="font-weight: 900; font-size: 14px; color: #38BDF8; display: flex; align-items: center; gap: 6px;">
+          👟 Garçons (Assistências)
+        </span>
+        <span style="font-size: 11px; font-weight: 800; color: #BAE6FD; background: rgba(2, 132, 199, 0.2); padding: 2px 8px; border-radius: 6px;">${totalAssists} ${totalAssists === 1 ? 'Passe' : 'Passes'}</span>
+      </div>
+  `;
+
   if (topAssists.length === 0) {
-    assistsHtml += `<div style="font-size: 12px; color: #64748B;">Nenhuma assistência lançada ainda.</div>`;
+    assistsHtml += `<div style="font-size: 12px; color: #64748B; text-align: center; padding: 10px 0;">Nenhuma assistência registrada nesta pelada ainda.</div>`;
   } else {
     topAssists.forEach((item, idx) => {
-      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `${idx + 1}º`));
+      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `<span style="color:#94A3B8; font-size:11px; margin-right:4px;">${idx + 1}º</span>`));
+      const teamBadge = item.team ? `<span style="font-size:10px; font-weight:700; color:#94A3B8; background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px;">${item.team}</span>` : '';
       assistsHtml += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 13px;">
-          <span>${medal} <strong style="color: #FFF;">${item.name}</strong></span>
-          <strong style="color: #38BDF8; font-size: 14px;">${item.val} Passes</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); font-size: 13px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+            <span style="font-size: 15px; flex-shrink: 0;">${medal}</span>
+            <strong style="color: #FFF; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</strong>
+            ${teamBadge}
+          </div>
+          <strong style="color: #38BDF8; font-size: 14px; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 6px; flex-shrink: 0;">${item.val} ${item.val === 1 ? 'Passe' : 'Passes'}</strong>
         </div>
       `;
     });
   }
+  assistsHtml += `</div>`;
 
   container.innerHTML = `
-    <div>${goalsHtml}</div>
-    <div>${assistsHtml}</div>
+    ${goalsHtml}
+    ${assistsHtml}
   `;
 }
+window.App.renderFullscreenScorers = renderFullscreenScorers;
 
 function syncFullscreenScoreboardUI() {
   const liveMatch = window.App.liveMatch || {};
@@ -2079,11 +2582,11 @@ function syncFullscreenScoreboardUI() {
       fsGoalsAEl.innerHTML = "";
     } else {
       fsGoalsAEl.innerHTML = goalsA.map((g, idx) => `
-        <div style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); padding:3px 10px; border-radius:6px;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); padding:4px 10px; border-radius:8px; margin-bottom:2px;">
           <span style="color:#34D399;">⚽</span>
           <span style="color:#FFF;">${g.autorNome || 'Jogador'}</span>
           ${g.assistNome ? `<span style="font-size:11px; color:#94A3B8;">(${g.assistNome} 👟)</span>` : ''}
-          <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="a" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.3); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold; margin-left:4px;">✕</button>
+          <button type="button" class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="a" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.25); color:#F87171; border-radius:6px; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; font-weight:bold; margin-left:6px; padding:0;">✕</button>
         </div>
       `).join('');
     }
@@ -2096,14 +2599,25 @@ function syncFullscreenScoreboardUI() {
       fsGoalsBEl.innerHTML = "";
     } else {
       fsGoalsBEl.innerHTML = goalsB.map((g, idx) => `
-        <div style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); padding:3px 10px; border-radius:6px;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); padding:4px 10px; border-radius:8px; margin-bottom:2px;">
           <span style="color:#34D399;">⚽</span>
           <span style="color:#FFF;">${g.autorNome || 'Jogador'}</span>
           ${g.assistNome ? `<span style="font-size:11px; color:#94A3B8;">(${g.assistNome} 👟)</span>` : ''}
-          <button class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="b" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.3); color:#EF4444; border-radius:4px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; font-weight:bold; margin-left:4px;">✕</button>
+          <button type="button" class="btn-delete-live-goal" data-goal-id="${g.id || idx}" data-team-key="b" title="Excluir este gol lançado por acidente" style="border:none; background:rgba(239,68,68,0.25); color:#F87171; border-radius:6px; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; font-weight:bold; margin-left:6px; padding:0;">✕</button>
         </div>
       `).join('');
     }
+  }
+
+  // Atualiza visibilidade e vínculo do botão de Lançar Resultado em tela cheia
+  const fsFinishCont = document.getElementById("fs-finish-container");
+  const fsBtnFinish = document.getElementById("fs-btn-finish-match");
+  const isPeladaEncerrada = (window.App.activePelada || {}).status === "finalizada";
+  if (fsFinishCont) {
+    fsFinishCont.style.display = isPeladaEncerrada ? "none" : "flex";
+  }
+  if (fsBtnFinish) {
+    fsBtnFinish.onclick = () => handleFinishMatch();
   }
 
   setupFullscreenDrawers();
@@ -2123,11 +2637,37 @@ window.App.syncFullscreenScoreboardUI = syncFullscreenScoreboardUI;
 
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") {
-    window.App.closeFullscreenScoreboard();
+    const openDrawer = document.querySelector(".fs-side-drawer.open");
+    if (openDrawer) {
+      openDrawer.classList.remove("open");
+      if (openDrawer.associatedBtn) openDrawer.associatedBtn.classList.remove("active");
+    } else {
+      window.App.closeFullscreenScoreboard();
+    }
   }
 });
 
-async function handleFinishMatch() {
+async function handleFinishMatch(skipConfirm = false) {
+  if (window.App.isFinishingMatch) return;
+
+  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!peladaId) {
+    window.App.showToast("Nenhuma pelada selecionada.", "error");
+    return;
+  }
+
+  const teamAName = window.App.liveMatch ? (window.App.liveMatch.teamA || "Time A") : "Time A";
+  const teamBName = window.App.liveMatch ? (window.App.liveMatch.teamB || "Time B") : "Time B";
+  const scoreA = window.App.liveMatch ? (window.App.liveMatch.scoreA || 0) : 0;
+  const scoreB = window.App.liveMatch ? (window.App.liveMatch.scoreB || 0) : 0;
+
+  if (!skipConfirm) {
+    const confirmMsg = `Deseja realmente registrar o resultado oficial e encerrar esta partida?\n\n⚽ ${teamAName} ${scoreA} x ${scoreB} ${teamBName}\n\nClique em OK para confirmar ou Cancelar para continuar jogando.`;
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+  }
+
   window.App.isFinishingMatch = true;
   try {
     const teams = getAppTeamsList();
@@ -2203,7 +2743,7 @@ async function handleFinishMatch() {
             currentMatchObj.penaltisB = penB;
             currentMatchObj.status = 'encerrado';
             currentMatchObj.vencedor = penWinner;
-            finishMatch();
+            handleFinishMatch(true);
           }
         });
         return;
@@ -2420,6 +2960,9 @@ async function handleFinishMatch() {
     if (window.App.renderFormacaoTournamentUI) {
       try { window.App.renderFormacaoTournamentUI(); } catch (e) { }
     }
+    if (window.App.syncFullscreenScoreboardUI) {
+      try { window.App.syncFullscreenScoreboardUI(); } catch (e) { }
+    }
 
     // Sincroniza o novo estado no banco de dados e atualiza histórico recente
     if (window.App.updateAcompanhamentoUI) {
@@ -2433,6 +2976,7 @@ async function handleFinishMatch() {
     window.App.isFinishingMatch = false;
   }
 }
+window.App.handleFinishMatch = handleFinishMatch;
 
 async function renderRecentMatches() {
   window.App.renderRecentMatches = renderRecentMatches;
@@ -2489,12 +3033,14 @@ async function renderRecentMatches() {
     container.innerHTML = "";
 
     if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+      window.App.recentMatchesList = [];
       container.innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Nenhuma partida finalizada nesta pelada ainda.</p>`;
       return;
     }
 
     // Ordena do jogo mais recente (#N) para o mais antigo (#1)
     partidas.sort((a, b) => (b.numero_jogo || b.id || 0) - (a.numero_jogo || a.id || 0));
+    window.App.recentMatchesList = partidas;
 
     window.App.openGoalPanels = window.App.openGoalPanels || {};
 
@@ -2815,9 +3361,9 @@ async function carregarLiveStateDaPelada(peladaId) {
   };
 
   // 1. CARREGAMENTO INICIAL INSTANTÂNEO DO LOCALSTORAGE (Para resposta visual em 0ms)
-  let localTeams = safeLocalStorageGetItem(teamsKey) || safeLocalStorageGetItem("teams") || window.App.teams || [];
-  let localQueue = safeLocalStorageGetItem(queueKey) || safeLocalStorageGetItem("waitingQueue") || window.App.waitingQueue || [];
-  let localLiveMatch = safeLocalStorageGetItem(liveMatchKey) || safeLocalStorageGetItem("liveMatch") || window.App.liveMatch;
+  let localTeams = safeLocalStorageGetItem(teamsKey) || [];
+  let localQueue = safeLocalStorageGetItem(queueKey) || [];
+  let localLiveMatch = safeLocalStorageGetItem(liveMatchKey) || null;
 
   if (Array.isArray(localTeams)) {
     localTeams.forEach((t, i) => {
@@ -2826,8 +3372,8 @@ async function carregarLiveStateDaPelada(peladaId) {
     });
   }
 
-  window.App.teams = localTeams;
-  window.App.waitingQueue = localQueue;
+  if (localTeams.length > 0) window.App.teams = localTeams;
+  if (localQueue.length > 0) window.App.waitingQueue = localQueue;
   if (localLiveMatch) window.App.liveMatch = localLiveMatch;
 
   renderLiveMatchUI();
@@ -2855,6 +3401,11 @@ async function carregarLiveStateDaPelada(peladaId) {
   let finalTeams = (serverTeams && serverTeams.length > 0) ? serverTeams : localTeams;
   let finalQueue = (serverQueue && serverQueue.length >= 0) ? serverQueue : localQueue;
   let finalLiveMatch = serverLiveMatch || localLiveMatch || window.App.liveMatch;
+
+  // Fallback: se os times ainda estiverem vazios, tenta buscar via getAppTeamsList()
+  if (!finalTeams || finalTeams.length === 0) {
+    finalTeams = getAppTeamsList();
+  }
 
   if (Array.isArray(finalTeams) && finalTeams.length > 0) {
     finalTeams.forEach((t, i) => {
@@ -3086,8 +3637,11 @@ async function initPartidasPeladaSelect() {
 
     updateBtnLiberarConvidados();
 
-    await carregarLiveStateDaPelada(activePelada.id);
     await renderRecentMatches();
+    await carregarLiveStateDaPelada(activePelada.id);
+    renderLiveMatchUI();
+    renderWaitingQueue();
+    renderTournamentUI();
 
     const btnCorrigir = document.getElementById("btn-corrigir-jogos-excedentes");
     if (btnCorrigir) {
@@ -3104,18 +3658,27 @@ async function initPartidasPeladaSelect() {
       const found = peladas.find(p => String(p.id) === String(selectedId));
       if (found) {
         window.App.activePelada = found;
-        // Só limpa se a pelada estiver explicitamente 'finalizada'
-        if (found.status === "finalizada") {
-          limparEstadoPartida();
-        }
         localStorage.setItem("activePelada", JSON.stringify(found));
 
+        // Sincroniza o seletor de formato/modo com a pelada selecionada
+        const selectModo = document.getElementById("partidas-select-pelada-modo");
+        if (selectModo && found.modo) {
+          selectModo.value = found.modo;
+        }
+
         updateBtnLiberarConvidados();
+
+        // 1. Carrega o histórico de partidas reais desta pelada
+        await renderRecentMatches();
+
+        // 2. Carrega o estado ao vivo/equipes da pelada
         await carregarLiveStateDaPelada(found.id);
 
+        // 3. Renderiza a interface completa
         renderLiveMatchUI();
         renderWaitingQueue();
-        await renderRecentMatches();
+        renderTournamentUI();
+
         window.App.showToast(`Pelada selecionada: ${window.Utils ? window.Utils.formatDate(found.data) : found.data}`);
       }
     };
@@ -3136,7 +3699,7 @@ function renderTournamentUI() {
   const liveMatch = window.App.liveMatch || {};
   let tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
 
-  const drawnTeams = window.App.teams || [];
+  let drawnTeams = (window.App.teams && window.App.teams.length >= 2) ? window.App.teams : getAppTeamsList();
   
   const resolveOfficialTeamName = (nameStr) => {
     if (window.App && window.App.resolveOfficialTeamName) {
@@ -3152,7 +3715,7 @@ function renderTournamentUI() {
       const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
       const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
       tState = {
-        modo: 'torneio',
+        modo: peladaAtiva.modo || 'torneio',
         fase: 'grupo',
         turno: turnoAtual,
         teams: drawnTeams,
@@ -3168,6 +3731,54 @@ function renderTournamentUI() {
       if (window.App.liveMatch) {
         window.App.liveMatch.tournamentState = tState;
       }
+    }
+  }
+
+  // Sincroniza partidas do torneio com partidas salvas no banco de dados (evita dados zerados)
+  const recentMatches = window.App.recentMatchesList || [];
+  if (tState && Array.isArray(tState.matches) && recentMatches.length > 0) {
+    const cronoPartidas = recentMatches.slice().sort((a, b) => (parseInt(a.id) || 0) - (parseInt(b.id) || 0));
+
+    tState.matches.forEach((m, idx) => {
+      let real = cronoPartidas[idx];
+      if (!real || (resolveOfficialTeamName(real.time_a_nome).toLowerCase() !== (m.teamA || '').toLowerCase() && resolveOfficialTeamName(real.time_b_nome).toLowerCase() !== (m.teamA || '').toLowerCase())) {
+        real = cronoPartidas.find(r => {
+          const rA = resolveOfficialTeamName(r.time_a_nome).toLowerCase();
+          const rB = resolveOfficialTeamName(r.time_b_nome).toLowerCase();
+          const mA = (m.teamA || '').toLowerCase();
+          const mB = (m.teamB || '').toLowerCase();
+          return (rA === mA && rB === mB) || (rA === mB && rB === mA);
+        });
+      }
+
+      if (real) {
+        m.golsA = parseInt(real.gols_time_a) || 0;
+        m.golsB = parseInt(real.gols_time_b) || 0;
+        m.status = 'encerrado';
+        m.vencedor = m.golsA > m.golsB ? m.teamA : (m.golsB > m.golsA ? m.teamB : (m.golsA === m.golsB ? 'empate' : m.teamA));
+      }
+    });
+
+    if (window.TournamentEngine && window.TournamentEngine.calculateStandings) {
+      tState.standings = window.TournamentEngine.calculateStandings(drawnTeams, tState.matches);
+    }
+
+    const allGroupDone = tState.matches.every(m => m.status === 'encerrado');
+    if (allGroupDone || peladaAtiva.status === 'finalizada') {
+      if (peladaAtiva.modo === 'pontos_corridos' || tState.modo === 'pontos_corridos' || peladaAtiva.status === 'finalizada') {
+        tState.fase = 'finalizado';
+        if (window.TournamentEngine && window.TournamentEngine.determinePodium) {
+          tState.podium = window.TournamentEngine.determinePodium(tState.finalsMatches || [], tState.standings);
+        }
+      }
+    }
+
+    if (peladaAtiva.id) {
+      safeLocalStorageSetItem(`tournamentState_${peladaAtiva.id}`, tState);
+    }
+    safeLocalStorageSetItem('tournamentState', tState);
+    if (window.App.liveMatch) {
+      window.App.liveMatch.tournamentState = tState;
     }
   }
 

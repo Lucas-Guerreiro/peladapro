@@ -397,6 +397,22 @@
     }
   }
 
+  #fs-btn-finish-match:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55) !important;
+  }
+  #fs-btn-finish-match:active {
+    transform: translateY(0);
+  }
+  .btn-delete-live-goal {
+    transition: all 0.2s ease;
+  }
+  .btn-delete-live-goal:hover {
+    background: rgba(239, 68, 68, 0.6) !important;
+    color: #FFFFFF !important;
+    transform: scale(1.15);
+  }
+
   /* --- BOTÕES LATERAIS DISCRETOS (PINNADOS À DIREITA NA TELA CHEIA) --- */
   .fs-side-tabs {
     position: fixed;
@@ -721,6 +737,9 @@
         style="flex: 1; background: #10B981; color: #FFF; font-weight: 700; font-size: 14px; border-radius: 12px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);">
         <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Lançar Resultado (Concluir Jogo)
       </button>
+      <div id="gestor-finish-archived-msg" style="display: none; width: 100%; text-align: center; padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; color: #475569; font-weight: 700; font-size: 13px;">
+        ✅ Esta rodada foi finalizada e todos os resultados estão arquivados.
+      </div>
     </div>
   </div>
 
@@ -969,6 +988,15 @@
         ⚽ Atribuir Gol & Assistência
       </button>
     </div>
+  </div>
+
+  <!-- AÇÃO PRINCIPAL EM TELA CHEIA: LANÇAR RESULTADO -->
+  <div id="fs-finish-container" style="width: 100%; max-width: 580px; margin: 18px auto 6px auto; display: flex; justify-content: center;">
+    <button id="fs-btn-finish-match" class="btn"
+      style="width: 100%; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; font-weight: 900; font-size: 16px; border-radius: 14px; padding: 14px 28px; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); letter-spacing: 0.5px; transition: transform 0.2s, box-shadow 0.2s;"
+      title="Encerrar Partida e Gravar Resultado Oficial">
+      <span style="font-size: 20px;">✅</span> Lançar Resultado (Concluir Jogo)
+    </button>
   </div>
 
   <div style="text-align: center; font-size: 13px; color: #94A3B8; margin-top: 10px; font-weight: 600;">
