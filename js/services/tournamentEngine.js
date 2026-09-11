@@ -182,16 +182,108 @@ window.TournamentEngine = {
 
     const standings = Object.values(statsMap);
 
-    // Ordenação por Pontos > Vitórias > Saldo de Gols > Gols Pró > Nome
+    // 1. Ordena primeiramente pelos critérios globais (Pontos > Vitórias > Saldo de Gols > Gols Pró)
     standings.sort((a, b) => {
       if (b.pontos !== a.pontos) return b.pontos - a.pontos;
       if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
       if (b.saldoGols !== a.saldoGols) return b.saldoGols - a.saldoGols;
       if (b.golsPro !== a.golsPro) return b.golsPro - a.golsPro;
-      return a.nome.localeCompare(b.nome);
+      return 0;
     });
 
-    return standings;
+    // 2. Desempate de Confronto Direto (Head-to-Head):
+    // Agrupa subconjuntos de times que empataram rigorosamente nos 4 critérios primários
+    const finalStandings = [];
+    let i = 0;
+    while (i < standings.length) {
+      let j = i + 1;
+      while (
+        j < standings.length &&
+        standings[j].pontos === standings[i].pontos &&
+        standings[j].vitorias === standings[i].vitorias &&
+        standings[j].saldoGols === standings[i].saldoGols &&
+        standings[j].golsPro === standings[i].golsPro
+      ) {
+        j++;
+      }
+
+      const tiedGroup = standings.slice(i, j);
+
+      if (tiedGroup.length === 1) {
+        finalStandings.push(tiedGroup[0]);
+      } else {
+        // Para times empatados, calcula a mini-tabela considerando APENAS as partidas jogadas ENTRE ELES
+        const tiedNames = new Set(tiedGroup.map(t => t.nome.trim().toLowerCase()));
+
+        const miniStats = {};
+        tiedGroup.forEach(t => {
+          miniStats[t.nome.trim().toLowerCase()] = {
+            team: t,
+            miniPontos: 0,
+            miniVitorias: 0,
+            miniSaldoGols: 0,
+            miniGolsPro: 0,
+            miniGolsContra: 0
+          };
+        });
+
+        (matches || []).forEach(m => {
+          if (m.fase !== 'grupo' || m.status !== 'encerrado') return;
+          const tA = (m.teamA || '').trim().toLowerCase();
+          const tB = (m.teamB || '').trim().toLowerCase();
+
+          // Filtra SOMENTE partidas onde ambos os times pertencem ao subconjunto empatado
+          if (tiedNames.has(tA) && tiedNames.has(tB)) {
+            const gA = parseInt(m.golsA) || 0;
+            const gB = parseInt(m.golsB) || 0;
+            const stA = miniStats[tA];
+            const stB = miniStats[tB];
+
+            if (stA) {
+              stA.miniGolsPro += gA;
+              stA.miniGolsContra += gB;
+            }
+            if (stB) {
+              stB.miniGolsPro += gB;
+              stB.miniGolsContra += gA;
+            }
+
+            if (gA > gB) {
+              if (stA) { stA.miniPontos += 3; stA.miniVitorias++; }
+            } else if (gB > gA) {
+              if (stB) { stB.miniPontos += 3; stB.miniVitorias++; }
+            } else {
+              if (stA) stA.miniPontos += 1;
+              if (stB) stB.miniPontos += 1;
+            }
+          }
+        });
+
+        tiedGroup.forEach(t => {
+          const st = miniStats[t.nome.trim().toLowerCase()];
+          if (st) {
+            st.miniSaldoGols = st.miniGolsPro - st.miniGolsContra;
+          }
+        });
+
+        // Ordena o subconjunto empatado pelos resultados do Confronto Direto (Mini-tabela)
+        tiedGroup.sort((a, b) => {
+          const stA = miniStats[a.nome.trim().toLowerCase()];
+          const stB = miniStats[b.nome.trim().toLowerCase()];
+          if (stB.miniPontos !== stA.miniPontos) return stB.miniPontos - stA.miniPontos;
+          if (stB.miniVitorias !== stA.miniVitorias) return stB.miniVitorias - stA.miniVitorias;
+          if (stB.miniSaldoGols !== stA.miniSaldoGols) return stB.miniSaldoGols - stA.miniSaldoGols;
+          if (stB.miniGolsPro !== stA.miniGolsPro) return stB.miniGolsPro - stA.miniGolsPro;
+          return a.nome.localeCompare(b.nome);
+        });
+
+        finalStandings.push(...tiedGroup);
+      }
+
+      i = j;
+    }
+
+    return finalStandings;
   },
 
   /**
@@ -370,3 +462,7 @@ window.TournamentEngine = {
   }
 
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = window.TournamentEngine;
+}

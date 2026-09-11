@@ -22,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PlayerCard from '../components/PlayerCard';
 import { supabase } from '../lib/supabase';
 import tokens from '../theme/tokens';
 
@@ -48,6 +49,20 @@ export default function CardPremiumScreen() {
   const [userName, setUserName] = useState('Atleta');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
+  const isLucasGuerreiro = true;
+
+  const userStats = {
+    posicao: 'Atacante',
+    idade: 28,
+    jogos: 28,
+    gols: 12,
+    rating: 94,
+    primaryColor: '#1D9E75',
+    secondaryColor: '#D4AF37',
+    timeNome: 'PeladaPro FC',
+    nacionalidade: { code: 'BRA', flagEmoji: '🇧🇷' },
+  };
+
   // Animações: rotação 3D do card hero e pulso do botão
   const cardRotateAnim = useRef(new Animated.Value(0)).current;
   const btnScaleAnim = useRef(new Animated.Value(1)).current;
@@ -61,9 +76,8 @@ export default function CardPremiumScreen() {
 
       // 2. Consulta a fonte da verdade: Supabase Database
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data } = await supabase
-          .from('usuarios')
+      if (session?.user?.email) {
+        const { data } = await (supabase.from('usuarios') as any)
           .select('nome, apelido, foto, premium_status, vip, premium, card_ultimate, plano')
           .eq('email', session.user.email)
           .single();
@@ -164,9 +178,8 @@ export default function CardPremiumScreen() {
 
         // 3. PERSISTÊNCIA REAL NO SUPABASE (Sobrevive a qualquer limpeza do iPhone)
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { error } = await supabase
-            .from('usuarios')
+        if (session?.user?.email) {
+          const { error } = await (supabase.from('usuarios') as any)
             .update({
               premium_status: true,
               premium_ativado_em: new Date().toISOString(),
@@ -308,7 +321,8 @@ export default function CardPremiumScreen() {
                 )}
               </LinearGradient>
             </Animated.View>
-          </View>
+          )}
+        </View>
 
         {/* ── Benefícios Exclusivos ── */}
         <View style={styles.benefitsCard}>

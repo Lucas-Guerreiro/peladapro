@@ -57,17 +57,7 @@ window.App.initModalLancar_gol = function(data) {
       btnSubmit.textContent = "Gravando...";
 
       try {
-        // 1. Grava no banco de dados real do PostgreSQL local para o atleta
-        const res = await Api.lancarGolAtleta(autorId);
-
-        if (res.error) {
-          window.App.showToast(res.error, "error");
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = "Confirmar Gol";
-          return;
-        }
-
-        // 2. Incrementa o placar local na partida ativa e grava a lista de autores de gols
+        // 1. Incrementa o placar local na partida ativa e grava a lista de autores de gols
         if (teamKey === "a") {
           window.App.liveMatch.scoreA = Math.max(0, window.App.liveMatch.scoreA + 1);
         } else {

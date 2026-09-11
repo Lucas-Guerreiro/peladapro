@@ -166,13 +166,93 @@ var Ranking = {
       }
     });
 
-    var sortedTeams = Object.values(teamsMap).sort(function(a, b) {
+    var rawTeams = Object.values(teamsMap);
+    rawTeams.sort(function(a, b) {
       if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+      if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
       var sgA = a.gols_pro - a.gols_contra;
       var sgB = b.gols_pro - b.gols_contra;
       if (sgB !== sgA) return sgB - sgA;
-      return b.gols_pro - a.gols_pro;
+      if (b.gols_pro !== a.gols_pro) return b.gols_pro - a.gols_pro;
+      return 0;
     });
+
+    var sortedTeams = [];
+    var iIdx = 0;
+    while (iIdx < rawTeams.length) {
+      var jIdx = iIdx + 1;
+      while (
+        jIdx < rawTeams.length &&
+        rawTeams[jIdx].pontos === rawTeams[iIdx].pontos &&
+        rawTeams[jIdx].vitorias === rawTeams[iIdx].vitorias &&
+        (rawTeams[jIdx].gols_pro - rawTeams[jIdx].gols_contra) === (rawTeams[iIdx].gols_pro - rawTeams[iIdx].gols_contra) &&
+        rawTeams[jIdx].gols_pro === rawTeams[iIdx].gols_pro
+      ) {
+        jIdx++;
+      }
+
+      var tiedGroup = rawTeams.slice(iIdx, jIdx);
+
+      if (tiedGroup.length === 1) {
+        sortedTeams.push(tiedGroup[0]);
+      } else {
+        var tiedNames = new Set(tiedGroup.map(function(t) { return (t.nome || '').trim().toLowerCase(); }));
+        var miniStats = {};
+        tiedGroup.forEach(function(t) {
+          miniStats[(t.nome || '').trim().toLowerCase()] = {
+            team: t,
+            miniPontos: 0,
+            miniVitorias: 0,
+            miniSaldoGols: 0,
+            miniGolsPro: 0,
+            miniGolsContra: 0
+          };
+        });
+
+        (partidas || []).forEach(function(m) {
+          var tA = (m.time_a_nome || '').trim().toLowerCase();
+          var tB = (m.time_b_nome || '').trim().toLowerCase();
+
+          if (tiedNames.has(tA) && tiedNames.has(tB)) {
+            var gA = parseInt(m.gols_time_a) || 0;
+            var gB = parseInt(m.gols_time_b) || 0;
+            var stA = miniStats[tA];
+            var stB = miniStats[tB];
+
+            if (stA) { stA.miniGolsPro += gA; stA.miniGolsContra += gB; }
+            if (stB) { stB.miniGolsPro += gB; stB.miniGolsContra += gA; }
+
+            if (gA > gB) {
+              if (stA) { stA.miniPontos += 3; stA.miniVitorias++; }
+            } else if (gB > gA) {
+              if (stB) { stB.miniPontos += 3; stB.miniVitorias++; }
+            } else {
+              if (stA) stA.miniPontos += 1;
+              if (stB) stB.miniPontos += 1;
+            }
+          }
+        });
+
+        tiedGroup.forEach(function(t) {
+          var st = miniStats[(t.nome || '').trim().toLowerCase()];
+          if (st) st.miniSaldoGols = st.miniGolsPro - st.miniGolsContra;
+        });
+
+        tiedGroup.sort(function(a, b) {
+          var stA = miniStats[(a.nome || '').trim().toLowerCase()];
+          var stB = miniStats[(b.nome || '').trim().toLowerCase()];
+          if (stB.miniPontos !== stA.miniPontos) return stB.miniPontos - stA.miniPontos;
+          if (stB.miniVitorias !== stA.miniVitorias) return stB.miniVitorias - stA.miniVitorias;
+          if (stB.miniSaldoGols !== stA.miniSaldoGols) return stB.miniSaldoGols - stA.miniSaldoGols;
+          if (stB.miniGolsPro !== stA.miniGolsPro) return stB.miniGolsPro - stA.miniGolsPro;
+          return (a.nome || '').localeCompare(b.nome || '');
+        });
+
+        sortedTeams.push.apply(sortedTeams, tiedGroup);
+      }
+
+      iIdx = jIdx;
+    }
 
     if (sortedTeams.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 32px; color: var(--text-caption);">Nenhuma partida ou time registrado ainda.</td></tr>';
