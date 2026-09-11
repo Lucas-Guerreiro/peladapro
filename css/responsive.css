@@ -1,14 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap');
+
 /* ==========================================================================
    css/responsive.css — Media Queries Centralizadas
    PeladaPro · Fundacional
    ========================================================================== */
 
-/* --- TABLET (≤ 1024px) ---------------------------------------------------- */
-@media (max-width: 1024px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+/* ==========================================================================
+   CONFIGURAÇÃO EXCLUSIVA PARA TABLETS (600px a 1280px - Samsung Tab S6/S10 Lite, iPads, etc.)
+   Ajusta proporcionalmente elementos, botões, grades e tipografia
+   para ocupar 100% da tela com conforto e máxima usabilidade.
+   ========================================================================== */
+@media (min-width: 600px) and (max-width: 1280px) {
+  /* Container e Margens Laterais Ajustadas para Tela Cheia de Tablet */
+  .app-container,
+  .gestor-web-body,
+  .acomp-web-body,
+  #main-view-container,
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    padding-top: 16px !important;
+    box-sizing: border-box !important;
+  }
 
-  .score-numbers { font-size: 56px; }
+  .gestor-center-container,
+  .acomp-center-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    gap: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Cabeçalho da Aplicação Otimizado para Tablet */
+  .main-header {
+    padding: 16px 20px !important;
+  }
+
+  .main-header .brand h1 {
+    font-size: 26px !important;
+  }
+
+  /* Abas de Navegação Ajustadas para Toque em Tablet */
+  .tabs-navigation {
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .tab-btn,
+  .gestor-nav-item-clear,
+  .acomp-nav-item-clear {
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+  }
+
+  /* Grades Adaptadas para Tablet (2 Colunas Perfeitamente Equilibradas Aproveitando a Tela) */
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .teams-draft-grid,
+  .teams-setup-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  /* Cards e Contêineres de Informações em Tela Cheia no Tablet */
+  .card,
+  .gestor-score-card,
+  .gestor-card-clear,
+  .gestor-header-unified-card,
+  .acomp-header-unified-card,
+  #gestor-queue-card,
+  #gestor-recent-matches-card,
+  #gestor-tournament-card {
+    padding: 26px !important;
+    border-radius: 18px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* --- ELEMENTOS DA TELA PARTIDA AO VIVO (PLACAR, CRONÔMETRO, BOTOES E NOMES) OTIMIZADOS PARA TABLET --- */
+  .gestor-score-num,
+  #match-control-score-a,
+  #match-control-score-b {
+    font-size: 68px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  .gestor-score-divider {
+    font-size: 36px !important;
+    opacity: 0.7 !important;
+  }
+
+  .gestor-timer-time,
+  #match-control-timer {
+    font-size: 96px !important;
+    font-weight: 900 !important;
+    letter-spacing: 2px !important;
+    line-height: 1 !important;
+  }
+
+  .gestor-timer-wrapper {
+    padding: 28px 24px !important;
+    border-radius: 20px !important;
+    border: 2px solid #94A3B8 !important;
+  }
+
+  .gestor-team-title,
+  #match-control-team-a,
+  #match-control-team-b {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  #emblem-team-a,
+  #emblem-team-b {
+    width: 60px !important;
+    height: 68px !important;
+  }
+
+  .btn-adjust-score,
+  .btn-score-adjust,
+  #btn-timer-minus,
+  #btn-timer-plus {
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 22px !important;
+    font-weight: 900 !important;
+  }
+
+  .btn-goal-trigger,
+  #btn-goal-team-a,
+  #btn-goal-team-b {
+    height: 42px !important;
+    padding: 6px 18px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+
+  #gestor-phase-header-title {
+    font-size: 20px !important;
+    font-weight: 900 !important;
+  }
+
+  #gestor-phase-header-sub {
+    font-size: 13px !important;
+  }
+
+  /* Títulos de Seção em Destaque no Tablet */
+  .gestor-card-clear h3,
+  #gestor-queue-card h3,
+  #gestor-recent-matches-card h3,
+  #gestor-tournament-card h3 {
+    font-size: 19px !important;
+    font-weight: 800 !important;
+  }
+
+  .score-numbers {
+    font-size: 72px !important;
+  }
+
+  /* Botões e Áreas de Toque para Tablet (Fácil Manuseio Sem Ficar Pequeno) */
+  .btn-lg {
+    height: 50px !important;
+    padding: 0 24px !important;
+    font-size: 16px !important;
+  }
+
+  .btn-md {
+    height: 44px !important;
+    padding: 0 18px !important;
+    font-size: 15px !important;
+  }
+
+  .btn-sm {
+    height: 38px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Entradas de Formulário e Selects */
+  .form-control,
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"] {
+    height: 44px !important;
+    font-size: 14px !important;
+    padding: 0 14px !important;
+  }
+
+  /* Modais Otimizados para Tela de Tablet (Centralizados e Confortáveis) */
+  .modal-backdrop {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .modal-content {
+    width: 90% !important;
+    max-width: 680px !important;
+    max-height: 85vh !important;
+    border-radius: 18px !important;
+    padding: 28px 24px !important;
+    margin: auto !important;
+  }
+
+  /* Tabelas de Classificação e Histórico no Tablet */
+  .table-custom th,
+  .table-custom td {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+  }
+
+  /* Agenda de Jogos e Lista de Partidas Recentes */
+  #tournament-matches-list,
+  #recent-matches-container {
+    max-height: 450px !important;
+  }
+}
+
+/* --- TABLET EM MODO EM PÉ (Portrait 768px a 991px) ------------------------ */
+@media (min-width: 768px) and (max-width: 991px) and (orientation: portrait) {
+  .teams-draft-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .modal-content {
+    max-width: 580px !important;
+  }
 }
 
 /* --- MOBILE (≤ 768px) ----------------------------------------------------- */

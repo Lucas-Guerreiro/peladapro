@@ -9,6 +9,8 @@ router.post('/webhook', pixController.receberWebhookMercadoPago);
 // Rota para simulação de aprovação em ambiente local (PÚBLICA)
 router.post('/simular-aprovacao', pixController.simularAprovacao);
 
+router.post('/simular-aprovacao-recarga', pixController.simularAprovacaoRecarga);
+
 // DIAGNÓSTICO TEMPORÁRIO — verificar se o token do MP está carregado no servidor
 router.get('/diag', (req, res) => {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -26,5 +28,9 @@ router.get('/comprovantes', pixController.listarComprovantes);
 router.post('/estornar', pixController.estornarTransacao);
 router.post('/criar-pagamento', pixController.criarPagamentoMercadoPago);
 router.get('/status-pagamento/:peladaId', pixController.obterStatusPagamento);
+
+// Recarga de Saldo Pessoal do Atleta via Pix
+router.post('/recarga', pixController.criarRecargaSaldoPix);
+router.get('/status-recarga/:paymentId', pixController.consultarStatusRecarga);
 
 module.exports = router;

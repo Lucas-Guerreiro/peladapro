@@ -116,6 +116,7 @@ var Convocacao = {
           horario: p.horario,
           local: p.local,
           status: p.status,
+          liberar_convidados: !!p.liberar_convidados,
           max_jogadores: p.max_jogadores,
           valor_convocacao: p.valor_convocacao,
           chave_pix: p.chave_pix,
@@ -370,10 +371,16 @@ var Convocacao = {
 
     if (statusEl && user && Convocacao._selectedPeladaId) {
       hasSelected = true;
-      var convocations = Api.getConvocations();
-      var myConv = convocations.find(function (c) {
-        return String(c.pelada_id) === String(Convocacao._selectedPeladaId) && String(c.player_id) === String(user.id);
-      });
+      let myConv = null;
+      if (this._lastConvocados && Array.isArray(this._lastConvocados)) {
+        myConv = this._lastConvocados.find(c => String(c.id || c.usuario_id || c.player_id) === String(user.id));
+      }
+      if (!myConv) {
+        var convocations = Api.getConvocations();
+        myConv = convocations.find(function (c) {
+          return String(c.pelada_id) === String(Convocacao._selectedPeladaId) && (String(c.player_id) === String(user.id) || String(c.usuario_id) === String(user.id));
+        });
+      }
 
       if (myConv && myConv.status === 'confirmado') {
         statusEl.className = 'badge-status confirmado';
@@ -396,14 +403,33 @@ var Convocacao = {
       statusEl.textContent = '⏳ Selecione a pelada';
     }
 
-    // Exibe ou oculta o alerta de fila de espera
+    // Exibe ou oculta o alerta de fila de espera e gerencia estado de vaga liberada
+    var peladaObj = Convocacao._selectedPeladaId ? Api.getPelada(Convocacao._selectedPeladaId) : null;
+    var maxVagas = peladaObj ? (peladaObj.limite_atletas || peladaObj.max_jogadores || 20) : 20;
+    var confirmedList = (this._lastConvocados || []).filter(c => c.status === 'confirmado');
+    var temVagaLiberada = confirmedList.length < maxVagas;
+
+    const isConvidado = user && user.tipo === 'convidado';
+    const isLiberadoParaConvidados = peladaObj ? !!peladaObj.liberar_convidados : false;
+
     if (waitlistAlert && waitlistAlertText) {
-      if (isWaiting && Convocacao._selectedPeladaId) {
-        var pelada = Api.getPelada(Convocacao._selectedPeladaId);
-        var limite = pelada ? (pelada.limite_atletas || pelada.max_jogadores || 20) : 20;
-        
+      if (isConvidado && !isLiberadoParaConvidados && Convocacao._selectedPeladaId) {
         waitlistAlert.style.display = 'flex';
-        waitlistAlertText.innerHTML = `Lista cheia (${limite} vagas). Você entrou na <b>fila de espera (posição #${posicaoFila})</b>.`;
+        waitlistAlert.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+        waitlistAlert.style.border = '1.5px solid rgba(239, 68, 68, 0.3)';
+        waitlistAlertText.innerHTML = `🔒 <b>Convocação de Convidados Bloqueada:</b> O gestor ainda não liberou a convocação para convidados nesta pelada. A liberação ocorre normalmente algumas horas antes do horário do futebol.`;
+      } else if (isWaiting && Convocacao._selectedPeladaId) {
+        if (temVagaLiberada) {
+          waitlistAlert.style.display = 'flex';
+          waitlistAlert.style.backgroundColor = 'rgba(0, 200, 83, 0.15)';
+          waitlistAlert.style.border = '1.5px solid rgba(0, 200, 83, 0.4)';
+          waitlistAlertText.innerHTML = `🎉 <b>Vaga Liberada na Pelada!</b> Um atleta se desconvocou. Clique em <b>"🎉 Confirmar Presença (Vaga Liberada!)"</b> abaixo para efetuar o pagamento por Pix ou Saldo e garantir sua vaga!`;
+        } else {
+          waitlistAlert.style.display = 'flex';
+          waitlistAlert.style.backgroundColor = '';
+          waitlistAlert.style.border = '';
+          waitlistAlertText.innerHTML = `Lista cheia (${maxVagas} vagas). Você está na <b>fila de espera (posição #${posicaoFila})</b>. Assim que um atleta se desconvocar, você poderá garantir sua vaga aqui!`;
+        }
       } else {
         waitlistAlert.style.display = 'none';
       }
@@ -411,14 +437,34 @@ var Convocacao = {
 
     // Habilita/Desabilita os botões de ação dinamicamente
     if (btnAdd) {
-      if (!hasSelected || isConfirmed || isWaiting) {
+      if (isConvidado && !isLiberadoParaConvidados) {
+        btnAdd.disabled = true;
+        btnAdd.style.opacity = "0.55";
+        btnAdd.style.cursor = "not-allowed";
+        btnAdd.innerHTML = '<span>🔒 Aguardando Liberação do Gestor</span>';
+        btnAdd.style.background = '#64748B';
+      } else if (!hasSelected || isConfirmed || (isWaiting && !temVagaLiberada)) {
         btnAdd.disabled = true;
         btnAdd.style.opacity = "0.5";
         btnAdd.style.cursor = "not-allowed";
+        if (isConfirmed) {
+          btnAdd.innerHTML = '<span>✅ Presença Confirmada</span>';
+        } else if (isWaiting && !temVagaLiberada) {
+          btnAdd.innerHTML = `<span>⏳ Aguardando Vaga (Fila #${posicaoFila})</span>`;
+        } else {
+          btnAdd.innerHTML = '<span>⚡ Confirmar Presença</span>';
+        }
       } else {
         btnAdd.disabled = false;
         btnAdd.style.opacity = "1";
         btnAdd.style.cursor = "pointer";
+        if (isWaiting && temVagaLiberada) {
+          btnAdd.innerHTML = '<span>🎉 Confirmar Presença (Vaga Liberada!)</span>';
+          btnAdd.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+        } else {
+          btnAdd.innerHTML = '<span>⚡ Confirmar Presença</span>';
+          btnAdd.style.background = '';
+        }
       }
     }
 
@@ -595,6 +641,13 @@ var Convocacao = {
           }
         }
 
+        // Validação de segurança para convidados
+        const curUser = Auth.currentUser;
+        if (curUser && curUser.tipo === 'convidado' && pelada && !pelada.liberar_convidados) {
+          Utils.toast('A convocação para convidados nesta pelada ainda não foi liberada pelo gestor.', 'warning');
+          return;
+        }
+
         // Checagem de capacidade: verificar se a lista oficial de confirmados já lotou
         try {
           const convocados = await Api.listarConvocados(Convocacao._selectedPeladaId);
@@ -637,7 +690,6 @@ var Convocacao = {
             if (!confirmouFila) return;
 
             // ATLETA CONFIRMOU ENTRADA NA FILA — ENVIAR DIRETO SEM COBRAR PIX / SALDO AGORA
-            Utils.toast('Adicionando à fila de espera...', 'info');
             const resFila = await Api.entrarFilaEspera(Convocacao._selectedPeladaId);
             if (resFila.error) {
               Utils.toast(resFila.error, 'error');

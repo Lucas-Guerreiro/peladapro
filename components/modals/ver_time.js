@@ -3,8 +3,30 @@
 // ==========================================================================
 
 window.App.initModalVer_time = function(data) {
+  data = data || {};
   const teamName = data.teamName || "Time";
-  const players = data.players || [];
+  let players = data.players || [];
+
+  if (!players || players.length === 0) {
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    let teams = window.App.teams || [];
+    if ((!teams || teams.length === 0) && peladaId) {
+      try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch (e) {}
+    }
+    if (!teams || teams.length === 0) {
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) {}
+    }
+
+    const cleanTarget = (teamName || "").trim().toLowerCase();
+    const found = teams.find(t => t.nome && t.nome.trim().toLowerCase() === cleanTarget)
+      || teams.find(t => t.nome && (t.nome.toLowerCase().includes(cleanTarget) || cleanTarget.includes(t.nome.toLowerCase())));
+
+    if (found && Array.isArray(found.players) && found.players.length > 0) {
+      players = found.players;
+    } else {
+      players = window.App.confirmadosList || JSON.parse(localStorage.getItem("players")) || [];
+    }
+  }
 
   const titleEl = document.getElementById("ver-time-modal-title");
   if (titleEl) {

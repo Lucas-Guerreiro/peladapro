@@ -14,10 +14,15 @@
         <button id="btn-presence-none" class="btn btn-sm" style="flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">Limpar Todos</button>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button id="btn-open-add-presence-modal" class="btn btn-sm btn-primary" style="flex: 2; padding: 8px; font-size: 12px; font-weight: 700; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: 'Inter', sans-serif;">
-          ➕ Adicionar Atleta / Convidado
+        <button id="btn-open-add-presence-modal" onclick="window.App.openAddPresenceModal()" class="btn btn-sm btn-primary" style="flex: 1.2; padding: 8px 6px; font-size: 11px; font-weight: 700; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-family: 'Inter', sans-serif;">
+          ➕ Adicionar
         </button>
-        <button id="btn-export-presence-excel" class="btn btn-sm" style="flex: 1; padding: 8px; font-size: 12px; font-weight: 700; background: #15803D; color: #FFFFFF; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: 'Inter', sans-serif;" title="Exportar lista de convocados em planilha Excel">
+
+        <button id="btn-copy-presence-list" class="btn btn-sm" style="flex: 1.2; padding: 8px 6px; font-size: 11px; font-weight: 700; background: #25D366; color: #FFFFFF; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-family: 'Inter', sans-serif;" title="Copiar lista de confirmados formatada para o WhatsApp">
+          📋 Copiar Lista
+        </button>
+
+        <button id="btn-export-presence-excel" class="btn btn-sm" style="flex: 0.9; padding: 8px 6px; font-size: 11px; font-weight: 700; background: #15803D; color: #FFFFFF; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-family: 'Inter', sans-serif;" title="Exportar lista de convocados em planilha Excel">
           📊 Excel
         </button>
       </div>
@@ -40,9 +45,12 @@
 
     <div class="form-group" style="margin-bottom: 16px;">
       <label for="select-pelada-modo" class="form-label" style="font-weight: 700; color: var(--primary);">Formato do Dia</label>
-      <select id="select-pelada-modo" class="form-control" style="font-weight: 600;">
-        <option value="normal">⚽ Pelada Normal (Reina Campo)</option>
-        <option value="torneio">🏆 Mini Torneio (Tabela Mista + Mata-Mata)</option>
+      <select id="select-pelada-modo" class="form-control" style="font-weight: 600;" autocomplete="off" data-lpignore="true" data-form-type="other">
+        <option value="normal">Pelada Normal (Reina Campo)</option>
+        <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
+        <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
+        <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
+        <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
       </select>
     </div>
 
@@ -83,6 +91,12 @@
       <h3 style="margin: 0; font-size: 18px; color: var(--text-heading);">Times Sorteados</h3>
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
         <span style="font-size: 11px; color: var(--text-caption); margin-right: 4px;">Arraste os jogadores para realizar trocas manuais</span>
+        <button id="btn-cadastrar-nomes-times" class="btn btn-sm" style="border: 1.5px solid #0284C7; color: #0284C7; background: #F0F9FF; font-weight: bold; padding: 6px 14px; border-radius: 8px; font-family: 'Inter', sans-serif; cursor: pointer;">
+          🏷️ Nomes dos Times
+        </button>
+        <button id="btn-export-teams-whatsapp" class="btn btn-sm" style="background: #25D366; color: #FFFFFF; font-weight: bold; padding: 6px 14px; border-radius: 8px; font-family: 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Exportar escalação dos times para o WhatsApp">
+          💬 Exportar WhatsApp
+        </button>
         <button id="btn-sync-teams-cloud" class="btn btn-sm btn-primary" style="font-weight: bold; padding: 6px 14px; border-radius: 8px; font-family: 'Inter', sans-serif;">
           ☁️ Salvar na Nuvem
         </button>
@@ -94,10 +108,11 @@
         </button>
       </div>
     </div>
-    
-    <div id="drawn-teams-container" class="teams-setup-grid" style="min-height: 250px;">
-      <!-- Inserido dinamicamente -->
+    <!-- Grid onde os times sorteados e seus respectivos atletas são renderizados -->
+    <div id="drawn-teams-container" class="teams-draft-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; min-height: 200px;">
+      <!-- Preenchido dinamicamente via JS pelo renderDrawnTeams() -->
     </div>
   </div>
 
 </div>
+

@@ -40,10 +40,8 @@ async function seedAtletas() {
     client = await db.pool.connect();
     console.log("Conectado ao PostgreSQL com sucesso!");
 
-    // 1. Limpa os jogadores antigos para evitar duplicação ou mistura
-    console.log("Limpando jogadores anteriores com tipo = 'jogador'...");
-    await client.query("DELETE FROM usuarios WHERE tipo = 'jogador'");
-    console.log("Limpeza concluída.");
+    // 1. Limpeza desativada para proteção dos dados reais de produção
+    console.log("Limpeza desativada em produção.");
 
     console.log("Inserindo os 22 novos atletas de teste...");
 
@@ -61,8 +59,8 @@ async function seedAtletas() {
       const apelido = a.nome;
 
       const query = `
-        INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, ativo)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, $9, $10, true)`;
+        INSERT INTO usuarios (nome, email, cpf, data_nascimento, whatsapp, senha_hash, autoavaliacao, tipo, goleiro, saldo, apelido, verificado, ativo)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'jogador', $8, $9, $10, true, true)`;
 
       const result = await client.query(query, [
         a.nome, email, cpf, dob, whatsapp, senhaHash, autoavaliacao, goleiro, saldo, apelido

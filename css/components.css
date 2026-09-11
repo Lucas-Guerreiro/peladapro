@@ -136,6 +136,14 @@
   color: var(--text-heading);
   transition: var(--transition);
   outline: none;
+  box-sizing: border-box;
+}
+
+select.form-control, select.form-input {
+  padding: 8px 14px;
+  line-height: 1.4;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .form-control:focus, .form-input:focus {
@@ -927,44 +935,45 @@
 .role-toggle-switch {
   display: inline-flex;
   align-items: center;
-  background: linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   border-radius: 20px;
   padding: 3px;
   position: relative;
   cursor: pointer;
   user-select: none;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border: 1.5px solid rgba(212, 175, 55, 0.7) !important;
   transition: all 0.2s ease;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .role-toggle-switch:hover {
-  border-color: #94A3B8;
+  border-color: rgba(212, 175, 55, 1) !important;
   transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
 }
 
 .role-toggle-option {
-  font-family: var(--font-display);
+  font-family: var(--font-display, 'Inter', sans-serif);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   z-index: 2;
   transition: color 0.2s ease;
-  color: rgba(245, 210, 112, 0.75) !important;
+  color: #1E293B !important;
   white-space: nowrap;
 }
 
 .role-toggle-switch.is-jogador .role-opt-jogador {
-  color: #F5D270 !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .role-toggle-switch.is-gestor .role-opt-gestor {
-  color: #F5D270 !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .role-toggle-slider {
@@ -976,39 +985,39 @@
   border-radius: 16px;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
   z-index: 1;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
 .role-toggle-switch.is-jogador .role-toggle-slider {
   transform: translateX(0);
-  background-color: #059669;
+  background-color: #059669 !important;
 }
 
 .role-toggle-switch.is-gestor .role-toggle-slider {
   transform: translateX(100%);
-  background-color: #0284C7;
+  background-color: #059669 !important;
 }
 
 /* Estilos do Role Toggle Switch no Modo Noturno do Time */
 body.modo-noturno-ativo .role-toggle-switch {
-  background: linear-gradient(135deg, #C8102E 0%, #8B1A1A 100%) !important;
-  border-color: var(--border-modo-noturno, rgba(255, 255, 255, 0.3)) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(212, 175, 55, 0.7) !important;
 }
 
 body.modo-noturno-ativo .role-toggle-option {
-  color: rgba(245, 210, 112, 0.75) !important;
+  color: #FFFFFF !important;
 }
 
 body.modo-noturno-ativo .role-toggle-switch.is-jogador .role-opt-jogador,
 body.modo-noturno-ativo .role-toggle-switch.is-gestor .role-opt-gestor {
-  color: #F5D270 !important;
+  color: #FFFFFF !important;
   font-weight: 800 !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 body.modo-noturno-ativo .role-toggle-slider {
-  background-color: var(--badge-modo-noturno, var(--border-modo-noturno, #F5D270)) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  background-color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* ── MODO NOTURNO GLOBAL NO TEMA DO TIME DE FUTEBOL ───────── */
@@ -1059,14 +1068,18 @@ body.modo-noturno-ativo .acomp-history-item-clear,
 body.modo-noturno-ativo .acomp-next-match-card-clear,
 body.modo-noturno-ativo .acomp-timer-wrapper-clear,
 body.modo-noturno-ativo #acomp-live-goals-feed,
-body.modo-noturno-ativo #acomp-tournament-card,
-body.modo-noturno-ativo #acomp-tournament-podium-container {
-  background: rgba(0, 0, 0, 0.65) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1.5px solid #F5D270 !important;
+body.modo-noturno-ativo h1,
+body.modo-noturno-ativo h2,
+body.modo-noturno-ativo h3,
+body.modo-noturno-ativo h4,
+body.modo-noturno-ativo h5 {
   color: #FFFFFF !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.modo-noturno-ativo #tournament-matches-list,
+body.modo-noturno-ativo #formacao-tournament-matches-list,
+body.modo-noturno-ativo #acomp-tournament-matches-list {
+  color: #FFFFFF !important;
 }
 
 body.modo-noturno-ativo .player-draft-item,
@@ -1078,25 +1091,7 @@ body.modo-noturno-ativo .checkin-athlete-card {
   color: #FFFFFF !important;
 }
 
-/* ── BORDAS DOURADAS EM TODOS OS CARDS DAS TELAS DO GESTOR ─────────────────── */
-.gestor-web-body .card,
-.gestor-web-body .card-athlete,
-.gestor-web-body .team-draft-card,
-.gestor-web-body .player-draft-item,
-.gestor-web-body .checkin-athlete-card,
-.gestor-web-body .stat-card,
-.gestor-web-body .match-card,
-.gestor-web-body .gestor-score-card,
-.gestor-web-body .gestor-card-clear,
-.gestor-web-body .gestor-timer-wrapper,
-.gestor-web-body .gestor-queue-wrapper-clear,
-.gestor-web-body .card-fifa,
-.gestor-web-body .card-fifa-balance,
-.gestor-web-body .gestor-header-unified-card,
-.gestor-web-body .gestor-header-mobile-unified,
-.gestor-web-body .gestor-mobile-dropdown,
-.gestor-web-body .table-responsive,
-.gestor-web-body .modal-content,
+/* ── BORDAS DOURADAS EM TODOS OS CARDS DAS TELAS DO GESTOR NO MODO NOTURNO ─────────────────── */
 body.modo-noturno-ativo .gestor-web-body .card,
 body.modo-noturno-ativo .gestor-web-body .card-athlete,
 body.modo-noturno-ativo .gestor-web-body .team-draft-card,

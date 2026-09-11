@@ -5,32 +5,202 @@
 window.App.initModalSorteio = function () {
   document.getElementById("btn-close-sorteio-modal").onclick = window.App.closeModal;
   document.getElementById("btn-execute-sorteio").onclick = handleExecuteSorteio;
+
+  // Sincroniza o modo de torneio ativo da pelada com o seletor do modal
+  const modalSelectModo = document.getElementById("modal-select-pelada-modo");
+  const activePelada = window.App.activePelada || {};
+  if (modalSelectModo) {
+    modalSelectModo.innerHTML = `
+      <option value="normal">Pelada Normal (Reina Campo)</option>
+      <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
+      <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
+      <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
+      <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
+    `;
+    if (activePelada.modo) {
+      modalSelectModo.value = activePelada.modo;
+    }
+  }
+
+  // --- Lógica do Seletor de Nomes Cadastrados para a Pelada (Vindo do Banco PostgreSQL) ---
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = currentGroup ? currentGroup.id : null;
+  const selectedNamesKey = groupId ? `customTeamNames_${groupId}` : 'customTeamNames';
+
+  let dbTeamCatalog = [];
+
+  const getSavedSelectedNames = () => {
+    try {
+      return JSON.parse(localStorage.getItem(selectedNamesKey)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+    } catch(e) {
+      return [];
+    }
+  };
+
+  const getMergedCatalog = () => {
+    const list = [];
+    const seen = new Set();
+
+    // 1. Nomes vindos do banco de dados (nomes_times_grupo)
+    if (Array.isArray(dbTeamCatalog) && dbTeamCatalog.length > 0) {
+      dbTeamCatalog.forEach(item => {
+        const n = (typeof item === 'object' ? item.nome : item || '').trim();
+        if (n && !seen.has(n.toLowerCase())) {
+          seen.add(n.toLowerCase());
+          list.push(n);
+        }
+      });
+    }
+
+    // 2. Fallbacks padrão caso não haja registros
+    const DEFAULT_CATALOG = ["Time A", "Time B", "Time C", "Time D", "Time E", "Time F", "Laranja", "Azul", "Branco", "Preto"];
+    DEFAULT_CATALOG.forEach(n => {
+      if (!seen.has(n.toLowerCase())) {
+        seen.add(n.toLowerCase());
+        list.push(n);
+      }
+    });
+
+    return list;
+  };
+
+  const renderTeamSelects = () => {
+    const listContainer = document.getElementById("sorteio-teams-select-list");
+    const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+    if (!listContainer || !modalSelectQtd) return;
+
+    const qtyTeams = parseInt(modalSelectQtd.value) || 4;
+    const catalog = getMergedCatalog();
+    const savedSelected = getSavedSelectedNames();
+
+    let html = '';
+    for (let i = 0; i < qtyTeams; i++) {
+      const defaultVal = savedSelected[i] || catalog[i] || `Time ${String.fromCharCode(65 + i)}`;
+      if (!catalog.includes(defaultVal)) {
+        catalog.push(defaultVal);
+      }
+
+      const optionsHtml = catalog.map(name => {
+        const isSelected = name === defaultVal ? 'selected' : '';
+        return `<option value="${name}" ${isSelected}>${name}</option>`;
+      }).join('');
+
+      html += `
+        <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #E2E8F0;">
+          <span style="font-size: 13px; font-weight: 800; color: #1E293B; min-width: 75px; flex-shrink: 0;">Equipe ${i + 1}:</span>
+          <select class="sorteio-team-name-select" data-team-index="${i}" style="width: 100%; height: 40px; line-height: 1.4; padding: 6px 12px; font-size: 14px; font-weight: 700; color: #0F172A; background-color: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 6px; box-sizing: border-box; outline: none; cursor: pointer;">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }
+    listContainer.innerHTML = html;
+  };
+
+  renderTeamSelects();
+
+  // Carrega assincronamente os nomes do banco PostgreSQL
+  if (window.Api && window.Api.getCatalogoTimes) {
+    window.Api.getCatalogoTimes(groupId).then(dbItems => {
+      if (Array.isArray(dbItems) && dbItems.length > 0) {
+        dbTeamCatalog = dbItems;
+        renderTeamSelects();
+      }
+    }).catch(() => {});
+  }
+
+  if (modalSelectQtd) {
+    modalSelectQtd.onchange = renderTeamSelects;
+  }
 };
 
 function handleExecuteSorteio() {
-  const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
-  const type = checkedRadio ? checkedRadio.value : "todos";
-  window.App.closeModal();
+  try {
+    const checkedRadio = document.querySelector('input[name="sorteio-type"]:checked');
+    const type = checkedRadio ? checkedRadio.value : "todos";
 
-  const players = JSON.parse(localStorage.getItem("players")) || [];
+    // 1. Captura os seletores do modal ANTES de fechar o modal
+    const modalSelectQtd = document.getElementById("modal-select-qtd-times");
+    const modalSelectModo = document.getElementById("modal-select-pelada-modo");
+    
+    const selectedQtdVal = modalSelectQtd ? parseInt(modalSelectQtd.value) : null;
+    const selectedModoVal = modalSelectModo ? modalSelectModo.value : null;
 
-  // Obter configurações específicas da pelada/data selecionada (ou do grupo ativo como fallback)
-  const peladaAtiva = window.App.activePelada || {};
-  const grupoAtivo = window.App.currentGroup || {};
+    const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+    const groupId = currentGroup ? currentGroup.id : null;
 
-  let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
-  if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 6;
+    // 2. Salva os nomes de times selecionados dos selects do modal
+    const selectElements = document.querySelectorAll('.sorteio-team-name-select');
+    if (selectElements && selectElements.length > 0) {
+      const selectedNames = Array.from(selectElements).map(s => s.value.trim()).filter(Boolean);
+      try {
+        if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(selectedNames));
+        localStorage.setItem('customTeamNames', JSON.stringify(selectedNames));
+      } catch(e) {}
+    }
 
-  let maxTeams = parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
-  if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
+    // Fecha o modal após ler com segurança os campos do formulário
+    window.App.closeModal();
 
-  // Filtra apenas jogadores que o gestor marcou manualmente como presentes (check-in ativo)
-  const activePresent = players.filter(p => {
-    return (window.App.presentPlayers || []).some(id => String(id) === String(p.id));
-  });
+    let allAvailablePlayers = JSON.parse(localStorage.getItem("players")) || [];
+
+    if ((!allAvailablePlayers || allAvailablePlayers.length === 0) && window.App.confirmadosList && window.App.confirmadosList.length > 0) {
+      allAvailablePlayers = window.App.confirmadosList.map(c => ({
+        id: c.id,
+        nome: c.nome,
+        apelido: c.apelido || c.nome,
+        goleiro: !!c.goleiro,
+        autoavaliacao: parseInt(c.autoavaliacao) || 3,
+        ativo: true
+      }));
+    }
+
+    // Obter configurações específicas da pelada/data selecionada (ou do grupo ativo como fallback)
+    if (!window.App.activePelada) window.App.activePelada = {};
+    const peladaAtiva = window.App.activePelada;
+    const grupoAtivo = window.App.currentGroup || {};
+
+    let playersPerTeam = parseInt(peladaAtiva.jogadores_por_time || grupoAtivo.jogadores_por_time || 6);
+    if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 6;
+
+    let maxTeams = (!isNaN(selectedQtdVal) && selectedQtdVal > 0) 
+      ? selectedQtdVal 
+      : parseInt(peladaAtiva.quantidade_times || grupoAtivo.quantidade_times || 4);
+    if (isNaN(maxTeams) || maxTeams <= 0) maxTeams = 4;
+
+    peladaAtiva.quantidade_times = maxTeams;
+    try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
+    if (peladaAtiva.id && window.Api && window.Api.atualizarConfigPartida) {
+      window.Api.atualizarConfigPartida(peladaAtiva.id, { quantidade_times: maxTeams });
+    }
+
+  // 1. Tenta filtrar os atletas que foram explicitamente marcados como presentes no check-in
+  let activePresent = [];
+  if (window.App.presentPlayers && window.App.presentPlayers.length > 0) {
+    activePresent = allAvailablePlayers.filter(p => {
+      return window.App.presentPlayers.some(id => String(id) === String(p.id));
+    });
+  }
+
+  // 2. Fallback Inteligente: Se não houver atletas marcados individualmente no check-in,
+  // utiliza automaticamente todos os atletas confirmados para a partida!
+  if (activePresent.length < 2) {
+    if (window.App.confirmadosList && window.App.confirmadosList.length >= 2) {
+      activePresent = window.App.confirmadosList.map(c => ({
+        id: c.id,
+        nome: c.nome,
+        apelido: c.apelido || c.nome,
+        goleiro: !!c.goleiro,
+        autoavaliacao: parseInt(c.autoavaliacao) || 3,
+        ativo: true
+      }));
+    } else if (allAvailablePlayers.length >= 2) {
+      activePresent = [...allAvailablePlayers];
+    }
+  }
 
   if (activePresent.length < 2) {
-    window.App.showToast("Número insuficiente de jogadores para o sorteio.", "error");
+    window.App.showToast("Número insuficiente de jogadores para o sorteio (mínimo 2 atletas confirmados).", "error");
     return;
   }
 
@@ -89,10 +259,26 @@ function handleExecuteSorteio() {
   const teamColors = ["#2196F3", "#FFC107", "#FF1744", "#00C853", "#FF6D00", "#9C27B0", "#E91E63", "#00BCD4", "#795548", "#607D8B"];
   const groupEmblems = window._groupEmblemsList || [];
 
+  // Busca nomes de times cadastrados pelo gestor
+  let customNames = [];
+  try {
+    customNames = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+  } catch(e) {}
+
+  const usedNames = new Set();
   for (let i = 0; i < qtyTeams; i++) {
+    let customName = (customNames && customNames[i] && String(customNames[i]).trim()) ? String(customNames[i]).trim() : `Time ${getColoName(i)}`;
+    let baseName = customName;
+    let counter = 2;
+    while (usedNames.has(customName.toLowerCase())) {
+      customName = `${baseName} ${counter}`;
+      counter++;
+    }
+    usedNames.add(customName.toLowerCase());
+
     const teamObj = {
       id: `team_${i + 1}`,
-      nome: `Time ${getColoName(i)}`,
+      nome: customName,
       cor: teamColors[i] || "#777",
       emblema: i % 10,
       players: []
@@ -107,82 +293,167 @@ function handleExecuteSorteio() {
     drawnTeams.push(teamObj);
   }
 
-  // 1. Distribuir goleiros de forma embaralhada respeitando a vaga de cada time
-  const shuffledGks = shuffleArray([...gkList]);
-  shuffledGks.forEach((gk) => {
-    // Encontra o primeiro time com vaga para goleiro e vaga geral disponível
-    const timeDisponivel = drawnTeams.find((t, idx) => {
-      const hasGk = t.players.some(p => p.goleiro);
-      return !hasGk && t.players.length < vagasPorTime[idx];
+  // =========================================================================
+  // NOVO ALGORITMO: SIMULAÇÃO COM 20 CANDIDATOS + SNAKE DRAFT + PENALIDADE DE HISTÓRICO
+  // =========================================================================
+  const pesoEquilibrio = 3;
+  const pesoRepeticao = 1;
+
+  // Carrega histórico de pares de sorteios anteriores deste grupo para evitar repetições
+  const historyKey = groupId ? `teamPairsHistory_${groupId}` : 'teamPairsHistory';
+  let pairHistory = {};
+  try {
+    pairHistory = JSON.parse(localStorage.getItem(historyKey)) || {};
+  } catch (e) {
+    pairHistory = {};
+  }
+
+  // Função auxiliar para calcular repetições de pares entre atletas no mesmo time
+  const calcularRepeticaoPares = (teamsList) => {
+    let score = 0;
+    teamsList.forEach(t => {
+      const pIds = t.players.map(p => String(p.id));
+      for (let a = 0; a < pIds.length; a++) {
+        for (let b = a + 1; b < pIds.length; b++) {
+          const pairKey = pIds[a] < pIds[b] ? `${pIds[a]}_${pIds[b]}` : `${pIds[b]}_${pIds[a]}`;
+          if (pairHistory[pairKey]) {
+            score += pairHistory[pairKey];
+          }
+        }
+      }
+    });
+    return score;
+  };
+
+  // Função auxiliar para calcular a diferença máxima de força (soma de autoavaliação) entre os times
+  const calcularForcaTotal = (t) => {
+    return t.players.reduce((sum, p) => sum + (parseInt(p.autoavaliacao) || 3), 0);
+  };
+
+  const calcularScoreEquilibrio = (teamsList) => {
+    if (teamsList.length <= 1) return 0;
+    const forcas = teamsList.map(calcularForcaTotal);
+    const maxF = Math.max(...forcas);
+    const minF = Math.min(...forcas);
+    return maxF - minF;
+  };
+
+  // Função para executar UMA simulação de sorteio
+  const gerarCandidatoSorteio = () => {
+    // Clona a estrutura básica de times
+    const simTeams = drawnTeams.map(t => ({
+      ...t,
+      players: []
+    }));
+
+    // 1. Restrição de Goleiros: um por time, embaralhados
+    const shuffledGks = shuffleArray([...gkList]);
+    shuffledGks.forEach((gk) => {
+      const timeDisponivel = simTeams.find((t, idx) => {
+        const hasGk = t.players.some(p => p.goleiro);
+        return !hasGk && t.players.length < vagasPorTime[idx];
+      });
+      if (timeDisponivel) {
+        timeDisponivel.players.push(gk);
+      } else {
+        const timeQualquer = simTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
+        if (timeQualquer) {
+          timeQualquer.players.push(gk);
+        }
+      }
     });
 
-    if (timeDisponivel) {
-      timeDisponivel.players.push(gk);
-    } else {
-      // Se não houver time sem goleiro com vaga, coloca no primeiro time que tiver vaga geral
-      const timeQualquer = drawnTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
-      if (timeQualquer) {
-        timeQualquer.players.push(gk);
-      } else {
-        // Goleiros adicionais sem vaga viram jogadores de linha (fallback)
-        fieldList.push(gk);
+    // 2. Ordena jogadores de linha por habilidade (5★ → 1★)
+    let ordenados = [...fieldList].sort((a, b) => {
+      const notaA = parseInt(a.autoavaliacao) || 3;
+      const notaB = parseInt(b.autoavaliacao) || 3;
+      if (notaB === notaA) return Math.random() - 0.5;
+      return notaB - notaA;
+    });
+
+    // 3. Snake Draft com Aleatoriedade Controlada (Pool de força similar: próximos 2 a 3)
+    let serpenteDirection = 1;
+    let currentTeamIdx = 0;
+
+    while (ordenados.length > 0) {
+      // Pega pool dos próximos 2 a 3 de força similar
+      const poolSize = Math.min(ordenados.length, Math.max(2, Math.min(3, qtyTeams)));
+      const poolIdx = Math.floor(Math.random() * poolSize);
+      const escolhido = ordenados.splice(poolIdx, 1)[0];
+
+      let found = false;
+      let startIdx = currentTeamIdx;
+
+      while (!found) {
+        const team = simTeams[currentTeamIdx];
+        const maxVagas = vagasPorTime[currentTeamIdx];
+
+        if (team.players.length < maxVagas) {
+          team.players.push(escolhido);
+          found = true;
+        }
+
+        // Alterna ordem na serpentina
+        currentTeamIdx += serpenteDirection;
+        if (currentTeamIdx >= qtyTeams) {
+          currentTeamIdx = qtyTeams - 1;
+          serpenteDirection = -1;
+        } else if (currentTeamIdx < 0) {
+          currentTeamIdx = 0;
+          serpenteDirection = 1;
+        }
+
+        // Fallback de segurança contra time cheio
+        if (!found && currentTeamIdx === startIdx) {
+          const timeLivre = simTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
+          if (timeLivre) timeLivre.players.push(escolhido);
+          found = true;
+        }
+      }
+    }
+
+    // Refinamento fino por trocas de menor impacto
+    balanceDrawnTeams(simTeams);
+
+    const diffForca = calcularScoreEquilibrio(simTeams);
+    const repeticoes = calcularRepeticaoPares(simTeams);
+    const totalScore = (pesoEquilibrio * diffForca) + (pesoRepeticao * repeticoes);
+
+    return {
+      teams: simTeams,
+      score: totalScore,
+      diffForca,
+      repeticoes
+    };
+  };
+
+  // Executa 20 simulações e escolhe a melhor combinação (menor score)
+  let melhoresCandidatos = [];
+  for (let tentativa = 1; tentativa <= 20; tentativa++) {
+    melhoresCandidatos.push(gerarCandidatoSorteio());
+  }
+
+  // Ordena pelo menor score ponderado
+  melhoresCandidatos.sort((a, b) => a.score - b.score);
+  const melhorCandidato = melhoresCandidatos[0];
+  drawnTeams = melhorCandidato.teams;
+
+  // 4. Registra no histórico os pares sorteados para evitar repetições em futuros sorteios
+  drawnTeams.forEach(t => {
+    const pIds = t.players.map(p => String(p.id));
+    for (let a = 0; a < pIds.length; a++) {
+      for (let b = a + 1; b < pIds.length; b++) {
+        const pairKey = pIds[a] < pIds[b] ? `${pIds[a]}_${pIds[b]}` : `${pIds[b]}_${pIds[a]}`;
+        pairHistory[pairKey] = (pairHistory[pairKey] || 0) + 1;
       }
     }
   });
 
-  // 2. Ordenar jogadores de linha por habilidade
-  let sortedField = [...fieldList].sort((a, b) => b.autoavaliacao - a.autoavaliacao);
+  try {
+    localStorage.setItem(historyKey, JSON.stringify(pairHistory));
+  } catch (e) {}
 
-  // 3. Montar potes com tamanho igual a qtyTeams para balancear o Snake Draft de forma randômica
-  let potes = [];
-  for (let i = 0; i < sortedField.length; i += qtyTeams) {
-    let pote = sortedField.slice(i, i + qtyTeams);
-    // Embaralha o pote de forma totalmente randômica para evitar panelinhas
-    potes.push(shuffleArray(pote));
-  }
-
-  // 4. Distribuir os jogadores dos potes nos times usando Serpentina (Snake Draft) com controle de vagas
-  let direction = 1;
-  let teamIdx = 0;
-
-  potes.forEach((pote) => {
-    pote.forEach((player) => {
-      let foundTeam = false;
-      let startIdx = teamIdx;
-
-      while (!foundTeam) {
-        const team = drawnTeams[teamIdx];
-        const maxVagas = vagasPorTime[teamIdx];
-
-        if (team.players.length < maxVagas) {
-          team.players.push(player);
-          foundTeam = true;
-        }
-
-        // Avança a serpentina
-        teamIdx += direction;
-        if (teamIdx >= qtyTeams) {
-          teamIdx = qtyTeams - 1;
-          direction = -1;
-        } else if (teamIdx < 0) {
-          teamIdx = 0;
-          direction = 1;
-        }
-
-        // Evita loop infinito se o time estiver cheio
-        if (!foundTeam && teamIdx === startIdx) {
-          const timeLivre = drawnTeams.find((t, idx) => t.players.length < vagasPorTime[idx]);
-          if (timeLivre) {
-            timeLivre.players.push(player);
-          }
-          foundTeam = true;
-        }
-      }
-    });
-  });
-
-  // 5. Ajustar médias de autoavaliação (refinamento fino de balanceamento)
-  balanceDrawnTeams(drawnTeams);
+  console.log(`[Sorteio Inteligente] Melhor de 20 simulações escolhido! Diferença de força: ${melhorCandidato.diffForca}★ | Repetições históricas: ${melhorCandidato.repeticoes}`);
 
   // Salvar no localStorage local de forma segura usando a chave específica por data/pelada e a genérica
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
@@ -213,6 +484,7 @@ function handleExecuteSorteio() {
 
   // Cópia genérica (fallback para outras telas): melhor esforço, NÃO bloqueia o sorteio se falhar
   try { localStorage.setItem("teams", JSON.stringify(teamsParaSalvar)); } catch (e) { }
+  window.App.teams = teamsParaSalvar;
 
   // Reset e alimentação da fila de espera global
   window.App.waitingQueue.length = 0;
@@ -230,44 +502,104 @@ function handleExecuteSorteio() {
 
   const selectModo = document.getElementById("select-pelada-modo");
   const selectTurno = document.getElementById("select-pelada-turno");
-  const modoAtual = (selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal');
+  const modoAtual = selectedModoVal || ((selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal'));
   const turnoAtual = (selectTurno && selectTurno.value) ? selectTurno.value : ((peladaAtiva && peladaAtiva.turno_torneio) || 'ida');
   
+  if (selectModo) selectModo.value = modoAtual;
   if (peladaAtiva) {
     peladaAtiva.modo = modoAtual;
     peladaAtiva.turno_torneio = turnoAtual;
     try { localStorage.setItem("activePelada", JSON.stringify(peladaAtiva)); } catch(e) {}
   }
 
-  if (modoAtual === 'torneio' && window.TournamentEngine) {
-    const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
-    const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
-    const tState = {
-      modo: 'torneio',
-      turno: turnoAtual,
-      fase: 'grupo',
-      teams: drawnTeams,
-      matches: matches,
-      currentIndex: 0,
-      standings: standings,
-      knockoutMatches: [],
-      finalsMatches: [],
-      podium: null
-    };
+  const isTorneio = modoAtual === 'torneio' || modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos' || modoAtual === 'mata_mata_direto' || modoAtual === 'torneio_livre';
+  const isPontosCorridos = modoAtual === 'pontos_corridos' || modoAtual === 'torneio_pontos_corridos';
+  const isMataMataDireto = modoAtual === 'mata_mata_direto';
+  const isTorneioLivre = modoAtual === 'torneio_livre';
+
+  if (isTorneio && window.TournamentEngine) {
+    let tState;
+    if (isTorneioLivre) {
+      const standings = window.TournamentEngine.calculateStandings(drawnTeams, []);
+      tState = {
+        modo: modoAtual,
+        formato: 'livre',
+        turno: 'livre',
+        fase: 'livre',
+        teams: drawnTeams,
+        matches: [],
+        currentIndex: 0,
+        standings: standings,
+        knockoutMatches: [],
+        finalsMatches: [],
+        podium: null
+      };
+
+      if (drawnTeams.length >= 2) {
+        window.App.liveMatch.teamA = drawnTeams[0].nome;
+        window.App.liveMatch.teamB = drawnTeams[1].nome;
+        window.App.liveMatch.scoreA = 0;
+        window.App.liveMatch.scoreB = 0;
+        window.App.liveMatch.isPlaying = false;
+        window.App.liveMatch.tournamentMatchId = `livre_${Date.now().toString(36)}`;
+      }
+    } else if (isMataMataDireto) {
+      const knockoutMatches = window.TournamentEngine.generateDirectKnockoutMatches(drawnTeams);
+      const isFinalDirect = knockoutMatches.length === 1 && knockoutMatches[0].fase === 'final';
+      tState = {
+        modo: modoAtual,
+        formato: 'mata_mata_direto',
+        turno: 'ida',
+        fase: isFinalDirect ? 'finais' : 'mata_mata',
+        teams: drawnTeams,
+        matches: [],
+        currentIndex: 0,
+        standings: [],
+        knockoutMatches: isFinalDirect ? [] : knockoutMatches,
+        finalsMatches: isFinalDirect ? knockoutMatches : [],
+        podium: null
+      };
+
+      const firstMatch = isFinalDirect ? tState.finalsMatches[0] : tState.knockoutMatches[0];
+      if (firstMatch) {
+        window.App.liveMatch.teamA = firstMatch.teamA;
+        window.App.liveMatch.teamB = firstMatch.teamB;
+        window.App.liveMatch.scoreA = 0;
+        window.App.liveMatch.scoreB = 0;
+        window.App.liveMatch.isPlaying = false;
+        window.App.liveMatch.tournamentMatchId = firstMatch.id;
+      }
+    } else {
+      const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
+      const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
+      tState = {
+        modo: modoAtual,
+        formato: isPontosCorridos ? 'pontos_corridos' : 'mata_mata',
+        turno: turnoAtual,
+        fase: 'grupo',
+        teams: drawnTeams,
+        matches: matches,
+        currentIndex: 0,
+        standings: standings,
+        knockoutMatches: [],
+        finalsMatches: [],
+        podium: null
+      };
+
+      if (matches.length > 0) {
+        window.App.liveMatch.teamA = matches[0].teamA;
+        window.App.liveMatch.teamB = matches[0].teamB;
+        window.App.liveMatch.scoreA = 0;
+        window.App.liveMatch.scoreB = 0;
+        window.App.liveMatch.isPlaying = false;
+        window.App.liveMatch.tournamentMatchId = matches[0].id;
+      }
+    }
 
     window.App.liveMatch.tournamentState = tState;
     try { localStorage.setItem("tournamentState", JSON.stringify(tState)); } catch(e) {}
     if (peladaId) {
       try { localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState)); } catch(e) {}
-    }
-
-    if (matches.length > 0) {
-      window.App.liveMatch.teamA = matches[0].teamA;
-      window.App.liveMatch.teamB = matches[0].teamB;
-      window.App.liveMatch.scoreA = 0;
-      window.App.liveMatch.scoreB = 0;
-      window.App.liveMatch.isPlaying = false;
-      window.App.liveMatch.tournamentMatchId = matches[0].id;
     }
   } else {
     // Modo Pelada Normal
@@ -310,9 +642,23 @@ function handleExecuteSorteio() {
     window.App.syncDrawnTeamsToCloud(false);
   }
 
-  window.App.showToast(peladaAtiva.modo === 'torneio' ? "🏆 Mini Torneio gerado com sucesso!" : "Equipes geradas!");
+  let toastMsg = "Equipes geradas!";
+  if (isTorneioLivre) toastMsg = "📋 Torneio Livre (Confrontos Manuais) gerado com sucesso!";
+  else if (isMataMataDireto) toastMsg = "⚡ Mini Torneio (Mata-Mata Direto) gerado com sucesso!";
+  else if (isPontosCorridos) toastMsg = "🏅 Mini Torneio (Pontos Corridos) gerado com sucesso!";
+  else if (modoAtual === 'torneio') toastMsg = "🏆 Mini Torneio (Misto) gerado com sucesso!";
+  window.App.showToast(toastMsg);
   window.App.renderDrawnTeams();
   window.App.updateAcompanhamentoUI();
+
+  // Dispara as notificações individuais para cada atleta convocado informado sobre seu time
+  if (window.App && window.App.notificarAtletasSorteados) {
+    window.App.notificarAtletasSorteados(drawnTeams);
+  }
+  } catch (err) {
+    console.error("[Sorteio]", err);
+    window.App.showToast("Erro ao executar sorteio: " + (err.message || err), "error");
+  }
 }
 
 function getColoName(idx) {

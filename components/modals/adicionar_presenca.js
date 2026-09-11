@@ -3,7 +3,7 @@
 // Permite adicionar atletas cadastrados ou novos convidados diretamente
 // ==========================================================================
 
-window.App.initModalAdicionar_presenca = function (data = {}) {
+window.App.initModalAdicionar_presenca = window.App.initModalAdd_presence = function (data = {}) {
   const peladaId = data.peladaId;
   if (!peladaId) {
     window.App.showToast("Erro: ID da pelada não fornecido.", "error");
@@ -147,9 +147,11 @@ window.App.initModalAdicionar_presenca = function (data = {}) {
         availableAthletes.forEach(athlete => {
           const opt = document.createElement("option");
           opt.value = athlete.id;
-          opt.textContent = athlete.apelido
-            ? `${athlete.nome} (${athlete.apelido})`
-            : athlete.nome;
+          const valSaldo = parseFloat(athlete.saldo || 0);
+          const saldoFmt = valSaldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          const nomeExibicao = athlete.apelido ? `${athlete.nome} (${athlete.apelido})` : athlete.nome;
+          opt.textContent = `${nomeExibicao} — Saldo: ${saldoFmt}`;
+          opt.dataset.saldo = valSaldo;
           selectAthlete.appendChild(opt);
         });
       }

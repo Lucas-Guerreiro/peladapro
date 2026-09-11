@@ -10,28 +10,41 @@ const verificarRegra2Horas = async (peladaId) => {
     const row = rows[0];
     if (!row.data) return false;
 
-    let dataStr = '';
+    let year, month, day;
     if (row.data instanceof Date) {
-      dataStr = row.data.toISOString().split('T')[0];
+      year = row.data.getFullYear();
+      month = String(row.data.getMonth() + 1).padStart(2, '0');
+      day = String(row.data.getDate()).padStart(2, '0');
     } else {
-      dataStr = String(row.data).split('T')[0];
+      const parts = String(row.data).split('T')[0].split('-');
+      year = parts[0];
+      month = parts[1];
+      day = parts[2];
     }
 
     let timeStr = row.horario ? String(row.horario).trim() : '19:00';
-    if (timeStr.length === 5) timeStr += ':00';
+    const timeParts = timeStr.split(':');
+    const horaStr = String(timeParts[0] || '19').padStart(2, '0');
+    const minStr = String(timeParts[1] || '00').padStart(2, '0');
 
-    const peladaDateTime = new Date(`${dataStr}T${timeStr}`);
+    // Suporte aos fusos horários do Brasil: Manaus (-04:00) e Brasília (-03:00)
+    const peladaManaus = new Date(`${year}-${month}-${day}T${horaStr}:${minStr}:00-04:00`);
+    const peladaBrasilia = new Date(`${year}-${month}-${day}T${horaStr}:${minStr}:00-03:00`);
     const agora = new Date();
 
-    if (isNaN(peladaDateTime.getTime())) {
+    if (isNaN(peladaManaus.getTime()) && isNaN(peladaBrasilia.getTime())) {
       console.warn('[verificarRegra2Horas] Data/hora inválida para a pelada ID:', peladaId, row.data, row.horario);
       return true; // Em caso de parse inválido, permite o estorno
     }
 
-    const diffMs = peladaDateTime.getTime() - agora.getTime();
-    const diffHoras = diffMs / (1000 * 60 * 60);
+    const diffMsManaus = peladaManaus.getTime() - agora.getTime();
+    const diffMsBrasilia = peladaBrasilia.getTime() - agora.getTime();
+    
+    // Considera o maior tempo restante entre os fusos brasileiros (Manaus -04:00 ou Brasília -03:00)
+    const diffHoras = Math.max(diffMsManaus, diffMsBrasilia) / (1000 * 60 * 60);
+    console.log(`[verificarRegra2Horas] Pelada #${peladaId} - Horas restantes calculadas (Manaus/Brasília):`, diffHoras.toFixed(2));
 
-    return diffHoras >= 2; // Retorna true se faltar 2h ou mais
+    return diffHoras >= 2; // Retorna true se faltar 2h ou mais em relação ao fuso local
   } catch (err) {
     console.error('[verificarRegra2Horas] Erro ao verificar regra das 2 horas:', err);
     return true; // Na dúvida, permite estorno ao atleta

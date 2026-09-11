@@ -571,9 +571,33 @@ const Auth = {
   },
 
   async refreshCurrentUser() {
-    try {
-      // 1. Tenta buscar usuário atualizado via Supabase (Fonte da Verdade)
-      if (window.supabase) {
+    // 1. Tenta buscar usuário atualizado via API REST backend (Fonte Primária)
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
+    if (token) {
+      try {
+        const res = await fetch('/api/usuarios/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const user = await res.json();
+          if (user && user.id) {
+            this.currentUser = { ...this.currentUser, ...user, saldo: parseFloat(user.saldo || 0) };
+            if (window.App) window.App.currentUser = this.currentUser;
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('usuario', JSON.stringify(this.currentUser));
+            localStorage.setItem('user', JSON.stringify(this.currentUser));
+            if (typeof this.checkUserEmailTest === 'function') this.checkUserEmailTest();
+            return this.currentUser;
+          }
+        }
+      } catch (e) {
+        console.warn('[Auth] Erro REST em refreshCurrentUser:', e);
+      }
+    }
+
+    // 2. Fallback Supabase
+    if (window.supabase) {
+      try {
         const { data: { session } } = await window.supabase.auth.getSession();
         if (session?.user?.email) {
           const { data: userData } = await window.supabase
@@ -584,32 +608,19 @@ const Auth = {
 
           if (userData) {
             this.currentUser = { ...this.currentUser, ...userData, saldo: parseFloat(userData.saldo || 0) };
+            if (window.App) window.App.currentUser = this.currentUser;
             localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
             localStorage.setItem('usuario', JSON.stringify(this.currentUser));
-            this.checkUserEmailTest();
+            localStorage.setItem('user', JSON.stringify(this.currentUser));
+            if (typeof this.checkUserEmailTest === 'function') this.checkUserEmailTest();
+            return this.currentUser;
           }
         }
+      } catch (e) {
+        console.warn('[Auth] Erro Supabase em refreshCurrentUser:', e);
       }
-
-      // 2. Tenta buscar usuário atualizado via API REST backend
-      const token = localStorage.getItem('token');
-      if (token) {
-        const res = await fetch('/api/usuarios/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const user = await res.json();
-          if (user && user.id) {
-            this.currentUser = { ...this.currentUser, ...user, saldo: parseFloat(user.saldo || 0) };
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            localStorage.setItem('usuario', JSON.stringify(this.currentUser));
-            this.checkUserEmailTest();
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[Auth] Erro ao atualizar perfil/saldo do usuário:', e);
     }
+    return this.currentUser;
   },
 
   // --- Logout -------------------------------------------------------------

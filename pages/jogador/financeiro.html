@@ -1,66 +1,123 @@
-<!-- pages/jogador/financeiro.html — Carteira e Transações do Atleta -->
-<main style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+<!-- pages/jogador/financeiro.html — Painel Financeiro da Pelada para o Atleta (Apenas Leitura) -->
+<div class="financeiro-gestor-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
 
-  <!-- CARD DE SALDO PESSOAL -->
-  <div class="card" style="display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 16px; position: relative; overflow: hidden; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.04); box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03);">
-    <!-- Fundo abstrato sutil -->
-    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; border-radius: 50%; background: rgba(2, 132, 199, 0.05); filter: blur(20px); pointer-events: none;"></div>
+  <!-- BANNER DE MODO DE VISUALIZAÇÃO APENAS LEITURA PARA O ATLETA -->
+  <div style="background: rgba(2, 132, 199, 0.08); border: 1.5px solid #0284C7; color: #0284C7; border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);">
+    <i data-feather="eye" style="width: 18px; height: 18px; color: #0284C7;"></i>
+    <span>👁️ <strong>Modo de Visualização do Atleta:</strong> Todos os demonstrativos, caixas e lançamentos estão disponíveis <strong>apenas para visualização</strong>.</span>
+  </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; z-index: 1;">
-      <div>
-        <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Meu Saldo Atual</p>
-        <h2 id="player-wallet-balance" class="sports-font" style="font-size: 38px; font-weight: 900; margin: 6px 0 0; color: #0f172a; line-height: 1.1;">R$ 0,00</h2>
+  <!-- NÍVEL 1: CARTÕES DE RESUMO (5 KPIs) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+    <!-- 1. Total Arrecadado -->
+    <div class="card" style="padding: 16px 20px; border-left: 4px solid #378ADD; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Arrecadado</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(55, 138, 221, 0.12); color: #378ADD; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="arrow-down-left" style="width: 16px; height: 16px;"></i>
+        </div>
       </div>
-      <div style="background: rgba(2, 132, 199, 0.1); color: #0284C7; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-        💳
-      </div>
+      <h2 id="finances-kpi-arrecadado" style="font-size: 24px; font-weight: 800; color: #378ADD; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span id="finances-kpi-arrecadado-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Pix + Vaquinhas + Verbas</span>
     </div>
 
-    <!-- Mensagem de Alerta se Devedor -->
-    <div id="player-wallet-debt-alert" style="display: none; align-items: center; gap: 10px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px 16px; border-radius: 12px; margin-top: 4px; z-index: 1;">
-      <span style="font-size: 18px;">⚠️</span>
-      <p class="text-inter" style="margin: 0; font-size: 12px; font-weight: 600; color: #EF4444; line-height: 1.4;">
-        Você possui pendência financeira. Realize o acerto com o gestor via Pix.
-      </p>
+    <!-- 2. Despesas Efetivadas / Pagas -->
+    <div class="card" style="padding: 16px 20px; border-left: 4px solid var(--danger, #E74C3C); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Despesas Efetivadas / Pagas</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(231, 76, 60, 0.12); color: var(--danger, #E74C3C); display: flex; align-items: center; justify-content: center;">
+          <i data-feather="arrow-up-right" style="width: 16px; height: 16px;"></i>
+        </div>
+      </div>
+      <h2 id="finances-kpi-despesas" style="font-size: 24px; font-weight: 800; color: var(--danger, #E74C3C); margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span id="finances-kpi-despesas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Previstas: R$ 0,00 · A Pagar: R$ 0,00</span>
     </div>
 
-    <!-- Caixa de Chave Pix se Devedor -->
-    <div id="player-wallet-pix-box" style="display: none; flex-direction: column; gap: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-top: 4px; z-index: 1;">
-      <span style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase;">Chave Pix do Grupo:</span>
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-        <span id="player-wallet-pix-key" style="font-size: 13px; font-weight: 800; color: #0284C7; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">--</span>
-        <button id="btn-player-wallet-copy-pix" class="btn btn-sm" style="background: #0284C7; color: #FFFFFF; font-weight: 700; border-radius: 8px; padding: 6px 12px; border: none; cursor: pointer; white-space: nowrap; font-size: 11px;">
-          📋 Copiar
-        </button>
+    <!-- 3. Saldo Total do Atleta (Saldo Seguro) -->
+    <div class="card" id="finances-kpi-saldo-atletas-card" style="padding: 16px 20px; border-left: 4px solid #8B5CF6; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;" title="Saldo seguro reservado na carteira dos atletas. Utilizado exclusivamente quando o atleta confirma convocação por saldo.">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Total do Atleta</span>
+          <span style="font-size: 9px; font-weight: 800; background: #F3E8FF; color: #7C3AED; border: 1px solid #E9D5FF; padding: 1px 6px; border-radius: 10px; white-space: nowrap;">🔒 SALDO SEGURO</span>
+        </div>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139, 92, 246, 0.12); color: #8B5CF6; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="shield" style="width: 16px; height: 16px;"></i>
+        </div>
       </div>
+      <h2 id="finances-kpi-saldo-atletas" style="font-size: 24px; font-weight: 800; color: #8B5CF6; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span id="finances-kpi-saldo-atletas-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">🔒 Consumido só quando o atleta convocar via saldo</span>
+    </div>
+
+    <!-- 4. Saldo Pelada (Caixa Total - Saldo Total do Atleta) -->
+    <div class="card" id="finances-kpi-saldo-pelada-card" style="padding: 16px 20px; border-left: 4px solid #1D9E75; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Saldo Pelada</span>
+        <div id="finances-kpi-saldo-pelada-icon" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(29, 158, 117, 0.12); color: #1D9E75; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="pie-chart" style="width: 16px; height: 16px;"></i>
+        </div>
+      </div>
+      <h2 id="finances-kpi-saldo-pelada" style="font-size: 24px; font-weight: 800; color: #1D9E75; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span id="finances-kpi-saldo-pelada-sub" style="font-size: 11px; color: var(--text-caption); font-weight: 600;">Caixa Total menos Saldo dos Atletas</span>
+    </div>
+
+    <!-- 5. Caixa Total -->
+    <div class="card" style="padding: 16px 20px; border-left: 4px solid #0284C7; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-caption); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Caixa Total</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(2, 132, 199, 0.12); color: #0284C7; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="briefcase" style="width: 16px; height: 16px;"></i>
+        </div>
+      </div>
+      <h2 id="finances-kpi-caixa" style="font-size: 24px; font-weight: 800; color: #0284C7; margin: 6px 0 0 0; font-family: 'Inter', sans-serif;">R$ 0,00</h2>
+      <span style="font-size: 11px; color: var(--text-caption);">Saldo real disponível em conta</span>
     </div>
   </div>
 
-  <!-- HISTÓRICO DE LANÇAMENTOS -->
-  <div class="card" style="padding: 0; overflow: hidden; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.04); box-shadow: 0 10px 25px rgba(30, 41, 59, 0.03); border-radius: 16px;">
-    <div style="padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 20px;">📜</span>
-      <h3 class="text-inter" style="margin: 0; font-weight: 800; font-size: 16px; color: var(--text-heading);">Histórico de Lançamentos</h3>
-    </div>
-
-    <div style="overflow-x: auto; width: 100%;">
-      <table class="table-custom" style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
-        <thead>
-          <tr>
-            <th style="padding: 14px 20px; font-weight: 700; font-size: 12px; color: #64748B; text-transform: uppercase;">Data</th>
-            <th style="padding: 14px 20px; font-weight: 700; font-size: 12px; color: #64748B; text-transform: uppercase;">Descrição</th>
-            <th style="padding: 14px 20px; font-weight: 700; font-size: 12px; color: #64748B; text-transform: uppercase; text-align: right;">Valor</th>
-          </tr>
-        </thead>
-        <tbody id="player-finance-transactions-body">
-          <tr>
-            <td colspan="3" style="text-align: center; padding: 32px; color: var(--text-caption);" class="text-inter">
-              Carregando histórico...
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- NÍVEL 3 (BARRA SUPERIOR): FILTROS DE PERÍODO -->
+  <div class="card" style="padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: #FFFFFF; border-radius: 8px;">
+    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+      <span style="font-size: 12px; font-weight: 700; color: var(--text-caption); margin-right: 4px;">Período:</span>
+      <button class="btn btn-sm finance-filter-chip active" data-filter="este_mes" style="padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 20px; border: 1.5px solid var(--primary); background: var(--primary); color: #FFF; cursor: pointer; transition: all 0.2s;">
+        Este Mês
+      </button>
+      <button class="btn btn-sm finance-filter-chip" data-filter="ultimos_30" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 20px; border: 1.5px solid #CBD5E1; background: #F8FAFC; color: #475569; cursor: pointer; transition: all 0.2s;">
+        Últimos 30 Dias
+      </button>
+      <button class="btn btn-sm finance-filter-chip" data-filter="tudo" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 20px; border: 1.5px solid #CBD5E1; background: #F8FAFC; color: #475569; cursor: pointer; transition: all 0.2s;">
+        Tudo
+      </button>
     </div>
   </div>
 
-</main>
+  <!-- SEÇÃO 1: CAIXA GERAL, VAQUINHAS & LANÇAMENTOS NÃO VINCULADOS A PELADAS -->
+  <div id="finances-geral-card-container" style="display: flex; flex-direction: column; gap: 16px;">
+    <!-- Preenchido dinamicamente via JS -->
+  </div>
+
+  <!-- SEÇÃO 2: CORPO PRINCIPAL AGRUPADO POR PELADA / DATA -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-heading); display: flex; align-items: center; gap: 8px;">
+        <i data-feather="calendar" style="width: 18px; height: 18px; color: var(--secondary);"></i> Demonstrativo por Pelada
+      </h3>
+      
+      <!-- Seletor de Pelada Específica -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="finances-select-pelada" style="font-size: 12px; font-weight: 700; color: var(--text-caption); margin: 0; white-space: nowrap;">
+          Filtrar Pelada:
+        </label>
+        <select id="finances-select-pelada" class="form-control" style="height: 36px; padding: 4px 12px; font-size: 13px; font-weight: 600; border-radius: 6px; border: 1.5px solid #CBD5E1; background: #FFF; min-width: 200px; cursor: pointer;">
+          <option value="todas">📋 Todas as Peladas</option>
+          <!-- Preenchido dinamicamente via JS -->
+        </select>
+        <span style="font-size: 12px; color: var(--text-caption); display: none;" id="finances-count-badge">Carregando...</span>
+      </div>
+    </div>
+
+    <!-- Container Dinâmico onde os cards de cada Pelada são renderizados -->
+    <div id="finances-peladas-grouped-container" style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Preenchido dinamicamente via JS -->
+    </div>
+  </div>
+
+</div>

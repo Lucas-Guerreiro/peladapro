@@ -1,215 +1,154 @@
-# Pelada Pro — Mapa de Dados
+# Pelada Pro — Mapa de Dados (schema REAL confirmado)
 
-> Documento 04/12 · Data: 06/09/2026 · Status: aprovado
-> Objetivo: descrever as tabelas, colunas, chaves, relações, enums e regras
-> de dados. Base para criar o schema novo e o plano de migração.
-> Fonte: análise do código-fonte real (arquitetura confirmada no Antigravity).
-
----
-
-## 1. Visão geral do modelo
-
-O banco gira em torno de **3 entidades centrais**:
-- **Grupo** — a "comunidade" da pelada (jogadores + regras).
-- **Pelada** — cada rodada/evento (data, local, valor, times, placar).
-- **Jogador (usuário)** — o atleta, que participa de grupos e peladas.
-
-**Confirmação importante (do código real):**
-- O **financeiro** usa uma **tabela unificada `transacoes`** (créditos e débitos
-  juntos), com tabelas auxiliares de vaquinha.
-- O **ranking NÃO tem tabela própria** — é **calculado na hora** a partir do
-  histórico de partidas finalizadas.
-- **Fotos/arquivos NÃO estão em Storage** em produção — são URLs externas ou
-  base64 em colunas das tabelas.
-- A **autenticação** é via JWT + bcrypt na própria tabela `usuarios` (não é
-  Supabase Auth em produção).
-- As **regras do grupo** ficam em uma **tabela separada `configs`**.
+> Documento 04/12 · Data: 09/09/2026 · Status: ✅ FECHADO
+> Schema confirmado por consulta direta ao Supabase (information_schema/pg_catalog).
+> 23 tabelas reais confirmadas. Nenhuma pendência de nomes.
+> Fonte: auditoria do código (raio-x) + consulta direta ao banco.
 
 ---
 
-## 2. Tabelas principais
+## 1. Objetivo
 
-### 2.1 `usuarios` — Atletas/contas
-
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | (PK) | Identificador único |
-| `email` | text (unique) | Login |
-| `senha` | text (hash bcrypt) | Senha criptografada |
-| `nome` | text | Nome completo |
-| `apelido` | text | Apelido |
-| `posicao` | text | Posição (goleiro, atacante...) |
-| `autoavaliacao` | int | Nível (estrelas 1–5) |
-| `goleiro` | boolean | Se é goleiro |
-| `premium_status` | boolean | Card Premium ativo |
-| `foto` | text | URL externa OU base64 da foto |
-
-> **Auth:** a validação de login consulta esta tabela (JWT + bcrypt), gerida pelo
-> `authController.js` do backend Node.js. O app mobile tem chamadas legadas ao
-> Supabase Auth — **decisão de migração necessária**.
-
-### 2.2 `grupos` — Grupos de pelada
-
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | (PK) | Identificador |
-| `nome` | text | Nome do grupo |
-| `escudo_url` | text | Escudo/foto (URL ou base64) |
-| `codigo_convite` | text | Código para jogadores entrarem |
-| `gestor_id` | (FK → usuarios) | Organizador/criador |
-
-> Decisão confirmada: um usuário pode ser organizador/participante de **vários**
-> grupos.
-
-### 2.3 Vínculo jogador ↔ grupo
-
-**[A CONFIRMAR no código]** — tabela de relacionamento entre `usuarios` e `grupos`
-(ex.: nome real, e se há coluna de papel `organizador`/`tesoureiro`/`jogador`).
-O `gestor_id` na tabela `grupos` aponta o organizador; precisa mapear como os
-demais jogadores são vinculados ao grupo.
-
-### 2.4 `configs` — Regras do grupo (tabela separada)
-
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | (PK) | Identificador |
-| `grupo_id` | (FK → grupos) | Grupo dono |
-| `jogadores_por_time` | int | Jogadores por time |
-| `qtd_times` | int | Quantidade de times |
-| `vitorias_para_sair` | int | Regra de rodízio (vitórias p/ sair) |
-| `regra_saida` | text | Como funciona a saída no rodízio |
-| `criterio_empate` | text | Critério de desempate |
-| `valor_convocacao` | numeric | Valor da convocação |
-
-### 2.5 `quadras` — Locais das peladas
-
-**[A CONFIRMAR no código]** — como o local/quadra é armazenado hoje (coluna na
-tabela de peladas ou tabela própria). A decisão do organizador é que peladas
-podem variar de local → precisa de cadastro reutilizável de quadras.
-
-### 2.6 `peladas` — Rodadas/eventos
-
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | (PK) | Identificador |
-| `grupo_id` | (FK → grupos) | Grupo dono |
-| `data` | date | Data |
-| `hora` | time | Horário |
-| `valor` | numeric | Valor por jogador |
-| `local` | text | Local/quadra (confirmar) |
-| `status` | text | `agendada` / `finalizada` |
-| `formato` | text | `normal`, torneios, etc. |
-| `live_state` | jsonb | Estado ao vivo (times, fila, placar) |
-
-> **Regra:** após "Limpar Times", o `live_state` zera e nada pode re-gravá-lo
-> automaticamente (bug antigo a não repetir).
+Este documento é a fonte da verdade sobre **quais dados existem de verdade** no
+banco atual. Ele foi fechado após consulta direta ao Supabase, porque várias
+tabelas em uso **não tinham script de criação no repositório** — só existiam no
+banco. Agora temos o mapa completo e confiável para guiar a reconstrução e a
+migração.
 
 ---
 
-## 3. Presença, Times e Partidas
+## 2. Tabelas confirmadas (23) — com script de criação no repositório
 
-### 3.1 Convocação / presença
-
-**[A CONFIRMAR no código]** — tabela(s) que ligam jogador ↔ pelada com status
-(`confirmado`/`pendente`/`recusado`/`fila de espera`). Confirmar nome real e se a
-fila de espera é um status ou campo separado.
-
-### 3.2 `times` — Times sorteados
-
-| Coluna | Tipo | Descrição |
+| Tabela | Colunas principais | Observação |
 |---|---|---|
-| `id` | (PK) | Identificador |
-| `pelada_id` | (FK → peladas) | Pelada |
-| `nome` | text | Nome do time |
-| `cor` | text | Cor |
-| `emblema` / `emblema_url` | text | Emblema do sistema ou customizado |
-
-### 3.3 `times_jogadores` — Jogadores de cada time
-
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `time_id` | (FK → times) | Time |
-| `usuario_id` | (FK → usuarios) | Jogador |
-
-### 3.4 `partidas` — Jogos
-
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | (PK) | Identificador |
-| `grupo_id` / `pelada_id` | FK | Vínculo |
-| Times A/B | FK → times | Confronto |
-| `gols_a` / `gols_b` | int | Placar |
-| `autores_gols` | json | JSON com autores (usado no ranking) |
-| `status` | text | Finalizada etc. |
+| `usuarios` | id, email, senha_hash, nome, apelido, cpf, whatsapp, foto, autoavaliacao, goleiro, saldo, ativo, verificado, tipo, premium/vip/plano, codigo_verificacao, recuperacao_codigo | Conta real (JWT+bcrypt) |
+| `grupos` | id, nome, gestor_id, ativo, licenca_codigo, licenca_status, licenca_expira_em | Um gestor dono; SEM tabela de membros |
+| `peladas` | id, grupo_id, data, horario, local(texto), status, max_jogadores, modo, turno_torneio, liberar_convidados, live_state(jsonb), chave_pix, valor_convocacao, jogadores_por_time, quantidade_times, vitorias_para_sair, criterio_empate, regra_saida | `live_state` guarda times/fila/placar |
+| `convocacoes` | pelada_id+usuario_id (PK), status, forma_pagamento, posicao_fila, saldo_estornado, motivo_remocao | É TAMBÉM a fila de espera |
+| `transacoes` | id, usuario_id, grupo_id, valor, tipo(credito/debito), descricao, data | Ledger append-only |
+| `configs` | grupo_id (PK), valor_convocacao, regra_saida, vitorias_para_sair, criterio_empate, qtd_times, jogadores_por_time | Divergem do CREATE original |
+| `times` / `times_jogadores` | id, pelada_id, nome, cor, emblema/emblema_url · time_id+usuario_id | Índice único (pelada, nome) |
+| `partidas` | id, pelada_id, times, placar, autores_gols(texto) | Recriada por script avulso |
+| `pagamentos_mercado_pago` | id, usuario_id, pelada_id, valor, status, qr_code, tipo | — |
+| `licencas` | codigo, email_comprador, plano, status, grupo_id, ativada_em, expira_em | — |
+| `nomes_times_grupo` | id, grupo_id, nome, cor | Catálogo de nomes/cores |
+| `configuracao_pelada` | (fragmento UUID) | Órfã — sem uso no código |
 
 ---
 
-## 4. Tabelas do Financeiro (CONFIRMADO)
+## 3. Tabelas em uso SEM script de criação no repositório (6)
 
-### 4.1 `transacoes` — Tabela ÚNICA de lançamentos
+Estas tabelas existem no banco e são usadas, mas **não há script de criação
+versionado** no repositório. Precisam ser recriadas (com melhorias) no novo
+sistema.
 
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | (PK) | Identificador |
-| `usuario_id` | (FK → usuarios) | Jogador (quando aplicável) |
-| `grupo_id` | (FK → grupos) | Grupo |
-| `valor` | numeric | Valor do lançamento |
-| `tipo` | text | `credito` (entrada) / `debito` (saída) |
-| `descricao` | text | Ex: "PIX João", "Aluguel quadra" |
-| `data` | timestamp | Data |
-
-> **Regra:** TODAS as entradas (créditos/PIX/verbas) e saídas (débitos/despesas/
-> quadra) ficam aqui. O `tipo` + `descricao` diferenciam receita de despesa.
-
-### 4.2 Vaquinha — campanhas de arrecadação (MÓDULO NOVO)
-
-| Tabela | Descrição |
+| Tabela | Uso observado |
 |---|---|
-| `arrecadacoes` | Campanhas de vaquinha do grupo |
-| `arrecadacao_contribuicoes` | Contribuições de cada jogador na campanha |
-
-> Pagamentos confirmados das contribuições são **consolidados** na tabela
-> `transacoes`.
-
----
-
-## 5. Ranking e Estatísticas (CONFIRMADO)
-
-**O ranking NÃO tem tabela própria.** É **calculado em tempo real**:
-- `pages/jogador/ranking.js` consulta o histórico das partidas finalizadas do
-  grupo (`Api.listarPartidas`).
-- Percorre placares + JSON `autores_gols` e gera dinamicamente:
-  - classificação por pontos/vitórias/empates/derrotas/saldo de gols;
-  - lista de artilharia e assistências.
-
-> **Implicação:** no novo sistema, manter ranking calculado na hora (simples) ou
-> criar tabela de estatísticas agregadas (performance) — decisão de arquitetura.
+| `arrecadacoes` | Campanhas de vaquinha |
+| `arrecadacoes_contribuicoes` | Contribuições da vaquinha |
+| `comprovantes_pix` | Comprovantes de pagamento manual |
+| `emblemas_grupo` | Galeria de brasões por grupo |
+| `push_subscriptions` | Tokens de push por usuário |
+| `locais` | Catálogo de quadras (desconectado de peladas.local) |
 
 ---
 
-## 6. Enums (valores fixos)
+## 4. Tabelas que NÃO existem (achado novo — falham silenciosamente)
 
-| Enum | Valores |
+O relatório anterior listava estas como existentes, mas a consulta direta ao
+banco confirmou que **não existem**. Os comandos do backend para elas **falham
+silenciosamente em produção**.
+
+| Tabela "imaginada" | Realidade |
 |---|---|
-| `tipo_transacao` | `credito`, `debito` |
-| `status_pelada` | `agendada`, `finalizada` |
-| `formato_pelada` | `normal`, `torneio`, `pontos_corridos`, `mata_mata_direto`, `torneio_livre` |
-| `status_presenca` | `confirmado`, `pendente`, `recusado`, `fila_espera` [A CONFIRMAR] |
-| `papel` | `organizador`, `tesoureiro`, `jogador` [A CONFIRMAR] |
+| `notificacoes` | ❌ NÃO existe — INSERT/UPDATE do backend falham em silêncio |
+| `mvp_partida` | ❌ NÃO existe — feature MVP praticamente não funciona |
+
+> ⚠️ **Impacto:** notificações in-app e MVP **nunca funcionaram de verdade**.
+> No novo sistema, ambos são construídos do zero (NOT-001 a 008, PAR-004).
 
 ---
 
-## 7. Pontos ainda a confirmar (para fechar 100%)
+## 5. Fragmento UUID órfão (achado novo — 5 tabelas desconectadas)
 
-1. Nome real da tabela que **vincula jogador ao grupo** (e se há papel
-   organizador/tesoureiro/jogador nela).
-2. Como a **fila de espera** é representada (status na convocação ou campo
-   separado).
-3. Como o **local/quadra** é armazenado hoje (coluna em peladas ou tabela).
-4. Se existem tabelas de **torneio** (fase de grupos, mata-mata) ou se o torneio
-   roda dentro do `live_state`/partidas.
-5. Tabela(s) de **notificações push** (tokens dos dispositivos) — onde ficam.
+Encontrado um quinto grupo de 5 tabelas em UUID que **ninguém tinha mapeado
+antes** — desconectadas do resto do banco, sem FK, sem nenhum controller usando-as.
+
+| Tabela | Situação |
+|---|---|
+| `usuario_grupo` | ⚠️ É a tabela de vínculo jogador↔grupo pedida — mas ÓRFÃ: 5 linhas, ninguém escreve nela |
+| `configuracao_pelada` | Órfã, sem FK, sem controller |
+| `jogador_time` | Órfã, sem FK, sem controller |
+| `desempenho_goleiro` | Órfã, sem FK, sem controller |
+| `gols` | Órfã, sem FK, sem controller |
+
+> ⚠️ **Impacto:** confirma que o **isolamento entre grupos nunca funcionou**
+> (a convocação vaza para o sistema inteiro). No novo sistema, `usuario_grupo`
+> vira peça central do multi-grupo (GRP-003, SEG-003/004).
 
 ---
 
-*Fim do documento 04 — Mapa de Dados (atualizado).*
+## 6. Tabelas do mobile que NÃO existem no banco real
+
+Nenhuma das tabelas consultadas pelo app mobile existe nas 23 reais:
+
+| Tabela consultada pelo mobile | Existe no banco? |
+|---|---|
+| `profiles` | ❌ Não |
+| `grupo_membros` | ❌ Não |
+| `pelada_presencas` | ❌ Não |
+| `quadras` | ❌ Não |
+| `jogadores` | ❌ Não |
+| `sorteios` | ❌ Não |
+| `ranking_grupos` | ❌ Não |
+| `conquistas` | ❌ Não |
+
+> ⚠️ **Impacto:** o mobile consulta tabelas que não existem — mais um motivo
+> para reconstruir o app seguindo o schema novo, não o legado.
+
+---
+
+## 7. Segurança (RLS) — achado crítico
+
+- **ZERO políticas de RLS** em qualquer tabela.
+- 5 tabelas (fragmento UUID) têm RLS ligado SEM política → trancadas.
+- As outras 18 (incluindo `usuarios`, `transacoes`, `peladas`, `convocacoes`,
+  `grupos`) estão com **RLS totalmente desligado**.
+- A **chave anônima do Supabase está exposta no código do app mobile** → risco
+  de segurança ATIVO.
+
+> ✅ **Decisão:** no novo sistema, RLS ativado em TODAS as tabelas (SEG-001),
+> com policies por papel (SEG-002) e isolamento por grupo (SEG-003/004).
+
+---
+
+## 8. Decisões fechadas que afetam o schema novo
+
+| Ponto | Decisão |
+|---|---|
+| Autenticação | ✅ Supabase Auth (opção B) — login Google/Apple funcionando |
+| Fotos | ✅ Supabase Storage + URL no banco (não BLOB) |
+| Data de corte | ✅ 09/09/2026 |
+| Vínculo jogador↔grupo | ✅ `usuario_grupo` vira peça central (conectada e com FK) |
+| Isolamento multi-grupo | ✅ Dados 100% isolados por grupo |
+| RLS | ✅ Ativo em todas as tabelas |
+
+---
+
+## 9. Pendências resolvidas (fechadas na auditoria)
+
+| Pendência anterior | Resolução |
+|---|---|
+| Tabela de vínculo jogador↔grupo | ✅ Encontrada: `usuario_grupo` — mas ÓRFÃ (5 linhas, sem uso). Vira peça central no novo. |
+| Fila de espera no banco | ✅ `convocacoes.status = 'espera'` (alias legado `fila_espera`). |
+| Local/quadra | ✅ Tabela `locais` existe, mas SEM FK — `peladas.local` é texto livre. |
+| Tabelas de torneio | ✅ Não existem — só rótulos em `peladas.modo/turno_torneio` + `partidas` genérica. |
+| Tokens de push | ✅ `push_subscriptions` (sem script no repo). |
+| Vaquinha | ✅ `arrecadacoes` + `arrecadacoes_contribuicoes` (sem campo de prazo). |
+| `notificacoes` e `mvp_partida` | ✅ NÃO existem no banco — falham silenciosamente. Construir do zero. |
+| Tabelas mobile | ✅ Nenhuma existe (`profiles`, `jogadores`, `sorteios` etc.). |
+| RLS | ✅ Zero políticas — risco ativo. P0 no novo. |
+
+---
+
+*Fim do doc 04 — Mapa de Dados (fechado).*

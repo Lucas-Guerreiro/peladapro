@@ -207,6 +207,14 @@
 | SEG-005 | Segurança não fica só no frontend: o banco nega acesso de verdade. | P0 |
 | SEG-006 | Segredos/chaves fora do código e do Git (`.env.example` sem valores; verificação de segredos). | P0 |
 | SEG-007 | Auditoria de ações sensíveis: estorno financeiro, remover jogador, excluir pelada, transferir grupo. | P1 |
+| SEG-008 | Recuperação de senha NÃO devolve o código OTP na resposta da API (hoje devolve — risco alto). | P0 |
+| SEG-009 | CORS restrito a origens permitidas (hoje efetivamente aberto). | P0 |
+| SEG-010 | Senha do banco NUNCA em texto puro no código-fonte (hoje hardcoded). | P0 |
+| SEG-011 | Endpoints validam papel antes de expor dados pessoais (CPF, nascimento, whatsapp, saldo). | P0 |
+| SEG-012 | Chave anônima do Supabase NÃO exposta no código do app; segredos via env/gestão de segredos. | P0 |
+| SEG-013 | Comprovante Pix validado de verdade (hoje aceito por autodeclaração). | P0 |
+| SEG-014 | Endpoint de diagnóstico (GET /api/pix/diag) removido ou protegido. | P1 |
+| SEG-015 | "Login com Google" sem senha mock fixa (hoje usa senha constante). | P0 |
 
 ---
 

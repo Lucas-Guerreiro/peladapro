@@ -347,7 +347,7 @@ async function triggerAbaNavigation(targetHtmlPath, tabName) {
   `;
 
   try {
-    const res = await fetch(`./pages/${targetHtmlPath}`);
+    const res = await fetch(`./pages/${targetHtmlPath}?v=${Date.now()}`);
     container.innerHTML = await res.text();
 
     // Carregar script de forma clássica injetada
@@ -457,8 +457,11 @@ function validateRegisterForm() {
 }
 
 function showToast(message, type = "success") {
-  const container = document.getElementById("toast-container");
+  const container = document.getElementById("toast-container") || (window.Utils && window.Utils._getContainer());
   if (!container) return;
+
+  // Limpa toasts anteriores acumulados para exibir apenas 1 aviso por vez
+  container.innerHTML = "";
 
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
@@ -466,13 +469,14 @@ function showToast(message, type = "success") {
   let icon = "check-circle";
   if (type === "warning") icon = "alert-triangle";
   if (type === "error") icon = "x-octagon";
+  if (type === "info") icon = "info";
 
   toast.innerHTML = `
     <i data-feather="${icon}"></i>
     <span>${message}</span>
   `;
   container.appendChild(toast);
-  feather.replace();
+  if (window.feather) feather.replace();
 
   setTimeout(() => {
     toast.style.animation = "toastOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards";

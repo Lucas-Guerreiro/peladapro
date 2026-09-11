@@ -2,7 +2,7 @@
 // Service Worker — PeladaPro PWA & Push Notifications
 // ==========================================================================
 
-const CACHE_NAME = 'peladapro-v173'; // ← Incrementado (v172 → v173)
+const CACHE_NAME = 'peladapro-v279'; // ← Exibição da data e hora de pagamento das convocações no Demonstrativo por Pelada
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -52,11 +52,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // 1) API / Supabase: SEMPRE direto, nunca cachear
-  if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
-    event.respondWith(fetch(request).catch(() => {
-      return new Response('Erro de rede', { status: 503 });
-    }));
+  // Ignora requisições de esquemas não suportados pelo Cache API (chrome-extension, data, etc.)
+  if (!request.url.startsWith('http')) return;
+
+  // 1) API / Supabase / Páginas & Modais JS/HTML: Network-First (sempre busca versão mais recente)
+  if (request.url.includes('/api/') || request.url.includes('supabase.co') || request.url.includes('/pages/') || request.url.includes('/components/')) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match(request);
+      })
+    );
     return;
   }
 
@@ -72,7 +77,7 @@ self.addEventListener('fetch', (event) => {
       return cache.match(request).then((cachedResponse) => {
         const fetchPromise = fetch(request)
           .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
+            if (networkResponse && networkResponse.status === 200 && request.url.startsWith('http')) {
               cache.put(request, networkResponse.clone());
             }
             return networkResponse;

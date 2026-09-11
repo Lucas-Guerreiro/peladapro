@@ -9,7 +9,10 @@ window.PWAInstaller = {
     // 1. Registrar Service Worker com escopo absoluto /
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(() => console.log('📱 [PWA] Service Worker ativo com escopo /!'))
+        .then(reg => {
+          console.log('📱 [PWA] Service Worker ativo com escopo /!');
+          if (reg && reg.update) reg.update();
+        })
         .catch(err => console.warn('📱 [PWA] Erro no Service Worker:', err));
     }
 

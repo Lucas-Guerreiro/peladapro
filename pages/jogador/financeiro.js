@@ -1,168 +1,34 @@
 // ==========================================================================
-// pages/jogador/financeiro.js — Lógica de Finanças do Atleta
+// pages/jogador/financeiro.js — Espelho Completo do Financeiro para o Atleta
 // ==========================================================================
 
-var FinanceiroAtleta = {
+window.App = window.App || {};
 
-  init: function() {
-    this.renderBalanceAndAlerts();
-    this.loadTransactions();
-  },
-
-  // --- Renderizar Saldo e Alertas de Pix ---
-  renderBalanceAndAlerts: async function() {
-    const user = Auth.currentUser;
-    const balanceEl = document.getElementById('player-wallet-balance');
-    const debtAlert = document.getElementById('player-wallet-debt-alert');
-    const pixBox = document.getElementById('player-wallet-pix-box');
-    const pixKeyEl = document.getElementById('player-wallet-pix-key');
-    const btnCopyPix = document.getElementById('btn-player-wallet-copy-pix');
-
-    if (!user) return;
-
-    // 1. Atualizar Saldo
-    const saldo = parseFloat(user.saldo || 0);
-    if (balanceEl) {
-      balanceEl.textContent = window.Utils ? window.Utils.formatCurrency(saldo) : `R$ ${saldo.toFixed(2).replace('.', ',')}`;
-      balanceEl.style.color = saldo < 0 ? 'var(--danger)' : '#059669';
-    }
-
-    // 2. Tratar Alertas e Pix se Devedor
-    if (saldo < 0) {
-      if (debtAlert) debtAlert.style.display = 'flex';
-      
-      // Buscar chave Pix do grupo configurada em alguma pelada
-      const group = (Auth && Auth.currentGroup) || window.App.currentGroup;
-      if (group && group.id) {
-        try {
-          let peladas = Api.getPeladas() || [];
-          let peladasDoGrupo = peladas.filter(p => String(p.grupo_id) === String(group.id));
-          let peladaComPix = peladasDoGrupo.find(p => p.chave_pix);
-
-          if (!peladaComPix && window.Api && window.Api.listarDatasDoGrupo) {
-            const peladasRemotas = await Api.listarDatasDoGrupo(group.id);
-            if (Array.isArray(peladasRemotas)) {
-              peladaComPix = peladasRemotas.find(p => p.chave_pix);
-            }
-          }
-
-          if (peladaComPix && pixKeyEl && pixBox) {
-            pixKeyEl.textContent = peladaComPix.chave_pix;
-            pixBox.style.display = 'flex';
-
-            if (btnCopyPix) {
-              btnCopyPix.onclick = function() {
-                navigator.clipboard.writeText(peladaComPix.chave_pix).then(() => {
-                  window.Utils ? window.Utils.toast('Chave Pix copiada com sucesso! 📋', 'success') : alert('Chave Pix copiada!');
-                }).catch(() => {
-                  window.Utils ? window.Utils.toast('Erro ao copiar automaticamente.', 'warning') : null;
-                });
-              };
-            }
-          } else if (pixBox) {
-            pixBox.style.display = 'none';
-          }
-        } catch (e) {
-          console.warn('[FinanceiroAtleta] Erro ao carregar chave Pix do grupo:', e);
-        }
+window.App.initFinanceiro = window.App.initFinanceiro || async function() {
+  if (window.Router && window.Router._loadScript) {
+    window.Router._loadScript(`pages/gestor/financeiro.js?v=${Date.now()}`, async () => {
+      if (window.App && window.App.renderFinanceiroData) {
+        await window.App.initFinanceiro();
       }
-    } else {
-      if (debtAlert) debtAlert.style.display = 'none';
-      if (pixBox) pixBox.style.display = 'none';
-    }
-  },
-
-  // --- Carregar Histórico de Transações Pessoais ---
-  loadTransactions: async function() {
-    const tbody = document.getElementById('player-finance-transactions-body');
-    if (!tbody) return;
-
-    const group = Auth.currentGroup;
-    const user = Auth.currentUser;
-
-    if (!group || !group.id || !user || !user.id) {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhum grupo ativo selecionado.</td></tr>`;
-      return;
-    }
-
-    try {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Carregando lançamentos...</td></tr>`;
-
-      // 1. Chamar a API comum de transações do grupo
-      const dbTx = await Api.listarTransacoesDoGrupo(group.id);
-
-      if (!Array.isArray(dbTx) || dbTx.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhuma transação registrada.</td></tr>`;
-        return;
-      }
-
-      // 2. Filtrar transações apenas do jogador logado
-      const transacoesJogador = dbTx.filter(t => String(t.usuario_id) === String(user.id));
-
-      if (transacoesJogador.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-caption);">Nenhuma movimentação em sua carteira ainda.</td></tr>`;
-        return;
-      }
-
-      // 3. Renderizar transações
-      let html = '';
-      transacoesJogador.forEach(t => {
-        const dateFormatted = window.Utils ? window.Utils.formatDate(t.data) : (t.data ? new Date(t.data).toLocaleDateString("pt-BR") : '—');
-        
-        let valColor = "var(--text-caption)";
-        let sign = "";
-        
-        // Na carteira do jogador: créditos entram como entrada (+), débitos como gasto (-)
-        if (t.tipo === "credito") {
-          valColor = "#059669"; // Verde
-          sign = "+";
-        } else if (t.tipo === "debito") {
-          valColor = "var(--danger)"; // Vermelho
-          sign = "-";
-        }
-
-        const valNum = isNaN(parseFloat(t.valor)) ? 0 : parseFloat(t.valor);
-        const valText = window.Utils ? window.Utils.formatCurrency(valNum) : `R$ ${valNum.toFixed(2).replace(".", ",")}`;
-
-        // Se for crédito (entrada) e a descrição começar com "Presença de", alteramos para "Entrada Pix - Presença de"
-        // E se for acerto manual, mostramos como "Recarga/Ajuste de Saldo"
-        let desc = t.descricao || 'Lançamento';
-        if (t.tipo === 'credito') {
-          if (desc.startsWith("Presença de")) {
-            desc = desc.replace("Presença de", "Entrada Pix - Presença de");
-          } else if (desc.startsWith("Acerto manual:")) {
-            desc = "Crédito Manual (Ajuste de Saldo)";
-          }
-        } else if (t.tipo === 'debito') {
-          if (desc.startsWith("Acerto manual:")) {
-            desc = "Débito Manual (Ajuste de Saldo)";
-          }
-        }
-
-        html += `
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: 14px 20px; font-size: 13px; color: #475569;">${dateFormatted}</td>
-            <td style="padding: 14px 20px;">
-              <span style="font-weight: 600; font-size: 13px; display:block; color: #0F172A;">${desc}</span>
-            </td>
-            <td style="padding: 14px 20px; text-align: right; font-weight: bold; color: ${valColor}; font-size: 14px;">
-              ${sign} ${valText}
-            </td>
-          </tr>
-        `;
-      });
-
-      tbody.innerHTML = html;
-
-    } catch (err) {
-      console.error('[FinanceiroAtleta] Erro ao carregar transações:', err);
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--danger);">Erro ao carregar histórico.</td></tr>`;
-    }
+    });
   }
-
 };
 
-// --- Ponto de entrada do Roteador ---
-window.App.initFinanceiro = function() {
-  FinanceiroAtleta.init();
-};
+// Se o script pages/gestor/financeiro.js já foi ou precisa ser carregado:
+if (typeof window.App.renderFinanceiroData !== 'function') {
+  const script = document.createElement('script');
+  script.src = `pages/gestor/financeiro.js?v=${Date.now()}`;
+  script.onload = () => {
+    if (window.App && window.App.initFinanceiro) {
+      window.App.initFinanceiro();
+    }
+  };
+  document.head.appendChild(script);
+} else {
+  setTimeout(() => {
+    if (window.App && window.App.initFinanceiro) {
+      window.App.initFinanceiro();
+    }
+  }, 50);
+}
+

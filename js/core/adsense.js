@@ -25,7 +25,7 @@
     getPubId() {
       const stored = localStorage.getItem(this.KEYS.clientPubId);
       if (stored && stored.trim()) return stored.trim();
-      return 'ca-pub-7952143569713459';
+      return 'ca-pub-2291446471490542';
     },
 
     getSlotId() {

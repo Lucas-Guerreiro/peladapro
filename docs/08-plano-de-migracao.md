@@ -1,10 +1,10 @@
 # Pelada Pro — Plano de Migração de Dados
 
-> Documento 08/12 · Data: 09/09/2026 · Status: aprovado
+> Documento 08/12 · Data: 09/09/2026 · Status: ✅ ATUALIZADO
 > Objetivo: migrar TODOS os dados do app atual para o novo sistema SEM perder
 > nada, com backup, ensaio e rollback. É o documento mais crítico do projeto.
-> Fonte: doc 04 (mapa de dados real) + doc 06 (requisitos MIG) + arquitetura
-> confirmada no código-fonte.
+> Fonte: doc 04 (mapa de dados real confirmado) + doc 06 (requisitos MIG) +
+> auditoria real do código (raio-x).
 > Princípio nº 1: o app antigo permanece NO AR e INTACTO até o novo estar
 > validado. Nenhum dado do legado é apagado durante a transição.
 
@@ -27,24 +27,30 @@ sistema, preservando valores, relações e histórico.
 
 ## 2. O que será migrado (inventário de dados)
 
-Baseado na arquitetura real confirmada no código:
+Baseado no schema REAL confirmado (doc 04):
 
 | Dado | Tabela(s) atual(is) | Migra? |
 |---|---|---|
 | Usuários/contas | `usuarios` (com senha hash bcrypt) | ✅ Sim |
 | Grupos | `grupos` (codigo_convite, gestor_id, escudo_url) | ✅ Sim |
 | Regras do grupo | `configs` (jogadores_por_time, qtd_times, etc.) | ✅ Sim |
-| Vínculo jogador↔grupo | [confirmar nome da tabela] | ✅ Sim |
+| Vínculo jogador↔grupo | `usuario_grupo` (ÓRFÃ — 5 linhas) | ⚠️ Parcial — reconstruir vínculo real |
 | Peladas | `peladas` (data, hora, valor, local, status, formato) | ✅ Sim |
-| Presenças/convocacões | [confirmar tabela] | ✅ Sim |
+| Presenças/convocacões | `convocacoes` (status, posicao_fila) | ✅ Sim |
 | Times sorteados | `times` + `times_jogadores` | ✅ Sim |
 | Partidas finalizadas | `partidas` (placares, autores_gols) | ✅ Sim |
 | Financeiro | `transacoes` (tabela única crédito/débito) | ✅ Sim |
 | Vaquinha | `arrecadacoes` + `arrecadacao_contribuicoes` | ✅ Sim |
-| Emblemas | `emblemas_grupo` (se existir) | ✅ Sim |
-| Fotos/escudos | URL/base64 em `usuarios.foto`, `grupos.escudo_url` | ✅ Sim (referências) |
-| Tokens de push | [confirmar tabela] | ✅ Sim |
+| Emblemas | `emblemas_grupo` | ✅ Sim |
+| Fotos/escudos | URL em `usuarios.foto`, `grupos.escudo_url` | ✅ Sim (referências) |
+| Tokens de push | `push_subscriptions` | ✅ Sim |
+| Comprovantes PIX | `comprovantes_pix` | ✅ Sim |
+| Pagamentos MP | `pagamentos_mercado_pago` | ✅ Sim |
+| Licenças | `licencas` | ✅ Sim |
+| Nomes/cores de times | `nomes_times_grupo` | ✅ Sim |
 | **Ranking** | NÃO existe tabela — calculado na hora | ⚠️ Não migra (só o histórico de partidas que o alimenta) |
+| **Notificações** | `notificacoes` NÃO existe no banco | ❌ Não há dados — construir do zero |
+| **MVP** | `mvp_partida` NÃO existe no banco | ❌ Não há dados — construir do zero |
 
 ---
 
@@ -58,34 +64,41 @@ Baseado na arquitetura real confirmada no código:
 | **B. Migrar para Supabase Auth** | Usa o sistema de login do Supabase | ✅ **ESCOLHIDA** |
 | C. Híbrido | JWT para web + Supabase para mobile | ❌ Não escolhida |
 
-**Motivo da escolha (decisão do organizador):** o login com **Google e Apple** está
-quebrado no app atual. A opção B (Supabase Auth) é a que resolve esse login social
-de forma nativa e simples. O organizador quer o login social **funcionando** no novo
-sistema.
+**Motivo da escolha:** o login com **Google e Apple** está quebrado no app atual.
+A opção B resolve esse login social de forma nativa e simples.
 
-**Impacto na migração:** as contas dos usuários (e-mail + senha hash) precisam ser
-migradas para o schema `auth` do Supabase, conforme o procedimento da seção 6.2.
-O login social (Google/Apple) será configurado no novo projeto Supabase.
+**Impacto na migração:** as contas dos usuários (e-mail + senha hash) precisam
+ser migradas para o schema `auth` do Supabase, conforme a seção 6.2.
 
-### 3.2 Armazenamento de fotos (MIG-006)
+### 3.2 Armazenamento de fotos — ✅ DECIDIDO: STORAGE + URL
+
 | Opção | O que é | Impacto |
 |---|---|---|
 | A. Manter URL/base64 em colunas | Como hoje | Migração simples (copia referências) |
-| B. Migrar para Storage do Supabase | Upload real com RLS | Mais robusto, mas exige baixar/subir arquivos |
+| **B. Migrar para Storage do Supabase** | Upload real com RLS | ✅ **ESCOLHIDA** — mais robusto |
 
-> **Pendência:** o organizador ainda precisa decidir entre A e B. Recomenda-se
-> Storage do Supabase (mais robusto). Essa decisão pode ser fechada na fase de
-> arquitetura (doc 09).
+**Decisão:** as fotos vão para o **Supabase Storage** (pasta `avatars/`), e o
+banco guarda apenas a **URL**. Backup do banco + backup do Storage juntos
+garantem que nada se perde.
 
-### 3.3 Gateway de pagamento (PREM-007)
-- Só afeta o futuro (Card Premium). Não bloqueia a migração de dados agora.
+### 3.3 Gateway de pagamento — ✅ DECIDIDO: MERCADO PAGO
+
+| Opção | O que é | Decisão |
+|---|---|---|
+| **Mercado Pago** | Gateway já usado no legado (PIX) | ✅ **ESCOLHIDO** |
+| Supabase Payments | Alternativa nativa do Supabase | ❌ Não escolhida |
+
+**Motivo da escolha:** o legado já usa Mercado Pago para PIX; a tabela
+`pagamentos_mercado_pago` já existe; o organizador já conhece o painel da
+plataforma. Usa-se o Mercado Pago para o **Card Premium (PREM-007)** e para os
+**pagamentos PIX**.
 
 ---
 
 ## 4. Plano em 6 passagens (seguro e reversível)
 
-### Passagem 1 — Congelamento lógico
-- Definir uma **data de corte** (ex.: dia X às 23h59).
+### Passagem 1 — Congelamento lógico (data de corte: 09/09/2026)
+- **Data de corte definida: 09/09/2026.**
 - A partir dela, **não fazer mudanças estruturais** no banco antigo.
 - Registrar: data, responsável e exceções.
 - **Saída:** registro do congelamento.
@@ -160,18 +173,18 @@ O login social (Google/Apple) será configurado no novo projeto Supabase.
   - Registros sem grupo/pelada (órfãos).
 
 ### 5.3 Vaquinha
-- Migrar `arrecadacoes` + `arrecadacao_contribuicoes`.
+- Migrar `arrecadacoes` + `arrecadacoes_contribuicoes`.
 - Conferir que os pagamentos confirmados continuam consolidados em `transacoes`.
 
 ### 5.4 Ranking
 - **Não há dados de ranking a migrar** (é calculado na hora).
-- Migrar apenas o **histórico de partidas finalizadas** (placares + `autores_gols`)
-  que alimenta o ranking.
+- Migrar apenas o **histórico de partidas finalizadas** (placares + autores de
+  gols) que alimenta o ranking.
 
-### 5.5 Fotos e emblemas
-- Se manter URL/base64: copiar as referências nas colunas.
-- Se migrar para Storage: baixar cada arquivo, subir no novo bucket, atualizar as
+### 5.5 Fotos e emblemas (Storage + URL)
+- Migrar para Storage: baixar cada arquivo, subir no novo bucket, atualizar as
   referências e conferir que cada uma aponta para um arquivo existente.
+- O banco guarda apenas a **URL**.
 
 ### 5.6 Tokens de push
 - Migrar os tokens dos dispositivos para que as notificações continuem

@@ -17,7 +17,9 @@ const Router = {
     '#/jogador/ranking':     { page: 'jogador/ranking',     permission: 'jogador' },
     '#/jogador/desempenho':  { page: 'jogador/desempenho',  permission: 'jogador' },
     '#/jogador/financeiro':  { page: 'jogador/financeiro',  permission: 'jogador' },
+    '#/jogador/arrecadacao': { page: 'jogador/arrecadacao', permission: 'jogador' },
     '#/gestor/atletas':      { page: 'gestor/atletas',      permission: 'gestor'  },
+    '#/gestor/times':        { page: 'gestor/times',        permission: 'gestor'  },
     '#/gestor/formacao':     { page: 'gestor/formacao',     permission: 'gestor'  },
     '#/gestor/partidas':     { page: 'gestor/partidas',     permission: 'gestor'  },
     '#/gestor/financeiro':   { page: 'gestor/financeiro',   permission: 'gestor'  },
@@ -94,9 +96,16 @@ const Router = {
         return this.navigate('#/login');
       }
 
-      // Bloquear acesso à área de gestor se o usuário for apenas um jogador
+      const userType = Auth.currentUser ? Auth.currentUser.tipo : null;
+
+      // Bloquear abas financeiras para convidados
+      if (userType === 'convidado' && (targetHash === '#/jogador/financeiro' || targetHash === '#/jogador/arrecadacao')) {
+        Utils.toast('Acesso restrito para convidados.', 'warning');
+        return this.navigate('#/jogador/dashboard');
+      }
+
+      // Bloquear acesso à área de gestor se o usuário for apenas um jogador/convidado
       if (route.page.startsWith('gestor/') || route.permission === 'gestor') {
-        const userType = Auth.currentUser ? Auth.currentUser.tipo : null;
         const canAccessGestor = (userType === 'gestor' || userType === 'ambos' || userType === 'admin');
         if (!canAccessGestor) {
           Utils.toast('Acesso restrito: Sua conta é de Atleta.', 'warning');
@@ -232,16 +241,25 @@ const Router = {
 
     // Carrega o JS correspondente
     const jsPath = `pages/${route.page}.js`;
-    this._loadScript(jsPath, () => {
+    this._loadScript(jsPath, async () => {
       this.activeTabId = tabName;
       const initFn = `init${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`;
-      if (window.App && window.App[initFn]) window.App[initFn]();
+      if (window.App && window.App[initFn]) {
+        try { await window.App[initFn](); } catch(e) { console.error(e); }
+      }
+      if (window.App && window.App.applyModoNoturnoGlobal) {
+        window.App.applyModoNoturnoGlobal();
+      }
     });
 
     // Atualiza estado visual das abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.name === tabName);
     });
+
+    if (window.feather) {
+      try { window.feather.replace(); } catch(e) {}
+    }
 
     this._afterPageLoad(route);
   },
@@ -270,8 +288,8 @@ const Router = {
           onclick="Auth.toggleRole()"
           title="Clique para alternar entre perfil de Gestor e Jogador"
         >
-          <span class="role-toggle-option role-opt-jogador">⚽ Jogador</span>
-          <span class="role-toggle-option role-opt-gestor">🏆 Gestor</span>
+          <span class="role-toggle-option role-opt-jogador"><i data-feather="user" style="width:13px;height:13px;vertical-align:middle;margin-right:3px;"></i>Jogador</span>
+          <span class="role-toggle-option role-opt-gestor"><i data-feather="shield" style="width:13px;height:13px;vertical-align:middle;margin-right:3px;"></i>Gestor</span>
           <div class="role-toggle-slider"></div>
         </div>
       ` : '';
@@ -284,8 +302,8 @@ const Router = {
             title="Clique para alternar entre perfil de Gestor e Jogador"
             style="width: 100%; display: inline-flex; justify-content: space-around; padding: 2px;"
           >
-            <span class="role-toggle-option role-opt-jogador" style="flex: 1; text-align: center; padding: 4px 0; font-size: 11px;">⚽ Jogador</span>
-            <span class="role-toggle-option role-opt-gestor" style="flex: 1; text-align: center; padding: 4px 0; font-size: 11px;">🏆 Gestor</span>
+            <span class="role-toggle-option role-opt-jogador" style="flex: 1; text-align: center; padding: 4px 0; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;"><i data-feather="user" style="width:12px;height:12px;"></i> Jogador</span>
+            <span class="role-toggle-option role-opt-gestor" style="flex: 1; text-align: center; padding: 4px 0; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;"><i data-feather="shield" style="width:12px;height:12px;"></i> Gestor</span>
             <div class="role-toggle-slider" style="width: calc(50% - 2px);"></div>
           </div>
         </div>
@@ -307,6 +325,13 @@ const Router = {
 
     // Bind das abas de navegação
     this._bindTabButtons(role);
+
+    // Esconde abas financeiras no menu de navegação para usuários do tipo convidado
+    if (Auth.currentUser && Auth.currentUser.tipo === 'convidado') {
+      document.querySelectorAll('.tab-btn[data-name="financeiro"], .tab-btn[data-name="arrecadacao"]').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    }
   },
 
   _openMobileSidebar() {
@@ -405,6 +430,7 @@ const Router = {
 
   // --- Modal --------------------------------------------------------------
   async openModal(modalName, data = {}) {
+    if (modalName === 'add_presence') modalName = 'adicionar_presenca';
     const root = document.getElementById('modal-container-root');
     if (!root) {
       // Cria container de modal se não existir
@@ -447,13 +473,16 @@ const Router = {
 
   // --- loadScript ---------------------------------------------------------
   _loadScript(src, callback) {
-    const existing = document.querySelector(`script[src="${src}"]`);
+    const existing = document.querySelector(`script[src^="${src}"]`);
     if (existing) existing.remove();
 
     const script = document.createElement('script');
     script.src = `${src}?v=${Date.now()}`;
     script.onload = callback || (() => {});
-    script.onerror = () => console.error('[Router] Falha ao carregar script:', src);
+    script.onerror = () => {
+      // Caso o script da página seja opcional/não exista (ex: login.js), executa a callback sem interromper o fluxo
+      if (typeof callback === 'function') callback();
+    };
     document.head.appendChild(script);
   }
 };

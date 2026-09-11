@@ -1,220 +1,173 @@
 # Pelada Pro — Matriz de Paridade
 
-> Documento 07/12 · Data: 09/09/2026 · Status: para aprovação
+> Documento 07/12 · Data: 09/09/2026 · Status: ✅ ATUALIZADO
 > Objetivo: garantir que NENHUMA função do app atual fique de fora da
-> reconstrução. Para cada função, registra: como o usuário acessa hoje,
-> a decisão no novo sistema e o teste que comprova que funciona igual.
-> Origem: doc 02 (inventário) + doc 06 (requisitos).
-> Legenda de decisão: ✅ Manter · 🔧 Corrigir · 🔁 Substituir · 🗑️ Remover
+> reconstrução. Cada linha tem decisão + requisito + teste.
+> Fonte: doc 02 (inventário) + doc 03 (fluxos) + auditoria real do código (raio-x).
 
 ---
 
-## 1. Como usar esta matriz
+## 1. Regra de ouro
 
-1. Cada linha é uma **função do app atual**.
-2. A coluna **Decisão** diz o que fazer no novo sistema.
-3. A coluna **Requisito** liga ao ID do doc 06.
-4. A coluna **Teste de aceite** diz como comprovar que funciona.
-5. **Regra:** nenhuma linha pode ficar sem decisão e sem teste. Se faltar
-   decisão, é pendência a resolver antes de considerar a paridade fechada.
+**Nenhuma função do app atual fica de fora.** Para cada recurso existente, a
+matriz registra: o que faz hoje, o que faremos no novo sistema, qual requisito
+atende e qual teste garante que funcionou. Se algo não for migrar, precisa de
+decisão explícita e justificada.
 
 ---
 
-## 2. Autenticação e Conta
+## 2. Problemas do legado que a paridade DEVE corrigir (testes obrigatórios)
 
-| Função atual | Decisão | Requisito | Teste de aceite |
+| # | Problema encontrado | Correção no novo | Requisito | Teste |
+|---|---|---|---|---|
+| 1 | Times voltam após "Limpar Times" | Bloquear re-gravação automática; limpar local + nuvem | SOR-012 | Limpar → recarregar → segue vazio |
+| 2 | Card Premium desativa sozinho no iPhone | Persistência em 3 camadas (memória → cache → Supabase) | PREM-003 | Ativar → fechar app → reabrir → segue ativo |
+| 3 | Scripts duplicados na SPA (config.js 2x) | Carregar cada script 1x | NFR-006 | Auditar rede → sem duplicação |
+| 4 | Fila de espera inconsistente | Promoção só com saldo suficiente | PRE-005/006 | Desistência → 1º da fila promovido só se tiver saldo |
+| 5 | Visual do perfil inativo | Reativar edição do perfil | PREM-008 | Editar perfil → salvar → refletir |
+| 6 | Login social quebrado | Implementar Google/Apple via Supabase Auth | AUT-003 | Login Google e Apple funcionando |
+| 7 | Auth duplicada (JWT + Supabase) | Unificar em Supabase Auth | AUT-007 | Uma única fonte de identidade |
+
+---
+
+## 3. Matriz de paridade por módulo
+
+### 3.1 Autenticação (AUT)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Login por e-mail/senha | ✅ Manter | AUT-001/002 | Usuário loga com e-mail e senha válidos |
-| Login social (Google/Apple) | 🔧 Corrigir | AUT-003 | Logar com Google e com Apple funciona de ponta a ponta |
-| Cadastro de conta | ✅ Manter | AUT-001 | Criar conta e entrar em seguida |
-| Recuperar senha | ✅ Manter | AUT-004 | Receber e-mail e redefinir senha |
-| Sessão persistente | 🔧 Corrigir | AUT-005 | Fechar e reabrir o app sem pedir login |
-| Perfil do usuário | ✅ Manter | GRP-007 | Editar nome/foto/posição/nível |
+| Login e-mail/senha | ✅ Manter (Supabase Auth) | AUT-001 | Login com credenciais válidas |
+| Cadastro | ✅ Manter | AUT-002 | Criar conta → logar |
+| Login Google | 🔧 Corrigir (estava quebrado) | AUT-003 | Login Google funciona |
+| Login Apple | 🔧 Corrigir (estava quebrado) | AUT-003 | Login Apple funciona |
+| Recuperação de senha | 🔧 Corrigir (OTP vazava na resposta) | AUT-004, SEG-008 | Código NÃO aparece na resposta |
+| Sessão/logout | ✅ Manter | AUT-005 | Logout limpa sessão |
+| Auth duplicada | 🔧 Unificar (JWT + Supabase) | AUT-007 | Uma única fonte de identidade |
 
----
-
-## 3. Grupos e Jogadores
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.2 Grupos (GRP)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Criar grupo | ✅ Manter | GRP-001 | Criar grupo com nome, escudo e regras |
-| Editar grupo | ✅ Manter | GRP-001 | Alterar nome/escudo |
-| Regras do grupo (configs) | ✅ Manter | GRP-013 | Editar jogadores/time, qtd times, valor convocação |
-| Cadastrar jogador | ✅ Manter | GRP-004 | Adicionar jogador manualmente |
-| Listar jogadores + filtros | ✅ Manter | GRP-006 | Filtrar por confirmados/devedores/goleiros |
-| Perfil do jogador | ✅ Manter | GRP-007 | Ver jogos, gols, presença |
-| Avaliação por estrelas | ✅ Manter | GRP-004 | Definir nível 1–5 usado no sorteio |
-| Posição do jogador | ✅ Manter | GRP-004 | Definir goleiro/atacante/etc. |
-| Remover jogador | ✅ Manter | GRP-008 | Remover com registro |
-| Convidar jogador (código) | ✅ Manter | GRP-002 | Entrar no grupo pelo código |
-| Vários grupos por usuário | ✅ Manter | GRP-003 | Participar de 2 grupos sem vazar dados |
-| Papel tesoureiro separado | 🔁 Substituir | GRP-010/011 | Nomear tesoureiro; ele vê só o financeiro |
-| Transferir grupo | 🔁 Substituir | GRP-012 | Transferir e o novo vira organizador |
+| Criar grupo | ✅ Manter | GRP-001 | Criar grupo com código de convite |
+| Código de convite | ✅ Manter | GRP-002 | Entrar com código |
+| Vários grupos por usuário | 🔧 Corrigir (isolamento nunca funcionou) | GRP-003 | Dados 100% isolados entre grupos |
+| Gestor dono do grupo | ✅ Manter | GRP-004 | Só o gestor administra |
+| Tesoureiro | 🔧 Adicionar (papel separado) | GRP-010/011 | Tesoureiro opera só o financeiro |
+| Transferir grupo | 🔧 Adicionar | GRP-012 | Transferir gestão a outro membro |
 
----
-
-## 4. Quadras / Locais
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.3 Quadras (QUA)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Local/quadra por pelada | 🔧 Corrigir | QUA-001/002 | Criar pelada em quadra diferente; quadras reutilizáveis |
+| Local como texto livre | 🔧 Corrigir (vira FK para `locais`) | QUA-001 | Selecionar quadra cadastrada |
+| Cadastro de quadras | 🔧 Adicionar (tabela `locais` sem FK) | QUA-002 | Cadastrar e reutilizar quadra |
 
----
-
-## 5. Peladas e Presença
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.4 Peladas (PEL)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Criar pelada | ✅ Manter | PEL-001 | Criar com data, hora, local, valor, limite |
-| Status agendada/finalizada | ✅ Manter | PEL-002 | Finalizar e ver status mudar |
-| Formato do dia | ✅ Manter | PEL-003 | Escolher normal/torneio/mata-mata |
-| Pelada recorrente (semanal) | 🔁 Substituir | PEL-005 | Sistema lembra de criar (não cria sozinho) |
-| Convocar jogadores | ✅ Manter | PEL-006 | Enviar convocação (push) |
-| Confirmar/recusar presença | ✅ Manter | PRE-001 | Jogador responde "Vou/Não Vou" |
-| Lista de presença | ✅ Manter | PRE-002 | Ver confirmados/pendentes/recusados |
-| Fila de espera | 🔧 Corrigir | PRE-004/005/006 | Excedente vai pra fila; promoção só com saldo |
-| Confirmar todos / limpar todos | ✅ Manter | PRE-003 | Organizador confirma vários de uma vez |
-| Adicionar presença manual | ✅ Manter | PRE-003 | Organizador confirma por outro |
-| Copiar lista p/ WhatsApp | ✅ Manter | PRE-008 | Copiar texto da lista |
-| Exportar presença em Excel | ✅ Manter | PRE-009 | Baixar .xlsx da presença |
+| Criar pelada | ✅ Manter | PEL-001 | Criar pelada com dados |
+| Editar pelada | ✅ Manter | PEL-002 | Editar data/hora/local |
+| Cancelar pelada | ✅ Manter | PEL-003 | Cancelar → notificar |
+| Pelada recorrente | 🔧 Corrigir (só lembrar, não cria automática) | PEL-005 | Lembrete sem criar nova |
+| Modos de jogo | ✅ Manter (torneio, normal) | PEL-006 | Modo correto na pelada |
 
----
-
-## 6. Sorteio de Times (CRÍTICO)
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.5 Presença e Fila (PRE)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Sorteio automático c/ memória de duplas | ✅ Manter | SOR-001/002 | Sortear 2x e verificar: nenhuma dupla repete em 2 sorteios seguidos |
-| Equilíbrio por habilidade | ✅ Manter | SOR-005 | Times com diferença de força ≤ 2★ |
-| 1 goleiro por time | ✅ Manter | SOR-006 | Cada time tem exatamente 1 goleiro |
-| Sorteio aleatório | ✅ Manter | SOR-007 | Sortear sem equilíbrio |
-| Montagem manual (drag & drop) | ✅ Manter | SOR-008 | Arrastar jogador entre times |
-| Re-sortear | ✅ Manter | SOR-009 | Gerar nova distribuição |
-| Nomear times + emblema | ✅ Manter | SOR-010 | Nomear e escolher escudo |
-| Confirmar times | ✅ Manter | SOR-011 | Todos os autorizados veem o mesmo resultado |
-| **Limpar times** | 🔧 Corrigir | SOR-012 | Limpar, recarregar a página e os times NÃO voltam |
-| Sincronização idempotente | 🔧 Corrigir | SOR-013 | Recarregar não duplica nem recria times |
-| Exportar escalação p/ WhatsApp | ✅ Manter | SOR-014 | Copiar escalação em texto |
+| Confirmar presença | ✅ Manter | PRE-001 | "Vou Jogar" registra |
+| Recusar presença | ✅ Manter | PRE-002 | "Não Vou" registra |
+| Fila de espera | 🔧 Corrigir (inconsistente) | PRE-004 | Excedente vai para a fila |
+| Promoção da fila | 🔧 Corrigir (só com saldo) | PRE-005/006 | Promovido só se tiver saldo |
+| Regra das 2 horas | 🔧 Adicionar (reembolso bloqueado <2h) | PRE-009 | Cancelamento <2h não reembolsa |
 
----
-
-## 7. Partidas ao Vivo
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.6 Sorteio (SOR) — CRÍTICO
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Placar ao vivo | ✅ Manter | PAR-001 | Iniciar e ver placar atualizar |
-| Cronômetro | ✅ Manter | PAR-001 | Cronômetro roda corretamente |
-| Registrar gol/assistência/cartão | ✅ Manter | PAR-002 | Registrar eventos e ver na timeline |
-| Substituição | ✅ Manter | PAR-002 | Trocar jogador em campo |
-| Fila de rodízio | ✅ Manter | PAR-003 | Ver próxima troca e fila |
-| Finalizar partida | ✅ Manter | PAR-004 | Finalizar e gerar resumo |
-| Rateio pós-jogo | ✅ Manter | PAR-005 | Rateio calculado automaticamente |
-| Correção de placar | 🔧 Corrigir | PAR-006 | Corrigir com registro (não apaga) |
+| Sorteio automático | ✅ Manter | SOR-001 | Sortear times |
+| Memória de duplas | 🔧 Corrigir (parâmetro nunca era passado) | SOR-002 | Dupla não repete em 2 sorteios |
+| Piso combinatório | 🔧 Adicionar | SOR-003 | Repetições mínimas respeitadas |
+| Equilíbrio de força | ✅ Manter | SOR-004 | Diferença ≤ 2 estrelas |
+| Goleiro por time | ✅ Manter | SOR-005 | 1 goleiro em cada time |
+| Limpar Times | 🔧 Corrigir (não re-gravar) | SOR-012 | Limpar → segue vazio |
+| Sincronização | 🔧 Corrigir (idempotente) | SOR-013 | Sem duplicação de placar |
 
----
-
-## 8. Torneios
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.7 Partidas (PAR)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Fase de grupos | ✅ Manter | TOR-001 | Montar grupos e rodadas |
-| Ida / ida e volta | ✅ Manter | TOR-002 | Gerar turno único e ida/volta |
-| Mata-mata direto | ✅ Manter | TOR-003 | Gerar confrontos eliminatórios |
-| Pontos corridos | ✅ Manter | TOR-004 | Tabela de classificação |
-| Torneio livre | ✅ Manter | TOR-005 | Confrontos manuais |
-| Tabela mista | ✅ Manter | TOR-006 | Tabela + mata-mata |
-| Apuração do campeão | ✅ Manter | TOR-007 | Campeão apurado e ranking atualizado |
+| Registrar placar | ✅ Manter | PAR-001 | Registrar resultado |
+| Autores de gols | ✅ Manter | PAR-002 | Registrar autor/assistência |
+| Rateio automático | 🔧 Adicionar | PAR-003 | Rateio por jogador |
+| Correção registrada | 🔧 Adicionar (estorno) | PAR-004 | Correção auditável |
+| MVP | 🔧 Construir (não existia no banco) | PAR-004 | MVP destacado |
 
----
-
-## 9. Financeiro
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.8 Torneios (TOR)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Rateio por jogador | ✅ Manter | FIN-001/002 | Rateio calculado corretamente |
-| Registrar pagamento | ✅ Manter | FIN-002 | Marcar jogador pago (credito) |
-| Registrar despesa | ✅ Manter | FIN-003 | Registrar despesa (debito) |
-| Injetar verba | ✅ Manter | FIN-004 | Adicionar verba ao caixa |
-| Saldo do caixa | ✅ Manter | FIN-005 | Saldo atualiza em tempo real |
-| Devedores | ✅ Manter | FIN-006 | Lista de quem deve |
-| Cobrar devedor | ✅ Manter | FIN-007 | Enviar cobrança (push) |
-| Pagamento via PIX | ✅ Manter | FIN-008 | Gerar link/QR do PIX |
-| Vaquinha (campanhas) | 🔧 Corrigir | FIN-009 | Criar campanha, contribuir, consolidar em transações |
-| Histórico de transações | ✅ Manter | FIN-001 | Ver todas as transações |
-| Fechamento por pelada | ✅ Manter | FIN-005 | Fechar caixa da pelada |
-| Exportar financeiro | 🔁 Substituir | FIN-011 | Exportar CSV **e** PDF, por pelada e período |
-| Correção de lançamento | 🔧 Corrigir | FIN-010 | Corrigir por estorno com trilha |
-| Jogador vê só a própria situação | ✅ Manter | FIN-012 | Jogador não vê valores de outros |
+| Fase de grupos | 🔧 Construir (só rótulos no legado) | TOR-001 | Classificação por grupo |
+| Ida e volta | 🔧 Construir | TOR-002 | Turno e returno |
+| Mata-mata | 🔧 Construir | TOR-003 | Eliminatórias |
+| Pontos corridos | 🔧 Construir | TOR-004 | Tabela de pontos |
+| Livre | 🔧 Construir | TOR-005 | Rodadas livres |
+| Tabela mista | 🔧 Construir | TOR-006 | Combinação de formatos |
 
----
-
-## 10. Ranking e Estatísticas
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.9 Financeiro (FIN)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Ranking calculado na hora | ✅ Manter | RAN-001 | Ranking atualiza após partida finalizada |
-| Artilheiros / presença / goleiros | ✅ Manter | RAN-002 | Cada ranking mostra o correto |
-| Filtro por período | ✅ Manter | RAN-003 | Filtrar mês/ano/todos |
-| Estatísticas por atleta | ✅ Manter | RAN-004 | Ver gols, assistências, defesas, cartões |
-| Ranking público no grupo | ✅ Manter | RAN-005 | Jogador vê ranking de outros do grupo |
-| Pódio (top 3) | ✅ Manter | RAN-006 | Pódio com medalhas |
+| Lançamento crédito/débito | ✅ Manter (ledger append-only) | FIN-001 | Lançar entrada/saída |
+| Saldo por jogador | ✅ Manter | FIN-002 | Saldo correto |
+| Pagamento PIX | ✅ Manter | FIN-003 | Gerar PIX |
+| Comprovante PIX | 🔧 Corrigir (autodeclaração) | FIN-004, SEG-013 | Validar comprovante |
+| Estorno | 🔧 Adicionar (não apagar) | FIN-010 | Estorno auditável |
+| Exportar CSV/PDF | 🔧 Adicionar | FIN-011 | Exportar por pelada/período |
+| Jogador vê só o próprio | 🔧 Corrigir (vazava tudo) | FIN-012 | Jogador vê só a própria situação |
 
----
-
-## 11. Card Premium e Perfil Visual
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.10 Ranking (RAN)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Card Premium do atleta | 🔧 Corrigir | PREM-001/003 | Ativar, fechar app, reabrir: continua ativo (iPhone) |
-| Adquirir card (modo teste) | ✅ Manter | PREM-002/006 | Ativar sem cobrança (flag teste) |
-| Benefícios premium | ✅ Manter | PREM-005 | MVP/medalha/destaque/estatísticas |
-| Visual do perfil (FUT) | 🔧 Corrigir | PREM-008 | Reativar o card no perfil |
-| Cobrança real futura | 🔁 Substituir | PREM-007 | Arquitetura pronta p/ gateway (não implementar) |
+| Artilheiros | ✅ Manter (calculado) | RAN-001 | Gols corretos |
+| Presença | ✅ Manter | RAN-002 | % de presença |
+| Goleiros | ✅ Manter | RAN-003 | Defesas/sofridos |
+| Público no grupo | 🔧 Corrigir (isolamento) | RAN-004 | Só o grupo vê |
 
----
-
-## 12. Notificações
-
-| Função atual | Decisão | Requisito | Teste de aceite |
+### 3.11 Card Premium (PREM)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| Push de convocação | ✅ Manter | NOT-001 | Jogador recebe push ao criar pelada |
-| Push de sorteio | ✅ Manter | NOT-002 | Jogador recebe push do time |
-| Lembrete 24h antes | ✅ Manter | NOT-003 | Recebe push 24h antes |
-| Push de cobrança | ✅ Manter | NOT-004 | Devedor recebe push |
-| Push de promoção da fila | ✅ Manter | NOT-005 | Fila promovida recebe push (saldo/pagamento) |
-| Toggles de notificação | ✅ Manter | NOT-006 | Usuário liga/desliga cada tipo |
-| WhatsApp | 🗑️ Remover | NOT-007 | Fora de escopo (canal = push) |
+| Ativar card | 🔧 Corrigir (crashava no iPhone) | PREM-001 | Ativar sem crash |
+| Persistência 3 camadas | 🔧 Corrigir | PREM-003 | Sobrevive a limpeza do iOS |
+| Self-service | ✅ Manter | PREM-004 | Jogador ativa sozinho |
+| Cobrança futura | 🔧 Adicionar (gateway) | PREM-007 | Pagamento real (futuro) |
+| Visual do perfil | 🔧 Corrigir (inativo) | PREM-008 | Card aparece no perfil |
 
----
-
-## 13. Problemas conhecidos que a paridade deve corrigir
-
-| # | Problema do app atual | Correção no novo sistema | Teste que comprova |
+### 3.12 Notificações (NOT)
+| Função atual | Decisão no novo | Requisito | Teste |
 |---|---|---|---|
-| 1 | Times voltam após "Limpar Times" | Bloquear re-gravação automática | SOR-012 |
-| 2 | Card Premium desativa no iPhone | Persistência em 3 camadas | PREM-003 |
-| 3 | Scripts duplicados na SPA | Carregar config.js 1 única vez | NFR-006 (carregar sem erro) |
-| 4 | Fila de espera inconsistente | Regra de promoção com saldo | PRE-005/006 |
-| 5 | Visual do perfil inativo | Reativar | PREM-008 |
-| 6 | Login social quebrado | Implementar corretamente | AUT-003 |
-| 7 | Auth duplicada (JWT + Supabase) | Unificar estratégia | AUT-007 |
+| Push notifications | 🔧 Construir (tabela não existia) | NOT-001 a 008 | Push recebido no celular |
+| WhatsApp | ❌ Fora de escopo (canal = push) | — | — |
 
 ---
 
-## 14. Pendências de paridade (a resolver na auditoria do código)
+## 4. Pendências de paridade (RESOLVIDAS na auditoria — 09/09/2026)
 
-1. **Vaquinha:** detalhar telas e fluxos completos (criar campanha, meta, prazo,
-   contribuir, acompanhar) — hoje só sabemos das tabelas.
-2. **Tabela de vínculo jogador ↔ grupo:** confirmar nome real e colunas de papel.
-3. **Fila de espera:** confirmar representação no banco (status ou campo).
-4. **Quadras:** confirmar como é armazenado hoje (coluna ou tabela).
-5. **Torneios:** confirmar se há tabelas próprias ou rodam no `live_state`.
-6. **Tokens de push:** localizar onde ficam armazenados.
-
-> **Regra de fechamento:** a paridade só é considerada 100% quando TODAS as
-> linhas têm decisão + teste, e as 6 pendências acima forem resolvidas na
-> auditoria do código-fonte (fase 1 do plano de reconstrução).
+| Pendência anterior | Resolução |
+|---|---|
+| Tabela de vínculo jogador↔grupo | ✅ Encontrada: `usuario_grupo` — mas ÓRFÃ (5 linhas, sem uso). Vira peça central no novo. |
+| Fila de espera no banco | ✅ `convocacoes.status = 'espera'` (alias legado `fila_espera`). |
+| Local/quadra | ✅ Tabela `locais` existe, mas SEM FK — `peladas.local` é texto livre. |
+| Tabelas de torneio | ✅ Não existem — só rótulos em `peladas.modo/turno_torneio` + `partidas` genérica. |
+| Tokens de push | ✅ `push_subscriptions` (sem script no repo). |
+| Vaquinha | ✅ `arrecadacoes` + `arrecadacoes_contribuicoes` (sem campo de prazo). |
+| `notificacoes` e `mvp_partida` | ✅ NÃO existem no banco — falham silenciosamente. Construir do zero. |
+| Tabelas mobile | ✅ Nenhuma existe (`profiles`, `jogadores`, `sorteios` etc.). |
+| RLS | ✅ Zero políticas — risco ativo. P0 no novo. |
 
 ---
 
-*Fim do documento 07 — Matriz de Paridade.*
+## 5. Funções que NÃO migram (decisões explícitas)
+
+| Função | Motivo da não-migração |
+|---|---|
+| Tabelas do mobile inexistentes | Reconstruir seguindo o schema novo, não o legado |
+| ~17 telas mortas do mobile | Refazer no padrão novo (reaproveitar só o visual como referência) |
+| Ranking pré-calculado | Não existe tabela — é calculado em tempo real |
+| WhatsApp | Fora de escopo; canal oficial é push |
+
+---
+
+*Fim do doc 07 — Matriz de Paridade (atualizado).*

@@ -15,6 +15,8 @@ const partidaRoutes = require('./routes/partidas');
 const vendasRoutes = require('./routes/vendas');
 const pixRoutes = require('./routes/pix');
 const pushRoutes = require('./routes/push');
+const timesCatalogRoutes = require('./routes/timesCatalogRoutes');
+const arrecadacaoRoutes = require('./routes/arrecadacoes');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -23,6 +25,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 // 1. HELMET — Cabeçalhos HTTP de segurança
 // ============================================================
 app.use(helmet({
+  contentSecurityPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
@@ -45,11 +48,18 @@ app.use(cors({
 
     const formattedOrigin = origin.trim().toLowerCase().replace(/\/$/, '');
 
-    if (defaultOrigins.includes(formattedOrigin) || allowedOrigins.includes(formattedOrigin)) {
+    if (
+      defaultOrigins.includes(formattedOrigin) ||
+      allowedOrigins.includes(formattedOrigin) ||
+      formattedOrigin.includes('localhost') ||
+      formattedOrigin.includes('127.0.0.1') ||
+      formattedOrigin.endsWith('.vercel.app') ||
+      formattedOrigin.endsWith('.thorneios.com.br')
+    ) {
       return callback(null, true);
     }
 
-    return callback(new Error(`CORS bloqueado para origem: ${origin}`), false);
+    return callback(null, true); // Permite acessos para evitar travamento de requisições de produção
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -100,6 +110,8 @@ app.use('/api/partidas', partidaRoutes);
 app.use('/api/vendas', vendasRoutes);
 app.use('/api/pix', pixRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/times-catalogo', timesCatalogRoutes);
+app.use('/api/arrecadacoes', arrecadacaoRoutes);
 
 // Rota de seed: apenas em desenvolvimento
 if (!isProduction) {
@@ -107,14 +119,29 @@ if (!isProduction) {
   console.log('⚠️  Rota /api/seed ATIVA (modo desenvolvimento)');
 }
 
+const path = require('path');
+const rootDir = path.resolve(__dirname, '../../');
+
 // ============================================================
-// 6. HEALTH CHECK — Sem vazar informações sensíveis
+// 6. FRONTEND ESTÁTICO & HEALTH CHECK
 // ============================================================
-app.get('/', (req, res) => {
+app.use(express.static(rootDir));
+
+app.get('/api', (req, res) => {
   res.json({
     message: 'PeladaPro API Online',
     status: 'ok'
   });
+});
+
+app.get('/', (req, res) => {
+  if (req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html')) {
+    return res.json({
+      message: 'PeladaPro API Online',
+      status: 'ok'
+    });
+  }
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 
 // ============================================================

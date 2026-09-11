@@ -1,0 +1,52 @@
+<!-- Parcial: CRUD de Catálogo de Nomes de Times (pages/gestor/times.html) -->
+<div>
+  <!-- Header Resumo do Catálogo -->
+  <div class="grid-3" style="margin-bottom: 24px;">
+    <div class="card" style="border-left: 4px solid #0284C7; padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 700;">Total no Catálogo</p>
+      <h2 id="summary-catalog-total" style="font-size: 32px; color: #0284C7; margin-top: 4px; font-weight: 800;">0</h2>
+    </div>
+    <div class="card" style="border-left: 4px solid #10B981; padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 700;">No Banco PostgreSQL</p>
+      <h2 id="summary-catalog-custom" style="font-size: 32px; color: #10B981; margin-top: 4px; font-weight: 800;">0</h2>
+    </div>
+    <div class="card" style="border-left: 4px solid #8B5CF6; padding: 16px 20px;">
+      <p style="font-size: 12px; color: var(--text-caption); text-transform: uppercase; font-weight: 700;">Padrões de Fallback</p>
+      <h2 id="summary-catalog-default" style="font-size: 32px; color: #8B5CF6; margin-top: 4px; font-weight: 800;">0</h2>
+    </div>
+  </div>
+
+  <!-- Ações e Barra Superior -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--text-heading); display: flex; align-items: center; gap: 8px; margin: 0;">
+          🛡️ Cadastro e Gerenciamento dos Nomes dos Times
+        </h3>
+        <p style="font-size: 13px; color: var(--text-caption); margin-top: 4px; margin-bottom: 0;">
+          Gerencie o catálogo de nomes de times cadastrados do grupo. Esses nomes alimentam os seletores dos sorteios e partidas.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; width: 100%; max-width: 500px;">
+        <input 
+          type="text" 
+          id="team-catalog-search-input" 
+          class="form-control" 
+          placeholder="Buscar nome de time..." 
+          style="flex: 1; min-width: 180px;"
+        >
+        <button id="btn-open-create-team-name-modal" class="btn btn-md btn-primary" style="font-weight: 800; background: linear-gradient(135deg, #0284C7, #0369A1); border: none; white-space: nowrap;">
+          ➕ Cadastrar Novo Nome
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista do Catálogo de Nomes dos Times -->
+  <div id="manager-team-catalog-list" style="display: flex; flex-direction: column; gap: 10px;">
+    <!-- Renderizado dinamicamente -->
+  </div>
+</div>
+
+

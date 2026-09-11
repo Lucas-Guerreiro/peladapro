@@ -6,13 +6,9 @@ var Acompanhamento = {
 
   // Limpa o estado quando a pelada não está em andamento (sem sorteio)
   _limparEstado: function () {
-    window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
-    window.App.waitingQueue = [];
-    window.App.teams = [];
-    localStorage.removeItem("teams");
-    localStorage.setItem("waitingQueue", "[]");
-    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-    console.log("🧹 [Acompanhamento] Estado limpo (sem sorteio/pelada em andamento).");
+    if (!window.App.liveMatch) {
+      window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 0, goals: [] };
+    }
   },
 
   _pollingTimer: null,
@@ -69,7 +65,7 @@ var Acompanhamento = {
     var select = document.getElementById("acomp-select-pelada-date");
     if (!select) return;
 
-    var currentGroup = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    var currentGroup = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
     if (!currentGroup) {
       try {
         var groupRaw = localStorage.getItem('currentGroup');
@@ -78,7 +74,7 @@ var Acompanhamento = {
     }
     if (!currentGroup) {
       try {
-        var groups = Api.getGroups ? Api.getGroups() : [];
+        var groups = (window.Api && window.Api.getGroups) ? window.Api.getGroups() : [];
         if (groups && groups.length > 0) currentGroup = groups[0];
       } catch (e) { }
     }
@@ -90,11 +86,11 @@ var Acompanhamento = {
 
     try {
       var peladas = [];
-      if (Api.listarDatasDoGrupo) {
-        peladas = await Api.listarDatasDoGrupo(currentGroup.id);
+      if (window.Api && window.Api.listarDatasDoGrupo) {
+        peladas = await window.Api.listarDatasDoGrupo(currentGroup.id);
       }
       if (!peladas || peladas.length === 0) {
-        peladas = Api.getPeladas ? Api.getPeladas().filter(function (p) { return String(p.grupo_id) === String(currentGroup.id); }) : [];
+        peladas = (window.Api && window.Api.getPeladas) ? window.Api.getPeladas().filter(function (p) { return String(p.grupo_id) === String(currentGroup.id); }) : [];
       }
       if ((!peladas || peladas.length === 0) && window.supabase) {
         try {
@@ -120,23 +116,17 @@ var Acompanhamento = {
         if (found) activePelada = found;
       }
 
-      window.App.activePelada = activePelada;
-      try { localStorage.setItem("activePelada", JSON.stringify(activePelada)); } catch (e) { }
       select.value = activePelada.id;
+      window.App.activePelada = activePelada;
 
-      var self = this;
-      select.onchange = async function () {
-        var selectedId = select.value;
-        var found = peladas.find(function (p) { return String(p.id) === String(selectedId); });
-        if (found) {
-          window.App.activePelada = found;
-          // Se a pelada selecionada não estiver em andamento, limpa confronto/fila
-          if (found.status !== "ativa") {
-            self._limparEstado();
-          }
-          try { localStorage.setItem("activePelada", JSON.stringify(found)); } catch (e) { }
-          await self._fetchServerLiveState();
-          self.render();
+      select.onchange = async () => {
+        var selId = select.value;
+        var pSel = peladas.find(function (p) { return String(p.id) === String(selId); });
+        if (pSel) {
+          window.App.activePelada = pSel;
+          try { localStorage.setItem("activePelada", JSON.stringify(pSel)); } catch (e) { }
+          await Acompanhamento._fetchServerLiveState();
+          Acompanhamento.render();
         }
       };
     } catch (e) {
@@ -155,13 +145,6 @@ var Acompanhamento = {
   _fetchServerLiveState: async function () {
     var peladaId = window.App.activePelada ? window.App.activePelada.id : null;
 
-    var peladaAtiva = window.App.activePelada || {};
-    // Só limpa se a pelada for explicitamente 'finalizada' sem dados de partida ao vivo
-    if (peladaAtiva.status === "finalizada" && !localStorage.getItem("liveMatch")) {
-      this._limparEstado();
-      return;
-    }
-
     if (!peladaId) {
       try {
         var rawPelada = localStorage.getItem("activePelada");
@@ -173,10 +156,10 @@ var Acompanhamento = {
     }
 
     if (!peladaId) {
-      var group = (Auth && Auth.currentGroup) || window.App.currentGroup;
-      if (group && group.id && Api.listarDatasDoGrupo) {
+      var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
         try {
-          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          var peladasGroup = await window.Api.listarDatasDoGrupo(group.id);
           if (Array.isArray(peladasGroup) && peladasGroup.length > 0) {
             var active = peladasGroup.find(function (p) { return p.status !== 'finalizada'; }) || peladasGroup[0];
             if (active) {
@@ -189,16 +172,16 @@ var Acompanhamento = {
       }
     }
 
-    const groupConfigs = window.Api.getConfigs() || [];
-    const currentGrp = (Auth && Auth.currentGroup) || window.App.currentGroup;
+    const groupConfigs = (window.Api && window.Api.getConfigs) ? window.Api.getConfigs() : [];
+    const currentGrp = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
     const grpCfg = currentGrp ? groupConfigs.find(function (c) { return c.grupo_id === currentGrp.id; }) : null;
     const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
 
     let stateCarregado = false;
 
-    if (peladaId && Api.obterLiveState) {
+    if (peladaId && window.Api && window.Api.obterLiveState) {
       try {
-        var res = await Api.obterLiveState(peladaId);
+        var res = await window.Api.obterLiveState(peladaId);
         if (res && res.state) {
           if (res.state.liveMatch) {
             window.App.liveMatch = res.state.liveMatch;
@@ -220,15 +203,10 @@ var Acompanhamento = {
           if (res.state.waitingQueue) {
             window.App.waitingQueue = res.state.waitingQueue;
             localStorage.setItem("waitingQueue", JSON.stringify(res.state.waitingQueue));
-          } else {
-            window.App.waitingQueue = [];
-            localStorage.setItem("waitingQueue", "[]");
           }
 
           if (res.state.teams && res.state.teams.length > 0) {
             localStorage.setItem("teams", JSON.stringify(res.state.teams));
-          } else {
-            localStorage.removeItem("teams");
           }
           stateCarregado = true;
         }
@@ -237,7 +215,7 @@ var Acompanhamento = {
       }
     }
 
-    if (!stateCarregado) {
+    if (!stateCarregado && !window.App.liveMatch) {
       window.App.liveMatch = {
         teamA: 'Time A',
         teamB: 'Time B',
@@ -249,9 +227,6 @@ var Acompanhamento = {
         goals: []
       };
       localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-      window.App.waitingQueue = [];
-      localStorage.setItem("waitingQueue", "[]");
-      localStorage.removeItem("teams");
     }
   },
 
@@ -266,66 +241,33 @@ var Acompanhamento = {
       if (rawPelada) window.App.activePelada = JSON.parse(rawPelada);
     } catch (e) { }
 
-    var teams = [];
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
-
     const timerCard = document.querySelector('.acomp-timer-wrapper-clear');
     const scoreCard = document.querySelector('.acomp-score-card-clear');
     const queueCard = document.getElementById('acomp-queue-list')?.closest('.acomp-card-clear');
     const ruleCard = document.getElementById('acomp-rule-desc-clear')?.closest('.acomp-card-clear') || document.querySelector('.acomp-rule-title-clear')?.closest('.acomp-card-clear');
     let infoCard = document.getElementById('acomp-no-teams-card');
 
-    if (!teams || teams.length < 2) {
-      if (timerCard) timerCard.style.display = 'none';
-      if (scoreCard) scoreCard.style.display = 'none';
-      if (queueCard) queueCard.style.display = 'none';
-      if (ruleCard) ruleCard.style.display = 'none';
+    if (timerCard) timerCard.style.display = 'flex';
+    if (scoreCard) scoreCard.style.display = 'flex';
+    if (queueCard) queueCard.style.display = 'flex';
+    if (ruleCard) ruleCard.style.display = 'flex';
+    if (infoCard) infoCard.style.display = 'none';
 
-      if (!infoCard) {
-        infoCard = document.createElement('div');
-        infoCard.id = 'acomp-no-teams-card';
-        infoCard.className = 'acomp-card-clear';
-        infoCard.style.textAlign = 'center';
-        infoCard.style.padding = '32px 20px';
-        infoCard.style.display = 'flex';
-        infoCard.style.flexDirection = 'column';
-        infoCard.style.alignItems = 'center';
-        infoCard.style.justifyContent = 'center';
-        infoCard.style.gap = '12px';
-
-        infoCard.innerHTML = `
-          <div style="font-size: 40px; line-height: 1;">⚽</div>
-          <h4 class="text-inter" style="font-size: 16px; font-weight: 700; color: var(--text-heading); margin: 0;">Aguardando Sorteio</h4>
-          <p class="text-inter" style="font-size: 13px; color: var(--text-caption); margin: 0; max-width: 320px; line-height: 1.5;">
-            O gestor ainda não realizou o sorteio dos times para esta pelada. Assim que for feito, o placar e a fila de espera aparecerão aqui em tempo real!
-          </p>
-        `;
-        const container = document.getElementById('player-tab-content-container');
-        if (container) {
-          const recentCard = document.querySelector('.acomp-card-clear:last-child');
-          if (recentCard && recentCard !== infoCard) {
-            container.insertBefore(infoCard, recentCard);
-          } else {
-            container.appendChild(infoCard);
-          }
+    const btnToggleFS = document.getElementById("acomp-btn-toggle-fullscreen-scoreboard");
+    if (btnToggleFS) {
+      btnToggleFS.onclick = function () {
+        if (window.App && window.App.openFullscreenScoreboard) {
+          window.App.openFullscreenScoreboard();
         }
-      } else {
-        infoCard.style.display = 'flex';
-      }
-    } else {
-      if (timerCard) timerCard.style.display = 'flex';
-      if (scoreCard) scoreCard.style.display = 'flex';
-      if (queueCard) queueCard.style.display = 'flex';
-      if (ruleCard) ruleCard.style.display = 'flex';
-      if (infoCard) infoCard.style.display = 'none';
-
-      this.renderTimer();
-      this.renderScore();
-      this.renderQueue();
-      this.renderRule();
+      };
     }
 
+    this.renderTimer();
+    this.renderScore();
+    this.renderQueue();
+    this.renderRule();
     this.renderRecentMatches();
+    this.renderAcompanhamentoTournamentUI();
   },
 
   // --- Cronômetro --------------------------------------------------------
@@ -490,31 +432,38 @@ var Acompanhamento = {
       phaseBanner.style.display = "block";
     }
 
-    // Alertas de vitórias consecutivas
+    // Alertas de vitórias consecutivas (Apenas para Pelada Normal)
     var peladaAtiva = window.App.activePelada || {};
     var grupoAtivo = (Auth && Auth.currentGroup) || window.App.currentGroup || {};
-    var winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
-    var winsA = match.consecutiveWinsA || 0;
-    var winsB = match.consecutiveWinsB || 0;
+    var isTorneioMode = peladaAtiva.modo && peladaAtiva.modo !== 'normal' && peladaAtiva.modo !== 'tradicional';
 
     var statusAEl = document.getElementById('acomp-team-a-status');
     var statusBEl = document.getElementById('acomp-team-b-status');
 
-    if (statusAEl) {
-      statusAEl.innerHTML = '';
-      if (winsA === winsLimit - 1 && winsA > 0) {
-        statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
-      } else if (winsA > 0) {
-        statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsA + (winsA === 1 ? ' Vitória' : ' Vitórias') + '</span>';
-      }
-    }
+    if (isTorneioMode) {
+      if (statusAEl) statusAEl.innerHTML = '';
+      if (statusBEl) statusBEl.innerHTML = '';
+    } else {
+      var winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
+      var winsA = match.consecutiveWinsA || 0;
+      var winsB = match.consecutiveWinsB || 0;
 
-    if (statusBEl) {
-      statusBEl.innerHTML = '';
-      if (winsB === winsLimit - 1 && winsB > 0) {
-        statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
-      } else if (winsB > 0) {
-        statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsB + (winsB === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+      if (statusAEl) {
+        statusAEl.innerHTML = '';
+        if (winsA === winsLimit - 1 && winsA > 0) {
+          statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
+        } else if (winsA > 0) {
+          statusAEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsA + (winsA === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+        }
+      }
+
+      if (statusBEl) {
+        statusBEl.innerHTML = '';
+        if (winsB === winsLimit - 1 && winsB > 0) {
+          statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(255, 145, 0, 0.15); color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚠️ PRÓXIMA REVEZA</span>';
+        } else if (winsB > 0) {
+          statusBEl.innerHTML = '<span style="font-size: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔥 ' + winsB + (winsB === 1 ? ' Vitória' : ' Vitórias') + '</span>';
+        }
       }
     }
 
@@ -764,10 +713,10 @@ var Acompanhamento = {
     }
 
     if (!peladaId) {
-      var group = (Auth && Auth.currentGroup) || window.App.currentGroup;
-      if (group && group.id && Api.listarDatasDoGrupo) {
+      var group = (window.Auth && window.Auth.currentGroup) || (window.App && window.App.currentGroup);
+      if (group && group.id && window.Api && window.Api.listarDatasDoGrupo) {
         try {
-          var peladasGroup = await Api.listarDatasDoGrupo(group.id);
+          var peladasGroup = await window.Api.listarDatasDoGrupo(group.id);
           if (Array.isArray(peladasGroup) && peladasGroup.length > 0) {
             var active = peladasGroup.find(function (p) { return p.status !== 'finalizada'; }) || peladasGroup[0];
             if (active) peladaId = active.id;
@@ -776,13 +725,37 @@ var Acompanhamento = {
       }
     }
 
-    if (!peladaId) {
-      container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:12px 0;">Nenhuma pelada selecionada.</p>';
-      return;
-    }
-
     try {
-      var partidas = await Api.listarPartidas(peladaId);
+      var partidas = [];
+      if (peladaId && window.Api && window.Api.listarPartidas) {
+        try { partidas = await window.Api.listarPartidas(peladaId); } catch(e) {}
+      }
+      if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+        if (peladaId) {
+          try { partidas = JSON.parse(localStorage.getItem("partidas_" + peladaId)) || JSON.parse(localStorage.getItem("recentMatches_" + peladaId)) || []; } catch(e) {}
+        }
+      }
+      if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+        try { partidas = JSON.parse(localStorage.getItem("recentMatches")) || JSON.parse(localStorage.getItem("partidas")) || []; } catch(e) {}
+      }
+      if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
+        try {
+          var keys = Object.keys(localStorage).filter(function(k) { return k.indexOf("partidas") >= 0 || k.indexOf("recentMatches") >= 0; });
+          keys.forEach(function(k) {
+            try {
+              var items = JSON.parse(localStorage.getItem(k));
+              if (Array.isArray(items) && items.length > 0) {
+                items.forEach(function(item) {
+                  if (item && item.time_a_nome && !partidas.some(function(p) { return p.id === item.id; })) {
+                    partidas.push(item);
+                  }
+                });
+              }
+            } catch(e) {}
+          });
+        } catch(e) {}
+      }
+
       if (!partidas || !Array.isArray(partidas) || partidas.length === 0) {
         container.innerHTML = '<p style="text-align:center; font-size:13px; color:#64748b; padding:12px 0;">Nenhuma partida encerrada nesta pelada ainda.</p>';
         return;
@@ -855,21 +828,28 @@ var Acompanhamento = {
           } catch (e) { }
         }
 
-        html += '<div style="margin-bottom: 8px; background: #F8FAFC; border-radius: 8px; border-left: 4px solid #10B981; padding: 10px 14px;">' +
-          '<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">' +
-          '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
-          '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">' + embA + '</div>' +
-          '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_a_nome || 'Time A') + '</span>' +
-          '<span style="font-size: 15px; font-weight: 800; color: #0F172A; font-family: monospace;">' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '</span>' +
-          '<span style="font-size: 13px; font-weight: 700; color: #1E293B;">' + (p.time_b_nome || 'Time B') + '</span>' +
-          '<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">' + embB + '</div>' +
+        html += '<div style="margin-bottom: 10px; background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); border-radius: 14px; border: 1px solid #E2E8F0; border-left: 5px solid #10B981; padding: 12px 16px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; gap: 8px;">' +
+          '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">' +
+          '  <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">📌 Jogo #' + numJogo + '</span>' +
+          '  <button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">⚽ Gols (' + goalsList.length + ')</button>' +
           '</div>' +
-          '<button class="acomp-btn-toggle-goals" data-id="' + p.id + '" title="Ver quem fez os gols" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">⚽ Gols</button>' +
+          '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;">' +
+          '  <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
+          '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
+          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_a_nome || 'Time A') + '</span>' +
+          '  </div>' +
+          '  <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+          '    <div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 14px; border-radius: 16px; letter-spacing: 1px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: center;">' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + '</div>' +
+          '  </div>' +
+          '  <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
+          '    <div style="width: 24px; height: 26px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
+          '    <span style="font-size: 13px; font-weight: 800; color: #0F172A; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.time_b_nome || 'Time B') + '</span>' +
+          '  </div>' +
           '</div>' +
-          '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
+          '<div id="acomp-match-goals-list-' + p.id + '" style="display: ' + (isOpen ? 'block' : 'none') + '; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 12px;">' +
           (goalsList.length > 0
-            ? '<div style="display:flex; flex-wrap:wrap; gap:6px;">' + goalsList.map(function (g) { return '<span style="background:rgba(16,185,129,0.1); color:#10B981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">⚽ ' + (g.autorNome || 'Jogador') + (g.assistNome ? ' <span style="color:#0F172A; font-weight:600;">(Ass: ' + g.assistNome + ' 👟)</span>' : '') + ' <span style="color:#64748B; font-size:10px;">(' + (g.teamName || '') + ')</span></span>'; }).join('') + '</div>'
-            : '<span style="font-size:11px; color:#64748B;">Placar final: ' + (p.time_a_nome || 'Time A') + ' ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + ' ' + (p.time_b_nome || 'Time B') + '</span>'
+            ? '<div style="display:flex; flex-wrap:wrap; gap:6px;">' + goalsList.map(function (g) { return '<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚽ ' + (g.autorNome || 'Jogador') + (g.assistNome ? ' <span style="color:#0F172A; font-weight:600;">(Ass: ' + g.assistNome + ' 👟)</span>' : '') + ' <span style="color:#64748B; font-size:10px;">(' + (g.teamName || '') + ')</span></span>'; }).join('') + '</div>'
+            : '<span style="font-size:11px; color:#64748B;">Placar encerrado: ' + (p.time_a_nome || 'Time A') + ' ' + (p.gols_time_a || 0) + ' x ' + (p.gols_time_b || 0) + ' ' + (p.time_b_nome || 'Time B') + '</span>'
           ) +
           '</div>' +
           '</div>';
@@ -968,8 +948,10 @@ var Acompanhamento = {
     var peladaAtiva = window.App.activePelada || {};
     var liveMatch = window.App.liveMatch || {};
     var tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem('tournamentState_' + peladaAtiva.id) || 'null') : null);
+    var teams = [];
+    try { teams = (window.App && window.App.teams) || JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
-    var isTorneio = (peladaAtiva.modo === 'torneio') || !!tState;
+    var isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
 
     if (!isTorneio || !tState) {
       tournamentCard.style.display = 'none';
@@ -980,20 +962,30 @@ var Acompanhamento = {
     tournamentCard.style.display = 'block';
     if (queueWrapper) queueWrapper.style.display = 'none';
 
+    var isPontosCorridos = (peladaAtiva && (peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos')) || (tState && (tState.modo === 'pontos_corridos' || tState.formato === 'pontos_corridos'));
+    var isMataMataDireto = (peladaAtiva && peladaAtiva.modo === 'mata_mata_direto') || (tState && (tState.modo === 'mata_mata_direto' || tState.formato === 'mata_mata_direto'));
+    var isTorneioLivre = (peladaAtiva && peladaAtiva.modo === 'torneio_livre') || (tState && (tState.modo === 'torneio_livre' || tState.formato === 'livre'));
+
     // Badge de Fase
     var badgeEl = document.getElementById('acomp-tournament-phase-badge');
     if (badgeEl) {
-      if (tState.fase === 'grupo') {
-        badgeEl.textContent = 'FASE DE GRUPOS (TABELA MISTA)';
+      if (tState.fase === 'livre' || isTorneioLivre) {
+        badgeEl.textContent = '📋 TORNEIO LIVRE (CONFRONTOS MANUAIS)';
+        badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
+      } else if (tState.fase === 'grupo') {
+        badgeEl.textContent = isPontosCorridos ? 'CLASSIFICAÇÃO (PONTOS CORRIDOS)' : 'FASE DE GRUPOS (TABELA MISTA)';
         badgeEl.style.background = '#FEF3C7'; badgeEl.style.color = '#B45309';
+      } else if (tState.fase === 'quartas') {
+        badgeEl.textContent = isMataMataDireto ? 'QUARTAS DE FINAL (MATA-MATA DIRETO)' : 'QUARTAS DE FINAL (ELIMINATÓRIA)';
+        badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
       } else if (tState.fase === 'mata_mata') {
-        badgeEl.textContent = 'SEMIFINAIS (MATA-MATA)';
+        badgeEl.textContent = isMataMataDireto ? 'SEMIFINAIS (MATA-MATA DIRETO)' : 'SEMIFINAIS (MATA-MATA)';
         badgeEl.style.background = '#E0F2FE'; badgeEl.style.color = '#0369A1';
       } else if (tState.fase === 'finais') {
-        badgeEl.textContent = 'FINAIS & 3º LUGAR';
+        badgeEl.textContent = 'FINAIS & DISPUTA DE 3º LUGAR';
         badgeEl.style.background = '#FCE7F3'; badgeEl.style.color = '#9D174D';
       } else if (tState.fase === 'finalizado') {
-        badgeEl.textContent = '🏆 TORNEIO FINALIZADO';
+        badgeEl.textContent = isMataMataDireto ? '⚡ MATA-MATA DIRETO FINALIZADO' : (isPontosCorridos ? '🏅 PONTOS CORRIDOS FINALIZADO' : '🏆 TORNEIO FINALIZADO');
         badgeEl.style.background = '#D1FAE5'; badgeEl.style.color = '#065F46';
       }
     }
@@ -1007,7 +999,7 @@ var Acompanhamento = {
       } else {
         var html = '';
         standings.forEach(function (st, idx) {
-          var medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+          var medal = '';
           html += '<tr style="' + (idx === 0 ? 'font-weight:700; background:rgba(254,243,199,0.3);' : '') + '">' +
             '<td style="text-align:center; font-weight:700;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:700; color:#0F172A;">' + medal + st.nome + '</td>' +
@@ -1033,28 +1025,57 @@ var Acompanhamento = {
       if (Array.isArray(tState.knockoutMatches)) allMatches.push.apply(allMatches, tState.knockoutMatches);
       if (Array.isArray(tState.finalsMatches)) allMatches.push.apply(allMatches, tState.finalsMatches);
 
+      var isNight = document.body.classList.contains('modo-noturno-ativo');
+
       if (allMatches.length === 0) {
-        matchesList.innerHTML = '<div style="text-align:center; padding:12px; color:#64748B;">Nenhum jogo gerado.</div>';
+        matchesList.innerHTML = '<div style="text-align:center; padding:12px; color:' + (isNight ? '#CBD5E1' : '#64748B') + ';">Nenhum jogo gerado.</div>';
       } else {
         var mHtml = '';
         allMatches.forEach(function (m, idx) {
           var isCurrent = m.id === (liveMatch.tournamentMatchId) || (m.status === 'em_andamento');
           var isDone = m.status === 'encerrado';
 
-          var statusTag = isDone
-            ? '<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; font-weight:700;">✅ ' + m.golsA + ' x ' + m.golsB + '</span>'
-            : (isCurrent
-              ? '<span style="font-size:10px; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px; font-weight:700;">⚽ EM ANDAMENTO</span>'
-              : '<span style="font-size:10px; background:#F1F5F9; color:#64748B; padding:2px 6px; border-radius:4px; font-weight:600;">⏳ A JOGAR</span>');
+          var penTxt = (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined)
+            ? ' <small style="font-size:9px; opacity:0.9;">(' + m.penaltisA + 'x' + m.penaltisB + ' 🎯)</small>'
+            : '';
 
-          mHtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:' + (isCurrent ? '#FFFBEB' : '#F8FAFC') + '; border:1px solid ' + (isCurrent ? '#FCD34D' : '#E2E8F0') + '; border-radius:8px; font-size:12px;">' +
-            '<div style="display:flex; align-items:center; gap:8px;">' +
-            '<span style="font-weight:700; color:#64748B; font-size:11px;">' + (m.faseNome || 'Jogo ' + (idx + 1)) + ':</span>' +
-            '<strong style="color:#0F172A;">' + m.teamA + '</strong>' +
-            '<span style="color:#94A3B8; font-size:11px;">vs</span>' +
-            '<strong style="color:#0F172A;">' + m.teamB + '</strong>' +
+          var statusTag = isDone
+            ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(16, 185, 129, 0.25)' : '#D1FAE5') + '; color:' + (isNight ? '#A7F3D0' : '#065F46') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid rgba(16, 185, 129, 0.4)' : 'none') + ';">✅ ' + m.golsA + ' x ' + m.golsB + penTxt + '</span>'
+            : (isCurrent
+              ? '<span style="font-size:10px; background:' + (isNight ? 'rgba(245, 210, 112, 0.25)' : '#FEF3C7') + '; color:' + (isNight ? '#FFFFFF' : '#B45309') + '; padding:2px 6px; border-radius:4px; font-weight:700; border:' + (isNight ? '1px solid #F59E0B' : '1px solid #FCD34D') + ';">⚽ EM ANDAMENTO</span>'
+              : '<span style="font-size:10px; background:' + (isNight ? 'rgba(255, 255, 255, 0.15)' : '#F1F5F9') + '; color:' + (isNight ? '#E2E8F0' : '#64748B') + '; padding:2px 6px; border-radius:4px; font-weight:600; border:' + (isNight ? '1px solid rgba(255, 255, 255, 0.2)' : 'none') + ';">⏳ A JOGAR</span>');
+
+          var rowBg = isNight
+            ? (isCurrent ? 'linear-gradient(135deg, rgba(245, 210, 112, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)' : 'rgba(255, 255, 255, 0.12)')
+            : (isCurrent ? '#FFFBEB' : '#F8FAFC');
+
+          var rowBorder = isNight
+            ? (isCurrent ? '#FCD34D' : 'rgba(255, 255, 255, 0.2)')
+            : (isCurrent ? '#FCD34D' : '#E2E8F0');
+
+          var textColor = isNight ? '#FFFFFF' : '#0F172A';
+          var subTextColor = isNight ? 'rgba(255, 255, 255, 0.85)' : '#64748B';
+
+          var embA = '', embB = '';
+          if (window.TeamEmblems && teams.length > 0) {
+            var tA = teams.find(function (t) { return (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim(); });
+            var tB = teams.find(function (t) { return (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim(); });
+            if (tA) embA = '<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">' + window.TeamEmblems.forTeam(tA) + '</span>';
+            if (tB) embB = '<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">' + window.TeamEmblems.forTeam(tB) + '</span>';
+          }
+
+          mHtml += '<div style="margin-bottom: 8px; background: ' + rowBg + '; border-radius: 12px; border: 1px solid ' + rowBorder + '; border-left: 4px solid ' + (isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')) + '; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; backdrop-filter: blur(8px);' + (isCurrent && isNight ? ' box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : '') + '">' +
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
+            '<div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embA + '</div>' +
+            '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamA + '</span>' +
             '</div>' +
-            '<div>' + statusTag + '</div>' +
+            '<div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+            (isDone ? '<div style="background: #0F172A; color: #38BDF8; font-family: monospace, sans-serif; font-size: 15px; font-weight: 900; padding: 3px 12px; border-radius: 16px; letter-spacing: 1px;">' + m.golsA + ' x ' + m.golsB + penTxt + '</div>' : (isCurrent ? '<div style="background: #D97706; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⚽ EM ANDAMENTO</div>' : '<div style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 14px; text-transform: uppercase;">⏳ A JOGAR</div>')) +
+            '</div>' +
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">' +
+            '<div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">' + embB + '</div>' +
+            '<span style="font-size: 13px; font-weight: 800; color: ' + textColor + '; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.teamB + '</span>' +
+            '</div>' +
             '</div>';
         });
         matchesList.innerHTML = mHtml;

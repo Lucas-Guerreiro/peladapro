@@ -231,6 +231,30 @@ var Dashboard = {
     if (this._syncingDb) return;
     this._syncingDb = true;
     try {
+      const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const res = await fetch('/api/usuarios/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.id) {
+              var currentUser = window.Auth ? window.Auth.currentUser : null;
+              var merged = currentUser ? { ...currentUser, ...data, saldo: parseFloat(data.saldo || 0) } : data;
+              if (window.Auth) window.Auth.currentUser = merged;
+              if (window.App) window.App.currentUser = merged;
+              localStorage.setItem('currentUser', JSON.stringify(merged));
+              localStorage.setItem('usuario', JSON.stringify(merged));
+              this._repopulateCardDOM(merged);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('[Dashboard] Erro REST em syncPlayerDataWithDatabase:', e);
+        }
+      }
+
       if (window.supabase) {
         const { data: { session } } = await window.supabase.auth.getSession();
         if (session?.user?.email) {
@@ -242,8 +266,9 @@ var Dashboard = {
 
           if (data) {
             var currentUser = window.Auth ? window.Auth.currentUser : null;
-            var merged = currentUser ? { ...currentUser, ...data } : data;
+            var merged = currentUser ? { ...currentUser, ...data, saldo: parseFloat(data.saldo || 0) } : data;
             if (window.Auth) window.Auth.currentUser = merged;
+            if (window.App) window.App.currentUser = merged;
             localStorage.setItem('currentUser', JSON.stringify(merged));
             localStorage.setItem('usuario', JSON.stringify(merged));
 
@@ -983,14 +1008,14 @@ var Dashboard = {
     if (!teamName) return null;
     var name = teamName.toLowerCase().trim();
 
-    // Flamengo (Rubro-Negro: Fundo Preto -> Vermelho, Botões e Borda Pretos)
+    // Flamengo (Rubro-Negro: Vermelho e Preto Vibrante)
     if (name.includes('flamengo')) {
       return {
-        gradient: 'linear-gradient(135deg, #8B1A1A 0%, #3A050A 50%, #C8102E 100%)',
-        border: '#8B1A1A',
-        borderGlow: 'rgba(200, 16, 46, 0.4)',
+        gradient: 'linear-gradient(135deg, #C8102E 0%, #1A0003 50%, #000000 100%)',
+        border: '#C8102E',
+        borderGlow: 'rgba(200, 16, 46, 0.5)',
         accent: '#FFD700',
-        badgeBg: '#000000',
+        badgeBg: '#C8102E',
         badgeText: '#FFFFFF',
         ratingColor: '#FFD700'
       };
@@ -1178,10 +1203,16 @@ var Dashboard = {
   applyModoNoturno: function (isNight) {
     var card = document.getElementById('player-fifa-card');
     var user = Auth.currentUser;
-    if (card && isNight && user && user.time_coracao) {
-      var style = localStorage.getItem('peladapro_card_style') || 'free';
-      if (style !== 'free') {
-        this.applyTeamCardTheme(card, user.time_coracao);
+    if (card) {
+      if (isNight && user && user.time_coracao) {
+        var style = localStorage.getItem('peladapro_card_style') || 'free';
+        if (style !== 'free') {
+          this.applyTeamCardTheme(card, user.time_coracao);
+        } else {
+          this.applyTeamCardTheme(card, null);
+        }
+      } else {
+        this.applyTeamCardTheme(card, null);
       }
     }
   },

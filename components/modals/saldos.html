@@ -1,0 +1,43 @@
+<!-- Modal: Situação de Saldos e Devedores -->
+<div class="modal-backdrop" id="modal-saldos-backdrop">
+  <div class="modal-content" style="max-width: 680px; width: 95%;">
+    <div class="modal-header">
+      <h3 style="color: #4338CA; display: flex; align-items: center; gap: 8px; font-size: 18px;">
+        <i data-feather="users" style="width: 20px; height: 20px;"></i> Situação de Saldos dos Atletas
+      </h3>
+      <button class="modal-close" id="btn-close-saldos-modal">&times;</button>
+    </div>
+
+    <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">
+      Acompanhe o saldo atual em carteira de cada jogador, quem está em dia e quem possui pendências com o grupo.
+    </p>
+
+    <!-- Filtro de busca de atleta -->
+    <div style="margin-bottom: 14px;">
+      <input type="text" id="filter-saldos-input" class="form-control" placeholder="🔍 Buscar atleta por nome ou apelido..." style="height: 38px; font-size: 13px;">
+    </div>
+
+    <div class="table-responsive" style="max-height: 420px; border-radius: 8px; border: 1px solid #E2E8F0;">
+      <table class="table-custom" style="width: 100%; font-size: 13px;">
+        <thead style="position: sticky; top: 0; background: #F8FAFC; z-index: 1;">
+          <tr>
+            <th style="padding: 10px 14px;">Atleta</th>
+            <th style="padding: 10px 14px; text-align: center;">Status Carteira</th>
+            <th style="padding: 10px 14px; text-align: right;">Saldo em Conta</th>
+            <th style="padding: 10px 14px; text-align: center; width: 100px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="saldos-modal-table-body">
+          <!-- Inserido dinamicamente via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-caption);">
+      <span id="saldos-modal-summary">Carregando balanços...</span>
+      <button class="btn btn-sm" onclick="window.App.closeModal()" style="background: #F1F5F9; color: #475569; font-weight: 700; border-radius: 6px; padding: 6px 14px; border: 1px solid #CBD5E1; cursor: pointer;">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>

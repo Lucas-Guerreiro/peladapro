@@ -1,0 +1,721 @@
+<title>Raio-X do Pelada Pro</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f6f7f3;
+    --surface:#ffffff;
+    --surface-2:#edf0e8;
+    --border:#dbe1d3;
+    --border-strong:#c3cbb8;
+    --ink:#171a14;
+    --ink-muted:#5c6353;
+    --ink-faint:#8b9280;
+    --accent:#1f6f4a;
+    --accent-strong:#155537;
+    --accent-soft:#e3f0e6;
+    --crit:#b3271e;
+    --crit-soft:#fbe9e6;
+    --crit-ink:#7a1a14;
+    --warn:#93590a;
+    --warn-soft:#faf0da;
+    --warn-ink:#6b4106;
+    --minor:#2f5f8c;
+    --minor-soft:#e7eef6;
+    --minor-ink:#20456a;
+    --dead-soft:#eceee6;
+    --shadow: 0 1px 2px rgba(23,26,20,.04), 0 8px 24px -12px rgba(23,26,20,.10);
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f110d;
+      --surface:#171913;
+      --surface-2:#1c1f17;
+      --border:#2b2f25;
+      --border-strong:#3a4030;
+      --ink:#eceee5;
+      --ink-muted:#a3ab97;
+      --ink-faint:#6f7768;
+      --accent:#57b586;
+      --accent-strong:#7ecda3;
+      --accent-soft:#163523;
+      --crit:#ff8177;
+      --crit-soft:#3a1815;
+      --crit-ink:#ffb3ab;
+      --warn:#e6ac48;
+      --warn-soft:#332608;
+      --warn-ink:#f0c579;
+      --minor:#87b0e0;
+      --minor-soft:#152638;
+      --minor-ink:#aecbef;
+      --dead-soft:#22251d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f110d;
+    --surface:#171913;
+    --surface-2:#1c1f17;
+    --border:#2b2f25;
+    --border-strong:#3a4030;
+    --ink:#eceee5;
+    --ink-muted:#a3ab97;
+    --ink-faint:#6f7768;
+    --accent:#57b586;
+    --accent-strong:#7ecda3;
+    --accent-soft:#163523;
+    --crit:#ff8177;
+    --crit-soft:#3a1815;
+    --crit-ink:#ffb3ab;
+    --warn:#e6ac48;
+    --warn-soft:#332608;
+    --warn-ink:#f0c579;
+    --minor:#87b0e0;
+    --minor-soft:#152638;
+    --minor-ink:#aecbef;
+    --dead-soft:#22251d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15.5px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:var(--serif);
+    font-weight:600;
+    text-wrap:balance;
+    color:var(--ink);
+  }
+  a{color:var(--accent-strong);}
+  code, .mono{font-family:var(--mono);}
+
+  .layout{
+    display:grid;
+    grid-template-columns:248px minmax(0,1fr);
+    gap:0;
+    max-width:1240px;
+    margin:0 auto;
+  }
+  @media (max-width:920px){
+    .layout{grid-template-columns:1fr;}
+    .toc{position:static !important; height:auto !important; border-right:none !important; border-bottom:1px solid var(--border);}
+  }
+
+  .toc{
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    overflow-y:auto;
+    padding:28px 18px 40px 28px;
+    border-right:1px solid var(--border);
+  }
+  .toc-brand{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:4px;
+  }
+  .toc-title{
+    font-family:var(--serif);
+    font-size:19px;
+    font-weight:700;
+    margin-bottom:2px;
+    line-height:1.25;
+  }
+  .toc-meta{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-bottom:22px;
+  }
+  .toc nav a{
+    display:block;
+    padding:6px 10px;
+    margin:1px 0;
+    border-radius:6px;
+    color:var(--ink-muted);
+    text-decoration:none;
+    font-size:13.5px;
+  }
+  .toc nav a:hover{background:var(--surface-2); color:var(--ink);}
+  .toc nav .num{
+    font-family:var(--mono);
+    color:var(--ink-faint);
+    margin-right:7px;
+    font-size:12px;
+  }
+  .toc-sep{height:1px; background:var(--border); margin:14px 4px;}
+
+  main{padding:44px 48px 100px; min-width:0;}
+  @media (max-width:640px){ main{padding:28px 18px 80px;} }
+
+  header.hero{
+    padding-bottom:30px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:36px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:10px;
+  }
+  header.hero h1{
+    font-size:clamp(28px, 4vw, 40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  header.hero p.lede{
+    color:var(--ink-muted);
+    font-size:16.5px;
+    max-width:62ch;
+    margin:0 0 20px;
+  }
+  .hero-facts{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .fact{
+    font-family:var(--mono);
+    font-size:12px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:6px 10px;
+    color:var(--ink-muted);
+  }
+  .fact b{color:var(--ink); font-weight:600;}
+
+  section{margin-bottom:56px; scroll-margin-top:20px;}
+  section > h2{
+    font-size:23px;
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin:0 0 6px;
+  }
+  section > h2 .secnum{
+    font-family:var(--mono);
+    font-size:14px;
+    color:var(--accent);
+    font-weight:600;
+  }
+  section > p.dek{
+    color:var(--ink-muted);
+    max-width:72ch;
+    margin:0 0 22px;
+  }
+  h3{font-size:17px; margin:28px 0 10px;}
+  h3 .sub-eyebrow{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-weight:500;
+    margin-bottom:3px;
+  }
+  p{margin:0 0 12px;}
+
+  .callout{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent);
+    border-radius:8px;
+    padding:14px 16px;
+    margin:16px 0;
+    font-size:14.5px;
+  }
+  .callout.crit{border-left-color:var(--crit); background:var(--crit-soft);}
+  .callout.warn{border-left-color:var(--warn); background:var(--warn-soft);}
+  .callout b{color:var(--ink);}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .twrap{overflow-x:auto; border-radius:10px; box-shadow:var(--shadow); margin:14px 0 22px;}
+  .twrap table{box-shadow:none; margin:0; border-radius:0;}
+  th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:10.8px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    background:var(--surface-2);
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    vertical-align:top;
+    color:var(--ink);
+  }
+  tr:last-child td{border-bottom:none;}
+  td.path, td .path{font-family:var(--mono); font-size:12px; color:var(--ink-muted);}
+  td.cols{font-family:var(--mono); font-size:12px; color:var(--ink-muted); line-height:1.55;}
+
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.02em;
+    padding:2.5px 8px;
+    border-radius:99px;
+    white-space:nowrap;
+  }
+  .chip.ok{background:var(--accent-soft); color:var(--accent-strong);}
+  .chip.crit{background:var(--crit-soft); color:var(--crit-ink);}
+  .chip.warn{background:var(--warn-soft); color:var(--warn-ink);}
+  .chip.minor{background:var(--minor-soft); color:var(--minor-ink);}
+  .chip.dead{background:var(--dead-soft); color:var(--ink-faint);}
+
+  .stack{display:flex; flex-direction:column; gap:12px;}
+
+  .finding{
+    display:grid;
+    grid-template-columns:104px 1fr;
+    gap:16px;
+    padding:14px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .finding:last-child{border-bottom:none;}
+  .finding .sev{padding-top:2px;}
+  .finding h4{
+    font-family:var(--sans);
+    font-size:14.5px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .finding p{font-size:13.8px; color:var(--ink-muted); margin:0;}
+  .finding .loc{font-family:var(--mono); font-size:12px; color:var(--ink-faint);}
+
+  .findings-group{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:6px 18px;
+    box-shadow:var(--shadow);
+    margin-bottom:20px;
+  }
+  .findings-group > .gtitle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:14px 0 10px;
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-faint);
+  }
+
+  .exec-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:14px;
+    margin:20px 0 8px;
+  }
+  .exec-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 18px;
+    box-shadow:var(--shadow);
+  }
+  .exec-card .n{
+    font-family:var(--serif);
+    font-size:30px;
+    font-weight:700;
+    color:var(--accent-strong);
+    line-height:1;
+    font-variant-numeric: tabular-nums;
+  }
+  .exec-card .lbl{font-size:12.5px; color:var(--ink-muted); margin-top:6px;}
+
+  ol.decisions{padding-left:0; list-style:none; counter-reset:dec;}
+  ol.decisions li{
+    counter-increment:dec;
+    display:grid;
+    grid-template-columns:30px 1fr;
+    gap:10px;
+    padding:14px 0;
+    border-bottom:1px solid var(--border);
+  }
+  ol.decisions li:last-child{border-bottom:none;}
+  ol.decisions li::before{
+    content:counter(dec);
+    font-family:var(--serif);
+    font-weight:700;
+    color:var(--accent);
+    font-size:18px;
+  }
+  ol.decisions b{display:block; margin-bottom:3px;}
+  ol.decisions .why{color:var(--ink-muted); font-size:13.5px;}
+
+  footer{
+    margin-top:60px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    font-size:12.5px;
+    color:var(--ink-faint);
+  }
+
+  ::selection{background:var(--accent-soft); color:var(--accent-strong);}
+</style>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-brand">Auditoria de sistema</div>
+    <div class="toc-title">Raio-X do<br>Pelada Pro</div>
+    <div class="toc-meta">Somente leitura · 06/09/2026</div>
+    <nav>
+      <a href="#sumario"><span class="num">00</span>Sumário executivo</a>
+      <div class="toc-sep"></div>
+      <a href="#telas"><span class="num">01</span>Telas e funções</a>
+      <a href="#banco"><span class="num">02</span>Banco de dados</a>
+      <a href="#regras"><span class="num">03</span>Regras de negócio</a>
+      <a href="#problemas"><span class="num">04</span>Problemas encontrados</a>
+      <a href="#lacunas"><span class="num">05</span>Lacunas vs. especificação</a>
+      <div class="toc-sep"></div>
+      <a href="#pendencias"><span class="num">→</span>Pendências para você</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Diagnóstico · leitura apenas, nenhum dado alterado</div>
+      <h1>O que existe hoje no Pelada Pro, e o quanto se afasta do que os docs 01–08 pedem</h1>
+      <p class="lede">Auditoria do backend Node.js, do painel web (gestor/jogador) e do app mobile Expo, cruzada com a especificação oficial. Cada achado abaixo tem o arquivo e a linha de onde veio.</p>
+      <div class="hero-facts">
+        <span class="fact"><b>3</b> plataformas auditadas</span>
+        <span class="fact"><b>~60</b> telas mapeadas</span>
+        <span class="fact"><b>23</b> tabelas confirmadas no Supabase</span>
+        <span class="fact"><b>0</b> políticas de RLS em todo o banco</span>
+        <span class="fact"><b>9</b> achados críticos de segurança</span>
+        <span class="fact">Corte lógico: <b>09/09/2026</b></span>
+      </div>
+    </header>
+
+    <section id="sumario">
+      <h2><span class="secnum">00</span>Sumário executivo</h2>
+      <p class="dek">Antes do detalhe: o sistema funciona, mas em três camadas com modelos de dados e regras diferentes entre si — não um único "Pelada Pro", e sim três implementações parcialmente sobrepostas.</p>
+      <div class="exec-grid">
+        <div class="exec-card"><div class="n">17</div><div class="lbl">telas do app mobile existem no código mas não estão conectadas a nenhuma rota — dados 100% mockados</div></div>
+        <div class="exec-card"><div class="n">3</div><div class="lbl">implementações diferentes do sorteio de times (backend, web, mobile) — nenhuma aplica a regra de memória de duplas exatamente como especificado</div></div>
+        <div class="exec-card"><div class="n">5</div><div class="lbl">tabelas em UUID, órfãs e sem nenhuma política de RLS — travadas para qualquer acesso via chave anônima/autenticada</div></div>
+        <div class="exec-card"><div class="n">0</div><div class="lbl">telas com login social (Google/Apple) realmente funcionais, em qualquer plataforma</div></div>
+      </div>
+      <div class="callout crit"><b>Achado que muda o diagnóstico:</b> o "caminho paralelo Supabase" que os documentos apontam como causa da re-sincronização de times na web é código morto — <code>window.supabase</code> nunca é carregado no navegador. A causa mais provável é cache em memória do backend Node (por processo) ou uma segunda aba com a tela de Partidas aberta reenviando o placar. Ver seção 04.</div>
+    </section>
+
+    <section id="telas">
+      <h2><span class="secnum">01</span>Telas e funções</h2>
+      <p class="dek">Web: PWA em HTML/CSS/JS puro com roteador próprio (<code>js/core/router.js</code>). Mobile: React Native + Expo Router. As tabelas marcam o que está realmente acessível hoje.</p>
+
+      <h3><span class="sub-eyebrow">Web · painel do gestor</span>pages/gestor/</h3>
+      <div class="twrap"><table>
+        <tr><th>Tela</th><th>Arquivo</th><th>Função</th><th>Situação</th></tr>
+        <tr><td>Login / cadastro</td><td class="path">pages/login.html</td><td>E-mail+senha, cadastro, recuperação de senha</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Selecionar perfil</td><td class="path">pages/selecionar_perfil.*</td><td>Escolhe Gestor/Jogador para contas com <code>tipo='ambos'</code></td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Atletas</td><td class="path">gestor/atletas.js</td><td>CRUD de atletas, aprovação de cadastro, transferir "convidado"→"jogador"</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Times (catálogo)</td><td class="path">gestor/times.js</td><td>Nomes/cores padrão de times por grupo (tabela <code>nomes_times_grupo</code>)</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Formação</td><td class="path">gestor/formacao.js</td><td>Check-in, sorteio, fila de espera, drag&amp;drop, emblemas</td><td><span class="chip warn">Funcional c/ bugs</span></td></tr>
+        <tr><td>— versão antiga</td><td class="path">gestor/formacao copy.js</td><td>Estágio anterior do mesmo arquivo, sem as correções mais recentes</td><td><span class="chip dead">Código morto</span></td></tr>
+        <tr><td>Partidas</td><td class="path">gestor/partidas.js</td><td>Placar ao vivo, cronômetro, gols/pênaltis, histórico, torneio</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Financeiro</td><td class="path">gestor/financeiro.js</td><td>Caixa, vaquinhas, lançamentos avulsos, saldos (1390 linhas)</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Configurações</td><td class="path">gestor/config.js</td><td>Criar grupo/pelada, agendar, CRUD de locais, licença</td><td><span class="chip ok">Funcional</span></td></tr>
+      </table></div>
+
+      <h3><span class="sub-eyebrow">Web · área do jogador</span>pages/jogador/</h3>
+      <div class="twrap"><table>
+        <tr><th>Tela</th><th>Arquivo</th><th>Função</th><th>Situação</th></tr>
+        <tr><td>Dashboard</td><td class="path">jogador/dashboard.js</td><td>Home do atleta, próximos jogos, avisos</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Convocação</td><td class="path">jogador/convocacao.js</td><td>Confirmar presença, entrar na fila, pagar convocação</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Acompanhamento</td><td class="path">jogador/acompanhamento.js</td><td>Ver placar ao vivo da pelada em andamento</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Perfil completo</td><td class="path">jogador/completo.html</td><td>Perfil do atleta — sem arquivo <code>.js</code> dedicado</td><td><span class="chip warn">Incompleto</span></td></tr>
+        <tr><td>Desempenho</td><td class="path">jogador/desempenho.js</td><td>Estatísticas pessoais (pontos, gols, jogos)</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Financeiro</td><td class="path">jogador/financeiro.js</td><td>Carrega dinamicamente o financeiro do <b>gestor</b> e reexecuta a mesma tela</td><td><span class="chip crit">Vaza dados do grupo</span></td></tr>
+        <tr><td>Arrecadação</td><td class="path">jogador/arrecadacao.js</td><td>Lista vaquinhas do grupo, permite contribuir</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>Ranking</td><td class="path">jogador/ranking.js</td><td>Ranking de pontos/gols do grupo</td><td><span class="chip ok">Funcional</span></td></tr>
+      </table></div>
+
+      <h3><span class="sub-eyebrow">Web · serviços centrais</span>js/core, js/services</h3>
+      <div class="twrap"><table>
+        <tr><th>Arquivo</th><th>Papel</th></tr>
+        <tr><td class="path">js/core/api.js <span class="mono">(1519 linhas)</span></td><td>Camada híbrida: localStorage de cache + <code>fetch('/api/...')</code> para o backend real + ramos <code>window.supabase</code> que nunca executam (SDK não é carregado no navegador)</td></tr>
+        <tr><td class="path">js/core/auth.js</td><td>Login/cadastro via REST; tem 3 funções (<code>solicitarCodigo</code>, <code>redefinirSenha</code>, <code>copiarCodigo</code>) definidas duas vezes — a segunda sobrescreve a primeira silenciosamente</td></tr>
+        <tr><td class="path">js/core/router.js</td><td>Roteador da SPA + carregador de scripts por página/modal</td></tr>
+        <tr><td class="path">js/services/tournamentEngine.js</td><td>Motor de torneios (fase de grupos, mata-mata, pontos corridos)</td></tr>
+        <tr><td class="path">js/services/pix_ocr.js</td><td>Leitura de comprovante Pix</td></tr>
+        <tr><td class="path">js/pwa_push.js / pwa_installer.js</td><td>Push notification e instalação de PWA</td></tr>
+        <tr><td class="path">components/modals/*.js</td><td>30+ modais (atleta, pagamento, despesa, sorteio, vaquinha, penaltis, google_auth, etc.)</td></tr>
+      </table></div>
+
+      <h3><span class="sub-eyebrow">Mobile · rotas que realmente existem</span>Expo Router — src/app/</h3>
+      <div class="twrap"><table>
+        <tr><th>Rota</th><th>Arquivo</th><th>Função</th><th>Situação</th></tr>
+        <tr><td><code>/</code></td><td class="path">app/index.js</td><td>Login duplicado nº1 — e-mail de teste hardcoded, Supabase Auth direto</td><td><span class="chip warn">Duplicado</span></td></tr>
+        <tr><td><code>/login</code></td><td class="path">app/login.js</td><td>Login duplicado nº2 — via hook <code>useAuth</code></td><td><span class="chip warn">Duplicado</span></td></tr>
+        <tr><td><code>/signup</code></td><td class="path">app/signup.js</td><td>Cadastro (Supabase Auth)</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td>root</td><td class="path">app/_layout.js</td><td>Stack raiz — sem nenhum Provider (Auth/Toast) montado</td><td><span class="chip warn">Incompleto</span></td></tr>
+        <tr><td><code>/tabs/*</code></td><td class="path">app/tabs/_layout.tsx</td><td>Declara 5 abas: home, pelada, jogadores, ranking, mais</td><td><span class="chip crit">4 de 5 quebradas</span></td></tr>
+        <tr><td><code>/tabs/home</code></td><td class="path">app/tabs/home.tsx</td><td>Única aba que existe de fato; consulta <code>grupos</code>/<code>conquistas</code> reais</td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td><code>/sorteio</code></td><td class="path">app/sorteio.js → screens/TeamSelection.js</td><td>Sorteio real com memória de duplas, grava na tabela <code>sorteios</code></td><td><span class="chip ok">Funcional</span></td></tr>
+        <tr><td><code>/premium</code></td><td class="path">app/premium.tsx</td><td>Card Premium — persistência em 3 camadas implementada</td><td><span class="chip crit">Crasha ao abrir</span></td></tr>
+      </table></div>
+
+      <h3><span class="sub-eyebrow">Mobile · código morto (não roteado, dados mockados)</span>src/screens/</h3>
+      <p>Todas as telas abaixo só são alcançáveis por um mini-roteador próprio em <code class="path">screens/HomeScreen.js</code> — que, por sua vez, não é importado por nenhuma rota do Expo Router. Nenhuma delas é o que o usuário final vê hoje.</p>
+      <div class="twrap"><table>
+        <tr><th>Arquivo</th><th>Função pretendida</th></tr>
+        <tr><td class="path">HomeScreen.js</td><td>Roteador interno órfão</td></tr>
+        <tr><td class="path">OnboardingScreen.js</td><td>Onboarding (criar grupo, convite)</td></tr>
+        <tr><td class="path">Dashboard.js</td><td>Home do gestor</td></tr>
+        <tr><td class="path">PeladaScreen.js</td><td>Presença + fila de espera (hardcoded)</td></tr>
+        <tr><td class="path">JogadoresScreen.js</td><td>Lista de jogadores do grupo</td></tr>
+        <tr><td class="path">RankingScreen.js</td><td>Ranking com pódio</td></tr>
+        <tr><td class="path">MaisScreen.js</td><td>Configurações do grupo</td></tr>
+        <tr><td class="path">EscalarTimesScreen.js</td><td>Sorteio simplificado — <b>sem</b> memória de duplas, duplica o de <code>/sorteio</code></td></tr>
+        <tr><td class="path">FinanceiroScreen.js</td><td>Financeiro completo (mock, visão de gestor)</td></tr>
+        <tr><td class="path">NovaPeladaScreen.js</td><td>Criar pelada</td></tr>
+        <tr><td class="path">PerfilScreen.js</td><td>Perfil do jogador + "pagar via Pix"</td></tr>
+        <tr><td class="path">AoVivoScreen.js</td><td>Partida ao vivo (placar, timer, rodízio)</td></tr>
+        <tr><td class="path">PosJogoScreen.js</td><td>Pós-jogo: MVP, gols, pagamentos</td></tr>
+        <tr><td class="path">QuadrasScreen.js</td><td>CRUD de quadras (só em estado local)</td></tr>
+        <tr><td class="path">ComponentPreview.js</td><td>Preview do design system — tela de desenvolvimento</td></tr>
+        <tr><td class="path">AttendanceList.js</td><td>Lista de presença — <span class="chip crit">sintaxe inválida</span> (tags HTML soltas dentro do objeto de estilos)</td></tr>
+        <tr><td class="path">CreatePelada.js</td><td>Formulário de pelada — <span class="chip crit">sintaxe inválida</span> (mesmo problema)</td></tr>
+      </table></div>
+    </section>
+
+    <section id="banco">
+      <h2><span class="secnum">02</span>Banco de dados</h2>
+      <p class="dek">Um único Postgres hospedado no Supabase (projeto <code>xgsdaavryzhqxkwsonkk</code>), acessado por SQL cru no backend. <code>backend/database.sql</code> é só o esqueleto original de julho — o schema real cresceu por scripts avulsos e, em boa parte, direto no Supabase Studio, sem deixar rastro no repositório.</p>
+
+      <div class="callout ok" style="border-left-color:var(--accent);">
+        <b>Atualização · 06/09/2026, sessão seguinte:</b> conectamos direto no Postgres do Supabase (sem <code>pg_dump</code> disponível localmente, usamos uma consulta equivalente via <code>information_schema</code>/<code>pg_catalog</code> com o pacote <code>pg</code> já presente no backend — script somente leitura em <code class="path">backend/scratch/schema_audit.js</code>) e confirmamos: <b>23 tabelas reais</b> no schema <code>public</code>. Isso fecha a pendência 1 do relatório original e revela algo mais preciso do que a hipótese anterior — ver o quadro abaixo.
+      </div>
+
+      <div class="callout crit">
+        <b>Confirmado: existem duas modelagens de dados coexistindo no mesmo banco.</b> 18 tabelas usam <code>id</code> inteiro/serial (o schema "legado" que o backend Node realmente lê e escreve, com dados de verdade). Outras <b>5 tabelas usam <code>id</code> UUID</b> — <code>usuario_grupo</code>, <code>configuracao_pelada</code>, <code>jogador_time</code>, <code>desempenho_goleiro</code>, <code>gols</code> — formando um fragmento de schema paralelo, sem nenhuma FK ligando-o ao resto do banco (tipos incompatíveis: UUID vs. integer). Nenhum controller do backend escreve nessas 5 tabelas. É provavelmente o início de uma migração para o padrão UUID do Supabase Auth (coerente com a decisão do doc 08 de ir para Supabase Auth) que foi abandonada antes de ser conectada a qualquer código. Ver detalhe logo abaixo.
+      </div>
+      <div class="callout warn">
+        <b>Os nomes que o mobile consulta (<code>profiles</code>, <code>grupo_membros</code>, <code>pelada_presencas</code>, <code>quadras</code>, <code>jogadores</code>, <code>sorteios</code>, <code>ranking_grupos</code>, <code>conquistas</code>) não existem em NENHUMA das 23 tabelas reais.</b> Toda consulta do app mobile a essas tabelas retorna erro "relation does not exist" em produção — o mobile foi escrito contra um schema que nunca chegou a ser criado no banco.
+      </div>
+
+      <h3><span class="sub-eyebrow">Respostas às 6 perguntas "a confirmar" da especificação</span></h3>
+      <div class="twrap"><table>
+        <tr><th>Pergunta do doc 04</th><th>Resposta encontrada no código</th></tr>
+        <tr><td>Tabela de vínculo jogador↔grupo</td><td><b>Não existe.</b> Só há <code>grupos.gestor_id</code>. Ao agendar uma pelada, <code class="path">peladaController.agendarData</code> convoca <b>todos os usuários ativos do sistema</b>, não apenas os do grupo.</td></tr>
+        <tr><td>Como a fila de espera é guardada</td><td><code>convocacoes.status = 'espera'</code> (alias legado <code>'fila_espera'</code> ainda testado em várias queries), ordenada por <code>posicao_fila</code>.</td></tr>
+        <tr><td>Como o local/quadra é guardado</td><td>Existe tabela própria <code>locais</code> (CRUD completo) — mas <b>sem FK</b>: <code>peladas.local</code> é o nome copiado como texto livre.</td></tr>
+        <tr><td>Tabelas de torneio</td><td>Não existem. Só <code>peladas.modo</code>/<code>turno_torneio</code> (rótulos) + tabela genérica <code>partidas</code>, sem chaveamento/fases.</td></tr>
+        <tr><td>Tokens de push</td><td><code>push_subscriptions</code> (usuario_id, endpoint único, keys) — sem script de criação no repo.</td></tr>
+        <tr><td>Vaquinha (detalhe)</td><td><code>arrecadacoes</code> + <code>arrecadacoes_contribuicoes</code> — ver seção 03.</td></tr>
+      </table></div>
+
+      <h3><span class="sub-eyebrow">Confirmado ao vivo · schema legado (id inteiro) — o que o backend realmente usa</span></h3>
+      <div class="twrap"><table>
+        <tr><th>Tabela</th><th>Linhas hoje</th><th>Colunas principais</th><th>Observação</th></tr>
+        <tr><td class="path">usuarios</td><td class="cols">51</td><td class="cols">id, email, senha_hash, nome, apelido, cpf(único), whatsapp, foto, autoavaliacao, goleiro, saldo, ativo, verificado, tipo, premium/vip/plano, codigo_verificacao, recuperacao_codigo</td><td>Conta real (JWT+bcrypt), com dados de 51 pessoas. Mobile usa Supabase Auth em paralelo — ver alerta acima.</td></tr>
+        <tr><td class="path">grupos</td><td class="cols">1</td><td class="cols">id, nome, gestor_id, ativo, licenca_codigo, licenca_status, licenca_expira_em, adsense_*</td><td>Um gestor dono. Sem tabela de membros no schema legado.</td></tr>
+        <tr><td class="path">peladas</td><td class="cols">3</td><td class="cols">id, grupo_id, data, horario, local(texto), status, max_jogadores, modo, turno_torneio, liberar_convidados, live_state(<b>text</b>, não jsonb), chave_pix, valor_convocacao, jogadores_por_time, quantidade_times, vitorias_para_sair, criterio_empate, regra_saida, limite_atletas</td><td><code>live_state</code> é <b>texto</b> (provavelmente JSON serializado manualmente, não coluna <code>jsonb</code> nativa) — guarda times/fila/placar; centro do bug de "Limpar Times".</td></tr>
+        <tr><td class="path">convocacoes</td><td class="cols">134</td><td class="cols">pelada_id+usuario_id (PK composta), status, forma_pagamento, posicao_fila, saldo_estornado, presenca(bool), motivo_remocao, data_remocao</td><td>É também a fila de espera.</td></tr>
+        <tr><td class="path">transacoes</td><td class="cols">172</td><td class="cols">id, usuario_id, grupo_id, valor, tipo(credito/debito), descricao, data</td><td>Ledger append-only, mantido em paralelo a <code>usuarios.saldo</code> sem reconciliação.</td></tr>
+        <tr><td class="path">configs</td><td class="cols"><b>0</b></td><td class="cols">grupo_id (PK), valor_mensalidade, limite_saldo_negativo, qtd_times, jogadores_por_time, criterios_empate(array), criterio_empate, vitorias_para_sair, regra_saida, valor_convocacao</td><td><b>Zero linhas em produção</b> — as configurações reais vivem direto nas colunas de <code>peladas</code>, não nesta tabela.</td></tr>
+        <tr><td class="path">times</td><td class="cols"><b>0</b></td><td class="cols">id, pelada_id, nome, cor, vitorias, empates, gols_pro/contra, jogos, emblema, emblema_url</td><td><b>Zero linhas</b>, apesar de <code>formacaoController.sortear</code> supostamente persistir aqui — indício de que os times sorteados na prática só existem dentro de <code>peladas.live_state</code>.</td></tr>
+        <tr><td class="path">times_jogadores</td><td class="cols"><b>0</b></td><td class="cols">time_id+usuario_id (PK composta)</td><td>Idem — nunca populada.</td></tr>
+        <tr><td class="path">partidas</td><td class="cols">12</td><td class="cols">id, pelada_id, time_a_nome, time_b_nome, gols_time_a/b, status, autores_gols(texto), chave_pix, chave_pix_nome</td><td>Schema real diverge do <code>database.sql</code> versionado (foi recriada por script avulso).</td></tr>
+        <tr><td class="path">pagamentos_mercado_pago</td><td class="cols">62</td><td class="cols">id(varchar), usuario_id, pelada_id, valor, status, qr_code, qr_code_base64, tipo</td><td>Em uso ativo.</td></tr>
+        <tr><td class="path">licencas</td><td class="cols">1</td><td class="cols">id, codigo(único), email_comprador, plano, status, grupo_id, ativada_em, expira_em</td><td>—</td></tr>
+        <tr><td class="path">nomes_times_grupo</td><td class="cols">8</td><td class="cols">id, grupo_id, nome, cor — único(grupo_id,nome)</td><td>Catálogo de nomes/cores padrão — não confundir com <code>times</code>.</td></tr>
+        <tr><td class="path">emblemas_grupo</td><td class="cols">14</td><td class="cols">id, grupo_id, nome, imagem_url, criado_em</td><td>Existe de verdade e está em uso, apesar de não ter script no repositório.</td></tr>
+        <tr><td class="path">locais</td><td class="cols">1</td><td class="cols">id, nome, endereco, gestor_id, created_at</td><td>Existe, em uso — mas sem FK para <code>peladas.local</code> (que é texto livre).</td></tr>
+        <tr><td class="path">push_subscriptions</td><td class="cols">34</td><td class="cols">id, usuario_id, endpoint(único), keys(jsonb), created_at</td><td>Existe e está em uso real — 34 dispositivos registrados no lado servidor.</td></tr>
+        <tr><td class="path">comprovantes_pix</td><td class="cols">0</td><td class="cols">id, pelada_id, partida_id, atleta_email, e2e_id(único), valor, beneficiario_nome, status, comprovante_url</td><td>Existe, mas sem nenhuma linha ainda.</td></tr>
+        <tr><td class="path">arrecadacoes</td><td class="cols">1</td><td class="cols">id, grupo_id, titulo, descricao, meta_valor, valor_sugerido, categoria, chave_pix_custom, status</td><td>1 campanha ativa hoje. Confirma: sem coluna de prazo/data-limite.</td></tr>
+        <tr><td class="path">arrecadacoes_contribuicoes</td><td class="cols">29</td><td class="cols">id, arrecadacao_id, usuario_id, valor, status, payment_id, qr_code, qr_code_base64</td><td>29 contribuições reais na única campanha.</td></tr>
+      </table></div>
+
+      <h3><span class="sub-eyebrow">Correção do relatório anterior</span>"notificacoes" e "mvp_partida" não existem de fato</h3>
+      <p>A primeira leitura (só de código) listou essas duas como "usadas mas sem script de criação". Com acesso direto ao banco, confirmamos que <b>nenhuma das duas existe</b> nas 23 tabelas reais. Os <code>INSERT INTO notificacoes</code> (<code class="path">convocacaoController.js:422-425</code>) e <code>UPDATE mvp_partida</code> (<code class="path">usuarioController.js:525</code>) falham em produção — e, dado o padrão de <code>catch</code> silencioso já visto em todo o backend, o erro provavelmente é engolido sem log. Ou seja: notificações in-app e o recurso de "MVP da partida" não funcionam, silenciosamente, hoje.</p>
+
+      <h3><span class="sub-eyebrow">Descoberta desta consulta ao banco</span>Um segundo schema, em UUID, órfão e travado por RLS sem políticas</h3>
+      <p>Existem <b>5 tabelas</b> com <code>id</code> em UUID (o padrão do Supabase Auth) em vez de inteiro/serial — não referenciadas por nenhum controller do backend, sem nenhuma FK ligando-as ao restante do banco (os tipos nem seriam compatíveis: UUID vs. integer), e coincidentemente <b>são exatamente as 5 únicas tabelas com RLS ligado</b> em todo o banco:</p>
+      <div class="twrap"><table>
+        <tr><th>Tabela</th><th>Linhas</th><th>Colunas</th><th>RLS</th></tr>
+        <tr><td class="path">usuario_grupo</td><td class="cols">5</td><td class="cols">id, usuario_id(uuid), grupo_id(uuid), ativo, created_at — único(usuario_id,grupo_id)</td><td><span class="chip warn">Ligado, 0 políticas</span></td></tr>
+        <tr><td class="path">configuracao_pelada</td><td class="cols">0</td><td class="cols">id, grupo_id(uuid, único), criterio_empate, vitorias_para_sair, regra_saida, jogadores_por_time, quantidade_times, valor_convocacao, limite_saldo_negativo</td><td><span class="chip warn">Ligado, 0 políticas</span></td></tr>
+        <tr><td class="path">jogador_time</td><td class="cols">0</td><td class="cols">id, time_id(uuid), usuario_id(uuid), goleiro_na_partida, ordem_sorteio — único(time_id,usuario_id)</td><td><span class="chip warn">Ligado, 0 políticas</span></td></tr>
+        <tr><td class="path">desempenho_goleiro</td><td class="cols">0</td><td class="cols">id, partida_id(uuid), usuario_id(uuid), time_id(uuid), gols_sofridos, defesas, clean_sheet — único(partida_id,usuario_id)</td><td><span class="chip warn">Ligado, 0 políticas</span></td></tr>
+        <tr><td class="path">gols</td><td class="cols">0</td><td class="cols">id, partida_id(uuid), usuario_id(uuid), time_id(uuid), quantidade, minuto</td><td><span class="chip warn">Ligado, 0 políticas</span></td></tr>
+      </table></div>
+      <div class="callout warn">É exatamente <code>usuario_grupo</code> que responde à pergunta "onde fica o vínculo jogador↔grupo" do doc 04 — a tabela existe e até tem 5 linhas reais. Só que está isolada: tipo de chave incompatível com <code>usuarios.id</code>/<code>grupos.id</code> (integer), sem FK, sem nenhuma rota de API que a leia ou escreva, e com RLS ligado sem nenhuma política — nenhum papel (nem <code>anon</code>, nem <code>authenticated</code>) consegue ler ou escrever nela hoje. Como as 5 linhas foram inseridas ainda não está claro a partir do código (nenhum controller ou tela toca essa tabela); provavelmente foi um teste manual direto no Supabase Studio durante uma exploração de arquitetura anterior.</div>
+
+      <h3 id="rls"><span class="sub-eyebrow">Pergunta 4 da tarefa</span>Políticas de RLS existentes hoje</h3>
+      <p><b>Resposta direta: nenhuma.</b> A consulta a <code>pg_policies</code> devolveu uma lista vazia — <b>0 políticas de RLS em todo o banco</b>, em qualquer tabela. A situação real de RLS é:</p>
+      <ul>
+        <li><b>18 tabelas com RLS totalmente desligado</b> — incluindo <code>usuarios</code>, <code>grupos</code>, <code>peladas</code>, <code>convocacoes</code> e <code>transacoes</code>, ou seja, todas as tabelas com dados pessoais e financeiros reais.</li>
+        <li><b>5 tabelas com RLS ligado mas zero políticas</b> — na prática, isso bloqueia qualquer leitura/escrita por chaves <code>anon</code>/<code>authenticated</code> (só o papel dono/serviço, que é o que o backend usa via conexão direta ao Postgres, consegue acessá-las). É o fragmento UUID acima.</li>
+      </ul>
+      <div class="callout crit">
+        <b>Isto é mais grave do que "RLS incompleto" (SEG-001 do doc 06).</b> O app mobile carrega a <code>anon key</code> do Supabase diretamente no código-fonte (<code class="path">src/lib/supabase.ts</code>) e usa o cliente Supabase para ler/escrever tabelas como <code>usuarios</code> (tela <code>app/premium.tsx</code>) e outras do schema legado — todas com RLS desligado. Com RLS desligado, a API REST automática do Supabase (PostgREST) concede acesso conforme os grants padrão de <code>anon</code>/<code>authenticated</code>, sem depender do JWT próprio nem das checagens de papel do backend Node. Na prática, isso significa que qualquer pessoa com a <code>anon key</code> (já exposta no bundle do app) pode, em tese, consultar/alterar essas tabelas <b>direto pela API do Supabase, contornando completamente a autenticação e as regras de autorização do backend</b>. Recomendamos <b>não testar isso ativamente em produção</b> sem uma janela controlada — mas o achado por si só (RLS desligado + chave anônima pública) já justifica tratar como crítico e confirmar/corrigir antes do corte de 09/09.
+      </div>
+    </section>
+
+    <section id="regras">
+      <h2><span class="secnum">03</span>Regras de negócio no código</h2>
+
+      <h3><span class="sub-eyebrow">Crítico do produto</span>Sorteio de times — três implementações divergentes</h3>
+      <p>Não existe "o" algoritmo de sorteio: há três, um por plataforma, em estágios diferentes de fidelidade à regra de memória de duplas.</p>
+      <div class="twrap"><table>
+        <tr><th>Onde</th><th>Como funciona</th><th>Memória de duplas</th></tr>
+        <tr><td class="path">backend/sorteador.js</td><td>20 simulações "snake draft" ponderadas por estrelas, escolhe a de menor score</td><td><span class="chip crit">Morta</span> — <code class="path">formacaoController.sortear</code> nunca passa o histórico; o parâmetro sempre chega vazio</td></tr>
+        <tr><td class="path">components/modals/sorteio.js (web)</td><td>20 candidatos Monte Carlo + refinamento local por trocas (meta: diferença de média ≤0,5)</td><td><span class="chip warn">Parcial</span> — penalidade suave no score, histórico acumulado para sempre em <code>localStorage</code>, sem janela deslizante</td></tr>
+        <tr><td class="path">src/utils/sorteioComMemoria.js (mobile)</td><td>Distribuição guiada 2-2-1-1 + mecanismo de "sacrifício" de duplas repetidas</td><td><span class="chip ok">A mais fiel</span> — mas só é usada na única tela mobile de sorteio real</td></tr>
+      </table></div>
+      <p>Nenhuma das três implementa como restrição rígida a regra "diferença ≤2 estrelas, tolerância 3" nem o piso combinatório de 8 duplas repetidas citado no doc 01/06 — são heurísticas que tendem para o equilíbrio, sem garantia matemática.</p>
+
+      <h3><span class="sub-eyebrow">Presença</span>Fila de espera e promoção</h3>
+      <p>O backend tem dois caminhos que liberam vaga, com comportamentos inconsistentes entre si:</p>
+      <ul>
+        <li><b>Remoção pelo gestor</b> (<code class="path">convocacaoController.desconvocarPorGestor</code>) promove o primeiro da fila automaticamente <b>sem checar saldo nem cobrar</b> — risco de o atleta entrar "de graça".</li>
+        <li><b>Autorremoção do atleta</b> (<code class="path">convocacaoController.remover</code>) não promove ninguém: só envia push avisando que uma vaga abriu, e o próprio atleta precisa confirmar/pagar.</li>
+      </ul>
+      <p>Nenhum dos dois caminhos implementa exatamente a regra do doc 03/05 ("promove automaticamente se tiver saldo ≥ valor da pelada, senão notifica para pagar"). No mobile, a fila é 100% mockada (não há lógica real).</p>
+
+      <h3><span class="sub-eyebrow">Financeiro</span>Ledger, saldo paralelo e correção destrutiva</h3>
+      <p>O extrato (<code>transacoes</code>) e o saldo corrente (<code>usuarios.saldo</code>) são duas fontes de verdade mantidas manualmente, sem rotina de reconciliação. Mais grave: existem dois padrões de correção coexistindo —</p>
+      <ul>
+        <li><b>Correção destrutiva</b> (a maioria): <code class="path">editar_transacao.js</code> → <code>UPDATE</code>/<code>DELETE</code> físico da linha original, sem trilha. Viola a regra "nenhum lançamento apagado silenciosamente" (doc 01, item 6.4 / FIN-010).</li>
+        <li><b>Estorno auditável</b> (só para presença/Pix): <code class="path">estornarSaldoAtleta</code> cria uma nova transação de devolução, preservando a original — o padrão certo, mas aplicado de forma inconsistente.</li>
+      </ul>
+      <p>O dashboard web calcula "Caixa Real", "Saldo dos Atletas" e status de pagamento parcial lendo tags de texto embutidas na descrição (<code>[PAGO:x/y]</code>, <code>[PENDENTE]</code>) em vez de colunas estruturadas — funciona, mas é frágil a qualquer mudança de texto futura.</p>
+
+      <h3><span class="sub-eyebrow">Confidencialidade</span>Jogador vê o financeiro de todo o grupo</h3>
+      <div class="callout crit">A regra "jogador só vê a própria situação" (doc 05, seção 3.5) está <b>violada hoje</b>: <code class="path">pages/jogador/financeiro.js</code> carrega o mesmo dashboard agregado do gestor (caixa total, saldo de todos os atletas, todas as vaquinhas) e só esconde botões de ação via uma checagem (<code>Auth.getUserRole</code>) que <b>nem existe</b> em <code>auth.js</code> — funciona por acaso, caindo num fallback baseado na URL.</div>
+
+      <h3><span class="sub-eyebrow">Vaquinha</span>Campanhas de arrecadação</h3>
+      <p>Fluxo completo: criar campanha (título, meta, valor sugerido, categoria — <b>sem campo de prazo/data-limite</b>, ao contrário do que o doc 02 supõe) → contribuir por saldo interno (instantâneo) ou Pix real via Mercado Pago com polling a cada 2,5s. Um botão "Simular Aprovação" fica <b>sempre visível</b> no modal de contribuição, sem nenhuma trava de ambiente — um atalho de teste exposto em produção. Não há limite contra ultrapassar a meta, e contribuições não se vinculam a uma pelada específica, só ao grupo.</p>
+
+      <h3><span class="sub-eyebrow">Papéis</span>Tesoureiro não existe</h3>
+      <p>O modelo de três papéis por grupo (organizador/tesoureiro/jogador) do doc 05 não existe no código. A única distinção real é <code>usuarios.tipo</code>, com valores <code>jogador</code>, <code>gestor</code>, <code>ambos</code>, <code>convidado</code>, <code>incorporado</code> — nenhum deles é "tesoureiro", e nenhum é por grupo (é global ao usuário).</p>
+
+      <h3><span class="sub-eyebrow">Card Premium</span>Persistência certa, tela quebrada</h3>
+      <p>A correção do bug do iPhone <b>está implementada</b> em <code class="path">app/premium.tsx</code>: memória → <code>AsyncStorage</code> (com try/catch) → Supabase como fonte da verdade, com um listener de <code>AppState</code> comentado explicitamente como "crítico para iPhone". O problema é outro: a tela usa três variáveis nunca declaradas (<code>isLucasGuerreiro</code>, <code>PlayerCard</code>, <code>userStats</code>) e <b>crasha antes de renderizar</b> — a arquitetura certa existe, mas é inacessível.</p>
+
+      <h3><span class="sub-eyebrow">Autenticação</span>Login social — inexistente nas duas plataformas</h3>
+      <p>Na web, "Entrar com Google" (<code class="path">components/modals/google_auth.js</code>) não é OAuth real: pede para o usuário <b>digitar manualmente</b> um e-mail e usa uma senha mock fixa (<code>"google_oauth_secure_password"</code>) — além disso, esse modal está órfão, nenhum botão o chama. No mobile, não há nenhum vestígio de Google/Apple. Em nenhuma das duas plataformas o login social funciona hoje.</p>
+
+      <h3><span class="sub-eyebrow">Regra não documentada</span>Bônus: a "regra das 2 horas"</h3>
+      <p>O backend implementa uma regra financeira real e ausente dos documentos 01–08: <code class="path">convocacaoService.verificarRegra2Horas</code> bloqueia reembolso para cancelamentos feitos a menos de 2h do início da pelada (comparando fusos de Manaus e Brasília, dando benefício da dúvida ao atleta). Vale registrar essa regra no doc de fluxos antes de reconstruir.</p>
+    </section>
+
+    <section id="problemas">
+      <h2><span class="secnum">04</span>Problemas encontrados</h2>
+      <p class="dek">Agrupados por severidade. "Crítico" = risco de segurança ativo ou quebra de uma regra não-negociável do doc 01.</p>
+
+      <div class="findings-group">
+        <div class="gtitle"><span class="chip crit">Crítico</span>Segurança</div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Recuperação de senha devolve o código OTP na própria resposta da API</h4><p>Qualquer requisição não autenticada com o e-mail de uma vítima recebe o código de 6 dígitos direto no JSON — permite tomar a conta sem engenharia social.</p><div class="loc">backend/src/controllers/authController.js:439-444</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>CORS efetivamente aberto</h4><p>A allow-list de origens é código morto — a última linha do callback sempre libera qualquer origem, com <code>credentials:true</code>.</p><div class="loc">backend/src/server.js:44-66</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Senha do banco em texto puro no código-fonte</h4><p>A connection string do Postgres/Supabase (usuário+senha) está hardcoded como fallback.</p><div class="loc">backend/src/config/database.js:4</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Endpoints sem checagem de papel expõem dados pessoais</h4><p>Qualquer usuário autenticado pode listar CPF, data de nascimento, whatsapp e saldo de qualquer atleta, e alterar gols de terceiros.</p><div class="loc">backend/src/controllers/usuarioController.js — listarTodos:124, obterDetalhes:135, adicionarGol:249</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>"Comprovante" de Pix aceito sem verificação real</h4><p>Credita saldo por autodeclaração de valor/E2E; a única trava é uma heurística fraca de duplicidade.</p><div class="loc">backend/src/controllers/pixController.js:63-197</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip warn">Médio</span></div><div><h4>Endpoint de diagnóstico público</h4><p><code>GET /api/pix/diag</code> expõe se o token do Mercado Pago está setado e seus primeiros 15 caracteres.</p><div class="loc">backend/src/routes/pix.js:15-22</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Jogador vê o financeiro completo do grupo</h4><p>A tela do atleta reusa o dashboard do gestor; a checagem de papel que deveria escondê-lo chama um método inexistente.</p><div class="loc">pages/jogador/financeiro.js:7-33</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip warn">Médio</span></div><div><h4>"Login com Google" é uma senha mock fixa</h4><p>O modal aceita qualquer e-mail digitado à mão e autentica com senha constante — sem checar se pertence ao usuário.</p><div class="loc">components/modals/google_auth.js:29-64</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>RLS desligado nas tabelas sensíveis + chave anônima do Supabase exposta no app</h4><p>Confirmado direto no banco: 18 das 23 tabelas — incluindo <code>usuarios</code>, <code>grupos</code>, <code>peladas</code>, <code>convocacoes</code>, <code>transacoes</code> — têm RLS totalmente desligado, e não existe nenhuma política de RLS em nenhuma tabela do banco. Como a <code>anon key</code> do Supabase está hardcoded no código-fonte do mobile, essas tabelas ficam, em tese, acessíveis via API REST do Supabase sem passar pelo JWT/checagens de papel do backend.</p><div class="loc">consulta ao pg_catalog/pg_policies, 06/09/2026 · src/lib/supabase.ts</div></div></div>
+      </div>
+
+      <div class="findings-group">
+        <div class="gtitle"><span class="chip crit">Crítico</span>Integridade funcional</div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Sem isolamento real entre grupos</h4><p>Não existe tabela de vínculo jogador↔grupo. Agendar qualquer pelada convoca <b>todos os usuários ativos do sistema</b>, não só os do grupo — quebra a exigência não-negociável de isolamento multi-grupo.</p><div class="loc">backend/src/controllers/peladaController.js:110-130</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Coluna fantasma <code>usuarios.grupo_id</code></h4><p>É consultada em dois controllers mas nunca foi criada por nenhuma migração — o erro é engolido e o código sempre cai no "primeiro grupo do banco", com risco de misturar dados financeiros entre grupos.</p><div class="loc">peladaController.js:196-221; arrecadacaoController.js:75-86</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Tela de Card Premium crasha ao abrir</h4><p>Referencia três variáveis nunca declaradas/importadas.</p><div class="loc">src/app/premium.tsx:226-240</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Navegação por abas do mobile quebrada</h4><p>4 das 5 abas declaradas (pelada, jogadores, ranking, mais) apontam para arquivos que não existem no disco.</p><div class="loc">src/app/tabs/_layout.tsx</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip warn">Médio</span></div><div><h4>17 telas mobile são código morto</h4><p>Dashboard, Financeiro, Ranking, Ao Vivo, Pós-Jogo e outras existem prontas mas não estão ligadas a nenhuma rota — todo esse trabalho não roda no app real hoje.</p><div class="loc">src/screens/*.js</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip crit">Alto</span></div><div><h4>Memória de duplas do sorteio oficial é código morto</h4><p>O parâmetro de histórico nunca é passado pelo controller — a regra de negócio mais crítica do produto não é aplicada no sorteio que de fato é persistido.</p><div class="loc">backend/src/controllers/formacaoController.js:47-51</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip warn">Médio</span></div><div><h4>Correção financeira manual é destrutiva</h4><p><code>UPDATE</code>/<code>DELETE</code> físico sem trilha, contrariando a regra de auditoria — só o fluxo de estorno de saldo faz isso certo.</p><div class="loc">components/modals/editar_transacao.js:160-261</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip warn">Médio</span></div><div><h4>Schema real não é reproduzível a partir do repositório</h4><p>9 tabelas em uso não têm nenhum <code>CREATE TABLE</code> versionado — um clone limpo não recria o banco de produção.</p><div class="loc">ver seção 02</div></div></div>
+      </div>
+
+      <div class="findings-group">
+        <div class="gtitle"><span class="chip warn">Importante</span>Bugs conhecidos, reavaliados</div>
+        <div class="finding"><div class="sev"><span class="chip warn">Médio</span></div><div><h4>"Times voltam após Limpar Times" — causa real não é a que se suspeitava</h4><p>O caminho <code>window.supabase</code> nunca roda no navegador (SDK não é carregado). Causas mais prováveis: cache em memória por processo do Node (<code>liveStateMap</code>) dessincronizado entre réplicas, ou outra aba com a tela de Partidas aberta reenviando o placar antigo a cada tick do cronômetro.</p><div class="loc">js/core/api.js:744-888; backend/.../peladaController.js:443-464; pages/gestor/partidas.js:2685-2705</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip minor">Baixo</span></div><div><h4>Arquivos e funções duplicados</h4><p><code>formacao copy.js</code> (versão obsoleta), <code>app.html</code> vs <code>index.html</code> (entradas divergentes da SPA, uma sem torneio/OCR/push), e três funções de <code>auth.js</code> definidas duas vezes.</p><div class="loc">ver seções 01/03</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip minor">Baixo</span></div><div><h4>Callback OAuth quebrado, porém inalcançável hoje</h4><p>Chama um método que não existe em <code>auth.js</code> — inofensivo apenas porque nada dispara esse fluxo.</p><div class="loc">js/core/router.js:44-63</div></div></div>
+      </div>
+
+      <div class="findings-group">
+        <div class="gtitle"><span class="chip minor">Menor</span>Cosmético / manutenção</div>
+        <div class="finding"><div class="sev"><span class="chip minor">Baixo</span></div><div><h4>Taxa do Mercado Pago (1%) hardcoded em 3 arquivos do frontend</h4><p>Sem fonte única — risco de divergência se a taxa mudar.</p><div class="loc">financeiro.js (x2), arrecadacao.js</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip minor">Baixo</span></div><div><h4>Nomenclatura de status duplicada</h4><p><code>'espera'</code> e o alias legado <code>'fila_espera'</code> checados em paralelo em várias queries — rename incompleto.</p><div class="loc">convocacaoController.js:229,353,552,586</div></div></div>
+        <div class="finding"><div class="sev"><span class="chip minor">Baixo</span></div><div><h4>Validade de JWT inconsistente</h4><p>30 dias no login por senha, 1 dia no login por código/Google — mesmo app, sessões de duração diferente conforme o caminho.</p><div class="loc">authController.js:155,231,325</div></div></div>
+      </div>
+    </section>
+
+    <section id="lacunas">
+      <h2><span class="secnum">05</span>Lacunas vs. especificação (docs 01–08)</h2>
+      <div class="twrap"><table>
+        <tr><th>Módulo</th><th>O que a especificação pede</th><th>O que existe hoje</th></tr>
+        <tr><td>Autenticação</td><td>AUT-003/007: login social funcionando; estratégia única de auth</td><td>Login social inexistente nas duas plataformas; três esquemas de auth coexistindo (JWT próprio no backend, Supabase Auth direto no mobile, Supabase Auth só auxiliar no backend)</td></tr>
+        <tr><td>Grupos/Papéis</td><td>GRP-010/011: papel organizador/tesoureiro/jogador por grupo; isolamento total entre grupos</td><td>Papel "tesoureiro" não existe; sem tabela de vínculo jogador↔grupo; convocação vaza para o sistema inteiro</td></tr>
+        <tr><td>Quadras</td><td>QUA-002: cadastro reutilizável ligado à pelada</td><td>Catálogo existe, mas sem FK — <code>peladas.local</code> é texto livre</td></tr>
+        <tr><td>Recorrência</td><td>PEL-005: sistema só lembra, não cria pelada automática</td><td>Nenhum lembrete de recorrência encontrado no código investigado</td></tr>
+        <tr><td>Fila de espera</td><td>PRE-005/006: promoção automática condicionada a saldo</td><td>Dois caminhos inconsistentes no backend; nenhum implementa a regra exata; mobile é só mock</td></tr>
+        <tr><td>Sorteio</td><td>SOR-001/004: memória de duplas rígida, ≤2★ tolerância 3, piso combinatório</td><td>3 implementações heurísticas divergentes; a oficial (backend) tem a memória de duplas morta em código</td></tr>
+        <tr><td>Torneios</td><td>TOR-001/006: fase de grupos, mata-mata, pontos corridos com dados próprios</td><td>Sem modelagem de dados — só rótulos soltos + tabela genérica de partidas</td></tr>
+        <tr><td>Financeiro</td><td>FIN-010: correção só por estorno auditável · FIN-012: jogador só vê o próprio saldo</td><td>Correção manual é destrutiva; jogador vê o financeiro inteiro do grupo</td></tr>
+        <tr><td>Card Premium</td><td>PREM-003/008: persistência 3 camadas; visual FUT reativado</td><td>Persistência implementada corretamente, mas a tela crasha antes de renderizar qualquer visual</td></tr>
+        <tr><td>Notificações</td><td>NOT-001/008: push funcionando ponta a ponta</td><td>Só o lado servidor existe (tabela + endpoints); mobile nunca captura nem envia token de dispositivo</td></tr>
+        <tr><td>Segurança</td><td>SEG-001: RLS ativo em todas as tabelas</td><td>Confirmado direto no banco: <b>0 políticas de RLS</b> em qualquer tabela; RLS ligado (sem política) em 5 das 23 tabelas, desligado nas outras 18 — incluindo todas as tabelas com dados pessoais/financeiros</td></tr>
+        <tr><td>Migração/Auth</td><td>Doc 08: decisão já tomada por Supabase Auth (opção B)</td><td>O backend real ainda usa JWT próprio — a arquitetura atual diverge da decisão já registrada</td></tr>
+      </table></div>
+    </section>
+
+    <section id="pendencias">
+      <h2>Pendências que precisam da sua decisão</h2>
+      <p class="dek">Nada foi alterado. Estes são os pontos que travam o avanço para a próxima fase (arquitetura/schema novo) até você decidir.</p>
+      <div class="callout" style="margin-bottom:20px;"><b>Duas pendências da primeira rodada já foram resolvidas</b> nesta consulta direta ao banco: o schema real (23 tabelas, com colunas e chaves) e as políticas de RLS (zero em todo o banco) — ver seção 02. As pendências abaixo substituem as originais 1 e 5, agora mais específicas.</div>
+      <ol class="decisions">
+        <li><b>Decidir o que fazer com o fragmento de schema em UUID (<code>usuario_grupo</code>, <code>configuracao_pelada</code>, <code>jogador_time</code>, <code>desempenho_goleiro</code>, <code>gols</code>).</b><span class="why">Está desconectado do restante do banco (tipos incompatíveis, sem FK, sem controller que o use) e travado por RLS sem políticas. É provavelmente o começo de uma migração para UUID/Supabase Auth abandonada. Aproveitar como base do schema novo, ou descartar e desenhar do zero?</span></li>
+        <li><b>Habilitar RLS com políticas reais antes do corte de 09/09.</b><span class="why">Hoje 18 tabelas com dados pessoais e financeiros (<code>usuarios</code>, <code>transacoes</code>, <code>peladas</code>, <code>convocacoes</code>, <code>grupos</code>) têm RLS desligado, e a chave anônima do Supabase já está exposta no app mobile. Isso é um risco ativo em produção, não só uma lacuna do sistema a reconstruir.</span></li>
+        <li><b>Investigar se as tabelas que o mobile consulta (<code>profiles</code>, <code>grupo_membros</code>, <code>pelada_presencas</code>, <code>quadras</code>, <code>jogadores</code>, <code>sorteios</code>, <code>ranking_grupos</code>, <code>conquistas</code>) já falharam silenciosamente em produção.</b><span class="why">Confirmado: nenhuma dessas tabelas existe nas 23 reais. Toda tela mobile que as usa (ex.: <code>useGrupos.ts</code>, <code>services/api.ts</code>) provavelmente já recebe erro "relation does not exist" hoje — vale checar logs/Sentry do app para medir o impacto real em usuários.</span></li>
+        <li><b>Decidir o destino das ~17 telas mortas do mobile.</b><span class="why">Há trabalho de UI considerável (Financeiro, Ranking, Ao Vivo, Pós-Jogo) feito mas nunca conectado ao roteador real. Religar essas telas ou reescrevê-las do zero no novo sistema?</span></li>
+        <li><b>Priorizar as vulnerabilidades de segurança ativas no sistema atual.</b><span class="why">O doc 08 prevê que o app antigo "permanece no ar" até o corte — mas o OTP exposto, o CORS aberto, a senha do banco em texto puro e o RLS desligado são riscos ativos em produção hoje, não só no sistema a reconstruir.</span></li>
+        <li><b>Decidir se o Card Premium quebrado é corrigido ainda no legado ou só no novo sistema.</b><span class="why">A arquitetura de persistência já está certa; falta só religar três variáveis para a tela abrir — pode ser um reparo rápido e de baixo risco antes do corte.</span></li>
+        <li><b>Confirmar se a exportação financeira em CSV/PDF (FIN-011) já existe em algum lugar não coberto por esta auditoria.</b><span class="why">Nenhum dos três agentes encontrou essa função no código investigado — precisa validar se é 100% a construir.</span></li>
+      </ol>
+    </section>
+
+    <footer>
+      Auditoria somente leitura · nenhum arquivo ou dado foi alterado · gerada a partir do código-fonte e dos documentos docs/01–08 em 06/09/2026.
+    </footer>
+  </main>
+</div>

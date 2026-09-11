@@ -10,6 +10,25 @@ function getTeamsKey() {
 
 window.App.initFormacao = async function () {
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (peladaId && window.Api && window.Api.obterLiveState) {
+    try {
+      const res = await window.Api.obterLiveState(peladaId);
+      if (res && res.state) {
+        const teamsKey = `teams_${peladaId}`;
+        const serverTeams = Array.isArray(res.state.teams) ? res.state.teams : [];
+        if (serverTeams.length > 0) {
+          window.App.teams = serverTeams;
+          localStorage.setItem(teamsKey, JSON.stringify(serverTeams));
+          localStorage.setItem("teams", JSON.stringify(serverTeams));
+        } else {
+          // Se o servidor retornar 0 times para a pelada, limpa o estado local
+          window.App.teams = [];
+          localStorage.removeItem(teamsKey);
+          localStorage.removeItem("teams");
+        }
+      }
+    } catch (e) { }
+  }
   await renderManagerCheckin(peladaId);
   const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   const groupId = group ? group.id : null;
@@ -24,11 +43,22 @@ window.App.initFormacao = async function () {
       }
     }).catch(e => { });
   }
-  window.App.renderDrawnTeams();
+  await window.App.renderDrawnTeams();
+
   // Escutas
   const btnDraw = document.getElementById("btn-draw-teams");
   if (btnDraw) {
     btnDraw.onclick = () => window.App.openModal("sorteio");
+  }
+  const btnNomesTimes = document.getElementById("btn-cadastrar-nomes-times");
+  if (btnNomesTimes) {
+    btnNomesTimes.onclick = () => window.App.abrirModalNomesTimes();
+  }
+
+
+  const btnExportWhatsapp = document.getElementById("btn-export-teams-whatsapp");
+  if (btnExportWhatsapp) {
+    btnExportWhatsapp.onclick = () => window.App.exportTeamsWhatsApp();
   }
   const btnSyncCloud = document.getElementById("btn-sync-teams-cloud");
   if (btnSyncCloud) {
@@ -40,44 +70,60 @@ window.App.initFormacao = async function () {
   if (btnClearTeams) {
     btnClearTeams.onclick = async () => {
       const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-      if (!peladaId) {
-        window.App.showToast("Selecione uma pelada primeiro.", "warning");
-        return;
-      }
-      const confirmClear = confirm("Tem certeza que deseja apagar a formação de times deste dia localmente e na nuvem?");
-      if (!confirmClear) return;
+      if (!peladaId) { window.App.showToast("Selecione uma pelada primeiro.", "warning"); return; }
+      if (!confirm("Tem certeza que deseja apagar a formação de times deste dia localmente e na nuvem?")) return;
       try {
-        const token = localStorage.getItem("token");
-        // Limpa no localStorage usando a chave com ID da pelada
         const teamsKey = getTeamsKey();
+        // 1. Limpa localStorage
         localStorage.removeItem(teamsKey);
         localStorage.removeItem(`teams_${peladaId}`);
-        // Salva estado vazio na nuvem
+        localStorage.removeItem("teams");
+        localStorage.removeItem("waitingQueue");
+        localStorage.removeItem(`waitingQueue_${peladaId}`);
+        localStorage.removeItem("tournamentState");
+        localStorage.removeItem(`tournamentState_${peladaId}`);
+        localStorage.removeItem("liveMatch");
+        localStorage.removeItem(`liveMatch_${peladaId}`);
+
+        // 2. Reseta memória
+        window.App.teams = [];
+        window.App.waitingQueue = [];
+        window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, timerSeconds: 0, isPlaying: false, consecutiveWinsA: 0, consecutiveWinsB: 0, goals: [] };
+
+        // 3. Limpa na nuvem (isReset = true)
         if (window.Api && window.Api.atualizarLiveState) {
-          await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, []);
+          await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, [], [], true);
         }
+
         window.App.showToast("Formação de times apagada com sucesso!", "success");
         window.App.renderDrawnTeams();
+        if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
       } catch (err) {
         console.error("[LimparTimes]", err);
         window.App.showToast("Erro ao apagar times na nuvem.", "error");
       }
     };
+
   }
   const btnAddTeam = document.getElementById("btn-add-team-manual");
   if (btnAddTeam) {
     btnAddTeam.onclick = criarTimeManual;
   }
+  window.App.openAddPresenceModal = function () {
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    if (!peladaId) {
+      window.App.showToast("Selecione uma data para adicionar presença.", "warning");
+      return;
+    }
+    window.App.openModal("adicionar_presenca", { peladaId: peladaId });
+  };
   const btnOpenAddPresence = document.getElementById("btn-open-add-presence-modal");
   if (btnOpenAddPresence) {
-    btnOpenAddPresence.onclick = () => {
-      const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-      if (!peladaId) {
-        window.App.showToast("Selecione uma pelada primeiro.", "warning");
-        return;
-      }
-      window.App.openModal("adicionar_presenca", { peladaId: peladaId });
-    };
+    btnOpenAddPresence.onclick = window.App.openAddPresenceModal;
+  }
+  const btnCopyList = document.getElementById("btn-copy-presence-list");
+  if (btnCopyList) {
+    btnCopyList.onclick = copiarListaPresencaWhatsApp;
   }
   const btnExportExcel = document.getElementById("btn-export-presence-excel");
   if (btnExportExcel) {
@@ -225,12 +271,21 @@ async function renderManagerCheckin(selectedPeladaId = null) {
 
     function updateTurnoVisibility(modoVal) {
       if (containerTurno) {
-        containerTurno.style.display = modoVal === 'torneio' ? 'block' : 'none';
+        const hasTurno = modoVal === 'torneio' || modoVal === 'pontos_corridos' || modoVal === 'torneio_pontos_corridos';
+        containerTurno.style.display = hasTurno ? 'block' : 'none';
       }
     }
 
     if (selectModo) {
+      selectModo.innerHTML = `
+        <option value="normal">Pelada Normal (Reina Campo)</option>
+        <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
+        <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
+        <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
+        <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
+      `;
       selectModo.value = activePelada.modo || "normal";
+      console.log("🏆 [DIAGNÓSTICO FORMATO DO DIA] Opções carregadas no select:", selectModo.options.length, Array.from(selectModo.options).map(o => o.value));
       updateTurnoVisibility(selectModo.value);
 
       selectModo.onchange = async (e) => {
@@ -248,8 +303,13 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           }
           window.App.activePelada.modo = newModo;
           localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-          const desc = newModo === 'torneio' ? "🏆 Modo Mini Torneio ativado para esta data!" : "⚽ Modo Pelada Normal ativado!";
+          let desc = "⚽ Modo Pelada Normal ativado!";
+          if (newModo === 'torneio_livre') desc = "📋 Modo Torneio Livre (Confrontos Manuais) ativado para esta data!";
+          else if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado para esta data!";
+          else if (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos') desc = "🏅 Modo Mini Torneio (Pontos Corridos) ativado para esta data!";
+          else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
           window.App.showToast(desc, "success");
+          renderFormacaoTournamentUI();
         } catch (err) {
           console.error("[selectModo]", err);
           window.App.showToast("Erro ao atualizar formato da pelada.", "error");
@@ -277,13 +337,13 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           let liveMatch = window.App.liveMatch || {};
           let tState = liveMatch.tournamentState || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null);
           let teams = window.App.teams || [];
-          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e){}
+          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
 
           if (teams && teams.length > 0 && window.TournamentEngine && tState) {
             tState.turno = newTurno;
             // Regenera a tabela mista com o novo turno
             const newMatches = window.TournamentEngine.generateGroupSchedule(teams, newTurno);
-            
+
             // Preserva o placar de partidas que já haviam sido finalizadas
             if (Array.isArray(tState.matches)) {
               tState.matches.forEach(oldM => {
@@ -303,7 +363,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
             liveMatch.tournamentState = tState;
             window.App.liveMatch = liveMatch;
-            
+
             localStorage.setItem("tournamentState", JSON.stringify(tState));
             localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
             localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
@@ -313,8 +373,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             }
           }
 
-          const desc = newTurno === 'ida_volta' 
-            ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno) — 12 partidas geradas!" 
+          const desc = newTurno === 'ida_volta'
+            ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno) — 12 partidas geradas!"
             : "🔁 Fase de Grupos definida como Somente Ida — 6 partidas geradas!";
           window.App.showToast(desc, "success");
         } catch (err) {
@@ -327,6 +387,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     await updateCheckinPlayersList(activePelada.id);
     // Carrega os times salvos na nuvem (sincroniza entre dispositivos)
     window.App.carregarTimesDoServidor(activePelada.id);
+    renderFormacaoTournamentUI();
     select.onchange = async (e) => {
       if (e.target.value) {
         const sel = peladas.find(p => String(p.id) === String(e.target.value));
@@ -336,7 +397,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         // Limpa o cache local de times da data anterior para atualizar os cards
         localStorage.removeItem("teams");
         await updateCheckinPlayersList(e.target.value);
-        window.App.carregarTimesDoServidor(e.target.value);
+        await window.App.carregarTimesDoServidor(e.target.value);
+        renderFormacaoTournamentUI();
         window.App.renderDrawnTeams();
         window.App.updateAcompanhamentoUI();
       }
@@ -377,7 +439,8 @@ async function updateCheckinPlayersList(peladaId) {
       atualizarContadorPresencas();
       return;
     }
-    // Sincroniza jogadores com o localStorage local para retrocompatibilidade do Sorteio Técnico
+    window.App.confirmadosList = confirmados;
+    // Sincroniza jogadores com o localStorage local para o Sorteio Técnico
     const playersLocais = JSON.parse(localStorage.getItem("players")) || [];
     confirmados.forEach(c => {
       // Garante que o jogador está na tabela 'players' local para o sorteio usar
@@ -405,6 +468,7 @@ async function updateCheckinPlayersList(peladaId) {
       if (c.presenca) {
         window.App.presentPlayers.push(c.id);
       }
+
       const div = document.createElement("div");
       div.className = "checkin-athlete-card";
       div.style.display = "flex";
@@ -424,7 +488,6 @@ async function updateCheckinPlayersList(peladaId) {
           ${avatarHtml}
           <div style="display:flex; flex-direction:column;">
             <span style="font-size:15px; font-weight:700; color:var(--text-heading);">${nameStr} ${c.goleiro ? '🧤' : ''}</span>
-            <span style="color:var(--warning); font-size:12px;">${'★'.repeat(parseInt(c.autoavaliacao) || 3)}</span>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
@@ -433,16 +496,18 @@ async function updateCheckinPlayersList(peladaId) {
             <span class="toggle-label"></span>
           </label>
           ${(!c.presenca && c.forma_pagamento === 'saldo' && !c.saldo_estornado)
-            ? `<button title="Estornar saldo" onclick="estornarSaldoAtleta('${c.id}', '${nameStr}')" style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; cursor:pointer; color:#16a34a; font-size:12px; padding:3px 7px; font-weight:700; white-space:nowrap; line-height:1.4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">💰 Estornar</button>`
-            : (c.saldo_estornado ? `<span style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; color:#16a34a; font-size:11px; padding:3px 7px; font-weight:700;">✓ Estornado</span>` : '')
-          }
+          ? `<button title="Estornar saldo" onclick="estornarSaldoAtleta('${c.id}', '${nameStr}')" style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; cursor:pointer; color:#16a34a; font-size:12px; padding:3px 7px; font-weight:700; white-space:nowrap; line-height:1.4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">💰 Estornar</button>`
+          : (c.saldo_estornado ? `<span style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; color:#16a34a; font-size:11px; padding:3px 7px; font-weight:700;">✓ Estornado</span>` : '')
+        }
           <button title="Desconvocar atleta" onclick="desconvocarAtleta('${c.id}', '${nameStr}')" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
         </div>
       `;
       container.appendChild(div);
     });
-    localStorage.setItem("players", JSON.stringify(playersLocais));
-    window.App.confirmadosList = confirmados;
+
+    try {
+      localStorage.setItem("players", JSON.stringify(playersLocais));
+    } catch (e) { }
     atualizarContadorPresencas();
 
     // Renderizar Fila de Espera para o Gestor
@@ -696,7 +761,6 @@ window.App.renderDrawnTeams = async function () {
       <div class="team-draft-header" style="border-top: 4px solid ${team.cor || '#777'}; flex-direction: column; gap: 6px; padding-bottom: 10px;">
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <input type="text" class="team-draft-title-input" value="${team.nome}" onchange="renameTeam('${team.id}', this.value)">
-          <span style="font-size:11px; font-weight:bold; color:var(--text-caption);">⭐${avg}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <div 
@@ -737,7 +801,6 @@ window.App.renderDrawnTeams = async function () {
             ${nameStr} ${p.goleiro ? '🧤' : ''}
           </span>
         </div>
-        <span class="player-draft-stars">${"★".repeat(parseInt(p.autoavaliacao) || 3)}</span>
       `;
       playersList.appendChild(pDiv);
     });
@@ -755,10 +818,6 @@ window.App.renderDrawnTeams = async function () {
     } else {
       localStorage.removeItem(`teams_${activePelada.id}`);
     }
-  }
-  // Tenta salvar/sincronizar no banco em segundo plano se houver times locais
-  if (teams.length > 0) {
-    syncDrawnTeamsToCloud(false);
   }
 };
 async function syncDrawnTeamsToCloud(showToastMessage) {
@@ -788,7 +847,7 @@ async function syncDrawnTeamsToCloud(showToastMessage) {
   }
   if (teams && teams.length > 0 && window.Api && window.Api.atualizarLiveState) {
     try {
-      const res = await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+      const res = await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams, false, true);
       if (showToastMessage) {
         if (res && res.error) {
           window.App.showToast(res.error, "error");
@@ -811,29 +870,30 @@ window.App.carregarTimesDoServidor = async function (peladaId) {
     if (!window.Api || !window.Api.obterLiveState) return;
     const res = await window.Api.obterLiveState(peladaId);
     const state = res && res.state ? res.state : null;
-    if (!state) return;
-
-    const teamsServidor = Array.isArray(state.teams) ? state.teams : [];
-    if (teamsServidor.length === 0) return;
-
-    // Só sobrescreve o local se o local estiver vazio (o gestor pode estar editando)
     const teamsKey = `teams_${peladaId}`;
-    let localTeams = [];
-    try { localTeams = JSON.parse(localStorage.getItem(teamsKey)) || []; } catch (e) { }
 
-    if (localTeams.length === 0 && teamsServidor.length > 0) {
-      localStorage.setItem(teamsKey, JSON.stringify(teamsServidor));
-      localStorage.setItem("teams", JSON.stringify(teamsServidor));
-      // Restaura também o jogo ao vivo e a fila
-      if (state.liveMatch && window.App.liveMatch) {
-        window.App.liveMatch = { ...window.App.liveMatch, ...state.liveMatch };
-      }
-      if (Array.isArray(state.waitingQueue)) {
-        window.App.waitingQueue = state.waitingQueue;
-      }
+    const teamsServidor = (state && Array.isArray(state.teams)) ? state.teams : [];
+
+    if (teamsServidor.length === 0) {
+      window.App.teams = [];
+      localStorage.removeItem(teamsKey);
+      localStorage.removeItem("teams");
       window.App.renderDrawnTeams();
-      window.App.updateAcompanhamentoUI();
+      return;
     }
+
+    localStorage.setItem(teamsKey, JSON.stringify(teamsServidor));
+    localStorage.setItem("teams", JSON.stringify(teamsServidor));
+    window.App.teams = teamsServidor;
+
+    if (state.liveMatch && window.App.liveMatch) {
+      window.App.liveMatch = { ...window.App.liveMatch, ...state.liveMatch };
+    }
+    if (Array.isArray(state.waitingQueue)) {
+      window.App.waitingQueue = state.waitingQueue;
+    }
+    window.App.renderDrawnTeams();
+    window.App.updateAcompanhamentoUI();
   } catch (e) {
     console.warn("[carregarTimesDoServidor]", e);
   }
@@ -879,12 +939,21 @@ function renameTeam(teamId, newName) {
   // ===== CORREÇÃO: usa a chave com ID da pelada =====
   const teamsKey = getTeamsKey();
   const teams = JSON.parse(localStorage.getItem(teamsKey)) || [];
-  const team = teams.find(t => t.id === teamId);
-  if (team && newName.trim()) {
+  const team = teams.find(t => String(t.id) === String(teamId));
+  const trimmed = (newName || '').trim();
+  if (team && trimmed) {
+    const isDuplicate = teams.some(t => String(t.id) !== String(teamId) && (t.nome || t.name || '').trim().toLowerCase() === trimmed.toLowerCase());
+    if (isDuplicate) {
+      window.App.showToast(`⚠️ Já existe um time com o nome "${trimmed}". Os nomes dos times devem ser únicos!`, "warning");
+      window.App.renderDrawnTeams();
+      return;
+    }
     const oldName = team.nome;
-    team.nome = newName.trim();
+    team.nome = trimmed;
+    team.name = trimmed;
     // ===== CORREÇÃO: salva na chave com ID da pelada =====
     localStorage.setItem(teamsKey, JSON.stringify(teams));
+    localStorage.setItem("teams", JSON.stringify(teams));
     if (window.App.waitingQueue.includes(oldName)) {
       window.App.waitingQueue[window.App.waitingQueue.indexOf(oldName)] = team.nome;
     }
@@ -910,9 +979,16 @@ function criarTimeManual() {
   // Cores premium da paleta
   const CORES_PALETA = ["#00E676", "#FFD600", "#FF1744", "#2979FF", "#AA00FF", "#00E5FF", "#FF9100", "#F50057"];
   const novaCor = CORES_PALETA[teams.length % CORES_PALETA.length];
-  // Gera uma letra para o time (A, B, C, D, E, F...)
-  const letraTime = String.fromCharCode(65 + teams.length);
-  const nomePadrao = `Time ${letraTime}`;
+
+  // Garante que o nome gerado seja único (sem repetir nomes já existentes)
+  const existingNames = new Set(teams.map(t => (t.nome || t.name || '').trim().toLowerCase()));
+  let idx = 0;
+  let nomePadrao = `Time ${String.fromCharCode(65 + idx)}`;
+  while (existingNames.has(nomePadrao.toLowerCase())) {
+    idx++;
+    nomePadrao = `Time ${String.fromCharCode(65 + idx)}`;
+  }
+
   const novoTime = {
     id: Date.now(), // ID numérico único baseado no tempo
     nome: nomePadrao,
@@ -923,6 +999,7 @@ function criarTimeManual() {
   teams.push(novoTime);
   // ===== CORREÇÃO: salva na chave com ID da pelada =====
   localStorage.setItem(teamsKey, JSON.stringify(teams));
+  localStorage.setItem("teams", JSON.stringify(teams));
   // 2. Adiciona o time à fila de espera das partidas do dia
   // Se já temos pelo menos 2 times na partida ao vivo, os novos times criados entram na fila de espera!
   // Se não temos times ativos no liveMatch, alimentamos a partida ativa primeiro!
@@ -1161,6 +1238,90 @@ window.handleCustomEmblemUpload = function (event) {
   });
 };
 
+async function copiarListaPresencaWhatsApp() {
+  const selectPelada = document.getElementById("select-manager-pelada");
+  const peladaId = (selectPelada && selectPelada.value) || (window.App.activePelada ? window.App.activePelada.id : null);
+
+  if (!peladaId) {
+    window.App.showToast("Selecione uma pelada para copiar a lista.", "warning");
+    return;
+  }
+
+  try {
+    const convocados = await Api.listarConvocados(peladaId);
+    if (!convocados || convocados.length === 0) {
+      window.App.showToast("Nenhum atleta convocado para esta data.", "warning");
+      return;
+    }
+
+    const confirmados = convocados.filter(c => c.status === "confirmado");
+    if (confirmados.length === 0) {
+      window.App.showToast("Nenhum atleta confirmado nesta data.", "warning");
+      return;
+    }
+
+    const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup || {};
+    const groupName = group.nome || "PeladaPro";
+    const peladaData = window.App.activePelada ? (window.App.activePelada.data || "") : "";
+    const rawDate = peladaData ? String(peladaData).split("T")[0] : "";
+    const dataFmt = window.Utils ? window.Utils.formatDate(rawDate || peladaData) : (rawDate || "Data");
+    const horarioFmt = window.App.activePelada && window.App.activePelada.horario ? ` às ${window.App.activePelada.horario}` : "";
+    const localFmt = window.App.activePelada && window.App.activePelada.local ? `\n📍 *Local:* ${window.App.activePelada.local}` : "";
+
+    const goleiros = confirmados.filter(c => c.goleiro);
+    const linha = confirmados.filter(c => !c.goleiro);
+
+    let texto = `⚽ *LISTA DE CONFIRMADOS — ${groupName.toUpperCase()}*\n`;
+    texto += `📅 *Data:* ${dataFmt}${horarioFmt}${localFmt}\n`;
+    texto += `👥 *Total:* ${confirmados.length} atleta(s)\n\n`;
+
+    if (goleiros.length > 0) {
+      texto += `🧤 *GOLEIROS:*\n`;
+      goleiros.forEach((g, idx) => {
+        const nomeStr = g.apelido || g.nome || 'Atleta';
+        const check = g.presenca ? " ✅" : "";
+        texto += `${idx + 1}. ${nomeStr}${check}\n`;
+      });
+      texto += `\n`;
+    }
+
+    texto += `🏃 *JOGADORES DE LINHA:*\n`;
+    linha.forEach((l, idx) => {
+      const nomeStr = l.apelido || l.nome || 'Atleta';
+      const check = l.presenca ? " ✅" : "";
+      texto += `${idx + 1}. ${nomeStr}${check}\n`;
+    });
+
+    // Fila de espera (se houver)
+    const emEspera = convocados.filter(c => c.status === "fila_espera" || c.status === "espera");
+    if (emEspera.length > 0) {
+      texto += `\n⏳ *FILA DE ESPERA:*\n`;
+      emEspera.forEach((e, idx) => {
+        const nomeStr = e.apelido || e.nome || 'Atleta';
+        texto += `${idx + 1}. ${nomeStr}\n`;
+      });
+    }
+
+    texto += `\n_Gerado por PeladaPro 📱_`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(texto);
+    } else {
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = texto;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempTextArea);
+    }
+
+    window.App.showToast("📋 Lista copiada com sucesso! Pronta para colar no WhatsApp.", "success");
+  } catch (err) {
+    console.error("[copiarListaPresencaWhatsApp]", err);
+    window.App.showToast("Erro ao copiar lista para a área de transferência.", "error");
+  }
+}
+
 async function exportConvocadosExcel() {
   const selectPelada = document.getElementById("select-manager-pelada");
   const peladaId = (selectPelada && selectPelada.value) || (window.App.activePelada ? window.App.activePelada.id : null);
@@ -1290,6 +1451,307 @@ async function removerDaFilaGestor(peladaId, usuarioId, atletaNome) {
   }
 }
 
+window.App.abrirModalNomesTimes = function () {
+  const currentGroup = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
+  const groupId = currentGroup ? currentGroup.id : null;
+
+  let currentCustom = [];
+  try {
+    currentCustom = JSON.parse(localStorage.getItem(`customTeamNames_${groupId}`)) || JSON.parse(localStorage.getItem('customTeamNames')) || [];
+  } catch (e) { }
+
+  const rawInput = prompt(
+    `Cadastre os nomes personalizados dos times da pelada (separados por vírgula):\n\nExemplo: Flamengo, Vasco, Corinthians, Palmeiras\n\n(Deixe em branco para voltar aos nomes padrão: Time A, Time B...)`,
+    (currentCustom && currentCustom.length > 0) ? currentCustom.join(', ') : ''
+  );
+
+  if (rawInput === null) return; // Gestor cancelou o prompt
+
+  const newNames = rawInput.split(',').map(s => s.trim()).filter(Boolean);
+  try {
+    if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(newNames));
+    localStorage.setItem('customTeamNames', JSON.stringify(newNames));
+  } catch (e) { }
+
+  // Se já existirem times sorteados na tela, atualiza o nome de cada time!
+  const drawnTeams = window.App.teams || [];
+  if (Array.isArray(drawnTeams) && drawnTeams.length > 0) {
+    drawnTeams.forEach((t, idx) => {
+      if (newNames[idx]) {
+        t.nome = newNames[idx];
+        t.name = newNames[idx];
+      }
+    });
+    const teamsKey = getTeamsKey();
+    try {
+      localStorage.setItem(teamsKey, JSON.stringify(drawnTeams));
+      localStorage.setItem('teams', JSON.stringify(drawnTeams));
+    } catch (e) { }
+
+    // Sincroniza tState do torneio ativo com os novos nomes
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    let tState = (window.App.liveMatch ? window.App.liveMatch.tournamentState : null) || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+    if (tState && window.TournamentEngine) {
+      tState.teams = drawnTeams;
+      if (Array.isArray(tState.matches)) {
+        tState.matches.forEach(m => {
+          m.teamA = window.App.resolveOfficialTeamName(m.teamA, drawnTeams);
+          m.teamB = window.App.resolveOfficialTeamName(m.teamB, drawnTeams);
+        });
+      }
+      tState.standings = window.TournamentEngine.calculateStandings(drawnTeams, tState.matches);
+      if (peladaId) localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
+      localStorage.setItem('tournamentState', JSON.stringify(tState));
+      if (window.App.liveMatch) window.App.liveMatch.tournamentState = tState;
+    }
+
+    if (window.App.renderDrawnTeams) window.App.renderDrawnTeams();
+    renderFormacaoTournamentUI();
+  }
+
+  if (window.App.showToast) {
+    if (newNames.length > 0) {
+      window.App.showToast(`Nomes dos times cadastrados com sucesso: ${newNames.join(', ')}`, "success");
+    } else {
+      window.App.showToast("Nomes dos times restaurados para o padrão.", "info");
+    }
+  }
+};
+
 window.desconvocarAtleta = desconvocarAtleta;
 window.removerDaFilaGestor = removerDaFilaGestor;
 window.exportConvocadosExcel = exportConvocadosExcel;
+window.copiarListaPresencaWhatsApp = copiarListaPresencaWhatsApp;
+
+function renderFormacaoTournamentUI() {
+  const card = document.getElementById("formacao-tournament-card");
+  if (!card) return;
+
+  const peladaAtiva = window.App.activePelada || {};
+  const liveMatch = window.App.liveMatch || {};
+  let tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+
+  const isTorneio = (peladaAtiva && (peladaAtiva.modo === 'torneio' || peladaAtiva.modo === 'pontos_corridos' || peladaAtiva.modo === 'torneio_pontos_corridos' || peladaAtiva.modo === 'mata_mata_direto' || peladaAtiva.modo === 'torneio_livre')) || !!tState;
+
+  if (!isTorneio) {
+    card.style.display = "none";
+    return;
+  }
+
+  card.style.display = "block";
+
+  let modoDesc = "Mini Torneio";
+  if (peladaAtiva.modo === 'pontos_corridos') modoDesc = "Mini Torneio (Pontos Corridos)";
+  else if (peladaAtiva.modo === 'mata_mata_direto') modoDesc = "Mini Torneio (Mata-Mata Direto)";
+  else if (peladaAtiva.modo === 'torneio_livre') modoDesc = "Torneio Livre (Confrontos Manuais)";
+  else if (peladaAtiva.modo === 'torneio') modoDesc = "Mini Torneio (Misto: Tabela + Mata-Mata)";
+
+  const badgeEl = document.getElementById("formacao-tournament-phase-badge");
+  if (badgeEl) badgeEl.textContent = modoDesc.toUpperCase();
+
+  const standingsBody = document.getElementById("formacao-tournament-standings-body");
+  const matchesList = document.getElementById("formacao-tournament-matches-list");
+
+  if (!tState || !tState.standings || tState.standings.length === 0) {
+    if (standingsBody) {
+      standingsBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 18px; color: #64748B;">🏆 <strong>Formato Ativo: ${modoDesc}</strong><br><span style="font-size:12px;">Clique no botão 'Sorteio Inteligente' para gerar a tabela de jogos e classificação!</span></td></tr>`;
+    }
+    if (matchesList) {
+      matchesList.innerHTML = `<div style="text-align:center; padding: 14px; color: #64748B; font-size: 13px;">Aguardando sorteio das equipes...</div>`;
+    }
+    return;
+  }
+
+  if (standingsBody) {
+    standingsBody.innerHTML = tState.standings.map((s, idx) => {
+      const teamName = s.nome || s.name || `Time ${idx + 1}`;
+      return `
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="text-align: center; font-weight: bold;">${idx + 1}º</td>
+          <td style="font-weight: 700; color: var(--text-heading);">${teamName}</td>
+          <td style="text-align: center;">${s.j || 0}</td>
+          <td style="text-align: center; color: #10B981; font-weight: bold;">${s.v || 0}</td>
+          <td style="text-align: center;">${s.e || 0}</td>
+          <td style="text-align: center; color: #EF4444;">${s.d || 0}</td>
+          <td style="text-align: center;">${s.gp || 0}</td>
+          <td style="text-align: center;">${s.gc || 0}</td>
+          <td style="text-align: center; font-weight: bold;">${(s.sg > 0 ? '+' : '') + (s.sg || 0)}</td>
+          <td style="text-align: center; font-weight: 800; color: #D97706; font-size: 14px;">${s.pts || 0}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  if (matchesList) {
+    let matches = tState.matches || [];
+    if (window.TournamentEngine && window.TournamentEngine.optimizeMatchSequence) {
+      matches = window.TournamentEngine.optimizeMatchSequence(matches);
+    }
+
+    const isNight = document.body.classList.contains('modo-noturno-ativo');
+    let teamsList = [];
+    try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch (e) { }
+
+    if (matches.length === 0) {
+      matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:${isNight ? '#CBD5E1' : '#64748B'}; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
+    } else {
+      matchesList.innerHTML = matches.map((m, idx) => {
+        const isEncerrado = m.status === 'encerrado' || (m.golsA !== null && m.golsA !== undefined);
+        const hasPenalties = (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined);
+        const scoreText = isEncerrado
+          ? (hasPenalties ? `${m.golsA} x ${m.golsB} (${m.penaltisA}x${m.penaltisB} 🎯)` : `${m.golsA} x ${m.golsB}`)
+          : 'vs';
+        const badgeBg = isNight
+          ? (isEncerrado ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.18)')
+          : (isEncerrado ? '#D1FAE5' : '#F1F5F9');
+        const badgeColor = isNight
+          ? (isEncerrado ? '#A7F3D0' : '#E2E8F0')
+          : (isEncerrado ? '#065F46' : '#475569');
+        const itemBg = isNight ? 'rgba(255, 255, 255, 0.12)' : 'var(--background)';
+        const itemBorder = isNight ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-color)';
+        const textColor = isNight ? '#FFFFFF' : 'var(--text-heading)';
+
+        const resolveName = window.App.resolveOfficialTeamName || ((s) => s);
+        const nameA = resolveName(m.teamA);
+        const nameB = resolveName(m.teamB);
+
+        let embA = '', embB = '';
+        if (window.TeamEmblems && teamsList.length > 0) {
+          const tA = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim());
+          const tB = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim());
+          if (tA) embA = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">${window.TeamEmblems.forTeam(tA)}</span>`;
+          if (tB) embB = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">${window.TeamEmblems.forTeam(tB)}</span>`;
+        }
+
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: ${itemBg}; border: ${itemBorder}; border-radius: 8px; font-size: 12px; margin-bottom: 4px; backdrop-filter: blur(8px);">
+            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-end;">${embA}${nameA}</span>
+            <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 8px; ${isNight ? 'border: 1px solid rgba(255, 255, 255, 0.2);' : ''}">${scoreText}</span>
+            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-start;">${nameB}${embB}</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+window.App.renderFormacaoTournamentUI = renderFormacaoTournamentUI;
+
+window.App.exportTeamsWhatsApp = function () {
+  const teamsKey = getTeamsKey();
+  const drawnTeams = JSON.parse(localStorage.getItem(teamsKey)) || window.App.teams || [];
+
+  if (!drawnTeams || drawnTeams.length === 0) {
+    window.App.showToast("Nenhum time sorteado para exportar.", "warning");
+    return;
+  }
+
+  const TEAM_EMOJIS = ["🟡", "🔵", "🟢", "🟣", "🟠", "🔴", "⚪", "⚫"];
+  let texto = `⚽ *PELADA PRO - TIMES ESCALADOS* ⚽\n\n`;
+
+  drawnTeams.forEach((team, idx) => {
+    const emoji = TEAM_EMOJIS[idx % TEAM_EMOJIS.length];
+    const nomeTime = (team.nome || `Time ${String.fromCharCode(65 + idx)}`).trim();
+
+    const players = team.players || [];
+    let soma = 0;
+    players.forEach(p => soma += (parseInt(p.autoavaliacao || p.habilidade || 3)));
+    const media = players.length > 0 ? (soma / players.length).toFixed(1) : "0.0";
+
+    texto += `${emoji} *${nomeTime.toUpperCase()}* (Média: ${media}★)\n`;
+
+    const goleiro = players.find(p => p.goleiro || String(p.posicao || '').toLowerCase().includes('goleiro'));
+    const linha = players.filter(p => !p.goleiro && !String(p.posicao || '').toLowerCase().includes('goleiro'));
+
+    if (goleiro) {
+      const nomeGk = goleiro.apelido || goleiro.nome;
+      const fotoGk = goleiro.foto_url || goleiro.foto || goleiro.avatar_url;
+      const infoFoto = fotoGk ? ` 🖼️ (Foto: ${fotoGk})` : '';
+      texto += `🧤 *${nomeGk}* (Goleiro)${infoFoto}\n`;
+    }
+
+    linha.forEach(p => {
+      const nomeP = p.apelido || p.nome;
+      const fotoP = p.foto_url || p.foto || p.avatar_url;
+      const infoFoto = fotoP ? ` 🖼️ (Foto: ${fotoP})` : '';
+      texto += `• ${nomeP}${infoFoto}\n`;
+    });
+
+    texto += `\n`;
+  });
+
+  texto += `Organizado pelo *Pelada Pro* 🏆`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(() => {
+      window.App.showToast("Escalação dos times com fotos copiada para a área de transferência! Abrindo WhatsApp...", "success");
+    }).catch(() => { });
+  }
+
+  const encoded = encodeURIComponent(texto);
+  window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+};
+
+// ==========================================================================
+// NOTIFICAÇÃO DOS ATLETAS CONVOCADOS SOBRE SEUS RESPECTIVOS TIMES
+// ==========================================================================
+window.App.notificarAtletasSorteados = async function (drawnTeams) {
+  if (!Array.isArray(drawnTeams) || drawnTeams.length === 0) return;
+
+  const token = localStorage.getItem("token");
+  let countNotificados = 0;
+
+  for (let idx = 0; idx < drawnTeams.length; idx++) {
+    const team = drawnTeams[idx];
+    const nomeTime = (team.nome || `Time ${String.fromCharCode(65 + idx)}`).trim();
+    const players = team.players || team.jogadores || [];
+
+    for (let p of players) {
+      const nomeAtleta = p.apelido || p.nome || 'Atleta';
+      const usuarioId = p.id;
+
+      const titulo = '⚽ Sorteio de Times Realizado!';
+      const mensagem = `Olá, ${nomeAtleta}! O sorteio foi concluído e você jogará no *${nomeTime}*!`;
+
+      // 1. Notificação In-App Persistida no LocalStorage do Atleta
+      try {
+        const keyNotif = `notificacoes_user_${usuarioId}`;
+        const prev = JSON.parse(localStorage.getItem(keyNotif)) || [];
+        const nova = {
+          id: `sorteio_${Date.now()}_${usuarioId}`,
+          titulo,
+          mensagem,
+          tipo: 'sorteio_time',
+          time: nomeTime,
+          lida: false,
+          data: new Date().toISOString()
+        };
+        localStorage.setItem(keyNotif, JSON.stringify([nova, ...prev].slice(0, 20)));
+      } catch (e) { }
+
+      // 2. Envio de Push Notification via backend API
+      try {
+        fetch('/api/push/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            title: titulo,
+            body: mensagem,
+            usuarioId: usuarioId,
+            url: '/#/jogador/formacao',
+            payload: { type: 'sorteio_realizado', team: nomeTime }
+          })
+        }).catch(() => { });
+      } catch (e) { }
+
+      countNotificados++;
+    }
+  }
+
+  if (window.App && window.App.showToast && countNotificados > 0) {
+    window.App.showToast(`🔔 ${countNotificados} atletas convocados foram notificados de suas equipes!`, 'success');
+  }
+};

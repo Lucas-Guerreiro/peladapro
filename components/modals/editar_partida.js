@@ -21,11 +21,17 @@ window.App.initModalEditar_partida = function(data) {
 
   // 1. Carregar lista de times disponíveis (sorteados / cadastrados)
   let teams = (data && data.teams && Array.isArray(data.teams) && data.teams.length > 0) ? data.teams : [];
+  const peladaId = partida.pelada_id || (window.App.activePelada ? window.App.activePelada.id : null);
   if (!teams || teams.length === 0) {
-    try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
-  }
-  if (!teams || teams.length === 0) {
-    try { teams = Api.getTeams() || []; } catch(e) {}
+    if (peladaId) {
+      try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch(e) {}
+    }
+    if (!teams || teams.length === 0) {
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
+    }
+    if (!teams || teams.length === 0) {
+      try { teams = Api.getTeams() || []; } catch(e) {}
+    }
   }
 
   // Nomes de times conhecidos
@@ -56,7 +62,11 @@ window.App.initModalEditar_partida = function(data) {
   let players = [];
   try { players = JSON.parse(localStorage.getItem("players")) || []; } catch(e) {}
   if (!players || players.length === 0) {
-    try { players = Api.getPlayers() || []; } catch(e) {}
+    if (window.App.confirmadosList && window.App.confirmadosList.length > 0) {
+      players = window.App.confirmadosList;
+    } else {
+      try { players = Api.getPlayers() || []; } catch(e) {}
+    }
   }
 
   let activePlayers = (players || []).filter(p => p && p.ativo !== false && !p.goleiro);

@@ -39,6 +39,7 @@ exports.confirmar = async (req, res) => {
       SELECT p.grupo_id,
              p.data,
              p.limite_atletas,
+             COALESCE(p.liberar_convidados, false) as liberar_convidados,
              COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo,
              c.limite_saldo_negativo
       FROM peladas p
@@ -50,7 +51,14 @@ exports.confirmar = async (req, res) => {
       throw new Error('Configuração do grupo/pelada não encontrada');
     }
 
-    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada, limite_atletas } = configRes.rows[0];
+    const { grupo_id, custo, limite_saldo_negativo, data: dataPelada, limite_atletas, liberar_convidados } = configRes.rows[0];
+
+    // Verificar se o usuário é convidado e se a convocação para convidados está liberada pelo gestor
+    const userTipoRes = await client.query('SELECT tipo FROM usuarios WHERE id = $1', [usuario_id]);
+    const userTipo = (userTipoRes.rows[0] && userTipoRes.rows[0].tipo) || req.usuarioTipo;
+    if (userTipo === 'convidado' && !liberar_convidados) {
+      throw new Error('A convocação para convidados nesta pelada ainda não foi liberada pelo gestor.');
+    }
     const valorCusto = parseFloat(custo || 0);
     const limiteNegativo = parseFloat(limite_saldo_negativo || 0);
     const limiteMaxAtletas = limite_atletas || 20; // fallback se limite_atletas for null
@@ -195,7 +203,7 @@ exports.entrarFila = async (req, res) => {
 
     // 1. Obter informações da pelada
     const queryConfig = `
-      SELECT p.grupo_id, p.data
+      SELECT p.grupo_id, p.data, COALESCE(p.liberar_convidados, false) as liberar_convidados
       FROM peladas p
       WHERE p.id = $1`;
     const configRes = await client.query(queryConfig, [pelada_id]);
@@ -204,10 +212,14 @@ exports.entrarFila = async (req, res) => {
       throw new Error('Pelada não encontrada');
     }
 
-    const { grupo_id, data: dataPelada } = configRes.rows[0];
+    const { grupo_id, data: dataPelada, liberar_convidados } = configRes.rows[0];
 
     // 2. Buscar dados do usuário
-    const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    const userRes = await client.query('SELECT tipo, nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+    const userTipo = (userRes.rows[0] && userRes.rows[0].tipo) || req.usuarioTipo;
+    if (userTipo === 'convidado' && !liberar_convidados) {
+      throw new Error('A convocação para convidados nesta pelada ainda não foi liberada pelo gestor.');
+    }
     const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Atleta';
     const dataFmt = formatarDataDDMM(dataPelada);
 
@@ -261,6 +273,8 @@ exports.remover = async (req, res) => {
   const { pelada_id, opcao_remocao } = req.body; // 'estorno', 'caixa', 'cortado'
   const usuario_id = req.usuarioId;
 
+  console.log(`[Backend-Remover] 📥 Solicitação recebida: usuario_id=${usuario_id}, pelada_id=${pelada_id}, opcao_remocao=${opcao_remocao}`);
+
   if (!pelada_id || !opcao_remocao) {
     return res.status(400).json({ error: 'Pelada e opção de remoção são obrigatórias' });
   }
@@ -273,6 +287,7 @@ exports.remover = async (req, res) => {
 
     // 1. Verificar se pode estornar (Regra das 2 horas)
     const podeEstornar = await verificarRegra2Horas(pelada_id);
+    console.log(`[Backend-Remover] podeEstornar (2h):`, podeEstornar);
 
     if (!podeEstornar && opcao_remocao === 'estorno') {
       await client.query('ROLLBACK');
@@ -284,6 +299,7 @@ exports.remover = async (req, res) => {
       'SELECT status, forma_pagamento FROM convocacoes WHERE pelada_id = $1 AND usuario_id = $2',
       [pelada_id, usuario_id]
     );
+    console.log(`[Backend-Remover] Estado atual da convocação para usuario_id=${usuario_id}:`, convRes.rows[0]);
 
     if (convRes.rows.length === 0 || (convRes.rows[0].status !== 'confirmado' && convRes.rows[0].status !== 'espera')) {
       await client.query('ROLLBACK');
@@ -292,67 +308,67 @@ exports.remover = async (req, res) => {
 
     const { status: statusAntes, forma_pagamento } = convRes.rows[0];
 
-    // 3. Executar lógica de reembolso se aplicável (apenas se estava confirmado e pagou com saldo)
-    if (statusAntes === 'confirmado' && forma_pagamento === 'saldo' && opcao_remocao === 'estorno' && podeEstornar) {
+    // 3. Executar lógica de reembolso se aplicável (apenas se estava confirmado e for dentro do prazo de 2h)
+    if (statusAntes === 'confirmado' && opcao_remocao === 'estorno' && podeEstornar) {
       // Obter custo real da pelada (respeitando override por data)
       const configRes = await client.query(`
-        SELECT COALESCE(p.valor_convocacao, c.valor_convocacao, 20.00) as custo, p.grupo_id
+        SELECT COALESCE(NULLIF(p.valor_convocacao, 0), NULLIF(c.valor_convocacao, 0), 20.00) as custo, p.grupo_id
         FROM peladas p
         LEFT JOIN configs c ON p.grupo_id = c.grupo_id
         WHERE p.id = $1`, [pelada_id]);
 
       if (configRes.rows.length > 0) {
         const { custo, grupo_id } = configRes.rows[0];
-        const valorCusto = parseFloat(custo || 0);
+        let valorCusto = parseFloat(custo || 0);
+        if (isNaN(valorCusto) || valorCusto <= 0) valorCusto = 20.00;
 
         // Estornar saldo (soma ao saldo do usuário)
-        await client.query('UPDATE usuarios SET saldo = saldo + $1 WHERE id = $2', [valorCusto, usuario_id]);
+        await client.query('UPDATE usuarios SET saldo = COALESCE(saldo, 0) + $1 WHERE id = $2', [valorCusto, usuario_id]);
 
-        // Registrar transação de crédito
+        // Obter nome/apelido do atleta para identificação clara no extrato financeiro do gestor
+        const uRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+        const nomeAtleta = (uRes.rows[0] && (uRes.rows[0].apelido || uRes.rows[0].nome)) || 'Atleta';
+
+        // Registrar transação de débito/saída do caixa da pelada com o nome do atleta
         await client.query(`
           INSERT INTO transacoes (usuario_id, grupo_id, valor, tipo, descricao)
-          VALUES ($1, $2, $3, 'credito', $4)`,
-          [usuario_id, grupo_id, valorCusto, `Estorno de presença na Pelada #${pelada_id}`]
+          VALUES ($1, $2, $3, 'debito', $4)`,
+          [usuario_id, grupo_id, valorCusto, `Estorno de presença - ${nomeAtleta} na Pelada #${pelada_id}`]
         );
       }
     }
 
-    // 4. Atualizar status da convocação
+    // 4. Atualizar status da convocação (reseta presencia para false e remove posição da fila)
     const statusFinal = opcao_remocao === 'cortado' ? 'cortado' : 'pendente';
     const queryUpdate = `
       UPDATE convocacoes 
-      SET status = $1, motivo_remocao = $2, data_remocao = NOW(), posicao_fila = NULL
+      SET status = $1, motivo_remocao = $2, data_remocao = NOW(), posicao_fila = NULL, presenca = FALSE
       WHERE pelada_id = $3 AND usuario_id = $4`;
     await client.query(queryUpdate, [statusFinal, opcao_remocao, pelada_id, usuario_id]);
 
-    // 4.5 Se o atleta removido era da LISTA OFICIAL, promover o 1º da fila de espera
+    // 4.5 Se o atleta removido era da LISTA OFICIAL, notifica o 1º da fila de espera que uma vaga foi liberada
     if (statusAntes === 'confirmado') {
       const filaRes = await client.query(
         `SELECT usuario_id FROM convocacoes
          WHERE pelada_id = $1 AND status IN ('espera', 'fila_espera')
          ORDER BY COALESCE(posicao_fila, 999) ASC, data_convocacao ASC
-         LIMIT 1 FOR UPDATE`,
+         LIMIT 1`,
         [pelada_id]
       );
 
       if (filaRes.rows.length > 0) {
-        const promovidoUsuarioId = filaRes.rows[0].usuario_id;
-        await client.query(
-          `UPDATE convocacoes
-           SET status = 'confirmado', posicao_fila = NULL
-           WHERE pelada_id = $1 AND usuario_id = $2`,
-          [pelada_id, promovidoUsuarioId]
-        );
+        const primeiroDaFilaId = filaRes.rows[0].usuario_id;
+        console.log(`[Backend-Remover] Vaga liberada na pelada #${pelada_id}. Notificando atleta da fila ID=${primeiroDaFilaId}...`);
 
-        // Notificação push ao atleta promovido
+        // Envia notificação para o atleta da fila realizar o pagamento/confirmar presencia
         try {
           const { sendNotificationInternal } = require('./pushController');
           sendNotificationInternal({
-            usuarioId: promovidoUsuarioId,
+            usuarioId: primeiroDaFilaId,
             title: '🎉 Vaga Liberada na Pelada!',
-            body: 'Um atleta desistiu e uma vaga foi liberada para você! Acesse o aplicativo e efetue o pagamento para garantir sua vaga.',
+            body: 'Uma vaga foi liberada na lista oficial! Acesse o aplicativo e efetue o pagamento por Pix ou Saldo para garantir sua presença.',
             url: '/#/jogador/convocacao'
-          }).catch(e => console.warn('[Push] Erro ao notificar promovido:', e.message));
+          }).catch(e => console.warn('[Push] Erro ao notificar primeiro da fila:', e.message));
         } catch (e) { }
       }
     }
@@ -371,9 +387,13 @@ exports.remover = async (req, res) => {
       );
     }
 
-    // 4.6 Notificar o Gestor e gravar notificação em banco para TODAS as desconvocações
+    // 4.7 COMMIT DA TRANSAÇÃO DO BANCO (Gravando desconvocação e saldo estornado de forma permanente)
+    await client.query('COMMIT');
+    console.log(`[Backend-Remover] ✅ Transação COMMITADA no PostgreSQL com sucesso para usuario_id=${usuario_id}!`);
+
+    // 5. Notificações pós-commit (executadas com segurança fora da transação bancária)
     try {
-      const peladaRes = await client.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
+      const peladaRes = await db.query('SELECT grupo_id, data FROM peladas WHERE id = $1', [pelada_id]);
       const grupo_id = peladaRes.rows[0] ? peladaRes.rows[0].grupo_id : null;
       const dataPelada = peladaRes.rows[0] ? peladaRes.rows[0].data : null;
       
@@ -385,27 +405,24 @@ exports.remover = async (req, res) => {
         dataFmt = `${dia}/${mes}`;
       }
 
-      const userRes = await client.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
+      const userRes = await db.query('SELECT nome, apelido FROM usuarios WHERE id = $1', [usuario_id]);
       const atletaNome = (userRes.rows[0] && (userRes.rows[0].apelido || userRes.rows[0].nome)) || 'Um atleta';
 
       if (grupo_id) {
-        // Busca os IDs de todos os gestores do grupo
-        const gestoresRes = await client.query(`
-          SELECT DISTINCT u.id 
-          FROM usuarios u
-          LEFT JOIN grupo_membros gm ON gm.usuario_id = u.id AND gm.grupo_id = $1
-          WHERE u.tipo IN ('gestor', 'ambos', 'admin') OR gm.papel IN ('gestor', 'admin')
-        `, [grupo_id]);
+        // Busca os IDs de todos os gestores
+        const gestoresRes = await db.query(`
+          SELECT DISTINCT id FROM usuarios WHERE tipo IN ('gestor', 'ambos', 'admin')
+        `);
 
         const tituloNotif = '🚫 Atleta Desconvocado';
         const msgNotif = `O atleta ${atletaNome} desconvocou-se da pelada do dia ${dataFmt}.${statusAntes === 'confirmado' ? ' Vaga liberada na lista oficial!' : ' (Fila de Espera)'}`;
 
         // Inserir registro na tabela 'notificacoes' para cada gestor
         for (const gestor of gestoresRes.rows) {
-          await client.query(`
+          await db.query(`
             INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem, lida, created_at)
             VALUES ($1, 'desconvocacao', $2, $3, false, NOW())
-          `, [gestor.id, tituloNotif, msgNotif]);
+          `, [gestor.id, tituloNotif, msgNotif]).catch(() => {});
         }
 
         // Disparar Push Notification para os gestores
@@ -431,13 +448,13 @@ exports.remover = async (req, res) => {
         }).catch(e => console.warn('[Push] Erro próximo da fila:', e.message));
       }
     } catch (e) {
-      console.warn('[Notificação] Erro nas notificações de desconvocação:', e);
+      console.warn('[Notificação] Aviso nas notificações pós-commit:', e.message);
     }
 
-    await client.query('COMMIT');
     res.json({ message: 'Remoção processada com sucesso!', estornado: statusAntes === 'confirmado' && podeEstornar && opcao_remocao === 'estorno' });
   } catch (err) {
     if (client) await client.query('ROLLBACK');
+    console.error('[Backend-Remover] ❌ Erro ao processar remoção:', err);
     res.status(400).json({ error: err.message });
   } finally {
     if (client) client.release();
@@ -606,7 +623,7 @@ exports.adicionarPorGestor = async (req, res) => {
 
     // Se for um novo convidado
     if (convidado && convidado.nome) {
-      const bcrypt = require('bcrypt');
+      const bcrypt = require('bcryptjs');
       const hash = await bcrypt.hash('123456', 10);
       const emailFicticio = `convidado_${Date.now()}_${Math.floor(Math.random() * 1000)}@convidado.com`;
       const autoRating = convidado.autoavaliacao !== undefined ? parseInt(convidado.autoavaliacao) : 3;
@@ -614,7 +631,7 @@ exports.adicionarPorGestor = async (req, res) => {
       // Inserir na tabela usuarios
       const insertUserQuery = `
         INSERT INTO usuarios (nome, email, senha_hash, autoavaliacao, tipo, goleiro, verificado, ativo, saldo, gols, partidas, avaliacao_media)
-        VALUES ($1, $2, $3, $4, 'jogador', $5, true, true, 0.00, 0, 0, $6)
+        VALUES ($1, $2, $3, $4, 'convidado', $5, true, true, 0.00, 0, 0, $6)
         RETURNING id`;
 
       const { rows: userInserted } = await db.query(insertUserQuery, [

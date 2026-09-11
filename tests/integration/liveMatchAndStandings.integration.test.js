@@ -92,17 +92,49 @@ function runTest() {
   // =========================================================================
   // CENÁRIO C: Desempate por Confronto Direto (H2H) com 2 times empatados
   // =========================================================================
-  matches.slice(2).forEach((m) => {
-    m.golsA = 0;
-    m.golsB = 0;
-    m.status = 'encerrado';
-    m.vencedor = null;
-  });
+  console.log("\n-----------------------------------------------------------------");
+  console.log(" 🧪 TESTE CASO-LIMITE (C): DESEMPATE H2H ENTRE 2 TIMES EMPATADOS");
+  console.log("-----------------------------------------------------------------");
 
-  const standings2Teams = TournamentEngine.calculateStandings(teams, matches);
+  const teams2H2H = [
+    { id: 't2_a', nome: 'Time A' },
+    { id: 't2_b', nome: 'Time B' },
+    { id: 't2_c', nome: 'Time C' },
+    { id: 't2_d', nome: 'Time D' }
+  ];
 
-  if (standings2Teams[0].nome === 'Time Amarelo' && standings2Teams[1].nome === 'Time Azul') {
-    console.log("  [Asserção 3/6 PASSOU]: (c) Desempate H2H para 2 times empatados colocou Time Amarelo à frente!");
+  // Configuração para Time A e Time B empatarem em 4 Pts, 1 Vit, 0 SG (2-2), 2 GP:
+  // J1: Time A 2 x 1 Time B (A venceu B no confronto direto)
+  // J2: Time C 1 x 0 Time D
+  // J3: Time C 1 x 0 Time A
+  // J4: Time B 1 x 0 Time D
+  // J5: Time A 0 x 0 Time D
+  // J6: Time B 0 x 0 Time C
+  const matches2H2H = [
+    { fase: 'grupo', status: 'encerrado', teamA: 'Time A', teamB: 'Time B', golsA: 2, golsB: 1 },
+    { fase: 'grupo', status: 'encerrado', teamA: 'Time C', teamB: 'Time D', golsA: 1, golsB: 0 },
+    { fase: 'grupo', status: 'encerrado', teamA: 'Time C', teamB: 'Time A', golsA: 1, golsB: 0 },
+    { fase: 'grupo', status: 'encerrado', teamA: 'Time B', teamB: 'Time D', golsA: 1, golsB: 0 },
+    { fase: 'grupo', status: 'encerrado', teamA: 'Time A', teamB: 'Time D', golsA: 0, golsB: 0 },
+    { fase: 'grupo', status: 'encerrado', teamA: 'Time B', teamB: 'Time C', golsA: 0, golsB: 0 }
+  ];
+
+  const standings2Teams = TournamentEngine.calculateStandings(teams2H2H, matches2H2H);
+
+  console.log("📊 Tabela de Classificação Desempate 2 Times:");
+  console.table(standings2Teams.map((s, pos) => ({
+    Posição: `${pos + 1}º`,
+    Time: s.nome,
+    Pontos: s.pontos,
+    Vitórias: s.vitorias,
+    SaldoGols: s.saldoGols,
+    GolsPro: s.golsPro
+  })));
+
+  // Time C fica em 1º (7 pts). Time A e Time B empatam em 4 Pts, 1 Vit, 0 SG, 2 GP.
+  // H2H coloca Time A (vencedor de A x B) em 2º lugar e Time B em 3º lugar.
+  if (standings2Teams[1].nome === 'Time A' && standings2Teams[2].nome === 'Time B') {
+    console.log("  [Asserção 3/6 PASSOU]: (c) Desempate H2H para 2 times empatados colocou Time A à frente do Time B!");
     assertionsPassed++;
   } else {
     throw new Error("FAILED: Desempate H2H de 2 times falhou!");

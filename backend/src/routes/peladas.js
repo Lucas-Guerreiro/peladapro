@@ -9,11 +9,14 @@ router.post('/agendar', authMiddleware, peladaController.agendarData);
 router.get('/grupo/:grupoId', authMiddleware, peladaController.listarDatasDoGrupo);
 router.delete('/:id', authMiddleware, peladaController.deletarData);
 router.put('/:id/config', authMiddleware, peladaController.atualizarConfigPartida);
+router.put('/:id/liberar-convidados', authMiddleware, peladaController.alternarLiberarConvidados);
 router.put('/:id/status', authMiddleware, peladaController.atualizarStatus);
 router.post('/:id/live', authMiddleware, peladaController.atualizarLiveState);
 router.get('/:id/live', authMiddleware, peladaController.obterLiveState);
 router.get('/grupo/:grupoId/transacoes', authMiddleware, peladaController.listarTransacoesDoGrupo);
 router.post('/grupo/:grupoId/transacao', authMiddleware, peladaController.criarTransacaoManual);
+router.put('/transacoes/:id', authMiddleware, peladaController.editarTransacaoManual);
+router.delete('/transacoes/:id', authMiddleware, peladaController.deletarTransacaoManual);
 router.post('/atleta/:atletaId/ajuste-saldo', authMiddleware, peladaController.ajustarSaldoAtleta);
 
 module.exports = router;

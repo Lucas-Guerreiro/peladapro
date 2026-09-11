@@ -3,9 +3,33 @@
 // ==========================================================================
 
 window.App.initModalLancar_gol = function(data) {
+  data = data || {};
   const teamName = data.teamName || "Time";
   const teamKey = data.teamKey; // "a" | "b"
-  const players = data.players || [];
+  let players = data.players || [];
+
+  // Se a lista de jogadores do time veio vazia, tenta resolver de todas as fontes disponíveis
+  if (!players || players.length === 0) {
+    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+    let teams = window.App.teams || [];
+    if ((!teams || teams.length === 0) && peladaId) {
+      try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch (e) {}
+    }
+    if (!teams || teams.length === 0) {
+      try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) {}
+    }
+
+    const cleanTarget = (teamName || "").trim().toLowerCase();
+    const found = teams.find(t => t.nome && t.nome.trim().toLowerCase() === cleanTarget)
+      || teams.find(t => t.nome && (t.nome.toLowerCase().includes(cleanTarget) || cleanTarget.includes(t.nome.toLowerCase())));
+
+    if (found && Array.isArray(found.players) && found.players.length > 0) {
+      players = found.players;
+    } else {
+      // Fallback: se o time não contiver a lista individual, usa todos os atletas confirmados da partida
+      players = window.App.confirmadosList || JSON.parse(localStorage.getItem("players")) || [];
+    }
+  }
 
   const titleEl = document.getElementById("lancar-gol-modal-title");
   if (titleEl) {
@@ -18,21 +42,24 @@ window.App.initModalLancar_gol = function(data) {
 
   if (authorSelect) {
     authorSelect.innerHTML = "";
-    players.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = `${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}`;
-      authorSelect.appendChild(opt);
-    });
+    if (players.length === 0) {
+      authorSelect.innerHTML = '<option value="">Nenhum atleta encontrado</option>';
+    } else {
+      players.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.apelido || p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}`;
+        authorSelect.appendChild(opt);
+      });
+    }
   }
 
   if (assistSelect) {
-    // Mantém a opção "Nenhuma"
     assistSelect.innerHTML = '<option value="">Nenhuma</option>';
     players.forEach(p => {
       const opt = document.createElement("option");
       opt.value = p.id;
-      opt.textContent = `${p.apelido || p.nome} ${p.goleiro ? '🧤' : ''}`;
+      opt.textContent = `${p.apelido || p.nome || 'Atleta'} ${p.goleiro ? '🧤' : ''}`;
       assistSelect.appendChild(opt);
     });
   }
@@ -58,10 +85,13 @@ window.App.initModalLancar_gol = function(data) {
 
       try {
         // 1. Incrementa o placar local na partida ativa e grava a lista de autores de gols
+        if (!window.App.liveMatch) {
+          window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
+        }
         if (teamKey === "a") {
-          window.App.liveMatch.scoreA = Math.max(0, window.App.liveMatch.scoreA + 1);
+          window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) + 1);
         } else {
-          window.App.liveMatch.scoreB = Math.max(0, window.App.liveMatch.scoreB + 1);
+          window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) + 1);
         }
 
         const autorObj = players.find(p => String(p.id) === String(autorId));
@@ -79,16 +109,19 @@ window.App.initModalLancar_gol = function(data) {
           assistNome: assistNome || null,
           teamKey: teamKey,
           teamName: teamName,
-          timeSecs: window.App.liveMatch.timerSeconds
+          timeSecs: window.App.liveMatch.timerSeconds || 0
         });
 
         // 3. Persiste no localStorage e envia ao backend em tempo real
-        localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
+        try { localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch)); } catch(e) {}
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-        if (peladaId && window.Api && window.Api.atualizarLiveState) {
-          let teams = [];
-          try { teams = JSON.parse(localStorage.getItem("teams")) || []; } catch(e) {}
-          window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
+        if (peladaId) {
+          try { localStorage.setItem(`liveMatch_${peladaId}`, JSON.stringify(window.App.liveMatch)); } catch(e) {}
+          if (window.Api && window.Api.atualizarLiveState) {
+            let teams = window.App.teams || [];
+            let queue = window.App.waitingQueue || [];
+            window.Api.atualizarLiveState(peladaId, window.App.liveMatch, queue, teams).catch(e => {});
+          }
         }
 
         // 4. Feedback visual
@@ -101,16 +134,32 @@ window.App.initModalLancar_gol = function(data) {
         // 5. Fecha o modal
         window.App.closeModal();
 
-        // 6. Atualiza a UI do placar na aba de Partidas e no Acompanhamento
-        if (window.App.initPartidas) {
-          // Atualiza os placares sem recarregar tudo
-          const scoreAEl = document.getElementById("match-control-score-a");
-          const scoreBEl = document.getElementById("match-control-score-b");
-          if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
-          if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
-        }
+        // 6. Atualiza a UI do placar na aba de Partidas, no Acompanhamento e na Tela Cheia
+        const scoreAEl = document.getElementById("match-control-score-a");
+        const scoreBEl = document.getElementById("match-control-score-b");
+        if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
+        if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
 
-        window.App.updateAcompanhamentoUI();
+        const fsScoreA = document.getElementById("fs-score-a");
+        const fsScoreB = document.getElementById("fs-score-b");
+        if (fsScoreA) fsScoreA.textContent = window.App.liveMatch.scoreA;
+        if (fsScoreB) fsScoreB.textContent = window.App.liveMatch.scoreB;
+
+        if (window.App.updateAcompanhamentoUI) {
+          window.App.updateAcompanhamentoUI();
+        }
+        if (window.App.renderTournamentUI) {
+          window.App.renderTournamentUI();
+        }
+        if (window.App.renderFormacaoTournamentUI) {
+          window.App.renderFormacaoTournamentUI();
+        }
+        if (window.App.renderLiveMatchUI) {
+          window.App.renderLiveMatchUI();
+        }
+        if (window.App.syncFullscreenScoreboardUI) {
+          window.App.syncFullscreenScoreboardUI();
+        }
 
       } catch (err) {
         console.error("[lancar_gol]", err);

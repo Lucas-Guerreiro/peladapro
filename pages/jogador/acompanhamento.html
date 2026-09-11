@@ -6,25 +6,26 @@
   .acomp-timer-wrapper-clear {
     align-items: center;
     text-align: center;
+    padding: 20px !important;
   }
 
   .acomp-timer-time-clear {
-    font-size: 44px;
-    font-weight: 300;
-    font-family: monospace, sans-serif;
+    font-size: 68px;
+    font-weight: 900;
+    font-family: 'Consolas', 'Courier New', monospace, sans-serif;
     color: #0F172A;
     letter-spacing: 2px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     line-height: 1;
   }
 
   .acomp-progress-container-clear {
     width: 100%;
-    height: 8px;
-    background: #F1F5F9;
+    height: 12px;
+    background: #E2E8F0;
     border-radius: 100px;
     overflow: hidden;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .acomp-progress-bar-clear {
@@ -38,9 +39,30 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
-    color: #64748B;
-    font-weight: 600;
+    font-size: 14px;
+    color: #475569;
+    font-weight: 700;
+  }
+
+  @media (min-width: 601px) and (max-width: 1280px) {
+    .acomp-timer-time-clear,
+    #acomp-timer-text {
+      font-size: 88px !important;
+      font-weight: 900 !important;
+      letter-spacing: 2px !important;
+      line-height: 1 !important;
+    }
+
+    .acomp-progress-container-clear {
+      height: 14px !important;
+      border-radius: 100px !important;
+    }
+
+    .acomp-status-badge-clear,
+    #acomp-timer-status {
+      font-size: 16px !important;
+      font-weight: 800 !important;
+    }
   }
 
   .acomp-pulse-dot-clear {
@@ -74,35 +96,36 @@
     }
   }
 
-  /* --- Scoreboard ao Vivo (Fundo Claro) --- */
+  /* --- Scoreboard ao Vivo (Fundo Claro com Header Verde Primário #1D9E75) --- */
   .acomp-score-card-clear {
     position: relative;
-    padding: 32px 20px 24px;
+    padding: 0 0 16px 0;
     background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    border: 1px solid #E5E7EB;
+    overflow: hidden;
   }
 
   .acomp-live-tag-clear {
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #D1FAE5; /* Fundo verde menta suave */
-    border: 1px solid #A7F3D0;
-    color: #065F46;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 12px;
-    border-radius: 100px;
+    width: 100%;
+    background: #1D9E75; /* Verde primário */
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 10px 16px;
     letter-spacing: 1px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
   }
 
   .acomp-live-tag-clear span {
-    width: 6px;
-    height: 6px;
-    background-color: #34D399;
+    width: 8px;
+    height: 8px;
+    background-color: #E74C3C; /* Ponto vermelho pulsante */
     border-radius: 50%;
     display: inline-block;
     animation: acomp-pulse-clear 1.5s infinite;
@@ -113,24 +136,25 @@
     justify-content: space-between;
     align-items: center;
     margin-top: 12px;
+    padding: 0 16px;
     gap: 8px;
   }
 
   .acomp-team-box-clear {
     flex: 1.2;
-    padding: 16px 10px;
+    padding: 14px 10px;
     border-radius: 16px;
-    min-height: 180px;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: #FFFFFF; /* Fundo branco unificado */
+    background: #FFFFFF;
     border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .acomp-team-title-clear {
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: 16px;
     max-width: 100%;
     white-space: nowrap;
@@ -175,20 +199,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
+    background: #2C3E50; /* Card central escuro */
+    border-radius: 16px;
+    padding: 8px 16px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   .acomp-score-num-clear {
-    font-size: 52px;
+    font-size: 36px;
     font-weight: 800;
-    color: #1E293B;
+    color: #FFFFFF; /* Números grandes brancos em destaque */
     font-family: monospace, sans-serif;
   }
 
   .acomp-score-divider-clear {
-    font-size: 22px;
-    color: #94A3B8;
-    opacity: 0.5;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 700;
   }
 
   /* --- Fila de Espera --- */
@@ -373,8 +401,13 @@
 
 <!-- SCOREBOARD AO VIVO -->
 <div class="acomp-card-clear acomp-score-card-clear">
-  <div class="acomp-live-tag-clear">
-    <span></span>AO VIVO
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <div class="acomp-live-tag-clear">
+      <span></span>AO VIVO
+    </div>
+    <button id="acomp-btn-toggle-fullscreen-scoreboard" class="btn"
+      style="background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); color: #FFF; font-weight: 800; font-size: 11px; border-radius: 8px; padding: 5px 12px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);"
+      title="Modo Placar e Cronômetro em Tela Cheia para Tablet/TV">🖥️ Tela Cheia</button>
   </div>
 
   <!-- DESTAQUE PROMINENTE DA FASE DA PARTIDA (JOGADOR) -->

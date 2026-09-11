@@ -1,36 +1,66 @@
-<!-- Modal: Registrar Receita / Injetar Verba (Financeiro) -->
-<div class="modal-backdrop" id="modal-income-backdrop">
-  <div class="modal-content">
+<!-- Modal: Injetar Verba / Receita no Caixa -->
+<div class="modal-backdrop" id="modal-receita-backdrop">
+  <div class="modal-content" style="max-width: 480px;">
     <div class="modal-header">
-      <h3 style="color: #0369A1; display: flex; align-items: center; gap: 8px; font-size: 18px;">
-        💵 Injetar Verba / Receita no Caixa
+      <h3 style="color: #047857; display: flex; align-items: center; gap: 8px; font-size: 18px;">
+        <i data-feather="plus-circle" style="width: 20px; height: 20px;"></i> Injetar Verba no Caixa
       </h3>
       <button class="modal-close" id="btn-close-income-modal">&times;</button>
     </div>
 
-    <div class="form-group" style="margin-top: 12px;">
-      <label for="income-description" class="form-label" style="font-weight: 700;">Descrição da Entrada</label>
-      <input type="text" id="income-description" class="form-control" placeholder="Ex: Patrocínio, Aporte do Gestor, Doação">
+    <p style="font-size: 13px; color: var(--text-caption); margin-bottom: 16px;">
+      Adicione entradas extras ao caixa do grupo (ex: patrocínios, doações ou verba de abertura).
+    </p>
+
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="income-value" class="form-label" style="font-weight: 700;">Valor da Entrada (R$) *</label>
+      <input type="number" id="income-value" class="form-control" placeholder="0.00" step="5.00" min="1" required style="font-size: 16px; font-weight: 700;">
     </div>
 
-    <div class="grid-2" style="gap: 16px;">
-      <div class="form-group">
-        <label for="income-value" class="form-label" style="font-weight: 700;">Valor da Entrada (R$)</label>
-        <input type="number" id="income-value" class="form-control" placeholder="0.00" step="5.00">
+    <div class="grid-2" style="gap: 12px; margin-bottom: 16px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="income-category" class="form-label" style="font-weight: 700;">Categoria *</label>
+        <select id="income-category" class="form-control" style="font-size: 13px;">
+          <option value="Patrocínio">Patrocínio</option>
+          <option value="Aporte do Gestor">Aporte do Gestor</option>
+          <option value="Doação">Doação</option>
+          <option value="Mensalidade Externa">Mensalidade Externa</option>
+          <option value="Outro">Outra Entrada</option>
+        </select>
       </div>
-      <div class="form-group">
-        <label for="income-category" class="form-label" style="font-weight: 700;">Categoria</label>
-        <select id="income-category" class="form-control">
-          <option value="aporte">Aporte / Verba do Caixa</option>
-          <option value="patrocinio">Patrocínio</option>
-          <option value="mensalidade">Mensalidade Externa</option>
-          <option value="outro">Outra Entrada</option>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="income-pelada-select" class="form-label" style="font-weight: 700;">Vincular à Pelada</label>
+        <select id="income-pelada-select" class="form-control" style="font-size: 13px;">
+          <option value="">Nenhuma (Entrada Geral)</option>
+          <!-- Preenchido dinamicamente via JS -->
         </select>
       </div>
     </div>
 
-    <button id="btn-save-income" class="btn btn-md btn-accent" style="width: 100%; font-weight: 700; height: 44px; margin-top: 12px; cursor: pointer;">
-      ✅ Registrar Entrada no Caixa
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="income-status-select" class="form-label" style="font-weight: 700;">Status do Pagamento / Recebimento *</label>
+      <select id="income-status-select" class="form-control" style="font-size: 13px; font-weight: 700; border: 1.5px solid #CBD5E1;">
+        <option value="efetivado" selected>✅ Efetivado 100% (Totalmente Recebido)</option>
+        <option value="parcial">🌗 Parcialmente Efetivado (Recebido em Partes)</option>
+        <option value="pendente">⏳ Não Efetivado (A Receber / 0% Recebido)</option>
+      </select>
+    </div>
+
+    <!-- Campo de Valor Parcial (exibido apenas se parcial for selecionado) -->
+    <div class="form-group" id="income-partial-container" style="display: none; margin-bottom: 16px; background: #ECFDF5; border: 1.5px solid #047857; border-radius: 8px; padding: 12px;">
+      <label for="income-paid-value" class="form-label" style="font-weight: 800; color: #047857;">Valor Já Recebido / Efetivado (R$) *</label>
+      <input type="number" id="income-paid-value" class="form-control" placeholder="0.00" step="5.00" min="0" style="font-size: 15px; font-weight: 800; border: 1.5px solid #047857; background: #FFFFFF;">
+      <span style="font-size: 11px; color: #047857; display: block; margin-top: 4px;">Informe quanto do total da entrada já foi efetivamente pago/recebido no caixa.</span>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 24px;">
+      <label for="income-description" class="form-label" style="font-weight: 700;">Motivo / Origem da Verba *</label>
+      <input type="text" id="income-description" class="form-control" placeholder="Ex: Patrocínio Supermercado, Saldo Anterior">
+    </div>
+
+    <button id="btn-save-income" class="btn btn-md btn-accent" style="width: 100%; font-weight: 700; height: 44px; cursor: pointer; background: #047857; border: none; border-radius: 8px;">
+      ✅ Confirmar Entrada de Verba
     </button>
   </div>
 </div>

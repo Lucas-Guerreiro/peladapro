@@ -11,47 +11,77 @@ window.TournamentEngine = {
    * @param {Array} teams Lista de objetos de times [{ id, nome, cor, emblema, ... }]
    * @returns {Array} Lista de partidas agendadas para a fase de grupos
    */
-  generateGroupSchedule(teams, turno = 'ida') {
+  generateGroupSchedule(teams, turno = 'ida_volta') {
     if (!Array.isArray(teams) || teams.length < 2) return [];
 
-    const matches = [];
-    const teamList = teams.map((t, idx) => ({
-      id: t.id || `t_${idx + 1}`,
-      nome: t.nome || t.name || `Time ${idx + 1}`,
-      emblema: t.emblema || t.emblema_url || null,
-      cor: t.cor || null,
-      players: t.players || t.jogadores || []
-    }));
+    const teamList = teams.map((t, idx) => {
+      const name = (t && (t.nome || t.name)) ? String(t.nome || t.name).trim() : `Time ${String.fromCharCode(65 + idx)}`;
+      return {
+        id: (t && t.id) || `t_${idx + 1}`,
+        nome: name,
+        emblema: (t && (t.emblema || t.emblema_url)) || null,
+        cor: (t && t.cor) || null,
+        players: (t && (t.players || t.jogadores)) || []
+      };
+    });
 
-    // Algoritmo de Circle Method (Round Robin)
-    let list = [...teamList];
-    const isOdd = list.length % 2 !== 0;
-    if (isOdd) {
-      list.push({ id: '__BYE__', nome: 'BYE', isBye: true });
+    let timesList = [...teamList];
+    let n = timesList.length;
+
+    // Normaliza: se ímpar, adiciona "FOLGA"
+    if (n % 2 !== 0) {
+      timesList.push({ id: '__FOLGA__', nome: 'FOLGA', isFolga: true });
+      n += 1;
     }
 
-    const numTeams = list.length;
-    const numRounds = numTeams - 1;
-    const half = numTeams / 2;
+    const rodadasIda = [];
+    let circulo = timesList.slice(1);
+    const fixo = timesList[0];
 
+    for (let r = 0; r < n - 1; r++) {
+      const rodada = [];
+      // Pareia fixo com o primeiro do círculo
+      rodada.push([fixo, circulo[0]]);
+      // Pareia os demais de fora para dentro
+      const half = Math.floor(n / 2);
+      for (let i = 1; i < half; i++) {
+        rodada.push([circulo[circulo.length - i], circulo[i]]);
+      }
+      rodadasIda.push(rodada);
+
+      // Rotaciona o círculo (mantém fixo parado): circulo = [circulo[-1]] + circulo[:-1]
+      const last = circulo[circulo.length - 1];
+      const rest = circulo.slice(0, circulo.length - 1);
+      circulo = [last, ...rest];
+    }
+
+    // Volta: segue a mesma sequência das rodadas da Ida (1 -> 2 -> 3), invertendo o mando (teamB x teamA)
+    const rodadasVolta = [];
+    for (let r = 0; r < rodadasIda.length; r++) {
+      const rodada = rodadasIda[r];
+      const rodadaInvertida = rodada.map(([a, b]) => [b, a]);
+      rodadasVolta.push(rodadaInvertida);
+    }
+
+    // Tabela: une rodadas de Ida e Volta (se turno === 'ida_volta') ou apenas Ida
+    const rodadasFinais = (turno === 'ida_volta') ? [...rodadasIda, ...rodadasVolta] : rodadasIda;
+
+    // Remove confrontos com "FOLGA" e monta a lista de partidas final
+    const rawMatches = [];
     let matchCount = 0;
 
-    // --- TURNO DE IDA ---
-    for (let round = 0; round < numRounds; round++) {
-      for (let i = 0; i < half; i++) {
-        const teamA = list[i];
-        const teamB = list[numTeams - 1 - i];
-
-        // Ignora jogos de folga (BYE)
-        if (teamA.isBye || teamB.isBye) continue;
+    rodadasFinais.forEach((rodada, rIdx) => {
+      rodada.forEach(([teamA, teamB]) => {
+        if (teamA.isFolga || teamB.isFolga || teamA.nome === 'FOLGA' || teamB.nome === 'FOLGA') return;
 
         matchCount++;
-        matches.push({
-          id: `torneio_g_${matchCount}_${Date.now().toString(36)}`,
+        const isVolta = rIdx >= rodadasIda.length;
+        rawMatches.push({
+          id: `torneio_g_${matchCount}_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
           fase: 'grupo',
-          turno: 'ida',
-          faseNome: 'Fase de Grupos (Ida)',
-          rodada: round + 1,
+          turno: isVolta ? 'volta' : 'ida',
+          faseNome: isVolta ? 'Fase de Grupos (Volta)' : 'Fase de Grupos (Ida)',
+          rodada: rIdx + 1,
           numeroJogo: matchCount,
           teamA: teamA.nome,
           teamB: teamB.nome,
@@ -59,49 +89,109 @@ window.TournamentEngine = {
           teamBObj: teamB,
           golsA: null,
           golsB: null,
-          status: 'agendado', // 'agendado' | 'em_andamento' | 'encerrado'
-          vencedor: null,
-          penaltisA: null,
-          penaltisB: null
-        });
-      }
-
-      // Rotaciona os elementos da lista mantendo o primeiro fixo
-      const fixed = list[0];
-      const rest = list.slice(1);
-      const last = rest.pop();
-      rest.unshift(last);
-      list = [fixed, ...rest];
-    }
-
-    // --- TURNO DE VOLTA (SE turno === 'ida_volta') ---
-    if (turno === 'ida_volta') {
-      const totalIdaMatches = matches.length;
-      for (let i = 0; i < totalIdaMatches; i++) {
-        const idaMatch = matches[i];
-        matchCount++;
-        matches.push({
-          id: `torneio_g_volta_${matchCount}_${Date.now().toString(36)}`,
-          fase: 'grupo',
-          turno: 'volta',
-          faseNome: 'Fase de Grupos (Volta)',
-          rodada: numRounds + idaMatch.rodada,
-          numeroJogo: matchCount,
-          teamA: idaMatch.teamB,
-          teamB: idaMatch.teamA,
-          teamAObj: idaMatch.teamBObj,
-          teamBObj: idaMatch.teamAObj,
-          golsA: null,
-          golsB: null,
           status: 'agendado',
           vencedor: null,
           penaltisA: null,
           penaltisB: null
         });
-      }
+      });
+    });
+
+    return rawMatches;
+  },
+
+  /**
+   * Reordena e otimiza a sequência de partidas da fase de grupos e mata-mata para equilibrar o descanso das equipes.
+   * Garante estritamente que todos os jogos da IDA sejam realizados primeiro e depois todos da VOLTA,
+   * evitando ao máximo que um time jogue partidas consecutivas repetidas vezes.
+   */
+  optimizeMatchSequence(matches) {
+    if (!Array.isArray(matches) || matches.length <= 2) return matches;
+
+    const matchesIda = matches.filter(m => m.turno === 'ida');
+    const matchesVolta = matches.filter(m => m.turno === 'volta');
+
+    if (matchesIda.length > 0 && matchesVolta.length > 0) {
+      const orderedIda = this._optimizeSinglePool(matchesIda, []);
+      const orderedVolta = this._optimizeSinglePool(matchesVolta, orderedIda);
+      const combined = [...orderedIda, ...orderedVolta];
+      combined.forEach((m, idx) => {
+        m.numeroJogo = idx + 1;
+      });
+      return combined;
     }
 
-    return matches;
+    return this._optimizeSinglePool(matches, []);
+  },
+
+  _optimizeSinglePool(matches, previousMatches = []) {
+    if (!Array.isArray(matches) || matches.length <= 1) return matches;
+
+    const playedMatches = matches.filter(m => m.status === 'encerrado' || m.status === 'em_andamento');
+    const unplayedMatches = matches.filter(m => m.status !== 'encerrado' && m.status !== 'em_andamento');
+
+    if (unplayedMatches.length === 0) return matches;
+
+    const pool = [...unplayedMatches];
+    const ordered = [...playedMatches];
+    const lastPlayed = {};
+
+    const contextMatches = [...previousMatches, ...playedMatches];
+    contextMatches.forEach((m, idx) => {
+      if (m.teamA) lastPlayed[m.teamA] = idx;
+      if (m.teamB) lastPlayed[m.teamB] = idx;
+    });
+
+    const contextOffset = previousMatches.length;
+
+    while (pool.length > 0) {
+      const currentIndex = contextOffset + ordered.length;
+      let bestIdx = 0;
+      let bestScore = -Infinity;
+
+      for (let i = 0; i < pool.length; i++) {
+        const candidate = pool[i];
+        const tA = candidate.teamA;
+        const tB = candidate.teamB;
+
+        const restA = (tA in lastPlayed) ? (currentIndex - lastPlayed[tA]) : 999;
+        const restB = (tB in lastPlayed) ? (currentIndex - lastPlayed[tB]) : 999;
+
+        let score = 0;
+
+        if (restA === 999 && restB === 999) score += 2500;
+
+        // Penalidade extrema para jogos seguidos do mesmo time (rest == 1)
+        if (restA === 1) score -= 100000;
+        if (restB === 1) score -= 100000;
+
+        // Penalidade severa para descanso curto (rest == 2)
+        if (restA === 2) score -= 2500;
+        if (restB === 2) score -= 2500;
+
+        // Bônus proporcional para times esperando há mais tempo
+        score += (restA * 500) + (restB * 500);
+
+        // Penalidade se a diferença de descanso entre os 2 times for alta
+        score -= Math.abs(restA - restB) * 200;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      const chosen = pool.splice(bestIdx, 1)[0];
+      lastPlayed[chosen.teamA] = currentIndex;
+      lastPlayed[chosen.teamB] = currentIndex;
+      ordered.push(chosen);
+    }
+
+    ordered.forEach((m, idx) => {
+      m.numeroJogo = idx + 1;
+    });
+
+    return ordered;
   },
 
   /**
@@ -114,11 +204,29 @@ window.TournamentEngine = {
     if (!Array.isArray(teams)) return [];
 
     const statsMap = {};
+    const aliasMap = {};
 
+    // 1. Mapeia cada time oficial e cria aliases (Time A, Time B, Time 1, Time 2...)
     teams.forEach((t, idx) => {
-      const nameKey = (t.nome || t.name || `Time ${idx + 1}`).trim().toLowerCase();
+      const officialName = (t.nome || t.name || `Time ${idx + 1}`).trim();
+      const nameKey = officialName.toLowerCase();
+
+      const letterAlias = String.fromCharCode(65 + idx).toLowerCase(); // 'a', 'b', 'c', 'd'...
+      const timeLetterAlias = `time ${letterAlias}`; // 'time a', 'time b'...
+      const numAlias = `time ${idx + 1}`; // 'time 1', 'time 2'...
+
+      aliasMap[nameKey] = nameKey;
+      aliasMap[timeLetterAlias] = nameKey;
+      aliasMap[numAlias] = nameKey;
+
+      // Se for Time A/B/C/D, mapeia também as cores correspondentes (Azul->Time A, Preto->Time B, Vermelho->Time C, Branco->Time D)
+      if (idx === 0 || letterAlias === 'a') { aliasMap['azul'] = nameKey; aliasMap['time azul'] = nameKey; }
+      if (idx === 1 || letterAlias === 'b') { aliasMap['preto'] = nameKey; aliasMap['time preto'] = nameKey; }
+      if (idx === 2 || letterAlias === 'c') { aliasMap['vermelho'] = nameKey; aliasMap['time vermelho'] = nameKey; }
+      if (idx === 3 || letterAlias === 'd') { aliasMap['branco'] = nameKey; aliasMap['time branco'] = nameKey; }
+
       statsMap[nameKey] = {
-        nome: t.nome || t.name || `Time ${idx + 1}`,
+        nome: officialName,
         emblema: t.emblema || t.emblema_url || null,
         cor: t.cor || null,
         jogos: 0,
@@ -136,8 +244,12 @@ window.TournamentEngine = {
       if (m.fase !== 'grupo' || m.status !== 'encerrado') return;
       if (m.golsA === null || m.golsB === null) return;
 
-      const keyA = (m.teamA || '').trim().toLowerCase();
-      const keyB = (m.teamB || '').trim().toLowerCase();
+      const rawKeyA = (m.teamA || '').trim().toLowerCase();
+      const rawKeyB = (m.teamB || '').trim().toLowerCase();
+
+      // Resolve alias para a chave do time oficial
+      const keyA = aliasMap[rawKeyA] || rawKeyA;
+      const keyB = aliasMap[rawKeyB] || rawKeyB;
 
       if (!statsMap[keyA]) {
         statsMap[keyA] = { nome: m.teamA, emblema: null, cor: null, jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, saldoGols: 0, pontos: 0 };
@@ -287,71 +399,310 @@ window.TournamentEngine = {
   },
 
   /**
-   * Gera os confrontos do Mata-Mata a partir da classificação final da fase de grupos.
-   * @param {Array} standings Tabela de classificação
-   * @returns {Array} Lista de jogos de Mata-Mata (Semifinais)
+   * Gera os confrontos diretos de Mata-Mata (sem fase de grupos prévia).
+   * @param {Array} teams Lista de times sorteados
+   * @returns {Array} Lista de jogos eliminatórios
+   */
+  generateDirectKnockoutMatches(teams) {
+    if (!Array.isArray(teams) || teams.length < 2) return [];
+
+    const formattedTeams = teams.map((t, idx) => ({
+      nome: (t.nome || t.name || `Time ${idx + 1}`).trim(),
+      emblema: t.emblema || t.emblema_url || null,
+      cor: t.cor || null
+    }));
+
+    if (formattedTeams.length === 2) {
+      return [{
+        id: `torneio_final_direta_${Date.now().toString(36)}`,
+        fase: 'final',
+        faseNome: '🏆 Grande Final (Mata-Mata Direto)',
+        numeroJogo: 1,
+        teamA: formattedTeams[0].nome,
+        teamB: formattedTeams[1].nome,
+        teamAObj: formattedTeams[0],
+        teamBObj: formattedTeams[1],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      }];
+    }
+
+    return this.generateKnockoutMatches(formattedTeams);
+  },
+
+  /**
+   * Gera os confrontos do Mata-Mata adaptando-se estritamente ao número de times (2, 3, 4, 5, 6, 8+).
+   * @param {Array} standings Classificação da fase de grupos ou lista de times
+   * @returns {Array} Lista de jogos da primeira rodada do Mata-Mata
    */
   generateKnockoutMatches(standings) {
     if (!Array.isArray(standings) || standings.length < 2) return [];
 
+    const list = standings.map((s, idx) => typeof s === 'string' ? { nome: s } : {
+      nome: s.nome || s.name || `Time ${idx + 1}`,
+      emblema: s.emblema || s.emblema_url || null,
+      cor: s.cor || null
+    });
+    const n = list.length;
     const knockoutMatches = [];
 
-    if (standings.length >= 4) {
-      // 4 ou mais times: 1º x 4º e 2º x 3º
+    if (n === 2) {
+      // 2 Times: Vai direto pra Grande Final!
       knockoutMatches.push({
+        id: `torneio_final_${Date.now().toString(36)}`,
+        fase: 'final',
+        faseNome: '🏆 Grande Final (Mata-Mata)',
+        numeroJogo: 1,
+        teamA: list[0].nome,
+        teamB: list[1].nome,
+        teamAObj: list[0],
+        teamBObj: list[1],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 3) {
+      // 3 Times: 1º vai direto pra final, 2º x 3º jogam Semifinal
+      knockoutMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal (2º x 3º)',
+        numeroJogo: 1,
+        teamA: list[1].nome,
+        teamB: list[2].nome,
+        teamAObj: list[1],
+        teamBObj: list[2],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 4) {
+      // 4 Times: Semifinais (1º x 4º e 2º x 3º)
+      knockoutMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 1 (1º x 4º)',
+        numeroJogo: 1,
+        teamA: list[0].nome,
+        teamB: list[3].nome,
+        teamAObj: list[0],
+        teamBObj: list[3],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+      knockoutMatches.push({
+        id: `torneio_sf2_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 2 (2º x 3º)',
+        numeroJogo: 2,
+        teamA: list[1].nome,
+        teamB: list[2].nome,
+        teamAObj: list[1],
+        teamBObj: list[2],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 5) {
+      // 5 Times: Jogo Preliminar de Quartas (4º x 5º); 1º, 2º e 3º avançam direto
+      knockoutMatches.push({
+        id: `torneio_qf1_${Date.now().toString(36)}`,
+        fase: 'quartas',
+        faseNome: 'Jogo Repescagem / Quartas (4º x 5º)',
+        numeroJogo: 1,
+        teamA: list[3].nome,
+        teamB: list[4].nome,
+        teamAObj: list[3],
+        teamBObj: list[4],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else if (n === 6) {
+      // 6 Times: Quartas de Final (3º x 6º e 4º x 5º); 1º e 2º avançam direto pras Semifinais
+      knockoutMatches.push({
+        id: `torneio_qf1_${Date.now().toString(36)}`,
+        fase: 'quartas',
+        faseNome: 'Quartas de Final 1 (3º x 6º)',
+        numeroJogo: 1,
+        teamA: list[2].nome,
+        teamB: list[5].nome,
+        teamAObj: list[2],
+        teamBObj: list[5],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+      knockoutMatches.push({
+        id: `torneio_qf2_${Date.now().toString(36)}`,
+        fase: 'quartas',
+        faseNome: 'Quartas de Final 2 (4º x 5º)',
+        numeroJogo: 2,
+        teamA: list[3].nome,
+        teamB: list[4].nome,
+        teamAObj: list[3],
+        teamBObj: list[4],
+        golsA: null,
+        golsB: null,
+        status: 'agendado',
+        vencedor: null,
+        penaltisA: null,
+        penaltisB: null
+      });
+    } else {
+      // 7 ou 8+ Times: Quartas de Final completas (1º x 8º, 2º x 7º, 3º x 6º, 4º x 5º)
+      const top8 = list.slice(0, 8);
+      const half = Math.floor(top8.length / 2);
+      for (let i = 0; i < half; i++) {
+        const teamA = top8[i];
+        const teamB = top8[top8.length - 1 - i];
+        knockoutMatches.push({
+          id: `torneio_qf_${i + 1}_${Date.now().toString(36)}`,
+          fase: 'quartas',
+          faseNome: `Quartas de Final ${i + 1} (${i + 1}º x ${top8.length - i}º)`,
+          numeroJogo: i + 1,
+          teamA: teamA.nome,
+          teamB: teamB.nome,
+          teamAObj: teamA,
+          teamBObj: teamB,
+          golsA: null,
+          golsB: null,
+          status: 'agendado',
+          vencedor: null,
+          penaltisA: null,
+          penaltisB: null
+        });
+      }
+    }
+
+    return knockoutMatches;
+  },
+
+  /**
+   * Gera as Semifinais a partir dos vencedores das Quartas de Final e times pré-classificados.
+   * @param {Array} qfMatches Partidas de Quartas de Final encerradas
+   * @param {Array} standings Classificação da fase de grupos ou times
+   * @returns {Array} Partidas de Semifinal
+   */
+  generateSemifinalsFromQuartas(qfMatches, standings) {
+    if (!Array.isArray(qfMatches) || qfMatches.length === 0) return [];
+    const list = standings || [];
+    const numTeams = list.length;
+    const sfMatches = [];
+
+    const getWinner = (m) => {
+      if (!m) return null;
+      if (m.vencedor) return m.vencedor;
+      if (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined) {
+        return m.penaltisA > m.penaltisB ? m.teamA : m.teamB;
+      }
+      if (m.golsA > m.golsB) return m.teamA;
+      if (m.golsB > m.golsA) return m.teamB;
+      return m.teamA;
+    };
+
+    if (numTeams === 5 && qfMatches.length === 1) {
+      const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF';
+      sfMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 1 (1º x Vencedor QF)',
+        numeroJogo: 1,
+        teamA: list[0] ? list[0].nome : '1º Colocado',
+        teamB: winnerQF1,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+      sfMatches.push({
+        id: `torneio_sf2_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 2 (2º x 3º)',
+        numeroJogo: 2,
+        teamA: list[1] ? list[1].nome : '2º Colocado',
+        teamB: list[2] ? list[2].nome : '3º Colocado',
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+    } else if (numTeams === 6 && qfMatches.length === 2) {
+      const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF1';
+      const winnerQF2 = getWinner(qfMatches[1]) || 'Vencedor QF2';
+      sfMatches.push({
+        id: `torneio_sf1_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 1 (1º x Vencedor QF2)',
+        numeroJogo: 1,
+        teamA: list[0] ? list[0].nome : '1º Colocado',
+        teamB: winnerQF2,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+      sfMatches.push({
+        id: `torneio_sf2_${Date.now().toString(36)}`,
+        fase: 'semifinal',
+        faseNome: 'Semifinal 2 (2º x Vencedor QF1)',
+        numeroJogo: 2,
+        teamA: list[1] ? list[1].nome : '2º Colocado',
+        teamB: winnerQF1,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
+      });
+    } else if (qfMatches.length >= 4) {
+      const winnerQF1 = getWinner(qfMatches[0]) || 'Vencedor QF1';
+      const winnerQF2 = getWinner(qfMatches[1]) || 'Vencedor QF2';
+      const winnerQF3 = getWinner(qfMatches[2]) || 'Vencedor QF3';
+      const winnerQF4 = getWinner(qfMatches[3]) || 'Vencedor QF4';
+      sfMatches.push({
         id: `torneio_sf1_${Date.now().toString(36)}`,
         fase: 'semifinal',
         faseNome: 'Semifinal 1',
         numeroJogo: 1,
-        teamA: standings[0].nome,
-        teamB: standings[3].nome,
-        teamAObj: { nome: standings[0].nome, emblema: standings[0].emblema, cor: standings[0].cor },
-        teamBObj: { nome: standings[3].nome, emblema: standings[3].emblema, cor: standings[3].cor },
-        golsA: null,
-        golsB: null,
-        status: 'agendado',
-        vencedor: null,
-        penaltisA: null,
-        penaltisB: null
+        teamA: winnerQF1,
+        teamB: winnerQF4,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
       });
-
-      knockoutMatches.push({
+      sfMatches.push({
         id: `torneio_sf2_${Date.now().toString(36)}`,
         fase: 'semifinal',
         faseNome: 'Semifinal 2',
         numeroJogo: 2,
-        teamA: standings[1].nome,
-        teamB: standings[2].nome,
-        teamAObj: { nome: standings[1].nome, emblema: standings[1].emblema, cor: standings[1].cor },
-        teamBObj: { nome: standings[2].nome, emblema: standings[2].emblema, cor: standings[2].cor },
-        golsA: null,
-        golsB: null,
-        status: 'agendado',
-        vencedor: null,
-        penaltisA: null,
-        penaltisB: null
+        teamA: winnerQF2,
+        teamB: winnerQF3,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
       });
-    } else if (standings.length === 3) {
-      // 3 times: 1º vai direto pra final, 2º x 3º jogam semifinal
-      knockoutMatches.push({
+    } else {
+      const winner1 = getWinner(qfMatches[0]) || 'Vencedor 1';
+      const winner2 = getWinner(qfMatches[1]) || 'Vencedor 2';
+      sfMatches.push({
         id: `torneio_sf1_${Date.now().toString(36)}`,
         fase: 'semifinal',
         faseNome: 'Semifinal',
         numeroJogo: 1,
-        teamA: standings[1].nome,
-        teamB: standings[2].nome,
-        teamAObj: { nome: standings[1].nome, emblema: standings[1].emblema, cor: standings[1].cor },
-        teamBObj: { nome: standings[2].nome, emblema: standings[2].emblema, cor: standings[2].cor },
-        golsA: null,
-        golsB: null,
-        status: 'agendado',
-        vencedor: null,
-        penaltisA: null,
-        penaltisB: null
+        teamA: winner1,
+        teamB: winner2,
+        golsA: null, golsB: null, status: 'agendado', vencedor: null
       });
     }
 
-    return knockoutMatches;
+    return sfMatches;
   },
 
   /**
@@ -365,15 +716,31 @@ window.TournamentEngine = {
 
     const finalMatches = [];
 
+    const getWinner = (m) => {
+      if (!m) return null;
+      if (m.vencedor) return m.vencedor;
+      if (m.penaltisA !== null && m.penaltisB !== null && m.penaltisA !== undefined && m.penaltisB !== undefined) {
+        return m.penaltisA > m.penaltisB ? m.teamA : m.teamB;
+      }
+      if (m.golsA > m.golsB) return m.teamA;
+      if (m.golsB > m.golsA) return m.teamB;
+      return m.teamA;
+    };
+    const getLoser = (m) => {
+      if (!m) return null;
+      const w = getWinner(m);
+      return w === m.teamA ? m.teamB : m.teamA;
+    };
+
     if (sfMatches.length === 2) {
       const sf1 = sfMatches[0];
       const sf2 = sfMatches[1];
 
-      const winnerSF1 = sf1.vencedor === sf1.teamA ? sf1.teamA : sf1.teamB;
-      const loserSF1  = sf1.vencedor === sf1.teamA ? sf1.teamB : sf1.teamA;
+      const winnerSF1 = getWinner(sf1);
+      const loserSF1  = getLoser(sf1);
 
-      const winnerSF2 = sf2.vencedor === sf2.teamA ? sf2.teamA : sf2.teamB;
-      const loserSF2  = sf2.vencedor === sf2.teamA ? sf2.teamB : sf2.teamA;
+      const winnerSF2 = getWinner(sf2);
+      const loserSF2  = getLoser(sf2);
 
       // Disputa de 3º lugar
       finalMatches.push({
@@ -433,6 +800,23 @@ window.TournamentEngine = {
   /**
    * Apura o pódio completo (1º, 2º, 3º e 4º colocados) após o término da Final e Disputa de 3º Lugar.
    * @param {Array} finalsMatches Lista de partidas de Finais concluídas
+  /**
+   * Apura o pódio direto por Pontos Corridos (1º ao 4º lugar da tabela de classificação final).
+   * @param {Array} standings Tabela de classificação ordenada
+   * @returns {Object} { primeiro, segundo, terceiro, quarto }
+   */
+  determinePodiumPontosCorridos(standings = []) {
+    return {
+      primeiro: standings[0] ? standings[0].nome : null,
+      segundo:  standings[1] ? standings[1].nome : null,
+      terceiro: standings[2] ? standings[2].nome : null,
+      quarto:   standings[3] ? standings[3].nome : null
+    };
+  },
+
+  /**
+   * Apura o pódio completo (1º, 2º, 3º e 4º colocados) após o término da Final ou por Pontos Corridos.
+   * @param {Array} finalsMatches Lista de partidas de Finais concluídas
    * @param {Array} standings Classificação da fase de grupos para fallback
    * @returns {Object} { primeiro, segundo, terceiro, quarto }
    */
@@ -453,7 +837,13 @@ window.TournamentEngine = {
     if (match3rd && match3rd.vencedor) {
       terceiro = match3rd.vencedor;
       quarto   = match3rd.vencedor === match3rd.teamA ? match3rd.teamB : match3rd.teamA;
-    } else if (standings.length >= 4 && !terceiro) {
+    }
+
+    // Se não houver mata-mata (Pontos Corridos) ou faltarem dados, usa a tabela de classificação
+    if (!primeiro && standings.length > 0) {
+      return this.determinePodiumPontosCorridos(standings);
+    }
+    if (!terceiro && standings.length >= 3) {
       terceiro = standings[2] ? standings[2].nome : null;
       quarto   = standings[3] ? standings[3].nome : null;
     }

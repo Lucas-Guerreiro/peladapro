@@ -84,7 +84,7 @@ exports.listarGrupos = async (req, res) => {
 
 // --- Agendar nova data/horário para a pelada (com notificação) ----------
 exports.agendarData = async (req, res) => {
-  const { grupo_id, data, horario, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome } = req.body;
+  const { grupo_id, data, horario, local, max_jogadores, valor_convocacao, chave_pix, chave_pix_nome, modo, turno_torneio } = req.body;
 
   if (!grupo_id || !data || !horario || !local) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes (grupo, data, horário, local)' });
@@ -96,11 +96,15 @@ exports.agendarData = async (req, res) => {
     client = await db.pool.connect();
     await client.query('BEGIN');
 
+    await client.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(50) DEFAULT 'normal'");
+    await client.query("ALTER TABLE peladas ALTER COLUMN modo TYPE VARCHAR(50)");
+    await client.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
+
     // 1. Inserir a partida na tabela 'peladas'
     const queryPelada = `
-      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, limite_atletas, valor_convocacao, chave_pix, chave_pix_nome)
-      VALUES ($1, $2, $3, 'agendada', $4, $5, $5, $6, $7, $8) RETURNING id, data, horario, local, chave_pix, chave_pix_nome`;
-    const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00, chave_pix || null, chave_pix_nome || null]);
+      INSERT INTO peladas (grupo_id, data, horario, status, local, max_jogadores, limite_atletas, valor_convocacao, chave_pix, chave_pix_nome, modo, turno_torneio)
+      VALUES ($1, $2, $3, 'agendada', $4, $5, $5, $6, $7, $8, $9, $10) RETURNING id, data, horario, local, chave_pix, chave_pix_nome, modo, turno_torneio`;
+    const peladaRes = await client.query(queryPelada, [grupo_id, data, horario, local, max_jogadores || 20, valor_convocacao || 20.00, chave_pix || null, chave_pix_nome || null, modo || 'normal', turno_torneio || 'ida']);
     const pelada = peladaRes.rows[0];
 
     // 2. Buscar todos os atletas ativos no sistema (jogadores, gestores e tipo ambos)
@@ -189,16 +193,48 @@ exports.deletarData = async (req, res) => {
   }
 };
 
+async function resolveGrupoIdHelper(inputGrupoId, req) {
+  let grupoId = inputGrupoId;
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    try {
+      if (req && req.usuarioId) {
+        const userRes = await db.query(`SELECT grupo_id FROM usuarios WHERE id = $1`, [req.usuarioId]);
+        if (userRes.rows.length > 0 && userRes.rows[0].grupo_id) {
+          grupoId = userRes.rows[0].grupo_id;
+        }
+      }
+    } catch (e) {}
+  }
+  if (!grupoId || grupoId === 'me' || grupoId === 'undefined' || grupoId === 'null') {
+    try {
+      const firstGroupRes = await db.query(`SELECT id FROM grupos ORDER BY id ASC LIMIT 1`);
+      if (firstGroupRes.rows.length > 0) {
+        grupoId = firstGroupRes.rows[0].id;
+      }
+    } catch (e) {}
+  }
+  if (typeof grupoId === 'string' && /^g\d+/i.test(grupoId)) {
+    grupoId = grupoId.replace(/^g/i, '');
+  }
+  const parsed = parseInt(grupoId, 10);
+  return isNaN(parsed) ? null : parsed;
+}
+
 // --- Listar datas (peladas) de um grupo específico ------------------------
 exports.listarDatasDoGrupo = async (req, res) => {
-  const { grupoId } = req.params;
+  const grupoId = await resolveGrupoIdHelper(req.params.grupoId, req);
   const gestor_id = req.usuarioId;
   const tipo = req.usuarioTipo;
 
+  if (!grupoId) {
+    return res.json([]);
+  }
+
   try {
-    // Garante que a coluna modo e turno_torneio existem na tabela peladas (idempotente)
+    // Garante que as colunas necessárias existem na tabela peladas (idempotente)
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS liberar_convidados BOOLEAN DEFAULT FALSE");
 
     // Valida se o gestor é dono do grupo apenas se for gestor
     if (tipo === 'gestor') {
@@ -213,6 +249,7 @@ exports.listarDatasDoGrupo = async (req, res) => {
       SELECT p.id, p.data, p.horario, p.status, p.local, p.max_jogadores, p.limite_atletas, p.chave_pix, p.chave_pix_nome,
              COALESCE(p.modo, 'normal') as modo,
              COALESCE(p.turno_torneio, 'ida') as turno_torneio,
+             COALESCE(p.liberar_convidados, false) as liberar_convidados,
              COALESCE(p.criterio_empate, c.criterio_empate, 'ambos_permanecem') as criterio_empate,
              COALESCE(p.vitorias_para_sair, c.vitorias_para_sair, 2) as vitorias_para_sair,
              COALESCE(p.jogadores_por_time, c.jogadores_por_time, 7) as jogadores_por_time,
@@ -235,15 +272,17 @@ exports.atualizarConfigPartida = async (req, res) => {
   const { id } = req.params;
   const gestorId = req.usuarioId;
   const tipo = req.usuarioTipo;
-  const { modo, turno_torneio, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas } = req.body;
+  const { modo, turno_torneio, criterio_empate, vitorias_para_sair, jogadores_por_time, quantidade_times, regra_saida, valor_convocacao, chave_pix, chave_pix_nome, limite_atletas, liberar_convidados } = req.body;
 
   if (tipo !== 'gestor' && tipo !== 'ambos') {
     return res.status(403).json({ error: 'Apenas gestores podem alterar configurações da partida.' });
   }
 
   try {
-    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(20) DEFAULT 'normal'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS modo VARCHAR(50) DEFAULT 'normal'");
+    await db.query("ALTER TABLE peladas ALTER COLUMN modo TYPE VARCHAR(50)");
     await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS turno_torneio VARCHAR(20) DEFAULT 'ida'");
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS liberar_convidados BOOLEAN DEFAULT FALSE");
 
     // Validar se a pelada pertence a um grupo do gestor
     const queryCheck = `
@@ -268,9 +307,10 @@ exports.atualizarConfigPartida = async (req, res) => {
           chave_pix = COALESCE($9, chave_pix),
           chave_pix_nome = COALESCE($10, chave_pix_nome),
           limite_atletas = COALESCE($11, limite_atletas),
-          max_jogadores = COALESCE($11, max_jogadores)
-      WHERE id = $12 RETURNING id, modo, turno_torneio`;
-    await db.query(queryUpdate, [
+          max_jogadores = COALESCE($11, max_jogadores),
+          liberar_convidados = COALESCE($12, liberar_convidados, false)
+      WHERE id = $13 RETURNING id, modo, turno_torneio, liberar_convidados`;
+    const { rows } = await db.query(queryUpdate, [
       modo || null,
       turno_torneio || null,
       criterio_empate || null,
@@ -282,12 +322,62 @@ exports.atualizarConfigPartida = async (req, res) => {
       chave_pix !== undefined ? chave_pix : null,
       chave_pix_nome !== undefined ? chave_pix_nome : null,
       (limite_atletas !== undefined && limite_atletas !== null) ? parseInt(limite_atletas) : null,
+      liberar_convidados !== undefined ? !!liberar_convidados : null,
       id
     ]);
 
-    res.json({ message: 'Configurações da partida atualizadas com sucesso!' });
+    res.json({ message: 'Configurações da partida atualizadas com sucesso!', pelada: rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao atualizar configurações da partida', detail: err.message });
+  }
+};
+
+exports.alternarLiberarConvidados = async (req, res) => {
+  const { id } = req.params;
+  const { liberar_convidados } = req.body;
+  const gestorId = req.usuarioId;
+  const tipo = req.usuarioTipo;
+
+  if (tipo !== 'gestor' && tipo !== 'ambos') {
+    return res.status(403).json({ error: 'Apenas gestores podem alterar a liberação de convidados.' });
+  }
+
+  try {
+    await db.query("ALTER TABLE peladas ADD COLUMN IF NOT EXISTS liberar_convidados BOOLEAN DEFAULT FALSE");
+
+    const queryCheck = `
+      SELECT p.id FROM peladas p
+      JOIN grupos g ON p.grupo_id = g.id
+      WHERE p.id = $1 AND g.gestor_id = $2`;
+    const checkRes = await db.query(queryCheck, [id, gestorId]);
+    if (checkRes.rows.length === 0) {
+      return res.status(403).json({ error: 'Você não tem permissão para alterar esta partida.' });
+    }
+
+    const estadoFinal = !!liberar_convidados;
+    const { rows } = await db.query(
+      "UPDATE peladas SET liberar_convidados = $1 WHERE id = $2 RETURNING id, liberar_convidados",
+      [estadoFinal, id]
+    );
+
+    // Se liberou convidados, pode disparar notificação push para convidados
+    if (estadoFinal) {
+      try {
+        const { sendNotificationInternal } = require('./pushController');
+        sendNotificationInternal({
+          title: '🔓 Convocação Aberta para Convidados!',
+          body: 'O gestor liberou a convocação para atletas convidados nesta pelada! Acesse o app e confirme sua presença.',
+          url: '/#/jogador/convocacao'
+        }).catch(e => console.warn('[Push] Erro push convidado:', e.message));
+      } catch (e) {}
+    }
+
+    res.json({
+      message: estadoFinal ? 'Convocação liberada para convidados!' : 'Convocação bloqueada para convidados.',
+      pelada: rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao alterar liberação de convidados.', detail: err.message });
   }
 };
 
@@ -354,13 +444,25 @@ const liveStateMap = new Map();
 
 exports.atualizarLiveState = async (req, res) => {
   const { id } = req.params;
-  const { liveMatch, waitingQueue, teams } = req.body;
+  const { liveMatch, waitingQueue, teams, isReset } = req.body;
 
   if (!id) {
     return res.status(400).json({ error: 'ID da pelada é obrigatório' });
   }
 
   try {
+    // Se for solicitação de reset OU se os times forem um array vazio, zera completamente o live_state da pelada no banco e tabelas relacionais
+    if (isReset || (Array.isArray(teams) && teams.length === 0 && Array.isArray(waitingQueue) && waitingQueue.length === 0)) {
+      await db.query('UPDATE peladas SET live_state = NULL WHERE id = $1', [id]);
+      await db.query(
+        'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
+        [id]
+      );
+      await db.query('DELETE FROM times WHERE pelada_id = $1', [id]);
+      liveStateMap.delete(String(id));
+      return res.json({ message: 'Estado ao vivo zerado com sucesso no servidor.' });
+    }
+
     // 1. Busca estado anterior do banco de dados
     const selectRes = await db.query('SELECT live_state FROM peladas WHERE id = $1', [id]);
     let existing = {};
@@ -369,7 +471,7 @@ exports.atualizarLiveState = async (req, res) => {
     }
 
     const currentMatch = liveMatch !== undefined ? liveMatch : (existing.liveMatch || {});
-    const currentTeams = (teams && Array.isArray(teams) && teams.length > 0) ? teams : (existing.teams || []);
+    const currentTeams = (teams !== undefined && Array.isArray(teams)) ? teams : (existing.teams || []);
     let currentQueue = waitingQueue !== undefined ? waitingQueue : (existing.waitingQueue || []);
 
     // Reconstrói a fila de espera se estiver vazia mas existirem mais de 2 times sorteados
@@ -401,34 +503,55 @@ exports.atualizarLiveState = async (req, res) => {
     liveStateMap.set(String(id), updatedState);
 
     // ===== Persistência relacional: tabelas times e times_jogadores =====
-    // Melhor esforço usando apenas db.query (o wrapper do projeto não expõe db.connect).
-    // Fluxo idempotente: a próxima sincronização apaga e recria — falha parcial se autocorrige.
-    // Nunca derruba o live_state (erro só é logado).
     try {
-      if (Array.isArray(currentTeams) && currentTeams.length > 0) {
-        // 1. Remove registros anteriores da pelada (evita duplicação)
+      if (Array.isArray(currentTeams)) {
+        // 1. Remove registros anteriores da pelada (evita duplicação ou limpa se estiver vazio)
         await db.query(
           'DELETE FROM times_jogadores WHERE time_id IN (SELECT id FROM times WHERE pelada_id = $1)',
           [id]
         );
         await db.query('DELETE FROM times WHERE pelada_id = $1', [id]);
 
-        // 2. Insere cada time e seus jogadores
-        for (const [i, t] of currentTeams.entries()) {
-          const timeRes = await db.query(
-            `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
-             VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
-             RETURNING id`,
-            [id, t.nome || ('Time ' + (i + 1)), t.cor || null, t.emblema ?? null, t.emblema_url || null]
-          );
-          const timeId = timeRes.rows[0].id;
+        // 2. Insere cada time único e seus jogadores se existirem
+        if (currentTeams.length > 0) {
+          const seenTeamNames = new Set();
+          const uniqueCurrentTeams = [];
 
-          for (const p of (t.players || [])) {
-            if (p.id == null) continue;
-            await db.query(
-              'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2)',
-              [timeId, p.id]
+          for (let i = 0; i < currentTeams.length; i++) {
+            const t = currentTeams[i];
+            let baseName = (t.nome || t.name || `Time ${String.fromCharCode(65 + i)}`).trim();
+            let name = baseName;
+            let counter = 2;
+            while (seenTeamNames.has(name.toLowerCase())) {
+              name = `${baseName} ${counter}`;
+              counter++;
+            }
+            seenTeamNames.add(name.toLowerCase());
+            t.nome = name;
+            t.name = name;
+            uniqueCurrentTeams.push(t);
+          }
+
+          for (const [i, t] of uniqueCurrentTeams.entries()) {
+            const timeRes = await db.query(
+              `INSERT INTO times (pelada_id, nome, cor, emblema, emblema_url, vitorias, empates, gols_pro, gols_contra, jogos)
+               VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, 0)
+               ON CONFLICT (pelada_id, LOWER(TRIM(nome))) DO UPDATE SET 
+                 cor = EXCLUDED.cor, 
+                 emblema = EXCLUDED.emblema, 
+                 emblema_url = EXCLUDED.emblema_url
+               RETURNING id`,
+              [id, t.nome, t.cor || null, t.emblema ?? null, t.emblema_url || null]
             );
+            const timeId = timeRes.rows[0].id;
+
+            for (const p of (t.players || [])) {
+              if (p.id == null) continue;
+              await db.query(
+                'INSERT INTO times_jogadores (time_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                [timeId, p.id]
+              );
+            }
           }
         }
       }
@@ -488,9 +611,9 @@ exports.obterLiveState = async (req, res) => {
 };
 
 exports.listarTransacoesDoGrupo = async (req, res) => {
-  const { grupoId } = req.params;
+  const grupoId = await resolveGrupoIdHelper(req.params.grupoId, req);
   if (!grupoId) {
-    return res.status(400).json({ error: 'grupoId é obrigatório' });
+    return res.json([]);
   }
 
   try {
@@ -499,7 +622,7 @@ exports.listarTransacoesDoGrupo = async (req, res) => {
        FROM transacoes t
        LEFT JOIN usuarios u ON t.usuario_id = u.id
        WHERE t.grupo_id = $1
-       ORDER BY t.data DESC`,
+       ORDER BY t.data DESC, t.id DESC`,
       [grupoId]
     );
 
@@ -511,7 +634,7 @@ exports.listarTransacoesDoGrupo = async (req, res) => {
 };
 
 exports.criarTransacaoManual = async (req, res) => {
-  const { grupoId } = req.params;
+  const grupoId = await resolveGrupoIdHelper(req.params.grupoId, req);
   const { valor, tipo, descricao } = req.body;
   const gestorTipo = req.usuarioTipo;
 
@@ -535,6 +658,63 @@ exports.criarTransacaoManual = async (req, res) => {
   } catch (err) {
     console.error('[criarTransacaoManual]', err);
     res.status(500).json({ error: 'Erro ao criar transação manual no banco.', detail: err.message });
+  }
+};
+
+exports.editarTransacaoManual = async (req, res) => {
+  const { id } = req.params;
+  const { valor, tipo, descricao } = req.body;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Acesso restrito ao gestor.' });
+  }
+
+  if (!id || valor === undefined || !tipo || !descricao) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios (id, valor, tipo, descricao).' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `UPDATE transacoes
+       SET valor = $1, tipo = $2, descricao = $3
+       WHERE id = $4
+       RETURNING *`,
+      [parseFloat(valor), tipo, descricao, id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Transação não encontrada.' });
+    }
+
+    res.json({ message: 'Transação atualizada com sucesso!', transacao: rows[0] });
+  } catch (err) {
+    console.error('[editarTransacaoManual]', err);
+    res.status(500).json({ error: 'Erro ao editar transação no banco.', detail: err.message });
+  }
+};
+
+exports.deletarTransacaoManual = async (req, res) => {
+  const { id } = req.params;
+  const gestorTipo = req.usuarioTipo;
+
+  if (gestorTipo !== 'gestor' && gestorTipo !== 'ambos') {
+    return res.status(403).json({ error: 'Acesso restrito ao gestor.' });
+  }
+
+  if (!id) {
+    return res.status(400).json({ error: 'ID da transação é obrigatório.' });
+  }
+
+  try {
+    const { rows } = await db.query('DELETE FROM transacoes WHERE id = $1 RETURNING *', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Transação não encontrada.' });
+    }
+    res.json({ message: 'Transação apagada com sucesso!', id });
+  } catch (err) {
+    console.error('[deletarTransacaoManual]', err);
+    res.status(500).json({ error: 'Erro ao deletar transação no banco.', detail: err.message });
   }
 };
 

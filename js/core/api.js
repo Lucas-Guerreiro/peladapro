@@ -279,6 +279,28 @@ const Api = {
     return responseData;
   },
 
+  async atualizarConfigPartida(peladaId, configObj) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return { error: 'Sessão expirada ou inválida.' };
+    }
+    try {
+      const res = await fetch(`/api/peladas/${peladaId}/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(configObj)
+      });
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error('[Api.atualizarConfigPartida]', err);
+      return { error: 'Erro de conexão com o servidor.' };
+    }
+  },
+
   async getGruposDoGestor() {
     const token = localStorage.getItem('token');
     if (!token) return [];
@@ -330,6 +352,32 @@ const Api = {
     return res.json();
   },
 
+  async editarTransacao(id, valor, tipo, descricao) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/peladas/transacoes/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ valor, tipo, descricao })
+    });
+    return res.json();
+  },
+
+  async deletarTransacao(id) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/peladas/transacoes/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return res.json();
+  },
+
   async ajustarSaldoAtleta(atletaId, grupoId, valor, descricao = '') {
     const token = localStorage.getItem('token');
     if (!token) return { error: 'Token não encontrado' };
@@ -340,6 +388,117 @@ const Api = {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ grupoId, valor, descricao })
+    });
+    return res.json();
+  },
+
+  // --- Arrecadações / Vaquinha do Grupo ---
+  async listarArrecadacoes(grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    const targetGroup = (grupoId && grupoId !== 'undefined' && grupoId !== 'null') ? grupoId : 'me';
+    try {
+      const res = await fetch(`/api/arrecadacoes/grupo/${targetGroup}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.warn('[listarArrecadacoes Error]', e);
+      return [];
+    }
+  },
+
+  async criarArrecadacao(dados) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(dados)
+    });
+    return res.json();
+  },
+
+  async atualizarStatusArrecadacao(id, status) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes/${id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    });
+    return res.json();
+  },
+
+  async gerarPixContribuicao(arrecadacao_id, valor, cpf = '') {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado. Por favor, faça login.' };
+    try {
+      const res = await fetch(`/api/arrecadacoes/pix`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ arrecadacao_id, valor, cpf })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || data.detail || 'Erro ao gerar Pix de contribuição.' };
+      }
+      return data;
+    } catch (e) {
+      console.warn('[gerarPixContribuicao Error]', e);
+      return { error: 'Erro de conexão ao gerar Pix.' };
+    }
+  },
+
+  async contribuirVaquinhaComSaldo(arrecadacaoId, valor) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado. Por favor, faça login.' };
+
+    try {
+      const res = await fetch(`/api/arrecadacoes/usar-saldo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ arrecadacao_id: arrecadacaoId, valor: parseFloat(valor) })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || data.detail || 'Erro ao processar contribuição com saldo.' };
+      }
+      return data;
+    } catch (e) {
+      console.warn('[contribuirVaquinhaComSaldo Error]', e);
+      return { error: 'Erro de conexão com o servidor.' };
+    }
+  },
+
+  async consultarStatusContribuicao(contribuicaoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Token não encontrado' };
+    const res = await fetch(`/api/arrecadacoes/status/${contribuicaoId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.json();
+  },
+
+  async simularAprovacaoContribuicao(contribuicaoId) {
+    const res = await fetch(`/api/arrecadacoes/simular-aprovacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contribuicaoId })
     });
     return res.json();
   },
@@ -369,19 +528,47 @@ const Api = {
 
   async listarConvocados(peladaId) {
     if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
-    const token = localStorage.getItem('token');
-    if (!token) return [];
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
     try {
-      const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      if (token) {
+        const res = await fetch(`/api/convocacoes/pelada/${peladaId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      }
     } catch (e) {
-      console.error('[Api] Erro em listarConvocados:', e);
-      return [];
+      console.warn('[Api] Erro REST em listarConvocados:', e);
     }
+
+    // Fallback Supabase direto se a API REST falhar ou não houver token REST
+    if (window.supabase) {
+      try {
+        const { data: convs, error } = await window.supabase
+          .from('convocacoes')
+          .select('*, usuarios(*)')
+          .eq('pelada_id', peladaId);
+        if (!error && Array.isArray(convs)) {
+          return convs.map(c => ({
+            id: c.usuario_id || (c.usuarios ? c.usuarios.id : null),
+            nome: c.usuarios ? c.usuarios.nome : 'Atleta',
+            apelido: c.usuarios ? (c.usuarios.apelido || c.usuarios.nome) : 'Atleta',
+            goleiro: c.usuarios ? !!c.usuarios.goleiro : false,
+            autoavaliacao: c.usuarios ? c.usuarios.autoavaliacao : 3,
+            foto: c.usuarios ? c.usuarios.foto : null,
+            saldo: c.usuarios ? c.usuarios.saldo : 0,
+            status: c.status,
+            presenca: c.presenca,
+            forma_pagamento: c.forma_pagamento,
+            saldo_estornado: c.saldo_estornado
+          }));
+        }
+      } catch (eSupabase) { }
+    }
+
+    return [];
   },
 
   async entrarFilaEspera(peladaId) {
@@ -472,19 +659,57 @@ const Api = {
 
   async listarPartidas(peladaId) {
     if (!peladaId || peladaId === 'null' || peladaId === 'undefined') return [];
-    const token = localStorage.getItem('token');
-    if (!token) return [];
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
     try {
-      const res = await fetch(`/api/partidas/pelada/${peladaId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(`/api/partidas/pelada/${peladaId}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+      }
     } catch (e) {
       console.error('[Api] Erro em listarPartidas:', e);
+    }
+    try {
+      const localP = JSON.parse(localStorage.getItem(`partidas_${peladaId}`)) || JSON.parse(localStorage.getItem(`recentMatches_${peladaId}`)) || JSON.parse(localStorage.getItem("recentMatches")) || JSON.parse(localStorage.getItem("partidas")) || [];
+      return Array.isArray(localP) ? localP : [];
+    } catch(e) {
       return [];
     }
+  },
+
+  async zerarPartidasDaPelada(peladaId) {
+    if (!peladaId) return { error: 'Pelada ID não informado.' };
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch(`/api/partidas/pelada/${peladaId}/all`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) return await res.json();
+      } catch(e) {}
+    }
+    return { message: 'Partidas zeradas.' };
+  },
+
+  async deletarPartidasPorIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) return { message: 'Nenhum ID.' };
+    const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
+    if (token) {
+      try {
+        const res = await fetch('/api/partidas/delete-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ids })
+        });
+        if (res.ok) return await res.json();
+      } catch(e) {}
+    }
+    return { message: 'Partidas removidas.' };
   },
 
   async atualizarStatusPelada(peladaId, status) {
@@ -501,16 +726,86 @@ const Api = {
     return res.json();
   },
 
-  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams) {
+  async atualizarLiveState(peladaId, liveMatch, waitingQueue, teams, isReset = false) {
     if (!peladaId) return { error: 'Pelada ID não informado.' };
 
-    const liveStateObj = { liveMatch, waitingQueue, teams };
+    if (isReset) {
+      try {
+        localStorage.removeItem("liveMatch");
+        localStorage.removeItem(`liveMatch_${peladaId}`);
+        localStorage.removeItem("teams");
+        localStorage.removeItem(`teams_${peladaId}`);
+        localStorage.removeItem("waitingQueue");
+        localStorage.removeItem(`waitingQueue_${peladaId}`);
+        localStorage.removeItem("tournamentState");
+        localStorage.removeItem(`tournamentState_${peladaId}`);
+      } catch (e) {}
+
+      if (window.supabase) {
+        try {
+          await window.supabase
+            .from('peladas')
+            .update({ live_state: null })
+            .eq('id', peladaId);
+        } catch (eSupabase) { }
+      }
+
+      const token = (window.Auth && window.Auth.getToken && window.Auth.getToken()) ||
+                    localStorage.getItem('token') ||
+                    localStorage.getItem('pelada_token') ||
+                    localStorage.getItem('authToken');
+      if (token) {
+        try {
+          await fetch(`/api/peladas/${peladaId}/live`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ isReset: true, teams: [], waitingQueue: [] })
+          });
+        } catch(e) {}
+      }
+
+      return { message: 'Estado ao vivo zerado com sucesso.' };
+    }
+
+    // Sanitiza 'teams' removendo fotos base64 gigantes dos jogadores para EVITAR ERRO 413 (Content Too Large)
+    let cleanTeams = teams;
+    if (Array.isArray(teams)) {
+      cleanTeams = teams.map(t => {
+        if (!t) return t;
+        const cleanT = { ...t };
+        if (Array.isArray(cleanT.jogadores)) {
+          cleanT.jogadores = cleanT.jogadores.map(j => {
+            if (!j) return j;
+            const { foto, ...rest } = j;
+            if (foto && String(foto).startsWith('data:')) {
+              return rest;
+            }
+            return j;
+          });
+        }
+        return cleanT;
+      });
+    }
+
+    const liveStateObj = { liveMatch, waitingQueue, teams: cleanTeams };
 
     // Salva localmente para resposta instantânea na UI
     try {
       if (liveMatch) localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
       if (waitingQueue) localStorage.setItem("waitingQueue", JSON.stringify(waitingQueue));
-      if (teams) localStorage.setItem("teams", JSON.stringify(teams));
+      const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
+      if (Array.isArray(cleanTeams)) {
+        if (cleanTeams.length > 0) {
+          localStorage.setItem(teamsKey, JSON.stringify(cleanTeams));
+          localStorage.setItem("teams", JSON.stringify(cleanTeams));
+        } else {
+          localStorage.removeItem(teamsKey);
+          localStorage.removeItem("teams");
+        }
+      }
     } catch (e) {}
 
     // 1. Tenta via Supabase direto (JAMstack / Vercel)
@@ -535,9 +830,28 @@ const Api = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ liveMatch, waitingQueue, teams })
+          body: JSON.stringify(liveStateObj)
         });
         if (res.ok) return await res.json();
+        else if (res.status === 413) {
+          console.warn('[Api] 413 Content Too Large em /live. Tentando enviar payload compacto...');
+          const ultraCleanTeams = (cleanTeams || []).map(t => ({
+            id: t.id,
+            nome: t.nome || t.name,
+            cor: t.cor,
+            emblema: t.emblema,
+            jogadores: (t.jogadores || []).map(j => ({ id: j.id, nome: j.nome || j.name, posicao: j.posicao }))
+          }));
+          const res2 = await fetch(`/api/peladas/${peladaId}/live`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ liveMatch, waitingQueue, teams: ultraCleanTeams })
+          });
+          if (res2.ok) return await res2.json();
+        }
       } catch(e) {}
     }
 
@@ -585,7 +899,8 @@ const Api = {
     try {
       const lm = localStorage.getItem("liveMatch");
       const wq = localStorage.getItem("waitingQueue");
-      const tm = localStorage.getItem("teams");
+      const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
+      const tm = localStorage.getItem(teamsKey) || localStorage.getItem("teams");
       if (lm || tm) {
         return {
           state: {
@@ -989,6 +1304,125 @@ const Api = {
     } catch(e) {
       return { error: 'Erro ao conectar ao servidor.' };
     }
+  },
+
+  async getCatalogoTimes(groupId) {
+    const token = localStorage.getItem('token');
+    const activeGroup = (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null) || (window.App && window.App.currentGroup ? window.App.currentGroup.id : null);
+    const targetGroup = groupId || activeGroup || 7;
+    try {
+      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!res.ok) return [];
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        return Array.isArray(data) ? data : [];
+      } catch(parseErr) {
+        return [];
+      }
+    } catch(e) {
+      console.warn('[Api.getCatalogoTimes] Erro de rede:', e);
+      return [];
+    }
+  },
+
+  async cadastrarNomeTime(groupId, data) {
+    const token = localStorage.getItem('token');
+    const activeGroup = (window.Auth && window.Auth.currentGroup ? window.Auth.currentGroup.id : null) || (window.App && window.App.currentGroup ? window.App.currentGroup.id : null);
+    const targetGroup = groupId || activeGroup || 7;
+    try {
+      const res = await fetch(`/api/times-catalogo/grupo/${targetGroup}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        return { error: 'Resposta inválida do servidor' };
+      }
+    } catch(e) {
+      return { error: 'Erro de conexão ao salvar time' };
+    }
+  },
+
+  async atualizarNomeTime(id, data) {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/times-catalogo/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        return { error: 'Resposta inválida do servidor' };
+      }
+    } catch(e) {
+      return { error: 'Erro de conexão ao atualizar time' };
+    }
+  },
+
+  async excluirNomeTime(id) {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/times-catalogo/${id}`, {
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        return { error: 'Resposta inválida do servidor' };
+      }
+    } catch(e) {
+      return { error: 'Erro de conexão ao excluir time' };
+    }
+  },
+
+  async criarRecargaPix(valor, grupoId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch('/api/pix/recarga', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ valor, grupo_id: grupoId })
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[Api.criarRecargaPix]', e);
+      return { error: 'Erro de conexão com o servidor.' };
+    }
+  },
+
+  async obterStatusRecarga(paymentId) {
+    const token = localStorage.getItem('token');
+    if (!token) return { error: 'Sessão expirada.' };
+    try {
+      const res = await fetch(`/api/pix/status-recarga/${paymentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[Api.obterStatusRecarga]', e);
+      return { error: 'Erro ao consultar status da recarga.' };
+    }
   }
 };
 
@@ -1001,4 +1435,85 @@ window.manualFinanceSettlement = function (playerId) {
   } else if (window.Router && window.Router.openModal) {
     window.Router.openModal("ajustar_saldo", { id: playerId });
   }
+};
+
+// ===== FERRAMENTA GLOBAL DE TESTE E DIAGNÓSTICO EM TEMPO REAL DE DESCONVOCACÃO =====
+window.TestDesconvocacao = async function (peladaIdInput) {
+  const peladaId = peladaIdInput || 27;
+  console.group('%c 🧪 DIAGNÓSTICO DE DESCONVOCACÃO (CONSOLE) ', 'background: #0284C7; color: white; font-size: 14px; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+  
+  const token = localStorage.getItem('token') || localStorage.getItem('pelada_token') || localStorage.getItem('authToken');
+  console.log('1️⃣ Token JWT em Uso:', token ? `${token.substring(0, 25)}...` : '❌ NENHUM TOKEN ENCONTRADO!');
+
+  if (!token) {
+    console.groupEnd();
+    return '❌ Erro: Sessão não encontrada no navegador.';
+  }
+
+  // 2. Testa perfil / me
+  let userMe = null;
+  try {
+    const resMe = await fetch('/api/usuarios/me', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resMe.ok) {
+      userMe = await resMe.json();
+      console.log('2️⃣ Dados do Atleta Logado (/api/usuarios/me):', userMe);
+      console.log(`   ➜ ID: ${userMe.id} | Nome: ${userMe.nome || userMe.apelido} | Saldo Atual no Banco: R$ ${userMe.saldo}`);
+    } else {
+      console.error('2️⃣ Erro ao consultar perfil:', resMe.status, resMe.statusText);
+    }
+  } catch (e) {
+    console.error('2️⃣ Falha na requisição /api/usuarios/me:', e);
+  }
+
+  // 3. Convocação da pelada antes da desconvocação
+  try {
+    const resConvs = await fetch(`/api/convocacoes/pelada/${peladaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resConvs.ok) {
+      const convs = await resConvs.json();
+      const minhaConv = convs.find(c => String(c.id || c.usuario_id) === String(userMe?.id));
+      console.log(`3️⃣ Lista de Convocados no Banco (Pelada #${peladaId}):`);
+      console.log('   ➜ Sua Convocação Atual no Banco:', minhaConv || '❌ Nenhuma convocação nesta pelada');
+    }
+  } catch (e) {
+    console.error('3️⃣ Erro ao listar convocados:', e);
+  }
+
+  // 4. Executa desconvocação via POST /api/convocacoes/remover
+  console.log('4️⃣ Disparando POST /api/convocacoes/remover...');
+  try {
+    const resRemover = await fetch('/api/convocacoes/remover', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ pelada_id: peladaId, opcao_remocao: 'estorno' })
+    });
+    const bodyRemover = await resRemover.json();
+    console.log(`   ➜ HTTP Status: ${resRemover.status} ${resRemover.statusText}`);
+    console.log('   ➜ Resposta do Backend:', bodyRemover);
+
+    // 5. Re-checa o saldo pós-remoção
+    const resMePos = await fetch('/api/usuarios/me', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resMePos.ok) {
+      const userMePos = await resMePos.json();
+      console.log(`5️⃣ Verificação Pós-Remoção (/api/usuarios/me):`);
+      console.log(`   ➜ Saldo Anterior: R$ ${userMe?.saldo} | Novo Saldo no Banco: R$ ${userMePos.saldo}`);
+    }
+
+    // 6. Re-checa a lista de convocados pós-remoção
+    const resConvsPos = await fetch(`/api/convocacoes/pelada/${peladaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (resConvsPos.ok) {
+      const convsPos = await resConvsPos.json();
+      const minhaConvPos = convsPos.find(c => String(c.id || c.usuario_id) === String(userMe?.id));
+      console.log(`6️⃣ Convocados no Banco Pós-Remoção:`);
+      console.log('   ➜ Status do Atleta Pós-Remoção:', minhaConvPos || '✅ Removido completamente!');
+    }
+
+  } catch (e) {
+    console.error('4️⃣ Erro na requisição:', e);
+  }
+
+  console.groupEnd();
+  return '✅ Diagnóstico finalizado! Verifique os passos 1 a 6 acima no Console.';
 };
