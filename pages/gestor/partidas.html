@@ -577,6 +577,14 @@
             <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
           </select>
         </div>
+        <div id="partidas-container-pelada-turno" style="display: none; align-items: center; gap: 6px;">
+          <label for="partidas-select-pelada-turno" style="font-size: 12px; font-weight: 800; color: #0284C7;">🔄 Turno:</label>
+          <select id="partidas-select-pelada-turno" class="form-control"
+            style="font-weight: 700; font-size: 12px; padding: 4px 8px; border-radius: 8px; border: 1.5px solid #7DD3FC; color: #0369A1; background: #F0F9FF; height: 34px; cursor: pointer;">
+            <option value="ida">🔁 Somente Ida (Turno Único)</option>
+            <option value="ida_volta">🔄 Ida e Volta (Turno e Returno)</option>
+          </select>
+        </div>
       </div>
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
         <button id="btn-toggle-liberar-convidados" class="btn"
@@ -596,12 +604,12 @@
       </div>
     </div>
 
-    <!-- Cronômetro Central -->
-    <div class="gestor-timer-wrapper" id="gestor-timer-container" style="margin-bottom: 24px;">
+    <!-- Cronômetro Central com suporte a acessibilidade (Correção 3) -->
+    <div class="gestor-timer-wrapper" id="gestor-timer-container" style="margin-bottom: 24px;" role="region" aria-label="Controle de Tempo de Jogo">
       <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
-        <button id="btn-timer-minus" class="btn-adjust-score" title="Subtrair 1 minuto">-1</button>
-        <div class="gestor-timer-time" id="match-control-timer">08:00</div>
-        <button id="btn-timer-plus" class="btn-adjust-score" title="Somar 1 minuto">+1</button>
+        <button id="btn-timer-minus" class="btn-adjust-score" title="Subtrair 1 minuto" aria-label="Subtrair 1 minuto do cronômetro">-1</button>
+        <div class="gestor-timer-time" id="match-control-timer" role="timer" aria-label="Tempo de jogo restante" aria-live="off" aria-atomic="true">08:00</div>
+        <button id="btn-timer-plus" class="btn-adjust-score" title="Somar 1 minuto" aria-label="Somar 1 minuto ao cronômetro">+1</button>
       </div>
       <div class="gestor-progress-container">
         <div id="gestor-timer-progress" class="gestor-progress-bar" style="width: 0%;"></div>
@@ -613,12 +621,15 @@
         </div>
         <div style="display: flex; gap: 8px;">
           <button id="btn-timer-toggle" class="btn btn-sm"
-            style="background: #0284C7; color: #FFF; font-weight: 700; border-radius: 8px; padding: 6px 16px; border: none; cursor: pointer;">Iniciar</button>
+            style="background: #0284C7; color: #FFF; font-weight: 700; border-radius: 8px; padding: 6px 16px; border: none; cursor: pointer;"
+            aria-label="Iniciar ou pausar cronômetro">Iniciar</button>
           <button id="btn-timer-reset" class="btn btn-sm"
-            style="background: #F1F5F9; color: #475569; font-weight: 600; border-radius: 8px; padding: 6px 14px; border: 1px solid #CBD5E1; cursor: pointer;">Reset</button>
+            style="background: #F1F5F9; color: #475569; font-weight: 600; border-radius: 8px; padding: 6px 14px; border: 1px solid #CBD5E1; cursor: pointer;"
+            aria-label="Reiniciar cronômetro para o tempo padrão">Reset</button>
         </div>
       </div>
     </div>
+
 
     <!-- Placar Central e Controle de Placar -->
     <div id="gestor-scoreboard-container" class="gestor-scoreboard-wrapper"
@@ -672,20 +683,21 @@
 
           <div
             style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: nowrap; width: 100%;">
-            <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1">-</button>
+            <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="-1" aria-label="Subtrair 1 gol do Time A">-</button>
             <button class="btn-adjust-score btn-score-adjust" data-team="a" data-diff="1"
-              style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
-            <button id="btn-goal-team-a" class="btn-goal-trigger">GOL</button>
+              style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" aria-label="Adicionar 1 gol ao Time A">+</button>
+            <button id="btn-goal-team-a" class="btn-goal-trigger" aria-label="Registrar gol para o Time A">GOL</button>
           </div>
         </div>
 
-        <!-- PLACAR CENTRAL -->
+        <!-- PLACAR CENTRAL com suporte a acessibilidade (Correção 3) -->
         <div
-          style="text-align: center; padding: 0 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          style="text-align: center; padding: 0 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+          role="region" aria-label="Placar do Jogo">
           <div style="display: flex; align-items: center; gap: 4px;">
-            <span class="gestor-score-num" id="match-control-score-a">0</span>
-            <span class="gestor-score-divider">x</span>
-            <span class="gestor-score-num" id="match-control-score-b">0</span>
+            <span class="gestor-score-num" id="match-control-score-a" role="status" aria-live="polite" aria-atomic="true" aria-label="Gols do Time A">0</span>
+            <span class="gestor-score-divider" aria-hidden="true">x</span>
+            <span class="gestor-score-num" id="match-control-score-b" role="status" aria-live="polite" aria-atomic="true" aria-label="Gols do Time B">0</span>
           </div>
         </div>
 
@@ -702,17 +714,17 @@
               Time B</h4>
             <button id="btn-view-team-b"
               style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 6px; padding: 0 4px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; line-height: 1; flex-shrink: 0;"
-              title="Ver escalação do Time B">👁️</button>
+              title="Ver escalação do Time B" aria-label="Ver escalação do Time B">👁️</button>
           </div>
           <div id="match-control-team-b-status"
             style="min-height: 14px; margin-bottom: 4px; text-align: left; font-size: 10px;"></div>
 
           <div
             style="display: flex; align-items: center; justify-content: flex-start; gap: 4px; flex-wrap: nowrap; width: 100%;">
-            <button id="btn-goal-team-b" class="btn-goal-trigger">GOL</button>
-            <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1">-</button>
+            <button id="btn-goal-team-b" class="btn-goal-trigger" aria-label="Registrar gol para o Time B">GOL</button>
+            <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="-1" aria-label="Subtrair 1 gol do Time B">-</button>
             <button class="btn-adjust-score btn-score-adjust" data-team="b" data-diff="1"
-              style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;">+</button>
+              style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" aria-label="Adicionar 1 gol ao Time B">+</button>
           </div>
         </div>
       </div>
@@ -734,9 +746,11 @@
     <div id="gestor-finish-container"
       style="display: flex; border-top: 1px solid #E2E8F0; padding-top: 16px; width: 100%;">
       <button id="btn-finish-match" class="btn"
-        style="flex: 1; background: #10B981; color: #FFF; font-weight: 700; font-size: 14px; border-radius: 12px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);">
+        style="flex: 1; background: #10B981; color: #FFF; font-weight: 700; font-size: 14px; border-radius: 12px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);"
+        aria-label="Lançar Resultado e Concluir Partida">
         <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Lançar Resultado (Concluir Jogo)
       </button>
+
       <div id="gestor-finish-archived-msg" style="display: none; width: 100%; text-align: center; padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; color: #475569; font-weight: 700; font-size: 13px;">
         ✅ Esta rodada foi finalizada e todos os resultados estão arquivados.
       </div>
@@ -961,7 +975,7 @@
       <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0;">
         <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="a" data-diff="-1" title="Subtrair 1 Gol">-</button>
         <div id="fs-score-a" class="fs-score-num">0</div>
-        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" title="Adicionar 1 Gol Sem Atleta">+</button>
+        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="a" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" title="Adicionar Gol">+</button>
       </div>
       <div id="fs-team-a-goals" style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #F8FAFC; width: 100%; margin-bottom: 8px; min-height: 10px;"></div>
       <button id="fs-btn-goal-a" class="btn-goal-trigger fs-goal-btn" data-team="a" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; font-weight: 800; font-size: 15px; border-radius: 12px; padding: 12px 20px; border: none; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" title="Lançar Gol e Selecionar Autor e Assistência">
@@ -981,7 +995,7 @@
       <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0;">
         <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="b" data-diff="-1" title="Subtrair 1 Gol">-</button>
         <div id="fs-score-b" class="fs-score-num">0</div>
-        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" title="Adicionar 1 Gol Sem Atleta">+</button>
+        <button class="btn-adjust-score fs-adjust-btn btn-score-adjust" data-team="b" data-diff="1" style="background: #D1FAE5; border-color: #A7F3D0; color: #065F46;" title="Adicionar Gol">+</button>
       </div>
       <div id="fs-team-b-goals" style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #F8FAFC; width: 100%; margin-bottom: 8px; min-height: 10px;"></div>
       <button id="fs-btn-goal-b" class="btn-goal-trigger fs-goal-btn" data-team="b" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; font-weight: 800; font-size: 15px; border-radius: 12px; padding: 12px 20px; border: none; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" title="Lançar Gol e Selecionar Autor e Assistência">

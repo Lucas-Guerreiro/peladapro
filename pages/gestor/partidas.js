@@ -3,6 +3,11 @@
 // ==========================================================================
 
 var timerInterval = null;
+// Variáveis de controle para sincronização throttled (Correção 1) e eliminação de drift (Correção 2)
+var _lastLiveNetworkSync = 0;
+var _isLiveStateDirty = false;
+// Lock de ação e debounce de 600ms para botões de gol (Correção 4)
+var _isGoalActionLocked = false;
 
 // --- Helpers de Armazenamento Seguro contra QuotaExceededError ---
 function safeLocalStorageSetItem(key, value) {
@@ -211,54 +216,93 @@ function limparCachesAntigos() {
   }
 }
 
-// Centraliza a criação do loop de contagem regressiva.
-// Garante que jamais coexistam dois intervalos ao mesmo tempo.
-function startTimerLoop() {
-  // Mata qualquer intervalo anterior antes de criar um novo
+// Centraliza o encerramento do cronômetro com guarda de idempotência (Verificação 3 e Ajuste 2).
+var _isExpiringTime = false;
+function expirarTempoDeJogo() {
+  if (_isExpiringTime) return;
+  _isExpiringTime = true;
+
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
 
+  const match = window.App.liveMatch;
+  if (!match) {
+    _isExpiringTime = false;
+    return;
+  }
+
+  match.isPlaying = false;
+  match.targetEndTime = null;
+
+  const groupConfigs = window.Api.getConfigs() || [];
+  const currentGrp = window.Auth.currentGroup;
+  const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
+  const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
+  match.timerSeconds = durationMin * 60;
+
   const btn = document.getElementById("btn-timer-toggle");
+  if (btn) {
+    btn.textContent = "Iniciar";
+    btn.className = "btn btn-sm btn-primary";
+  }
+
+  playAlarmSound();
+  saveLiveMatchState(true);
+  updateTimerDisplay();
+  renderLiveMatchUI();
+  window.App.showToast("Tempo Encerrado!", "success");
+  setTimeout(() => { _isExpiringTime = false; }, 1000);
+}
+
+
+// Centraliza a criação do loop de contagem regressiva com recálculo via timestamp absoluto.
+// Salva localmente a cada tick sem chamada de rede, sincronizando throttled a cada 20s.
+function startTimerLoop() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  const match = window.App.liveMatch;
+  if (!match || !match.isPlaying) return;
+
+  // Define timestamp absoluto para imunidade a drift em background
+  if (!match.targetEndTime) {
+    match.targetEndTime = Date.now() + (match.timerSeconds * 1000);
+  }
 
   timerInterval = setInterval(() => {
-    if (!window.App.liveMatch.isPlaying) {
-      // Se o estado mudou para pausado (ex: resetLiveTimer chamou clearInterval mas
-      // algum tick já estava enfileirado), simplesmente ignora.
-      return;
-    }
+    if (!window.App.liveMatch || !window.App.liveMatch.isPlaying) return;
 
-    if (window.App.liveMatch.timerSeconds > 0) {
-      window.App.liveMatch.timerSeconds--;
-      saveLiveMatchState();
-      updateTimerDisplay();
-    } else {
-      // Tempo esgotado
-      clearInterval(timerInterval);
-      timerInterval = null;
-      window.App.liveMatch.isPlaying = false;
+    // Recálculo absoluto por timestamp para corrigir atrasos de background
+    const remainingMs = Math.max(0, match.targetEndTime - Date.now());
+    const recalculatedSecs = Math.ceil(remainingMs / 1000);
+    const hasSecondChanged = recalculatedSecs !== match.timerSeconds;
+    match.timerSeconds = recalculatedSecs;
 
-      // Restaura o tempo configurado para a próxima partida
-      const groupConfigs = window.Api.getConfigs() || [];
-      const currentGrp = window.Auth.currentGroup;
-      const grpCfg = currentGrp ? groupConfigs.find(c => c.grupo_id === currentGrp.id) : null;
-      const durationMin = grpCfg ? (grpCfg.tempo_partida || 8) : 8;
-      window.App.liveMatch.timerSeconds = durationMin * 60;
+    if (match.timerSeconds > 0) {
+      if (hasSecondChanged) {
+        updateTimerDisplay();
+        // Persistência local imediata e barata (custo zero de rede)
+        const peladaId = window.App.activePelada ? String(window.App.activePelada.id) : null;
+        safeLocalStorageSetItem("liveMatch", match);
+        if (peladaId) safeLocalStorageSetItem(`liveMatch_${peladaId}`, match);
 
-      if (btn) {
-        btn.textContent = "Iniciar";
-        btn.className = "btn btn-sm btn-primary";
+        // Sincronização throttled periódica (a cada 20s)
+        const now = Date.now();
+        if (now - _lastLiveNetworkSync >= 20000) {
+          saveLiveMatchState(true);
+        }
       }
-
-      playAlarmSound();
-      saveLiveMatchState();
-      updateTimerDisplay();
-      renderLiveMatchUI();
-      window.App.showToast("Tempo Encerrado!", "success");
+    } else {
+      expirarTempoDeJogo();
     }
-  }, 1000);
+  }, 250);
 }
+
+
 
 window.App.initPartidas = async function () {
   limparCachesAntigos();
@@ -373,26 +417,21 @@ window.App.initPartidas = async function () {
     const fsBtnReset = document.getElementById("fs-btn-timer-reset");
     if (fsBtnReset) fsBtnReset.onclick = resetLiveTimer;
 
-    const handleOpenGoalModal = (teamKey) => {
-      const isA = teamKey === 'a';
-      const targetName = isA 
-        ? (window.App.liveMatch ? window.App.liveMatch.teamA : 'Time A')
-        : (window.App.liveMatch ? window.App.liveMatch.teamB : 'Time B');
-      const teamObj = resolveTeamObj(targetName);
-      window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: teamKey, players: teamObj.players });
-    };
-
     const fsBtnGoalA = document.getElementById("fs-btn-goal-a");
-    if (fsBtnGoalA) fsBtnGoalA.onclick = () => handleOpenGoalModal("a");
+    if (fsBtnGoalA) fsBtnGoalA.onclick = () => triggerGoalModalWithLock("a", fsBtnGoalA);
 
     const fsBtnGoalB = document.getElementById("fs-btn-goal-b");
-    if (fsBtnGoalB) fsBtnGoalB.onclick = () => handleOpenGoalModal("b");
+    if (fsBtnGoalB) fsBtnGoalB.onclick = () => triggerGoalModalWithLock("b", fsBtnGoalB);
+
 
     const fsBtnMinus = document.getElementById("fs-btn-timer-minus");
     if (fsBtnMinus) {
       fsBtnMinus.onclick = () => {
         window.App.liveMatch.timerSeconds = Math.max(0, (window.App.liveMatch.timerSeconds || 0) - 60);
-        saveLiveMatchState();
+        if (window.App.liveMatch.isPlaying) {
+          window.App.liveMatch.targetEndTime = Date.now() + (window.App.liveMatch.timerSeconds * 1000);
+        }
+        saveLiveMatchState(true);
         updateTimerDisplay();
         renderLiveMatchUI();
       };
@@ -402,7 +441,10 @@ window.App.initPartidas = async function () {
     if (fsBtnPlus) {
       fsBtnPlus.onclick = () => {
         window.App.liveMatch.timerSeconds = (window.App.liveMatch.timerSeconds || 0) + 60;
-        saveLiveMatchState();
+        if (window.App.liveMatch.isPlaying) {
+          window.App.liveMatch.targetEndTime = Date.now() + (window.App.liveMatch.timerSeconds * 1000);
+        }
+        saveLiveMatchState(true);
         updateTimerDisplay();
         renderLiveMatchUI();
       };
@@ -424,7 +466,10 @@ window.App.initPartidas = async function () {
     if (btnTimerMinus) {
       btnTimerMinus.onclick = () => {
         window.App.liveMatch.timerSeconds = Math.max(0, (window.App.liveMatch.timerSeconds || 0) - 60);
-        saveLiveMatchState();
+        if (window.App.liveMatch.isPlaying) {
+          window.App.liveMatch.targetEndTime = Date.now() + (window.App.liveMatch.timerSeconds * 1000);
+        }
+        saveLiveMatchState(true);
         updateTimerDisplay();
         renderLiveMatchUI();
         window.App.showToast("Subtraído 1 minuto do jogo.", "info");
@@ -434,21 +479,30 @@ window.App.initPartidas = async function () {
     if (btnTimerPlus) {
       btnTimerPlus.onclick = () => {
         window.App.liveMatch.timerSeconds = (window.App.liveMatch.timerSeconds || 0) + 60;
-        saveLiveMatchState();
+        if (window.App.liveMatch.isPlaying) {
+          window.App.liveMatch.targetEndTime = Date.now() + (window.App.liveMatch.timerSeconds * 1000);
+        }
+        saveLiveMatchState(true);
         updateTimerDisplay();
         renderLiveMatchUI();
         window.App.showToast("Adicionado 1 minuto ao jogo.", "info");
       };
     }
 
-    // Restaura o loop de contagem regressiva se a partida estava rodando ao sair da página
+
+    // Restaura o loop de contagem regressiva se a partida estava rodando ao sair da página (Ajuste 2)
     if (window.App.liveMatch.isPlaying) {
-      if (btnToggle) {
-        btnToggle.textContent = "Pausar";
-        btnToggle.className = "btn btn-sm btn-outline-secondary";
+      if (window.App.liveMatch.targetEndTime && window.App.liveMatch.targetEndTime <= Date.now()) {
+        expirarTempoDeJogo();
+      } else {
+        if (btnToggle) {
+          btnToggle.textContent = "Pausar";
+          btnToggle.className = "btn btn-sm btn-outline-secondary";
+        }
+        startTimerLoop();
       }
-      startTimerLoop(); // usa a função centralizada para evitar duplo interval
     }
+
 
     // Botão Zerar Testes da Pelada
     const btnZerar = document.getElementById("btn-zerar-dados-pelada");
@@ -476,23 +530,71 @@ window.App.initPartidas = async function () {
       };
     };
 
+    // Desbloqueio seguro e idempotente dos botões de gol exposto para o ciclo do modal (Ajuste 1)
+    window.App.unlockGoalButtons = (fallbackBtn = null) => {
+      _isGoalActionLocked = false;
+      const goalBtns = document.querySelectorAll('#btn-goal-team-a, #btn-goal-team-b, #fs-btn-goal-a, #fs-btn-goal-b, .btn-goal-trigger');
+      goalBtns.forEach(btn => {
+        btn.removeAttribute('disabled');
+        btn.removeAttribute('aria-disabled');
+      });
+      const targetFocus = fallbackBtn || window.App._lastGoalTriggerBtn;
+      if (targetFocus && typeof targetFocus.focus === 'function') {
+        try { targetFocus.focus(); } catch (e) { }
+      }
+      window.App._lastGoalTriggerBtn = null;
+    };
+
+    // Abertura segura de modal de gol com lock atrelado ao ciclo de vida do modal (Ajuste 1)
+    const triggerGoalModalWithLock = (teamKey, triggerBtn) => {
+      if (_isGoalActionLocked) return;
+      _isGoalActionLocked = true;
+      window.App._lastGoalTriggerBtn = triggerBtn || null;
+
+      const goalBtns = document.querySelectorAll('#btn-goal-team-a, #btn-goal-team-b, #fs-btn-goal-a, #fs-btn-goal-b, .btn-goal-trigger');
+      goalBtns.forEach(btn => {
+        btn.setAttribute('disabled', 'true');
+        btn.setAttribute('aria-disabled', 'true');
+      });
+
+      const isA = teamKey === 'a';
+      const targetName = isA 
+        ? (window.App.liveMatch ? window.App.liveMatch.teamA : 'Time A')
+        : (window.App.liveMatch ? window.App.liveMatch.teamB : 'Time B');
+      const teamObj = resolveTeamObj(targetName);
+
+      window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: teamKey, players: teamObj.players });
+
+      setTimeout(() => {
+        const modalEl = document.querySelector('#modal-container-root .modal-card, #modal-container-root');
+        if (modalEl && typeof modalEl.focus === 'function') modalEl.focus();
+      }, 50);
+
+      // Fallback de segurança prolongado (10s) apenas caso o modal seja fechado fora do ciclo esperado
+      setTimeout(() => {
+        const modalBackdrop = document.querySelector('.modal-backdrop.active');
+        if (!modalBackdrop && _isGoalActionLocked) {
+          window.App.unlockGoalButtons();
+        }
+      }, 10000);
+    };
+    window.App.triggerGoalModalWithLock = triggerGoalModalWithLock;
+
+
     // Delegação Global de Eventos de Clique para botões de Jogo ao Vivo
     if (!window._partidasClickDelegated) {
       window._partidasClickDelegated = true;
       document.addEventListener('click', (e) => {
-        // 1. Botão Lançar Gol
+        // 1. Botão Lançar Gol protegido contra duplo toque
         const goalBtn = e.target.closest('#btn-goal-team-a, #btn-goal-team-b, .btn-goal-trigger');
         if (goalBtn) {
           e.preventDefault();
           const isA = goalBtn.id === 'btn-goal-team-a' || goalBtn.getAttribute('data-team') === 'a';
           const teamKey = isA ? 'a' : 'b';
-          const targetName = isA 
-            ? (window.App.liveMatch ? window.App.liveMatch.teamA : 'Time A')
-            : (window.App.liveMatch ? window.App.liveMatch.teamB : 'Time B');
-          const teamObj = resolveTeamObj(targetName);
-          window.App.openModal("lancar_gol", { teamName: teamObj.nome, teamKey: teamKey, players: teamObj.players });
+          triggerGoalModalWithLock(teamKey, goalBtn);
           return;
         }
+
 
         // 2. Botões de Placar (- / +)
         const scoreBtn = e.target.closest('.btn-score-adjust, .btn-adjust-score');
@@ -589,14 +691,22 @@ window.App.initPartidas = async function () {
   // Inicia polling e escuta de eventos em tempo real
   startGestorPolling();
 
-  // Inicializar ícones Feather
-  if (window.feather) feather.replace();
-
-  // Renderizar anúncio Google AdSense (se ativado pelo gestor)
-  if (window.AdSenseManager) {
-    window.AdSenseManager.renderAdContainer('adsense-partidas-banner');
-  }
+  // Listeners de ciclo de vida: força sync imediato ao sair de foco ou fechar aba (Correção 2)
+  if (window._partidasLifecycleCleanup) window._partidasLifecycleCleanup();
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      saveLiveMatchState(true);
+    }
+  };
+  const onPageHide = () => saveLiveMatchState(true);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('pagehide', onPageHide);
+  window._partidasLifecycleCleanup = () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('pagehide', onPageHide);
+  };
 };
+
 
 var gestorPollingInterval = null;
 
@@ -1062,13 +1172,9 @@ function deleteLiveGoal(goalId, teamKey) {
 
   window.App.liveMatch.goals = goals;
 
-  // Atualiza placar
-  const tk = teamKey || (removedGoal ? removedGoal.teamKey : null);
-  if (tk === 'a') {
-    window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) - 1);
-  } else if (tk === 'b') {
-    window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) - 1);
-  }
+  // Garante a invariante: placar = total de eventos de gols válidos (Correção B)
+  window.App.liveMatch.scoreA = goals.filter(g => g.teamKey === 'a').length;
+  window.App.liveMatch.scoreB = goals.filter(g => g.teamKey === 'b').length;
 
   if (typeof saveLiveMatchState === "function") {
     saveLiveMatchState();
@@ -1760,18 +1866,18 @@ function toggleLiveTimer() {
   if (!btn) return;
 
   if (window.App.liveMatch.isPlaying) {
-    // --- PAUSAR ---
+    // --- PAUSAR: limpa intervalo, reseta targetEndTime e força sync imediato ---
     clearInterval(timerInterval);
     timerInterval = null;
     window.App.liveMatch.isPlaying = false;
+    window.App.liveMatch.targetEndTime = null;
     btn.textContent = "Retomar";
     btn.className = "btn btn-sm btn-primary";
-    saveLiveMatchState();
+    saveLiveMatchState(true);
     renderLiveMatchUI();
     window.App.showToast("Jogo Pausado!");
   } else {
     // --- INICIAR / RETOMAR ---
-    // Se o tempo acabou, recarrega o tempo padrão
     if (window.App.liveMatch.timerSeconds <= 0) {
       const groupConfigs = window.Api.getConfigs() || [];
       const currentGrp = window.Auth.currentGroup;
@@ -1781,12 +1887,13 @@ function toggleLiveTimer() {
     }
 
     window.App.liveMatch.isPlaying = true;
+    window.App.liveMatch.targetEndTime = Date.now() + (window.App.liveMatch.timerSeconds * 1000);
     btn.textContent = "Pausar";
     btn.className = "btn btn-sm btn-outline-secondary";
 
-    startTimerLoop(); // usa a função centralizada — nunca duplica intervalos
+    startTimerLoop();
 
-    saveLiveMatchState();
+    saveLiveMatchState(true);
     renderLiveMatchUI();
     window.App.showToast("Jogo Iniciado!");
   }
@@ -1796,6 +1903,7 @@ function resetLiveTimer(silent = false) {
   clearInterval(timerInterval);
   timerInterval = null;
   window.App.liveMatch.isPlaying = false;
+  window.App.liveMatch.targetEndTime = null;
 
   // Reseta para o tempo padrão configurado para o grupo
   const groupConfigs = window.Api.getConfigs() || [];
@@ -1810,11 +1918,12 @@ function resetLiveTimer(silent = false) {
     btnToggle.className = "btn btn-sm btn-primary";
   }
 
-  saveLiveMatchState();
+  saveLiveMatchState(true);
   updateTimerDisplay();
   renderLiveMatchUI();
   if (!silent) window.App.showToast("Cronômetro resetado.");
 }
+
 
 function updateTimerDisplay() {
   const s = (window.App && window.App.liveMatch && window.App.liveMatch.timerSeconds !== undefined) ? window.App.liveMatch.timerSeconds : 480;
@@ -1887,18 +1996,27 @@ function updateLiveScore(team, diff) {
     window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
   }
 
-  if (team === "a") {
-    window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) + diff);
-    const scoreAEl = document.getElementById("match-control-score-a");
-    if (scoreAEl) scoreAEl.textContent = window.App.liveMatch.scoreA;
-    const fsScoreA = document.getElementById("fs-score-a");
-    if (fsScoreA) fsScoreA.textContent = window.App.liveMatch.scoreA;
-  } else {
-    window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) + diff);
-    const scoreBEl = document.getElementById("match-control-score-b");
-    if (scoreBEl) scoreBEl.textContent = window.App.liveMatch.scoreB;
-    const fsScoreB = document.getElementById("fs-score-b");
-    if (fsScoreB) fsScoreB.textContent = window.App.liveMatch.scoreB;
+  // Direciona incremento para abertura do modal com tipagem de gol (Correção B)
+  if (diff > 0) {
+    if (window.App && typeof window.App.triggerGoalModalWithLock === "function") {
+      window.App.triggerGoalModalWithLock(team);
+    }
+    return;
+  }
+
+  // Decremento remove o último evento de gol tipado para manter a invariante (Correção B)
+  if (diff < 0) {
+    const goals = window.App.liveMatch.goals || [];
+    const teamGoals = goals.filter(g => g.teamKey === team);
+    if (teamGoals.length > 0) {
+      const lastGoal = teamGoals[teamGoals.length - 1];
+      if (typeof deleteLiveGoal === "function") {
+        deleteLiveGoal(lastGoal.id, team);
+      }
+    } else if (window.App && window.App.showToast) {
+      window.App.showToast("Nenhum gol registrado para subtrair deste time.", "warning");
+    }
+    return;
   }
 
   safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
@@ -2415,7 +2533,8 @@ async function renderFullscreenScorers() {
     const assist = (g.assistNome || g.assistencia || g.assist || '').trim();
     const teamName = g.teamName || defaultTeam || (g.teamKey === 'a' ? liveMatch.teamA : (g.teamKey === 'b' ? liveMatch.teamB : null));
 
-    if (author && author !== 'Gol Contra' && author !== 'Auto Gol' && author !== 'Sem Autor') {
+    const isSpecialType = g.tipo === 'sem_autor' || g.tipo === 'gol_contra';
+    if (author && !isSpecialType && author !== 'Gol Contra' && author !== 'Auto Gol' && author !== 'Sem Autor') {
       if (!goalsMap[author]) {
         goalsMap[author] = {
           name: author,
@@ -2427,7 +2546,7 @@ async function renderFullscreenScorers() {
       if (teamName && !goalsMap[author].team) goalsMap[author].team = teamName;
     }
 
-    if (assist && assist !== 'Nenhuma' && assist !== 'Sem Assistência' && assist !== 'Sem Assist') {
+    if (assist && !isSpecialType && assist !== 'Nenhuma' && assist !== 'Sem Assistência' && assist !== 'Sem Assist') {
       if (!assistsMap[assist]) {
         assistsMap[assist] = {
           name: assist,
@@ -2685,23 +2804,46 @@ async function handleFinishMatch(skipConfirm = false) {
 
     window.App.showToast(`Fim de Jogo! ${teamAName} ${scoreA} x ${scoreB} ${teamBName}`);
 
-    // 1. Gravar a partida finalizada no banco de dados
+    // 1. Grava partida e sincroniza cache local imediato contra divergências (Verificação C)
     try {
       const goalsDetails = window.App.liveMatch ? (window.App.liveMatch.goals || []) : [];
       const res = await Api.lancarPartida(peladaId, teamAName, teamBName, scoreA, scoreB, goalsDetails);
-      if (res.error) {
-        console.error("Erro ao salvar partida:", res.error);
-      }
+      const savedPartida = (res && res.partida) ? res.partida : {
+        id: Date.now(),
+        pelada_id: peladaId,
+        time_a_nome: teamAName,
+        time_b_nome: teamBName,
+        gols_time_a: scoreA,
+        gols_time_b: scoreB,
+        autores_gols: JSON.stringify(goalsDetails),
+        status: 'finalizada',
+        created_at: new Date().toISOString()
+      };
+      [`partidas_${peladaId}`, `recentMatches_${peladaId}`].forEach(k => {
+        try {
+          const list = JSON.parse(localStorage.getItem(k)) || [];
+          if (!list.some(m => m.id === savedPartida.id)) {
+            list.unshift(savedPartida);
+            safeLocalStorageSetItem(k, list);
+          }
+        } catch (e) {}
+      });
+      if (res && res.error) console.error("Erro ao salvar partida:", res.error);
     } catch (err) {
       console.error("Erro na requisição de salvar partida:", err);
     }
 
-    // Busca as configurações da pelada ativa
+    // Busca configurações da pelada ativa via grupo/API com criterio_empate real (Correção A)
     const peladaAtiva = window.App.activePelada || {};
-    const grupoAtivo = window.App.currentGroup || {};
-    const winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
-    const exitRule = peladaAtiva.regra_saida || grupoAtivo.regra_saida || "final_fila";
-    const tieRule = peladaAtiva.criterio_empate || grupoAtivo.criterio_empate || "ambos_permanecem";
+    const grupoAtivo = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup || {};
+    let grpCfg = null;
+    try {
+      const allCfgs = (window.Api && window.Api.getConfigs) ? (window.Api.getConfigs() || []) : [];
+      if (grupoAtivo.id) grpCfg = allCfgs.find(c => c.grupo_id === grupoAtivo.id);
+    } catch (e) {}
+    const winsLimit = parseInt(peladaAtiva.vitorias_para_sair) || parseInt(grpCfg ? grpCfg.vitorias_para_sair : null) || parseInt(grupoAtivo.vitorias_para_sair) || 2;
+    const exitRule = peladaAtiva.regra_saida || (grpCfg ? grpCfg.regra_saida : null) || grupoAtivo.regra_saida || "final_fila";
+    const tieRule = peladaAtiva.criterio_empate || (grpCfg ? grpCfg.criterio_empate : null) || grupoAtivo.criterio_empate || "ambos_permanecem";
 
     let isTie = scoreA === scoreB;
     let winner = isTie ? null : (scoreA > scoreB ? teamAName : teamBName);
@@ -2897,24 +3039,59 @@ async function handleFinishMatch(skipConfirm = false) {
       // LÓGICA DE REVEZAMENTO PELADA NORMAL (REINA CAMPO)
       // -----------------------------------------------------------------------
       if (isTie) {
+        // Aplica o criterio_empate configurado pelo gestor (Correção A)
         if (tieRule === "saem_ambos") {
           window.App.liveMatch.consecutiveWinsA = 0;
           window.App.liveMatch.consecutiveWinsB = 0;
-
           if (window.App.waitingQueue.length >= 2) {
             const nextA = window.App.waitingQueue.shift();
             const nextB = window.App.waitingQueue.shift();
             window.App.waitingQueue.push(teamAName, teamBName);
             window.App.liveMatch.teamA = nextA;
             window.App.liveMatch.teamB = nextB;
+          } else if (window.App.waitingQueue.length === 1) {
+            const nextA = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(teamAName, teamBName);
+            const nextB = window.App.waitingQueue.shift();
+            window.App.liveMatch.teamA = nextA;
+            window.App.liveMatch.teamB = nextB;
           }
+          window.App.showToast("Empate: Saem ambos os times para a fila.", "info");
+        } else if (tieRule === "vencedor_ultima") {
+          const winsB = window.App.liveMatch.consecutiveWinsB || 0;
+          const stayingTeam = winsB > 0 ? teamBName : teamAName;
+          const leavingTeam = stayingTeam === teamAName ? teamBName : teamAName;
+
+          if (window.App.waitingQueue.length > 0) {
+            const nextTeam = window.App.waitingQueue.shift();
+            window.App.waitingQueue.push(leavingTeam);
+            if (stayingTeam === teamAName) {
+              window.App.liveMatch.teamB = nextTeam;
+              window.App.liveMatch.consecutiveWinsB = 0;
+            } else {
+              window.App.liveMatch.teamA = nextTeam;
+              window.App.liveMatch.consecutiveWinsA = 0;
+            }
+          }
+          window.App.showToast(`Empate: Fica o vencedor anterior (${stayingTeam}).`, "info");
         } else if (tieRule === "time_entrando") {
+          window.App.liveMatch.consecutiveWinsA = 0;
           window.App.liveMatch.consecutiveWinsB = 0;
           if (window.App.waitingQueue.length > 0) {
             const next = window.App.waitingQueue.shift();
-            window.App.waitingQueue.push(teamBName);
-            window.App.liveMatch.teamB = next;
+            window.App.waitingQueue.push(teamAName);
+            window.App.liveMatch.teamA = next;
           }
+          window.App.showToast(`Empate: Fica o time desafiante (${teamBName}).`, "info");
+        } else if (tieRule === "gestor_manual") {
+          window.App.liveMatch.consecutiveWinsA = 0;
+          window.App.liveMatch.consecutiveWinsB = 0;
+          window.App.showToast("Empate: Gestor decide manualmente a formação.", "info");
+        } else {
+          // ambos_permanecem
+          window.App.liveMatch.consecutiveWinsA = 0;
+          window.App.liveMatch.consecutiveWinsB = 0;
+          window.App.showToast("Empate: Ambos os times permanecem em campo.", "info");
         }
       } else {
         if (winner === teamAName) {
@@ -3264,12 +3441,15 @@ function setupHistoryActions() {
   });
 }
 
-async function saveLiveMatchState() {
+// Persistência local imediata e sincronização de rede throttled com dirty-flag (Correção 1).
+// forceSync=true garante envio imediato em eventos relevantes (início, pausa, gol, fim).
+async function saveLiveMatchState(forceSync = false) {
   const peladaId = window.App.activePelada ? String(window.App.activePelada.id) : null;
   if (window.App.liveMatch) {
     window.App.liveMatch.updatedAt = Date.now();
   }
 
+  // 1. Persistência local obrigatória (custo zero de rede)
   safeLocalStorageSetItem("liveMatch", window.App.liveMatch);
   if (peladaId) safeLocalStorageSetItem(`liveMatch_${peladaId}`, window.App.liveMatch);
 
@@ -3280,11 +3460,26 @@ async function saveLiveMatchState() {
     safeLocalStorageSetItem("activePelada", window.App.activePelada);
   }
 
-  // Envia atualização em tempo real para a API do backend somente se houver pelada e times sorteados
-  if (peladaId && window.Api && window.Api.atualizarLiveState && window.App.teams && window.App.teams.length >= 2) {
-    await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, window.App.teams);
+  _isLiveStateDirty = true;
+
+  // 2. Sincronização throttled com o backend ou imediata se forçado por evento
+  const now = Date.now();
+  const shouldSync = forceSync || (now - _lastLiveNetworkSync >= 20000);
+
+  if (shouldSync && _isLiveStateDirty) {
+    if (peladaId && window.Api && window.Api.atualizarLiveState && window.App.teams && window.App.teams.length >= 2) {
+      _lastLiveNetworkSync = now;
+      _isLiveStateDirty = false;
+      try {
+        await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, window.App.teams);
+      } catch (err) {
+        _isLiveStateDirty = true; // Mantém dirty para sincronizar no próximo ciclo sem retry agressivo
+        console.warn("[saveLiveMatchState] Falha suave na sincronização com API/Supabase:", err);
+      }
+    }
   }
 }
+
 
 async function handleFinishPeladaDay() {
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
@@ -3487,9 +3682,35 @@ async function carregarLiveStateDaPelada(peladaId) {
   safeLocalStorageSetItem("waitingQueue", finalQueue);
 
   if (finalLiveMatch) {
+    // Guarda de targetEndTime obsoleto na hidratação (Ajuste 2)
+    if (finalLiveMatch.isPlaying) {
+      if (finalLiveMatch.targetEndTime) {
+        if (finalLiveMatch.targetEndTime <= Date.now()) {
+          // O tempo expirou legitimamente enquanto a aba esteve fechada
+          finalLiveMatch.timerSeconds = 0;
+          finalLiveMatch.isPlaying = false;
+          finalLiveMatch.targetEndTime = null;
+          setTimeout(() => expirarTempoDeJogo(), 100);
+        } else {
+          // Partida ainda em andamento: recalcula tempo restante real
+          finalLiveMatch.timerSeconds = Math.ceil((finalLiveMatch.targetEndTime - Date.now()) / 1000);
+        }
+      } else if (finalLiveMatch.timerSeconds > 0) {
+        // Estado legado sem targetEndTime: recompõe a partir dos segundos restantes
+        finalLiveMatch.targetEndTime = Date.now() + (finalLiveMatch.timerSeconds * 1000);
+      } else {
+        finalLiveMatch.isPlaying = false;
+        finalLiveMatch.targetEndTime = null;
+      }
+    } else {
+      // Partida pausada: limpa targetEndTime e preserva timerSeconds sem expirar
+      finalLiveMatch.targetEndTime = null;
+    }
+
     safeLocalStorageSetItem(liveMatchKey, finalLiveMatch);
     safeLocalStorageSetItem("liveMatch", finalLiveMatch);
   }
+
 
   // 4. Se houverem pelo menos 2 times no sorteio:
   if (finalTeams && finalTeams.length >= 2) {
@@ -3591,8 +3812,18 @@ async function initPartidasPeladaSelect() {
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
 
-    // Sincroniza seletor de modo/formato de torneio
+    // Sincroniza seletor de modo/formato e turno de torneio
     const selectModo = document.getElementById("partidas-select-pelada-modo");
+    const containerTurnoPartidas = document.getElementById("partidas-container-pelada-turno");
+    const selectTurnoPartidas = document.getElementById("partidas-select-pelada-turno");
+
+    const updatePartidasTurnoVis = (modoVal) => {
+      if (containerTurnoPartidas) {
+        const hasTurno = modoVal === 'torneio' || modoVal === 'pontos_corridos' || modoVal === 'torneio_pontos_corridos';
+        containerTurnoPartidas.style.display = hasTurno ? 'inline-flex' : 'none';
+      }
+    };
+
     if (selectModo && activePelada) {
       selectModo.innerHTML = `
         <option value="normal">Pelada Normal (Reina Campo)</option>
@@ -3602,15 +3833,19 @@ async function initPartidasPeladaSelect() {
         <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
       `;
       selectModo.value = activePelada.modo || "normal";
+      updatePartidasTurnoVis(selectModo.value);
+
       selectModo.onchange = async (e) => {
         const newModo = e.target.value;
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        updatePartidasTurnoVis(newModo);
         if (!peladaId) return;
         try {
           const res = await Api.atualizarConfigPartida(peladaId, { modo: newModo });
           if (res && res.error) {
             window.App.showToast(res.error, "error");
             selectModo.value = window.App.activePelada.modo || "normal";
+            updatePartidasTurnoVis(selectModo.value);
             return;
           }
           window.App.activePelada.modo = newModo;
@@ -3627,6 +3862,65 @@ async function initPartidasPeladaSelect() {
         } catch (err) {
           console.error("[partidasSelectModo]", err);
           window.App.showToast("Erro ao atualizar formato da pelada.", "error");
+        }
+      };
+    }
+
+    if (selectTurnoPartidas && activePelada) {
+      selectTurnoPartidas.value = activePelada.turno_torneio || "ida_volta";
+      selectTurnoPartidas.onchange = async (e) => {
+        const newTurno = e.target.value;
+        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!peladaId) return;
+        try {
+          const res = await Api.atualizarConfigPartida(peladaId, { turno_torneio: newTurno });
+          if (res && res.error) {
+            window.App.showToast(res.error, "error");
+            selectTurnoPartidas.value = window.App.activePelada.turno_torneio || "ida_volta";
+            return;
+          }
+          window.App.activePelada.turno_torneio = newTurno;
+          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+
+          let liveMatch = window.App.liveMatch || {};
+          let tState = liveMatch.tournamentState || safeLocalStorageGetItem(`tournamentState_${peladaId}`) || safeLocalStorageGetItem("tournamentState");
+          let teams = (window.App.teams && window.App.teams.length >= 2) ? window.App.teams : getAppTeamsList();
+
+          if (teams.length >= 2 && window.TournamentEngine && tState) {
+            tState.turno = newTurno;
+            const newMatches = window.TournamentEngine.generateGroupSchedule(teams, newTurno);
+            if (Array.isArray(tState.matches)) {
+              tState.matches.forEach(oldM => {
+                if (oldM.status === 'encerrado') {
+                  const matchInNew = newMatches.find(nm => nm.teamA === oldM.teamA && nm.teamB === oldM.teamB && nm.turno === oldM.turno);
+                  if (matchInNew) {
+                    matchInNew.golsA = oldM.golsA;
+                    matchInNew.golsB = oldM.golsB;
+                    matchInNew.status = 'encerrado';
+                    matchInNew.vencedor = oldM.vencedor;
+                  }
+                }
+              });
+            }
+            tState.matches = newMatches;
+            tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
+            liveMatch.tournamentState = tState;
+            window.App.liveMatch = liveMatch;
+            safeLocalStorageSetItem(`tournamentState_${peladaId}`, tState);
+            safeLocalStorageSetItem("tournamentState", tState);
+            safeLocalStorageSetItem(`liveMatch_${peladaId}`, liveMatch);
+            safeLocalStorageSetItem("liveMatch", liveMatch);
+
+            if (window.Api && window.Api.atualizarLiveState) {
+              await window.Api.atualizarLiveState(peladaId, liveMatch, window.App.waitingQueue || [], teams);
+            }
+            renderTournamentUI();
+          }
+          const desc = newTurno === 'ida_volta' ? '🔄 Ida e Volta ativado (Turno e Returno)!' : '🔁 Somente Ida ativado (Turno Único)!';
+          window.App.showToast(desc, 'success');
+        } catch (err) {
+          console.error("[partidasSelectTurno]", err);
+          window.App.showToast("Erro ao atualizar turno da pelada.", "error");
         }
       };
     }
@@ -3696,10 +3990,15 @@ async function initPartidasPeladaSelect() {
         window.App.activePelada = found;
         localStorage.setItem("activePelada", JSON.stringify(found));
 
-        // Sincroniza o seletor de formato/modo com a pelada selecionada
+        // Sincroniza os seletores de formato e turno com a pelada selecionada
         const selectModo = document.getElementById("partidas-select-pelada-modo");
         if (selectModo && found.modo) {
           selectModo.value = found.modo;
+          updatePartidasTurnoVis(found.modo);
+        }
+        const selectTurnoP = document.getElementById("partidas-select-pelada-turno");
+        if (selectTurnoP) {
+          selectTurnoP.value = found.turno_torneio || "ida_volta";
         }
 
         updateBtnLiberarConvidados();
@@ -3746,8 +4045,9 @@ function renderTournamentUI() {
   
   // Se existirem times sorteados e tState tiver número diferente de times, sincroniza/recalcula tState com TODOS OS TIMES!
   if (drawnTeams.length >= 2 && window.TournamentEngine) {
-    if (!tState || !tState.teams || tState.teams.length !== drawnTeams.length) {
-      const turnoAtual = (tState && tState.turno) || 'ida_volta';
+    const turnoPelada = (peladaAtiva && peladaAtiva.turno_torneio) || (tState && tState.turno) || 'ida_volta';
+    if (!tState || !tState.teams || tState.teams.length !== drawnTeams.length || (tState.turno && tState.turno !== turnoPelada && (!tState.matches || tState.matches.every(m => m.status !== 'encerrado')))) {
+      const turnoAtual = turnoPelada;
       const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
       const standings = window.TournamentEngine.calculateStandings(drawnTeams, matches);
       tState = {
@@ -3770,15 +4070,28 @@ function renderTournamentUI() {
     }
   }
 
-  // Sincroniza partidas do torneio com partidas salvas no banco de dados (evita dados zerados)
+  // Sincroniza partidas do torneio com partidas salvas garantindo consumo unico
   const recentMatches = window.App.recentMatchesList || [];
   if (tState && Array.isArray(tState.matches) && recentMatches.length > 0) {
     const cronoPartidas = recentMatches.slice().sort((a, b) => (parseInt(a.id) || 0) - (parseInt(b.id) || 0));
+    const usedRealIds = new Set();
 
     tState.matches.forEach((m, idx) => {
       let real = cronoPartidas[idx];
-      if (!real || (resolveOfficialTeamName(real.time_a_nome).toLowerCase() !== (m.teamA || '').toLowerCase() && resolveOfficialTeamName(real.time_b_nome).toLowerCase() !== (m.teamA || '').toLowerCase())) {
+      let isDirectMatch = false;
+      if (real && !usedRealIds.has(real.id)) {
+        const rA = resolveOfficialTeamName(real.time_a_nome).toLowerCase();
+        const rB = resolveOfficialTeamName(real.time_b_nome).toLowerCase();
+        const mA = (m.teamA || '').toLowerCase();
+        const mB = (m.teamB || '').toLowerCase();
+        if ((rA === mA && rB === mB) || (rA === mB && rB === mA)) {
+          isDirectMatch = true;
+        }
+      }
+
+      if (!isDirectMatch) {
         real = cronoPartidas.find(r => {
+          if (usedRealIds.has(r.id)) return false;
           const rA = resolveOfficialTeamName(r.time_a_nome).toLowerCase();
           const rB = resolveOfficialTeamName(r.time_b_nome).toLowerCase();
           const mA = (m.teamA || '').toLowerCase();
@@ -3788,8 +4101,16 @@ function renderTournamentUI() {
       }
 
       if (real) {
-        m.golsA = parseInt(real.gols_time_a) || 0;
-        m.golsB = parseInt(real.gols_time_b) || 0;
+        usedRealIds.add(real.id);
+        const rA = resolveOfficialTeamName(real.time_a_nome).toLowerCase();
+        const mA = (m.teamA || '').toLowerCase();
+        if (rA === mA) {
+          m.golsA = parseInt(real.gols_time_a) || 0;
+          m.golsB = parseInt(real.gols_time_b) || 0;
+        } else {
+          m.golsA = parseInt(real.gols_time_b) || 0;
+          m.golsB = parseInt(real.gols_time_a) || 0;
+        }
         m.status = 'encerrado';
         m.vencedor = m.golsA > m.golsB ? m.teamA : (m.golsB > m.golsA ? m.teamB : (m.golsA === m.golsB ? 'empate' : m.teamA));
       }
@@ -3967,16 +4288,17 @@ function renderTournamentUI() {
             : `<div style="background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 14px; text-transform: uppercase; text-align: center;">⏳ A JOGAR</div>`);
 
         const isGroupMatch = Array.isArray(tState.matches) && idx < tState.matches.length;
-        const prevMatch = isGroupMatch && idx > 0 ? tState.matches[idx - 1] : null;
-        const nextMatch = isGroupMatch && idx < tState.matches.length - 1 ? tState.matches[idx + 1] : null;
+        const currentGroupIdx = isGroupMatch ? tState.matches.findIndex(gm => gm.id === m.id) : -1;
+        const prevMatch = currentGroupIdx > 0 ? tState.matches[currentGroupIdx - 1] : null;
+        const nextMatch = currentGroupIdx >= 0 && currentGroupIdx < tState.matches.length - 1 ? tState.matches[currentGroupIdx + 1] : null;
 
-        const disableUp = !isGroupMatch || idx === 0 || (prevMatch && prevMatch.status === 'encerrado') || isDone;
-        const disableDown = !isGroupMatch || idx === tState.matches.length - 1 || (nextMatch && nextMatch.status === 'encerrado') || isDone;
+        const disableUp = currentGroupIdx <= 0 || (prevMatch && prevMatch.status === 'encerrado') || isDone;
+        const disableDown = currentGroupIdx < 0 || currentGroupIdx >= tState.matches.length - 1 || (nextMatch && nextMatch.status === 'encerrado') || isDone;
 
         const reorderBtns = isGroupMatch
           ? `<div style="display:inline-flex; align-items:center; gap:2px; margin-left:6px;">
-               <button type="button" class="btn-reorder-tournament-match" data-idx="${idx}" data-dir="-1" title="Subir jogo na ordem" ${disableUp ? 'disabled style="opacity:0.25; cursor:not-allowed; border:none; background:transparent; font-size:11px;"' : 'style="cursor:pointer; border:1px solid #CBD5E1; background:#FFFFFF; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:700; color:#0F172A; transition:all 0.2s;"'}>⬆️</button>
-               <button type="button" class="btn-reorder-tournament-match" data-idx="${idx}" data-dir="1" title="Descer jogo na ordem" ${disableDown ? 'disabled style="opacity:0.25; cursor:not-allowed; border:none; background:transparent; font-size:11px;"' : 'style="cursor:pointer; border:1px solid #CBD5E1; background:#FFFFFF; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:700; color:#0F172A; transition:all 0.2s;"'}>⬇️</button>
+               <button type="button" class="btn-reorder-tournament-match" data-match-id="${m.id}" data-dir="-1" title="Subir jogo na ordem" ${disableUp ? 'disabled style="opacity:0.25; cursor:not-allowed; border:none; background:transparent; font-size:11px;"' : 'style="cursor:pointer; border:1px solid #CBD5E1; background:#FFFFFF; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:700; color:#0F172A; transition:all 0.2s;"'}>⬆️</button>
+               <button type="button" class="btn-reorder-tournament-match" data-match-id="${m.id}" data-dir="1" title="Descer jogo na ordem" ${disableDown ? 'disabled style="opacity:0.25; cursor:not-allowed; border:none; background:transparent; font-size:11px;"' : 'style="cursor:pointer; border:1px solid #CBD5E1; background:#FFFFFF; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:700; color:#0F172A; transition:all 0.2s;"'}>⬇️</button>
              </div>`
           : '';
 
@@ -4022,11 +4344,13 @@ function renderTournamentUI() {
       document.querySelectorAll(".btn-reorder-tournament-match").forEach(btn => {
         btn.onclick = async (e) => {
           e.stopPropagation();
-          const matchIdx = parseInt(btn.getAttribute("data-idx"));
+          const matchId = btn.getAttribute("data-match-id");
           const dir = parseInt(btn.getAttribute("data-dir"));
+          if (!matchId || !Array.isArray(tState.matches)) return;
+          const matchIdx = tState.matches.findIndex(m => m.id === matchId);
           const targetIdx = matchIdx + dir;
 
-          if (Array.isArray(tState.matches) && matchIdx >= 0 && targetIdx >= 0 && targetIdx < tState.matches.length) {
+          if (matchIdx >= 0 && targetIdx >= 0 && targetIdx < tState.matches.length) {
             const temp = tState.matches[matchIdx];
             tState.matches[matchIdx] = tState.matches[targetIdx];
             tState.matches[targetIdx] = temp;
@@ -4176,11 +4500,24 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
   const turnoAtual = (tState && tState.turno) || 'ida_volta';
   const matches = window.TournamentEngine.generateGroupSchedule(drawnTeams, turnoAtual);
 
-  // Preenche as 12 partidas da fase de grupos com o resultado dos 12 jogos reais
+  // Preenche as partidas da fase de grupos com o resultado dos jogos reais
+  const usedRealRecalcIds = new Set();
   matches.forEach((m, idx) => {
     let real = (reaisMatches || [])[idx];
-    if (!real && reaisMatches) {
+    let isDirectMatch = false;
+    if (real && !usedRealRecalcIds.has(real.id)) {
+      const rA = resolveOfficialTeamName(real.time_a_nome).toLowerCase();
+      const rB = resolveOfficialTeamName(real.time_b_nome).toLowerCase();
+      const mA = (m.teamA || '').toLowerCase();
+      const mB = (m.teamB || '').toLowerCase();
+      if ((rA === mA && rB === mB) || (rA === mB && rB === mA)) {
+        isDirectMatch = true;
+      }
+    }
+
+    if (!isDirectMatch && reaisMatches) {
       real = reaisMatches.find(r => {
+        if (usedRealRecalcIds.has(r.id)) return false;
         const rA = resolveOfficialTeamName(r.time_a_nome).toLowerCase();
         const rB = resolveOfficialTeamName(r.time_b_nome).toLowerCase();
         const mA = (m.teamA || '').toLowerCase();
@@ -4190,10 +4527,18 @@ async function recalcularEEstabelecerTorneio(pId, reaisMatches) {
     }
 
     if (real) {
-      m.golsA = parseInt(real.gols_time_a) || 0;
-      m.golsB = parseInt(real.gols_time_b) || 0;
+      usedRealRecalcIds.add(real.id);
+      const rA = resolveOfficialTeamName(real.time_a_nome).toLowerCase();
+      const mA = (m.teamA || '').toLowerCase();
+      if (rA === mA) {
+        m.golsA = parseInt(real.gols_time_a) || 0;
+        m.golsB = parseInt(real.gols_time_b) || 0;
+      } else {
+        m.golsA = parseInt(real.gols_time_b) || 0;
+        m.golsB = parseInt(real.gols_time_a) || 0;
+      }
       m.status = 'encerrado';
-      m.vencedor = m.golsA > m.golsB ? m.teamA : (m.golsB > m.golsA ? m.teamB : m.teamA);
+      m.vencedor = m.golsA > m.golsB ? m.teamA : (m.golsB > m.golsA ? m.teamB : (m.golsA === m.golsB ? 'empate' : m.teamA));
     }
   });
 

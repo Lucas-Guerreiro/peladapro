@@ -150,6 +150,11 @@ const Router = {
         clearInterval(window.gestorPollingInterval);
         window.gestorPollingInterval = null;
       }
+      // Limpeza de listeners de ciclo de vida de partidas
+      if (window._partidasLifecycleCleanup) {
+        window._partidasLifecycleCleanup();
+        window._partidasLifecycleCleanup = null;
+      }
     } catch (e) {
       console.warn('[Router] Erro na limpeza de timers:', e);
     }

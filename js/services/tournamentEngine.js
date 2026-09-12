@@ -97,7 +97,8 @@ window.TournamentEngine = {
       });
     });
 
-    return rawMatches;
+    // Retorna a lista de jogos ja otimizada para descanso equilibrado
+    return this.optimizeMatchSequence(rawMatches);
   },
 
   /**
@@ -219,11 +220,20 @@ window.TournamentEngine = {
       aliasMap[timeLetterAlias] = nameKey;
       aliasMap[numAlias] = nameKey;
 
-      // Se for Time A/B/C/D, mapeia também as cores correspondentes (Azul->Time A, Preto->Time B, Vermelho->Time C, Branco->Time D)
-      if (idx === 0 || letterAlias === 'a') { aliasMap['azul'] = nameKey; aliasMap['time azul'] = nameKey; }
-      if (idx === 1 || letterAlias === 'b') { aliasMap['preto'] = nameKey; aliasMap['time preto'] = nameKey; }
-      if (idx === 2 || letterAlias === 'c') { aliasMap['vermelho'] = nameKey; aliasMap['time vermelho'] = nameKey; }
-      if (idx === 3 || letterAlias === 'd') { aliasMap['branco'] = nameKey; aliasMap['time branco'] = nameKey; }
+      // Mapeia cor real e cores padrao apenas para times genericos
+      if (t.cor) {
+        const corKey = String(t.cor).trim().toLowerCase();
+        aliasMap[corKey] = nameKey;
+        aliasMap[`time ${corKey}`] = nameKey;
+      }
+      if (nameKey === timeLetterAlias || nameKey === numAlias || nameKey === letterAlias) {
+        const defaultColors = ['azul', 'preto', 'vermelho', 'branco'];
+        const defColor = defaultColors[idx];
+        if (defColor && !aliasMap[defColor]) {
+          aliasMap[defColor] = nameKey;
+          aliasMap[`time ${defColor}`] = nameKey;
+        }
+      }
 
       statsMap[nameKey] = {
         nome: officialName,
@@ -238,6 +248,12 @@ window.TournamentEngine = {
         saldoGols: 0,
         pontos: 0
       };
+    });
+
+    // Garante que nomes oficiais nunca sejam sobrescritos por apelidos
+    teams.forEach(t => {
+      const off = (t.nome || t.name || '').trim().toLowerCase();
+      if (off) aliasMap[off] = off;
     });
 
     (matches || []).forEach(m => {

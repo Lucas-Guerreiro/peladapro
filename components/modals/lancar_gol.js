@@ -52,6 +52,16 @@ window.App.initModalLancar_gol = function(data) {
         authorSelect.appendChild(opt);
       });
     }
+    // Opções especiais: Sem Autor e Gol Contra (Correção B)
+    const optSemAutor = document.createElement("option");
+    optSemAutor.value = "sem_autor";
+    optSemAutor.textContent = "⚽ Sem Autor (Indefinido)";
+    authorSelect.appendChild(optSemAutor);
+
+    const optGolContra = document.createElement("option");
+    optGolContra.value = "gol_contra";
+    optGolContra.textContent = "🔴 Gol Contra (para o adversário)";
+    authorSelect.appendChild(optGolContra);
   }
 
   if (assistSelect) {
@@ -64,9 +74,43 @@ window.App.initModalLancar_gol = function(data) {
     });
   }
 
-  // Eventos de fechamento
-  document.getElementById("btn-close-lancar-gol").onclick = () => window.App.closeModal();
-  document.getElementById("btn-cancel-lancar-gol").onclick = () => window.App.closeModal();
+  if (authorSelect && assistSelect) {
+    authorSelect.onchange = () => {
+      const isSpecial = authorSelect.value === "sem_autor" || authorSelect.value === "gol_contra";
+      assistSelect.disabled = isSpecial;
+      if (isSpecial) assistSelect.value = "";
+    };
+  }
+
+  // Desbloqueia botões de gol e fecha modal no ciclo de vida (Ajuste 1)
+  const fecharModalGol = () => {
+    if (window.App && typeof window.App.unlockGoalButtons === "function") {
+      window.App.unlockGoalButtons();
+    }
+    window.App.closeModal();
+  };
+
+  const btnClose = document.getElementById("btn-close-lancar-gol");
+  if (btnClose) btnClose.onclick = fecharModalGol;
+
+  const btnCancel = document.getElementById("btn-cancel-lancar-gol");
+  if (btnCancel) btnCancel.onclick = fecharModalGol;
+
+  // Fechamento ao clicar no backdrop ou pressionar ESC
+  const backdropEl = document.getElementById("modal-lancar-gol-backdrop");
+  if (backdropEl) {
+    backdropEl.onclick = (e) => {
+      if (e.target === backdropEl) fecharModalGol();
+    };
+  }
+  const onEscKey = (e) => {
+    if (e.key === "Escape") {
+      document.removeEventListener("keydown", onEscKey);
+      fecharModalGol();
+    }
+  };
+  document.addEventListener("keydown", onEscKey);
+
 
   // Submissão do gol
   const btnSubmit = document.getElementById("btn-submit-lancar-gol");
@@ -80,37 +124,63 @@ window.App.initModalLancar_gol = function(data) {
         return;
       }
 
+      const isSemAutor = autorId === "sem_autor";
+      const isGolContra = autorId === "gol_contra";
+
       btnSubmit.disabled = true;
       btnSubmit.textContent = "Gravando...";
 
       try {
-        // 1. Incrementa o placar local na partida ativa e grava a lista de autores de gols
+        // Grava gol individual do atleta apenas se for um jogador real (Correção B)
+        if (!isSemAutor && !isGolContra) {
+          try {
+            if (window.Api && window.Api.lancarGolAtleta) {
+              window.Api.lancarGolAtleta(autorId).catch(e => console.warn("[lancar_gol] DB sync warning:", e));
+            }
+          } catch (e) {
+            console.warn("[lancar_gol] Ignorando falha de API local para manter o jogo ativo:", e);
+          }
+        }
+
+        // Gol contra beneficia o time adversário na contagem de placar (Correção B)
         if (!window.App.liveMatch) {
           window.App.liveMatch = { teamA: "Time A", teamB: "Time B", scoreA: 0, scoreB: 0, isPlaying: false, timerSeconds: 480, goals: [] };
         }
-        if (teamKey === "a") {
-          window.App.liveMatch.scoreA = Math.max(0, (window.App.liveMatch.scoreA || 0) + 1);
-        } else {
-          window.App.liveMatch.scoreB = Math.max(0, (window.App.liveMatch.scoreB || 0) + 1);
+
+        const beneficiaryTeamKey = isGolContra ? (teamKey === "a" ? "b" : "a") : teamKey;
+        const beneficiaryTeamName = isGolContra
+          ? (teamKey === "a" ? (window.App.liveMatch.teamB || "Time B") : (window.App.liveMatch.teamA || "Time A"))
+          : teamName;
+
+        let autorNome = "Sem Autor";
+        let finalAutorId = null;
+        if (isGolContra) {
+          autorNome = "Gol Contra";
+        } else if (!isSemAutor) {
+          const autorObj = players.find(p => String(p.id) === String(autorId));
+          autorNome = autorObj ? (autorObj.apelido || autorObj.nome) : "Jogador";
+          finalAutorId = autorId;
         }
 
-        const autorObj = players.find(p => String(p.id) === String(autorId));
-        const autorNome = autorObj ? (autorObj.apelido || autorObj.nome) : "Jogador";
-
-        const assistObj = assistId ? players.find(p => String(p.id) === String(assistId)) : null;
+        const assistObj = (!isSemAutor && !isGolContra && assistId) ? players.find(p => String(p.id) === String(assistId)) : null;
         const assistNome = assistObj ? (assistObj.apelido || assistObj.nome) : null;
 
         if (!window.App.liveMatch.goals) window.App.liveMatch.goals = [];
         window.App.liveMatch.goals.push({
           id: Date.now(),
-          autorId: autorId,
+          autorId: finalAutorId,
           autorNome: autorNome,
-          assistId: assistId || null,
-          assistNome: assistNome || null,
-          teamKey: teamKey,
-          teamName: teamName,
+          assistId: (!isSemAutor && !isGolContra) ? (assistId || null) : null,
+          assistNome: assistNome,
+          teamKey: beneficiaryTeamKey,
+          teamName: beneficiaryTeamName,
+          concedingTeamKey: isGolContra ? teamKey : null,
+          tipo: isGolContra ? "gol_contra" : (isSemAutor ? "sem_autor" : "gol"),
           timeSecs: window.App.liveMatch.timerSeconds || 0
         });
+
+        window.App.liveMatch.scoreA = window.App.liveMatch.goals.filter(g => g.teamKey === 'a').length;
+        window.App.liveMatch.scoreB = window.App.liveMatch.goals.filter(g => g.teamKey === 'b').length;
 
         // 3. Persiste no localStorage e envia ao backend em tempo real
         try { localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch)); } catch(e) {}
@@ -125,14 +195,18 @@ window.App.initModalLancar_gol = function(data) {
         }
 
         // 4. Feedback visual
-        let msg = `Gol de ${autorNome}!`;
+        let msg = isGolContra ? `Gol Contra computado para ${beneficiaryTeamName}!` : (isSemAutor ? `Gol registrado (Sem Autor) para ${beneficiaryTeamName}!` : `Gol de ${autorNome}!`);
         if (assistNome) {
           msg += ` Assistência de ${assistNome}.`;
         }
         window.App.showToast(msg, "success");
 
-        // 5. Fecha o modal
+        // 5. Fecha o modal e desbloqueia os botões (Ajuste 1)
+        if (window.App && typeof window.App.unlockGoalButtons === "function") {
+          window.App.unlockGoalButtons();
+        }
         window.App.closeModal();
+
 
         // 6. Atualiza a UI do placar na aba de Partidas, no Acompanhamento e na Tela Cheia
         const scoreAEl = document.getElementById("match-control-score-a");

@@ -44,6 +44,8 @@ window.App.initFormacao = async function () {
     }).catch(e => { });
   }
   await window.App.renderDrawnTeams();
+  // Inicializa a alternancia entre as abas Formacao dos Times e Modo de Jogo
+  setupFormacaoSubtabs();
 
   // Escutas
   const btnDraw = document.getElementById("btn-draw-teams");
@@ -206,8 +208,103 @@ function formatarDataPelada(dataStr) {
   if (parts.length === 3) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`; // Retorna DD/MM/YYYY
   }
-  return dataStr;
+// Alternancia de abas do fluxo de formacao vs modo de jogo
+function setupFormacaoSubtabs() {
+  const btnTimes = document.getElementById("btn-tab-formacao-times");
+  const btnModo = document.getElementById("btn-tab-modo-jogo");
+  const tabTimes = document.getElementById("tab-content-formacao-times");
+  const tabModo = document.getElementById("tab-content-modo-jogo");
+  if (!btnTimes || !btnModo || !tabTimes || !tabModo) return;
+
+  btnTimes.onclick = () => {
+    btnTimes.style.background = "#E0F2FE";
+    btnTimes.style.color = "#0284C7";
+    btnTimes.style.borderColor = "#7DD3FC";
+    btnModo.style.background = "#F8FAFC";
+    btnModo.style.color = "#64748B";
+    btnModo.style.borderColor = "#CBD5E1";
+    tabTimes.style.display = "block";
+    tabModo.style.display = "none";
+    if (window.feather) feather.replace();
+  };
+
+  btnModo.onclick = () => {
+    btnModo.style.background = "#E0F2FE";
+    btnModo.style.color = "#0284C7";
+    btnModo.style.borderColor = "#7DD3FC";
+    btnTimes.style.background = "#F8FAFC";
+    btnTimes.style.color = "#64748B";
+    btnTimes.style.borderColor = "#CBD5E1";
+    tabTimes.style.display = "none";
+    tabModo.style.display = "block";
+    updateModoInfoCard();
+    if (window.feather) feather.replace();
+  };
 }
+
+// Atualiza o resumo visual de regras e estimativa de jogos da aba Modo de Jogo
+function updateModoInfoCard() {
+  const selectModo = document.getElementById("select-pelada-modo");
+  const selectTurno = document.getElementById("select-pelada-turno");
+  const badgeEl = document.getElementById("modo-info-badge");
+  const bodyEl = document.getElementById("modo-info-body");
+  const estEl = document.getElementById("lbl-turno-partidas-estimadas");
+  if (!selectModo || !bodyEl) return;
+
+  const modo = selectModo.value || "normal";
+  const turno = selectTurno ? selectTurno.value : "ida_volta";
+  let teams = window.App.teams || [];
+  try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+  const nTeams = teams.length >= 2 ? teams.length : 4;
+  const nJogosIda = Math.floor((nTeams * (nTeams - 1)) / 2);
+  const nJogosTotal = turno === 'ida_volta' ? nJogosIda * 2 : nJogosIda;
+
+  if (estEl) {
+    estEl.textContent = `📊 ${nTeams} equipes: ${nJogosTotal} partidas (${turno === 'ida_volta' ? `${nJogosIda} Ida + ${nJogosIda} Volta` : `${nJogosIda} Turno Único`})`;
+  }
+
+  const dataEl = document.getElementById("lbl-modo-pelada-data");
+  if (dataEl && window.App.activePelada) {
+    const dStr = window.App.activePelada.data ? (window.Utils ? window.Utils.formatDate(window.App.activePelada.data) : window.App.activePelada.data) : "";
+    dataEl.textContent = dStr ? `📅 Pelada: ${dStr}` : "";
+  }
+
+  if (modo === 'pontos_corridos') {
+    if (badgeEl) badgeEl.textContent = "PONTOS CORRIDOS";
+    bodyEl.innerHTML = `
+      <p style="margin: 0 0 8px 0;"><strong>🏆 Mini Torneio (Pontos Corridos)</strong></p>
+      <p style="margin: 0 0 8px 0;">Todas as equipes disputam uma tabela única por pontos corridos (Vitória: 3, Empate: 1, Derrota: 0).</p>
+      <p style="margin: 0 0 8px 0;"><strong>Turno:</strong> ${turno === 'ida_volta' ? '🔄 <strong>Ida e Volta (Turno e Returno)</strong>' : '🔁 <strong>Somente Ida (Turno Único)</strong>'}.</p>
+      <p style="margin: 0; color: #0284C7;">Com ${nTeams} times, serão disputadas <strong>${nJogosTotal} partidas</strong>. ${turno === 'ida_volta' ? 'O returno é disputado integralmente antes do encerramento final.' : 'Termina ao fim do turno único.'}</p>
+    `;
+  } else if (modo === 'torneio') {
+    if (badgeEl) badgeEl.textContent = "MISTO: TABELA + MATA-MATA";
+    bodyEl.innerHTML = `
+      <p style="margin: 0 0 8px 0;"><strong>🏆 Mini Torneio Misto</strong></p>
+      <p style="margin: 0 0 8px 0;">Fase de grupos com pontuação seguida de semifinais e finais eliminatórias.</p>
+      <p style="margin: 0; color: #0284C7;">Turno de grupos: ${turno === 'ida_volta' ? '🔄 Ida e Volta' : '🔁 Somente Ida'}.</p>
+    `;
+  } else if (modo === 'mata_mata_direto') {
+    if (badgeEl) badgeEl.textContent = "MATA-MATA DIRETO";
+    bodyEl.innerHTML = `
+      <p style="margin: 0 0 8px 0;"><strong>⚡ Mata-Mata Direto</strong></p>
+      <p style="margin: 0;">Confrontos eliminatórios diretos sem fase de grupos prévia.</p>
+    `;
+  } else if (modo === 'torneio_livre') {
+    if (badgeEl) badgeEl.textContent = "TORNEIO LIVRE";
+    bodyEl.innerHTML = `
+      <p style="margin: 0 0 8px 0;"><strong>📋 Torneio Livre</strong></p>
+      <p style="margin: 0;">Confrontos manuais definidos a cada rodada com tabela acumulada.</p>
+    `;
+  } else {
+    if (badgeEl) badgeEl.textContent = "PELADA NORMAL";
+    bodyEl.innerHTML = `
+      <p style="margin: 0 0 8px 0;"><strong>⚽ Pelada Normal (Reina Campo)</strong></p>
+      <p style="margin: 0;">Partidas avulsas contínuas com regra de vitórias consecutivas e fila de espera tradicional.</p>
+    `;
+  }
+}
+
 async function renderManagerCheckin(selectedPeladaId = null) {
   const select = document.getElementById("select-manager-pelada");
   const selectStatus = document.getElementById("select-pelada-status");
@@ -287,11 +384,13 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       selectModo.value = activePelada.modo || "normal";
       console.log("🏆 [DIAGNÓSTICO FORMATO DO DIA] Opções carregadas no select:", selectModo.options.length, Array.from(selectModo.options).map(o => o.value));
       updateTurnoVisibility(selectModo.value);
+      updateModoInfoCard();
 
       selectModo.onchange = async (e) => {
         const newModo = e.target.value;
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
         updateTurnoVisibility(newModo);
+        updateModoInfoCard();
         if (!peladaId) return;
         try {
           const res = await Api.atualizarConfigPartida(peladaId, { modo: newModo });
@@ -299,6 +398,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             window.App.showToast(res.error, "error");
             selectModo.value = window.App.activePelada.modo || "normal";
             updateTurnoVisibility(selectModo.value);
+            updateModoInfoCard();
             return;
           }
           window.App.activePelada.modo = newModo;
@@ -310,6 +410,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
           window.App.showToast(desc, "success");
           renderFormacaoTournamentUI();
+          updateModoInfoCard();
         } catch (err) {
           console.error("[selectModo]", err);
           window.App.showToast("Erro ao atualizar formato da pelada.", "error");
@@ -318,16 +419,18 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     }
 
     if (selectTurno) {
-      selectTurno.value = activePelada.turno_torneio || "ida";
+      selectTurno.value = activePelada.turno_torneio || "ida_volta";
       selectTurno.onchange = async (e) => {
         const newTurno = e.target.value;
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        updateModoInfoCard();
         if (!peladaId) return;
         try {
           const res = await Api.atualizarConfigPartida(peladaId, { turno_torneio: newTurno });
           if (res && res.error) {
             window.App.showToast(res.error, "error");
-            selectTurno.value = window.App.activePelada.turno_torneio || "ida";
+            selectTurno.value = window.App.activePelada.turno_torneio || "ida_volta";
+            updateModoInfoCard();
             return;
           }
           window.App.activePelada.turno_torneio = newTurno;
@@ -377,6 +480,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             ? "🔄 Fase de Grupos definida como Ida e Volta (Turno e Returno) — 12 partidas geradas!"
             : "🔁 Fase de Grupos definida como Somente Ida — 6 partidas geradas!";
           window.App.showToast(desc, "success");
+          updateModoInfoCard();
         } catch (err) {
           console.error("[selectTurno]", err);
           window.App.showToast("Erro ao atualizar turno do torneio.", "error");

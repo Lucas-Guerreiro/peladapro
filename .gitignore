@@ -65,3 +65,4 @@ scratch/
 check_users.js
 
 .vercel
+.env*

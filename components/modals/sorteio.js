@@ -503,7 +503,7 @@ function handleExecuteSorteio() {
   const selectModo = document.getElementById("select-pelada-modo");
   const selectTurno = document.getElementById("select-pelada-turno");
   const modoAtual = selectedModoVal || ((selectModo && selectModo.value) ? selectModo.value : ((peladaAtiva && peladaAtiva.modo) || 'normal'));
-  const turnoAtual = (selectTurno && selectTurno.value) ? selectTurno.value : ((peladaAtiva && peladaAtiva.turno_torneio) || 'ida');
+  const turnoAtual = (selectTurno && selectTurno.value) ? selectTurno.value : ((peladaAtiva && peladaAtiva.turno_torneio) || 'ida_volta');
   
   if (selectModo) selectModo.value = modoAtual;
   if (peladaAtiva) {
