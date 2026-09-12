@@ -4321,15 +4321,20 @@ function renderTournamentUI() {
           if (tB) embB = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">${window.TeamEmblems.forTeam(tB)}</span>`;
         }
 
-        html += `
-          <div style="margin-bottom: 8px; background: ${rowBg}; border-radius: 12px; border: 1px solid ${rowBorder}; border-left: 4px solid ${isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')}; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: grid; grid-template-columns: 1fr auto 1fr ${reorderBtns ? 'auto' : ''}; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; backdrop-filter: blur(8px); ${isCurrent && isTeamTheme ? 'box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : ''}">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">
-              <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
-              <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamA)}</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              ${scorePill}
-            </div>
+            const dateRaw = m.dataJogo || peladaAtiva.data || '';
+            const dateFormatted = dateRaw ? (window.Utils ? window.Utils.formatDate(dateRaw) : dateRaw) : '';
+            const dateBadge = dateFormatted ? `<span style="font-size: 10px; font-weight: 700; color: ${isTeamTheme ? '#93C5FD' : '#0369A1'}; display: block; margin-top: 3px; text-align: center;">📅 ${dateFormatted}</span>` : '';
+
+            html += `
+              <div style="margin-bottom: 8px; background: ${rowBg}; border-radius: 12px; border: 1px solid ${rowBorder}; border-left: 4px solid ${isCurrent ? '#F59E0B' : (isDone ? '#10B981' : '#64748B')}; padding: 10px 14px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04); display: grid; grid-template-columns: 1fr auto 1fr ${reorderBtns ? 'auto' : ''}; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; backdrop-filter: blur(8px); ${isCurrent && isTeamTheme ? 'box-shadow: 0 4px 12px rgba(245, 210, 112, 0.25);' : ''}">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">
+                  <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embA}</div>
+                  <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamA)}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
+                  ${scorePill}
+                  ${dateBadge}
+                </div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; text-align: center;">
               <div style="width: 22px; height: 24px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">${embB}</div>
               <span style="font-size: 13px; font-weight: 800; color: ${textColor}; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resolveOfficialTeamName(m.teamB)}</span>

@@ -253,9 +253,139 @@ function setupFormacaoSubtabs() {
     tabTimes.style.display = "none";
     tabModo.style.display = "block";
     updateModoInfoCard();
+    renderConfrontosDatasUI();
     if (window.feather) feather.replace();
   };
 }
+
+// Renderiza o agendador de datas por confronto e sincroniza a data base
+function renderConfrontosDatasUI() {
+  const container = document.getElementById("lista-confrontos-datas-container");
+  const badgeTotal = document.getElementById("badge-total-confrontos");
+  const selectDataBase = document.getElementById("select-pelada-data-base");
+  if (!container) return;
+
+  const peladaAtiva = window.App.activePelada || {};
+  const liveMatch = window.App.liveMatch || {};
+  let tState = liveMatch.tournamentState || (peladaAtiva.id ? JSON.parse(localStorage.getItem(`tournamentState_${peladaAtiva.id}`) || 'null') : null) || JSON.parse(localStorage.getItem('tournamentState') || 'null');
+
+  const peladasList = window.App.activeGroupPeladas || [];
+
+  // Popula o select de Data Base Geral
+  if (selectDataBase) {
+    const currentBaseVal = selectDataBase.value;
+    selectDataBase.innerHTML = `<option value="">📅 Data da Pelada Atual (${formatarDataPelada(peladaAtiva.data)})</option>`;
+    peladasList.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.data || p.id;
+      const dataFmt = formatarDataPelada(p.data);
+      const statusLabel = p.status === "finalizada" ? "Realizada" : "Agendada";
+      opt.textContent = `${dataFmt} às ${p.horario || ""} (${statusLabel})`;
+      selectDataBase.appendChild(opt);
+    });
+    if (currentBaseVal) selectDataBase.value = currentBaseVal;
+
+    selectDataBase.onchange = (e) => {
+      const selectedVal = e.target.value;
+      if (tState && Array.isArray(tState.matches) && tState.matches.length > 0) {
+        tState.matches.forEach(m => {
+          m.dataJogo = selectedVal || peladaAtiva.data || null;
+        });
+        if (peladaAtiva.id) {
+          try { localStorage.setItem(`tournamentState_${peladaAtiva.id}`, JSON.stringify(tState)); } catch(err){}
+        }
+        try { localStorage.setItem('tournamentState', JSON.stringify(tState)); } catch(err){}
+        if (window.App.liveMatch) window.App.liveMatch.tournamentState = tState;
+        renderConfrontosDatasUI();
+        if (window.App.renderFormacaoTournamentUI) window.App.renderFormacaoTournamentUI();
+        window.App.showToast("Data base aplicada a todas as partidas!", "success");
+      }
+    };
+  }
+
+  // Se não houver partidas geradas ainda
+  if (!tState || !Array.isArray(tState.matches) || tState.matches.length === 0) {
+    if (badgeTotal) badgeTotal.textContent = "0 JOGOS";
+    container.innerHTML = `
+      <div style="text-align: center; padding: 24px 16px; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px; color: #64748B;">
+        <span style="font-size: 24px; display: block; margin-bottom: 6px;">📋</span>
+        <strong style="font-size: 14px; color: #334155; display: block; margin-bottom: 4px;">Nenhum confronto gerado ainda</strong>
+        <p style="font-size: 12px; margin: 0;">Sorteie as equipes na aba <strong>Formação dos Times</strong> para gerar a tabela e agendar as datas de cada confronto.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let allMatches = tState.matches;
+  if (badgeTotal) badgeTotal.textContent = `${allMatches.length} JOGOS`;
+
+  let teamsList = [];
+  try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch(e){}
+
+  container.innerHTML = allMatches.map((m, idx) => {
+    const numJogo = m.numeroJogo || (idx + 1);
+    const turnoLabel = m.turno === 'volta' ? 'Returno' : 'Ida';
+    const rodadaLabel = m.rodada ? ` • Rodada ${m.rodada}` : '';
+
+    let embA = '', embB = '';
+    if (window.TeamEmblems && teamsList.length > 0) {
+      const tA = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamA || '').toLowerCase().trim());
+      const tB = teamsList.find(t => (t.nome || t.name || '').toLowerCase().trim() === (m.teamB || '').toLowerCase().trim());
+      if (tA) embA = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-right:4px;">${window.TeamEmblems.forTeam(tA)}</span>`;
+      if (tB) embB = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">${window.TeamEmblems.forTeam(tB)}</span>`;
+    }
+
+    const currentDateVal = m.dataJogo || "";
+    let optionsHtml = `<option value="">📅 Data Padrão (${formatarDataPelada(peladaAtiva.data)})</option>`;
+    peladasList.forEach(p => {
+      const pVal = p.data || p.id;
+      const isSelected = (currentDateVal && (currentDateVal === pVal || currentDateVal === p.data)) ? "selected" : "";
+      const dataFmt = formatarDataPelada(p.data);
+      const statusLabel = p.status === "finalizada" ? "Realizada" : "Agendada";
+      optionsHtml += `<option value="${p.data || pVal}" ${isSelected}>${dataFmt} às ${p.horario || ""} (${statusLabel})</option>`;
+    });
+
+    return `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #FFFFFF; border: 1.5px solid #E2E8F0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="min-width: 140px; flex: 1.2;">
+          <div style="font-size: 10px; font-weight: 800; color: #0284C7; text-transform: uppercase; margin-bottom: 2px;">
+            Jogo #${numJogo} (${turnoLabel}${rodadaLabel})
+          </div>
+          <div style="font-size: 13px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 4px;">
+            <span>${embA}${m.teamA}</span>
+            <span style="font-size: 11px; color: #94A3B8; font-weight: 600;">x</span>
+            <span>${m.teamB}${embB}</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; min-width: 180px; max-width: 260px;">
+          <select class="form-control select-match-date-picker" data-match-id="${m.id}" style="font-size: 12px; font-weight: 600; padding: 6px 10px; height: 36px; border-radius: 6px; border: 1.5px solid #CBD5E1; background: #F8FAFC;">
+            ${optionsHtml}
+          </select>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll(".select-match-date-picker").forEach(sel => {
+    sel.onchange = (e) => {
+      const matchId = e.target.dataset.matchId;
+      const newDate = e.target.value;
+      const targetMatch = tState.matches.find(m => m.id === matchId);
+      if (targetMatch) {
+        targetMatch.dataJogo = newDate || peladaAtiva.data || null;
+        if (peladaAtiva.id) {
+          try { localStorage.setItem(`tournamentState_${peladaAtiva.id}`, JSON.stringify(tState)); } catch(err){}
+        }
+        try { localStorage.setItem('tournamentState', JSON.stringify(tState)); } catch(err){}
+        if (window.App.liveMatch) window.App.liveMatch.tournamentState = tState;
+        if (window.App.renderFormacaoTournamentUI) window.App.renderFormacaoTournamentUI();
+        window.App.showToast(`Data do Jogo #${targetMatch.numeroJogo || ''} definida com sucesso!`, "success");
+      }
+    };
+  });
+}
+window.App.renderConfrontosDatasUI = renderConfrontosDatasUI;
 
 // Atualiza o resumo visual de regras e estimativa de jogos da aba Modo de Jogo
 function updateModoInfoCard() {
@@ -440,6 +570,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           window.App.showToast(desc, "success");
           renderFormacaoTournamentUI();
           updateModoInfoCard();
+          renderConfrontosDatasUI();
         } catch (err) {
           console.error("[selectModo]", err);
           window.App.showToast("Erro ao atualizar formato da pelada.", "error");
@@ -476,12 +607,13 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             // Regenera a tabela mista com o novo turno
             const newMatches = window.TournamentEngine.generateGroupSchedule(teams, newTurno);
 
-            // Preserva o placar de partidas que já haviam sido finalizadas
+            // Preserva o placar de partidas que já haviam sido finalizadas e datas personalizadas
             if (Array.isArray(tState.matches)) {
               tState.matches.forEach(oldM => {
-                if (oldM.status === 'encerrado') {
-                  const matchInNew = newMatches.find(nm => nm.teamA === oldM.teamA && nm.teamB === oldM.teamB && nm.turno === oldM.turno);
-                  if (matchInNew) {
+                const matchInNew = newMatches.find(nm => nm.teamA === oldM.teamA && nm.teamB === oldM.teamB && nm.turno === oldM.turno);
+                if (matchInNew) {
+                  if (oldM.dataJogo) matchInNew.dataJogo = oldM.dataJogo;
+                  if (oldM.status === 'encerrado') {
                     matchInNew.golsA = oldM.golsA;
                     matchInNew.golsB = oldM.golsB;
                     matchInNew.status = 'encerrado';
@@ -510,6 +642,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             : "🔁 Fase de Grupos definida como Somente Ida — 6 partidas geradas!";
           window.App.showToast(desc, "success");
           updateModoInfoCard();
+          renderConfrontosDatasUI();
         } catch (err) {
           console.error("[selectTurno]", err);
           window.App.showToast("Erro ao atualizar turno do torneio.", "error");
@@ -523,6 +656,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       await window.App.carregarTimesDoServidor(activePelada.id);
     }
     renderFormacaoTournamentUI();
+    renderConfrontosDatasUI();
     select.onchange = async (e) => {
       if (e.target.value) {
         const sel = peladasList.find(p => String(p.id) === String(e.target.value));
@@ -536,6 +670,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           await window.App.carregarTimesDoServidor(e.target.value);
         }
         renderFormacaoTournamentUI();
+        renderConfrontosDatasUI();
         if (window.App.renderDrawnTeams) window.App.renderDrawnTeams();
         if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
       }
@@ -1764,11 +1899,18 @@ function renderFormacaoTournamentUI() {
           if (tB) embB = `<span style="display:inline-block; width:16px; height:18px; vertical-align:middle; margin-left:4px;">${window.TeamEmblems.forTeam(tB)}</span>`;
         }
 
+        const dateRaw = m.dataJogo || peladaAtiva.data || '';
+        const dateFormatted = dateRaw ? formatarDataPelada(dateRaw) : '';
+        const dateBadge = dateFormatted ? `<span style="font-size: 10px; font-weight: 700; color: ${isNight ? '#93C5FD' : '#0284C7'}; display: block; margin-top: 2px;">📅 ${dateFormatted}</span>` : '';
+
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: ${itemBg}; border: ${itemBorder}; border-radius: 8px; font-size: 12px; margin-bottom: 4px; backdrop-filter: blur(8px);">
-            <span style="font-weight: 700; width: 40%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-end;">${embA}${nameA}</span>
-            <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 8px; ${isNight ? 'border: 1px solid rgba(255, 255, 255, 0.2);' : ''}">${scoreText}</span>
-            <span style="font-weight: 700; width: 40%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-start;">${nameB}${embB}</span>
+            <span style="font-weight: 700; width: 35%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-end;">${embA}${nameA}</span>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <span style="padding: 3px 10px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; border-radius: 6px; font-size: 11px; margin: 0 4px; ${isNight ? 'border: 1px solid rgba(255, 255, 255, 0.2);' : ''}">${scoreText}</span>
+              ${dateBadge}
+            </div>
+            <span style="font-weight: 700; width: 35%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor}; display: flex; align-items: center; justify-content: flex-start;">${nameB}${embB}</span>
           </div>
         `;
       }).join('');

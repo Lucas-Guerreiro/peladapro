@@ -83,6 +83,7 @@ window.TournamentEngine = {
           faseNome: isVolta ? 'Fase de Grupos (Volta)' : 'Fase de Grupos (Ida)',
           rodada: rIdx + 1,
           numeroJogo: matchCount,
+          dataJogo: null,
           teamA: teamA.nome,
           teamB: teamB.nome,
           teamAObj: teamA,
