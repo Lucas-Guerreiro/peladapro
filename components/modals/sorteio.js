@@ -477,9 +477,23 @@ function handleExecuteSorteio() {
   try {
     localStorage.setItem(teamsKey, JSON.stringify(teamsParaSalvar));
   } catch (e) {
-    console.error("[Sorteio] Falha ao salvar times:", e);
-    window.App.showToast("Erro ao salvar os times: " + (e && e.message ? e.message : e), "error");
-    return;
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      try {
+        localStorage.removeItem("teams");
+        localStorage.removeItem("groupEmblems");
+        localStorage.removeItem("performanceData");
+        localStorage.setItem(teamsKey, JSON.stringify(teamsParaSalvar));
+      } catch (err2) {
+        console.warn("[Sorteio] Cota cheia no disco, mantendo times apenas em memória.", err2);
+        if (window.App && window.App.showToast) {
+          window.App.showToast("Armazenamento cheio. Times gerados e mantidos nesta sessão.", "warning");
+        }
+      }
+    } else {
+      console.error("[Sorteio] Falha ao salvar times:", e);
+      window.App.showToast("Erro ao salvar os times: " + (e && e.message ? e.message : e), "error");
+      return;
+    }
   }
 
   // Cópia genérica (fallback para outras telas): melhor esforço, NÃO bloqueia o sorteio se falhar

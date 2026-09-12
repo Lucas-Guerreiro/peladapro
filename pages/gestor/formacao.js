@@ -8,6 +8,87 @@ function getTeamsKey() {
   return peladaId ? `teams_${peladaId}` : "teams";
 }
 
+// Salva de forma segura no localStorage com proteção contra QuotaExceededError
+function safeSetStorage(key, value) {
+  const strVal = typeof value === 'string' ? value : JSON.stringify(value);
+  try {
+    localStorage.setItem(key, strVal);
+    return true;
+  } catch (e) {
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22) {
+      console.warn(`[Storage] Cota excedida ao salvar '${key}'. Limpando cópias descartáveis...`);
+      try {
+        localStorage.removeItem("teams");
+        localStorage.removeItem("groupEmblems");
+        localStorage.removeItem("performanceData");
+        localStorage.setItem(key, strVal);
+        return true;
+      } catch (err2) {
+        console.warn(`[Storage] Cota cheia para '${key}'. Mantido em memória.`, err2);
+        if (window.App && window.App.showToast && !window._storageToastShown) {
+          window._storageToastShown = true;
+          window.App.showToast("Armazenamento do navegador cheio. Dados mantidos nesta sessão.", "warning");
+          setTimeout(() => { window._storageToastShown = false; }, 10000);
+        }
+        return false;
+      }
+    }
+    console.warn(`[Storage] Erro ao salvar '${key}':`, e);
+    return false;
+  }
+}
+
+// Remove fotos base64 e emblemas pesados antes de persistir no storage
+function enxugarTimesParaStorage(teams) {
+  if (!Array.isArray(teams)) return teams;
+  return teams.map(t => {
+    const copia = { ...t };
+    delete copia.emblema_url;
+    delete copia.emblemaUrl;
+    if (Array.isArray(t.players)) {
+      copia.players = t.players.map(p => {
+        const leve = { ...p };
+        delete leve.foto;
+        delete leve.emblema_url;
+        delete leve.emblemaUrl;
+        return leve;
+      });
+    }
+    return copia;
+  });
+}
+
+// Remove chaves de peladas antigas/finalizadas e órfãs para liberar espaço
+function limparDadosAntigosLocalStorage(peladasList) {
+  if (!Array.isArray(peladasList) || peladasList.length === 0) return;
+  try {
+    const activeIds = new Set(peladasList.map(p => String(p.id)));
+    const finalizedIds = new Set(peladasList.filter(p => p.status === 'finalizada').map(p => String(p.id)));
+    const curActiveId = window.App.activePelada ? String(window.App.activePelada.id) : null;
+    const keysToRemove = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      const match = k.match(/^(teams|tournamentState|liveMatch|waitingQueue)_(\d+)$/);
+      if (match) {
+        const pId = match[2];
+        if (!activeIds.has(pId) || (finalizedIds.has(pId) && pId !== curActiveId)) {
+          keysToRemove.push(k);
+        }
+      }
+    }
+    keysToRemove.forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) { }
+    });
+    if (curActiveId && localStorage.getItem(`teams_${curActiveId}`)) {
+      try { localStorage.removeItem("teams"); } catch (e) { }
+    }
+  } catch (err) {
+    console.warn("[Storage] Limpeza não-bloqueante falhou:", err);
+  }
+}
+
 window.App.initFormacao = async function () {
   if (!window.App.activePelada) {
     try {
@@ -510,6 +591,8 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       select.appendChild(opt);
     });
     window.App.activeGroupPeladas = peladasList;
+    // Limpeza proativa de peladas antigas e órfãs para garantir cota livre no localStorage
+    limparDadosAntigosLocalStorage(peladasList);
     // Define qual pelada está ativa
     let activePelada = peladasList[0];
     if (selectedPeladaId) {
@@ -520,16 +603,17 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       activePelada = peladasList.find(p => p.status !== "finalizada") || peladasList[0];
     }
     window.App.activePelada = activePelada;
-    localStorage.setItem("activePelada", JSON.stringify(activePelada));
+    safeSetStorage("activePelada", activePelada);
     select.value = activePelada.id;
     // Inicializa o estado de times da pelada ativa
     window.App.teams = [];
-    localStorage.removeItem("teams");
+    try { localStorage.removeItem("teams"); } catch (e) { }
     const initialKey = `teams_${activePelada.id}`;
-    const initialLocalTeams = JSON.parse(localStorage.getItem(initialKey) || 'null');
+    let initialLocalTeams = [];
+    try { initialLocalTeams = JSON.parse(localStorage.getItem(initialKey) || 'null'); } catch (e) { }
     if (initialLocalTeams && Array.isArray(initialLocalTeams) && initialLocalTeams.length > 0) {
       window.App.teams = initialLocalTeams;
-      localStorage.setItem("teams", JSON.stringify(initialLocalTeams));
+      safeSetStorage("teams", initialLocalTeams);
     }
     const selectModo = document.getElementById("select-pelada-modo");
     const containerTurno = document.getElementById("container-turno-torneio");
@@ -571,7 +655,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             return;
           }
           window.App.activePelada.modo = newModo;
-          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          safeSetStorage("activePelada", window.App.activePelada);
           let desc = "⚽ Modo Pelada Normal ativado!";
           if (newModo === 'torneio_livre') desc = "📋 Modo Torneio Livre (Confrontos Manuais) ativado para esta data!";
           else if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado para esta data!";
@@ -604,7 +688,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             return;
           }
           window.App.activePelada.turno_torneio = newTurno;
-          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          safeSetStorage("activePelada", window.App.activePelada);
 
           // Se já existirem times sorteados e um torneio ativo em andamento, atualiza a tabela de jogos com o novo turno!
           let liveMatch = window.App.liveMatch || {};
@@ -638,9 +722,9 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             liveMatch.tournamentState = tState;
             window.App.liveMatch = liveMatch;
 
-            localStorage.setItem("tournamentState", JSON.stringify(tState));
-            localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
-            localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
+            safeSetStorage("tournamentState", tState);
+            safeSetStorage(`tournamentState_${peladaId}`, tState);
+            safeSetStorage("liveMatch", liveMatch);
 
             if (window.Api && window.Api.atualizarLiveState) {
               await window.Api.atualizarLiveState(peladaId, liveMatch, window.App.waitingQueue || [], teams);
@@ -711,7 +795,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           window.App.activePelada.modo = modoVal;
           window.App.activePelada.turno_torneio = turnoVal;
           window.App.activePelada.status = statusVal;
-          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          safeSetStorage("activePelada", window.App.activePelada);
 
           // Atualiza torneio e partidas caso já existam times gerados
           let liveMatch = window.App.liveMatch || {};
@@ -740,9 +824,9 @@ async function renderManagerCheckin(selectedPeladaId = null) {
             tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
             liveMatch.tournamentState = tState;
             window.App.liveMatch = liveMatch;
-            localStorage.setItem("tournamentState", JSON.stringify(tState));
-            localStorage.setItem(`tournamentState_${curPeladaId}`, JSON.stringify(tState));
-            localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
+            safeSetStorage("tournamentState", tState);
+            safeSetStorage(`tournamentState_${curPeladaId}`, tState);
+            safeSetStorage("liveMatch", liveMatch);
 
             if (window.Api && window.Api.atualizarLiveState) {
               await window.Api.atualizarLiveState(curPeladaId, liveMatch, window.App.waitingQueue || [], teams);
@@ -775,7 +859,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       if (e.target.value) {
         const sel = peladasList.find(p => String(p.id) === String(e.target.value));
         window.App.activePelada = sel;
-        localStorage.setItem("activePelada", JSON.stringify(sel));
+        safeSetStorage("activePelada", sel);
         if (selectStatus) selectStatus.value = sel.status || "agendada";
         if (selectModo) selectModo.value = sel.modo || "normal";
         if (selectTurno) selectTurno.value = sel.turno_torneio || "ida_volta";
@@ -784,12 +868,13 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         updateModoInfoCard();
         // Reset do estado de times da data anterior e carga da nova data
         window.App.teams = [];
-        localStorage.removeItem("teams");
+        try { localStorage.removeItem("teams"); } catch (e) { }
         const specificKey = `teams_${e.target.value}`;
-        const localTeams = JSON.parse(localStorage.getItem(specificKey) || 'null');
+        let localTeams = [];
+        try { localTeams = JSON.parse(localStorage.getItem(specificKey) || 'null'); } catch (e) { }
         if (localTeams && Array.isArray(localTeams) && localTeams.length > 0) {
           window.App.teams = localTeams;
-          localStorage.setItem("teams", JSON.stringify(localTeams));
+          safeSetStorage("teams", localTeams);
         }
         await updateCheckinPlayersList(e.target.value);
         if (window.App.carregarTimesDoServidor) {
@@ -803,9 +888,11 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     };
   } catch (err) {
     console.error("[Formacao] Erro ao listar datas para checkin:", err);
-    select.innerHTML = "<option value=''>Erro ao carregar</option>";
+    if (!select.value && select.options.length === 0) {
+      select.innerHTML = "<option value=''>Erro ao carregar</option>";
+    }
     if (window.App && window.App.showToast) {
-      window.App.showToast("Erro ao carregar peladas de referência.", "error");
+      window.App.showToast("Aviso: Falha ao sincronizar dados da pelada.", "warning");
     }
   }
 }
@@ -1213,8 +1300,9 @@ window.App.renderDrawnTeams = async function () {
     container.appendChild(card);
   });
   if (teamsModificados) {
-    localStorage.setItem(teamsKey, JSON.stringify(teams));
-    localStorage.setItem("teams", JSON.stringify(teams));
+    const enxutos = enxugarTimesParaStorage(teams);
+    safeSetStorage(teamsKey, enxutos);
+    safeSetStorage("teams", enxutos);
     window.App.teams = teams;
   }
 };
@@ -1274,14 +1362,15 @@ window.App.carregarTimesDoServidor = async function (peladaId) {
 
     if (teamsServidor.length === 0) {
       window.App.teams = [];
-      localStorage.removeItem(teamsKey);
-      localStorage.removeItem("teams");
+      try { localStorage.removeItem(teamsKey); } catch (e) { }
+      try { localStorage.removeItem("teams"); } catch (e) { }
       window.App.renderDrawnTeams();
       return;
     }
 
-    localStorage.setItem(teamsKey, JSON.stringify(teamsServidor));
-    localStorage.setItem("teams", JSON.stringify(teamsServidor));
+    const enxutos = enxugarTimesParaStorage(teamsServidor);
+    safeSetStorage(teamsKey, enxutos);
+    safeSetStorage("teams", enxutos);
     window.App.teams = teamsServidor;
 
     if (state.liveMatch && window.App.liveMatch) {
@@ -1332,8 +1421,10 @@ function drop(ev, targetTeamId) {
   }
   sourceTeam.players = sourceTeam.players.filter(p => String(p.id) !== String(draggedPlayerId));
   targetTeam.players.push(player);
-  // ===== CORREÇÃO: salva na chave com ID da pelada =====
-  localStorage.setItem(teamsKey, JSON.stringify(teams));
+  const enxutosDrop = enxugarTimesParaStorage(teams);
+  safeSetStorage(teamsKey, enxutosDrop);
+  safeSetStorage("teams", enxutosDrop);
+  window.App.teams = teams;
   window.App.renderDrawnTeams();
   window.App.showToast(`${player.nome} movido para ${targetTeam.nome}!`);
 }
@@ -1353,9 +1444,10 @@ function renameTeam(teamId, newName) {
     const oldName = team.nome;
     team.nome = trimmed;
     team.name = trimmed;
-    // ===== CORREÇÃO: salva na chave com ID da pelada =====
-    localStorage.setItem(teamsKey, JSON.stringify(teams));
-    localStorage.setItem("teams", JSON.stringify(teams));
+    const enxutosRename = enxugarTimesParaStorage(teams);
+    safeSetStorage(teamsKey, enxutosRename);
+    safeSetStorage("teams", enxutosRename);
+    window.App.teams = teams;
     if (window.App.waitingQueue.includes(oldName)) {
       window.App.waitingQueue[window.App.waitingQueue.indexOf(oldName)] = team.nome;
     }
@@ -1365,8 +1457,8 @@ function renameTeam(teamId, newName) {
     if (window.App.liveMatch.teamB === oldName) {
       window.App.liveMatch.teamB = team.nome;
     }
-    localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-    localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+    safeSetStorage("liveMatch", window.App.liveMatch);
+    safeSetStorage("waitingQueue", window.App.waitingQueue);
     window.App.updateAcompanhamentoUI();
     window.App.renderDrawnTeams();
     window.App.showToast(`Time renomeado para ${team.nome}`);
@@ -1399,9 +1491,10 @@ function criarTimeManual() {
   };
   // 1. Adiciona nos times do localStorage
   teams.push(novoTime);
-  // ===== CORREÇÃO: salva na chave com ID da pelada =====
-  localStorage.setItem(teamsKey, JSON.stringify(teams));
-  localStorage.setItem("teams", JSON.stringify(teams));
+  const enxutosManual = enxugarTimesParaStorage(teams);
+  safeSetStorage(teamsKey, enxutosManual);
+  safeSetStorage("teams", enxutosManual);
+  window.App.teams = teams;
   // 2. Adiciona o time à fila de espera das partidas do dia
   // Se já temos pelo menos 2 times na partida ao vivo, os novos times criados entram na fila de espera!
   // Se não temos times ativos no liveMatch, alimentamos a partida ativa primeiro!
@@ -1415,8 +1508,8 @@ function criarTimeManual() {
     window.App.waitingQueue.push(novoTime.nome);
   }
   // 3. Persiste o estado do jogo ao vivo e fila no localStorage e servidor
-  localStorage.setItem("liveMatch", JSON.stringify(window.App.liveMatch));
-  localStorage.setItem("waitingQueue", JSON.stringify(window.App.waitingQueue));
+  safeSetStorage("liveMatch", window.App.liveMatch);
+  safeSetStorage("waitingQueue", window.App.waitingQueue);
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   if (peladaId && window.Api && window.Api.atualizarLiveState) {
     window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
@@ -1511,8 +1604,7 @@ window.selectEmblem = function (emblemaIdx) {
     team.emblema = emblemaIdx;
     delete team.emblema_url;
     delete team.emblemaUrl;
-    // ===== CORREÇÃO: salva na chave com ID da pelada =====
-    localStorage.setItem(teamsKey, JSON.stringify(teams));
+    safeSetStorage(teamsKey, enxugarTimesParaStorage(teams));
     syncDrawnTeamsToCloud(false);
   }
   var token = localStorage.getItem("token");
@@ -1547,8 +1639,7 @@ window.selectCustomEmblemFromLibrary = function (emblemaId) {
   if (team) {
     team.emblema_url = item.imagem_url;
     team.emblemaUrl = item.imagem_url;
-    // ===== CORREÇÃO: salva na chave com ID da pelada =====
-    localStorage.setItem(teamsKey, JSON.stringify(teams));
+    safeSetStorage(teamsKey, enxugarTimesParaStorage(teams));
     syncDrawnTeamsToCloud(false);
   }
   var token = localStorage.getItem("token");
@@ -1616,8 +1707,7 @@ window.handleCustomEmblemUpload = function (event) {
     if (team) {
       team.emblema_url = base64;
       team.emblemaUrl = base64;
-      // ===== CORREÇÃO: salva na chave com ID da pelada =====
-      localStorage.setItem(teamsKey, JSON.stringify(teams));
+      safeSetStorage(teamsKey, enxugarTimesParaStorage(teams));
       syncDrawnTeamsToCloud(false);
     }
     if (token && team && team.db_id) {
@@ -1871,8 +1961,8 @@ window.App.abrirModalNomesTimes = function () {
 
   const newNames = rawInput.split(',').map(s => s.trim()).filter(Boolean);
   try {
-    if (groupId) localStorage.setItem(`customTeamNames_${groupId}`, JSON.stringify(newNames));
-    localStorage.setItem('customTeamNames', JSON.stringify(newNames));
+    if (groupId) safeSetStorage(`customTeamNames_${groupId}`, newNames);
+    safeSetStorage('customTeamNames', newNames);
   } catch (e) { }
 
   // Se já existirem times sorteados na tela, atualiza o nome de cada time!
@@ -1885,10 +1975,9 @@ window.App.abrirModalNomesTimes = function () {
       }
     });
     const teamsKey = getTeamsKey();
-    try {
-      localStorage.setItem(teamsKey, JSON.stringify(drawnTeams));
-      localStorage.setItem('teams', JSON.stringify(drawnTeams));
-    } catch (e) { }
+    const enxutosDrawn = enxugarTimesParaStorage(drawnTeams);
+    safeSetStorage(teamsKey, enxutosDrawn);
+    safeSetStorage('teams', enxutosDrawn);
 
     // Sincroniza tState do torneio ativo com os novos nomes
     const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
@@ -1902,8 +1991,8 @@ window.App.abrirModalNomesTimes = function () {
         });
       }
       tState.standings = window.TournamentEngine.calculateStandings(drawnTeams, tState.matches);
-      if (peladaId) localStorage.setItem(`tournamentState_${peladaId}`, JSON.stringify(tState));
-      localStorage.setItem('tournamentState', JSON.stringify(tState));
+      if (peladaId) safeSetStorage(`tournamentState_${peladaId}`, tState);
+      safeSetStorage('tournamentState', tState);
       if (window.App.liveMatch) window.App.liveMatch.tournamentState = tState;
     }
 

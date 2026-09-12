@@ -490,7 +490,7 @@ function safeLocalStorageSetItem(key, value) {
   } catch (e) {
     if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22) {
       console.warn('[Storage] Cota do localStorage excedida. Tentando liberar espaço limpando caches não-essenciais...');
-      const keysToClear = ['players', 'transactions', 'groupEmblems', 'performanceData'];
+      const keysToClear = ['teams', 'groupEmblems', 'performanceData', 'transactions'];
       
       keysToClear.forEach(k => {
         try { localStorage.removeItem(k); } catch(err) {}
