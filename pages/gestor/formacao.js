@@ -243,7 +243,7 @@ function setupFormacaoSubtabs() {
     if (window.feather) feather.replace();
   };
 
-  btnModo.onclick = () => {
+    btnModo.onclick = () => {
     btnModo.style.background = "#E0F2FE";
     btnModo.style.color = "#0284C7";
     btnModo.style.borderColor = "#7DD3FC";
@@ -252,6 +252,25 @@ function setupFormacaoSubtabs() {
     btnTimes.style.borderColor = "#CBD5E1";
     tabTimes.style.display = "none";
     tabModo.style.display = "block";
+
+    // Garante que o select de data da aba 2 esteja populado e sincronizado
+    const selModoData = document.getElementById("select-modo-pelada-data");
+    const peladasList = window.App.activeGroupPeladas || [];
+    if (selModoData && peladasList.length > 0) {
+      const curId = window.App.activePelada ? String(window.App.activePelada.id) : "";
+      selModoData.innerHTML = "";
+      peladasList.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        const dateFormatted = formatarDataPelada(p.data);
+        const statusLabel = p.status === "finalizada" ? "Realizada" : "Agendada";
+        opt.textContent = `${dateFormatted} às ${p.horario || ""} (${statusLabel})`;
+        if (String(p.id) === curId) opt.selected = true;
+        selModoData.appendChild(opt);
+      });
+      if (curId) selModoData.value = curId;
+    }
+
     updateModoInfoCard();
     renderConfrontosDatasUI();
     if (window.feather) feather.replace();
@@ -649,6 +668,110 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         }
       };
     }
+    // Sincroniza e preenche o seletor de data da Aba 2 (Modo de Jogo)
+    const selectModoData = document.getElementById("select-modo-pelada-data");
+    if (selectModoData) {
+      selectModoData.innerHTML = "";
+      peladasList.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        const dateFormatted = formatarDataPelada(p.data);
+        const statusLabel = p.status === "finalizada" ? "Realizada" : "Agendada";
+        opt.textContent = `${dateFormatted} às ${p.horario || ""} (${statusLabel})`;
+        if (String(p.id) === String(activePelada.id)) opt.selected = true;
+        selectModoData.appendChild(opt);
+      });
+      selectModoData.value = activePelada.id;
+
+      selectModoData.onchange = async (e) => {
+        if (e.target.value) {
+          select.value = e.target.value;
+          if (typeof select.onchange === 'function') {
+            await select.onchange({ target: { value: e.target.value } });
+          }
+        }
+      };
+    }
+
+    // Botão explícito para Salvar Configurações da Disputa (Modo, Turno e Status)
+    const btnSalvarModo = document.getElementById("btn-salvar-modo-jogo");
+    if (btnSalvarModo) {
+      btnSalvarModo.onclick = async () => {
+        const curPeladaId = window.App.activePelada ? window.App.activePelada.id : null;
+        if (!curPeladaId) {
+          window.App.showToast("Selecione uma pelada para salvar as configurações.", "warning");
+          return;
+        }
+        const modoVal = selectModo ? selectModo.value : "normal";
+        const turnoVal = selectTurno ? selectTurno.value : "ida_volta";
+        const statusVal = selectStatus ? selectStatus.value : "agendada";
+
+        try {
+          btnSalvarModo.disabled = true;
+          btnSalvarModo.innerHTML = `<i data-feather="loader" class="spin"></i> Salvando...`;
+
+          const payload = { modo: modoVal, turno_torneio: turnoVal, status: statusVal };
+          const res = await Api.atualizarConfigPartida(curPeladaId, payload);
+          if (res && res.error) {
+            window.App.showToast(res.error, "error");
+            return;
+          }
+
+          window.App.activePelada.modo = modoVal;
+          window.App.activePelada.turno_torneio = turnoVal;
+          window.App.activePelada.status = statusVal;
+          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+
+          // Atualiza torneio e partidas caso já existam times gerados
+          let liveMatch = window.App.liveMatch || {};
+          let tState = liveMatch.tournamentState || (curPeladaId ? JSON.parse(localStorage.getItem(`tournamentState_${curPeladaId}`) || 'null') : null);
+          let teams = window.App.teams || [];
+          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+
+          if (teams && teams.length > 0 && window.TournamentEngine && tState) {
+            tState.turno = turnoVal;
+            const newMatches = window.TournamentEngine.generateGroupSchedule(teams, turnoVal);
+            if (Array.isArray(tState.matches)) {
+              tState.matches.forEach(oldM => {
+                const matchInNew = newMatches.find(nm => nm.teamA === oldM.teamA && nm.teamB === oldM.teamB && nm.turno === oldM.turno);
+                if (matchInNew) {
+                  if (oldM.dataJogo) matchInNew.dataJogo = oldM.dataJogo;
+                  if (oldM.status === 'encerrado') {
+                    matchInNew.golsA = oldM.golsA;
+                    matchInNew.golsB = oldM.golsB;
+                    matchInNew.status = 'encerrado';
+                    matchInNew.vencedor = oldM.vencedor;
+                  }
+                }
+              });
+            }
+            tState.matches = newMatches;
+            tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
+            liveMatch.tournamentState = tState;
+            window.App.liveMatch = liveMatch;
+            localStorage.setItem("tournamentState", JSON.stringify(tState));
+            localStorage.setItem(`tournamentState_${curPeladaId}`, JSON.stringify(tState));
+            localStorage.setItem("liveMatch", JSON.stringify(liveMatch));
+
+            if (window.Api && window.Api.atualizarLiveState) {
+              await window.Api.atualizarLiveState(curPeladaId, liveMatch, window.App.waitingQueue || [], teams);
+            }
+          }
+
+          window.App.showToast("Configurações da disputa salvas com sucesso!", "success");
+          updateModoInfoCard();
+          renderConfrontosDatasUI();
+        } catch (err) {
+          console.error("[btnSalvarModo]", err);
+          window.App.showToast("Erro ao salvar configurações da disputa.", "error");
+        } finally {
+          btnSalvarModo.disabled = false;
+          btnSalvarModo.innerHTML = `<i data-feather="save" style="width: 18px; height: 18px;"></i> Salvar Configurações da Disputa`;
+          if (window.feather) feather.replace();
+        }
+      };
+    }
+
     // Puxa a lista de convocados da data selecionada
     await updateCheckinPlayersList(activePelada.id);
     // Carrega os times salvos na nuvem (sincroniza entre dispositivos)
@@ -663,6 +786,10 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         window.App.activePelada = sel;
         if (selectStatus) selectStatus.value = sel.status || "agendada";
         if (selectModo) selectModo.value = sel.modo || "normal";
+        if (selectTurno) selectTurno.value = sel.turno_torneio || "ida_volta";
+        if (selectModoData) selectModoData.value = sel.id;
+        updateTurnoVisibility(sel.modo || "normal");
+        updateModoInfoCard();
         // Limpa o cache local de times da data anterior para atualizar os cards
         localStorage.removeItem("teams");
         await updateCheckinPlayersList(e.target.value);

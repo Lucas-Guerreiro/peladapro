@@ -3812,119 +3812,7 @@ async function initPartidasPeladaSelect() {
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
 
-    // Sincroniza seletor de modo/formato e turno de torneio
-    const selectModo = document.getElementById("partidas-select-pelada-modo");
-    const containerTurnoPartidas = document.getElementById("partidas-container-pelada-turno");
-    const selectTurnoPartidas = document.getElementById("partidas-select-pelada-turno");
-
-    const updatePartidasTurnoVis = (modoVal) => {
-      if (containerTurnoPartidas) {
-        const hasTurno = modoVal === 'torneio' || modoVal === 'pontos_corridos' || modoVal === 'torneio_pontos_corridos';
-        containerTurnoPartidas.style.display = hasTurno ? 'inline-flex' : 'none';
-      }
-    };
-
-    if (selectModo && activePelada) {
-      selectModo.innerHTML = `
-        <option value="normal">Pelada Normal (Reina Campo)</option>
-        <option value="torneio">Mini Torneio (Misto: Tabela + Mata-Mata)</option>
-        <option value="pontos_corridos">Mini Torneio (Pontos Corridos)</option>
-        <option value="mata_mata_direto">Mini Torneio (Mata-Mata Direto)</option>
-        <option value="torneio_livre">Torneio Livre (Confrontos Manuais)</option>
-      `;
-      selectModo.value = activePelada.modo || "normal";
-      updatePartidasTurnoVis(selectModo.value);
-
-      selectModo.onchange = async (e) => {
-        const newModo = e.target.value;
-        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-        updatePartidasTurnoVis(newModo);
-        if (!peladaId) return;
-        try {
-          const res = await Api.atualizarConfigPartida(peladaId, { modo: newModo });
-          if (res && res.error) {
-            window.App.showToast(res.error, "error");
-            selectModo.value = window.App.activePelada.modo || "normal";
-            updatePartidasTurnoVis(selectModo.value);
-            return;
-          }
-          window.App.activePelada.modo = newModo;
-          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-          
-          let desc = "⚽ Modo Pelada Normal ativado!";
-          if (newModo === 'torneio_livre') desc = "📋 Modo Torneio Livre (Confrontos Manuais) ativado!";
-          else if (newModo === 'mata_mata_direto') desc = "⚡ Modo Mini Torneio (Mata-Mata Direto) ativado!";
-          else if (newModo === 'pontos_corridos' || newModo === 'torneio_pontos_corridos') desc = "🏅 Modo Mini Torneio (Pontos Corridos) ativado!";
-          else if (newModo === 'torneio') desc = "🏆 Modo Mini Torneio (Misto: Tabela + Mata-Mata) ativado!";
-          
-          window.App.showToast(desc, "success");
-          renderTournamentUI();
-        } catch (err) {
-          console.error("[partidasSelectModo]", err);
-          window.App.showToast("Erro ao atualizar formato da pelada.", "error");
-        }
-      };
-    }
-
-    if (selectTurnoPartidas && activePelada) {
-      selectTurnoPartidas.value = activePelada.turno_torneio || "ida_volta";
-      selectTurnoPartidas.onchange = async (e) => {
-        const newTurno = e.target.value;
-        const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-        if (!peladaId) return;
-        try {
-          const res = await Api.atualizarConfigPartida(peladaId, { turno_torneio: newTurno });
-          if (res && res.error) {
-            window.App.showToast(res.error, "error");
-            selectTurnoPartidas.value = window.App.activePelada.turno_torneio || "ida_volta";
-            return;
-          }
-          window.App.activePelada.turno_torneio = newTurno;
-          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-
-          let liveMatch = window.App.liveMatch || {};
-          let tState = liveMatch.tournamentState || safeLocalStorageGetItem(`tournamentState_${peladaId}`) || safeLocalStorageGetItem("tournamentState");
-          let teams = (window.App.teams && window.App.teams.length >= 2) ? window.App.teams : getAppTeamsList();
-
-          if (teams.length >= 2 && window.TournamentEngine && tState) {
-            tState.turno = newTurno;
-            const newMatches = window.TournamentEngine.generateGroupSchedule(teams, newTurno);
-            if (Array.isArray(tState.matches)) {
-              tState.matches.forEach(oldM => {
-                if (oldM.status === 'encerrado') {
-                  const matchInNew = newMatches.find(nm => nm.teamA === oldM.teamA && nm.teamB === oldM.teamB && nm.turno === oldM.turno);
-                  if (matchInNew) {
-                    matchInNew.golsA = oldM.golsA;
-                    matchInNew.golsB = oldM.golsB;
-                    matchInNew.status = 'encerrado';
-                    matchInNew.vencedor = oldM.vencedor;
-                  }
-                }
-              });
-            }
-            tState.matches = newMatches;
-            tState.standings = window.TournamentEngine.calculateStandings(teams, newMatches);
-            liveMatch.tournamentState = tState;
-            window.App.liveMatch = liveMatch;
-            safeLocalStorageSetItem(`tournamentState_${peladaId}`, tState);
-            safeLocalStorageSetItem("tournamentState", tState);
-            safeLocalStorageSetItem(`liveMatch_${peladaId}`, liveMatch);
-            safeLocalStorageSetItem("liveMatch", liveMatch);
-
-            if (window.Api && window.Api.atualizarLiveState) {
-              await window.Api.atualizarLiveState(peladaId, liveMatch, window.App.waitingQueue || [], teams);
-            }
-            renderTournamentUI();
-          }
-          const desc = newTurno === 'ida_volta' ? '🔄 Ida e Volta ativado (Turno e Returno)!' : '🔁 Somente Ida ativado (Turno Único)!';
-          window.App.showToast(desc, 'success');
-        } catch (err) {
-          console.error("[partidasSelectTurno]", err);
-          window.App.showToast("Erro ao atualizar turno da pelada.", "error");
-        }
-      };
-    }
-
+    // Atualiza estado do botão de liberar convidados
     const updateBtnLiberarConvidados = () => {
       const btnLiberar = document.getElementById("btn-toggle-liberar-convidados");
       if (!btnLiberar) return;
@@ -3938,29 +3826,21 @@ async function initPartidasPeladaSelect() {
       btnLiberar.onclick = async () => {
         const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
         if (!peladaId) return;
-        const novoState = !(window.App.activePelada && window.App.activePelada.liberar_convidados);
+        const novoStatus = !isLiberado;
         try {
-          const token = localStorage.getItem('token') || localStorage.getItem('pelada_token');
-          const res = await fetch(`/api/peladas/${peladaId}/liberar-convidados`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ liberar_convidados: novoState })
-          });
-          const data = await res.json();
-          if (res.ok) {
-            window.App.activePelada.liberar_convidados = novoState;
-            localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
-            window.App.showToast(data.message || (novoState ? "Convocação liberada para convidados!" : "Convocação bloqueada para convidados."), "success");
-            updateBtnLiberarConvidados();
-          } else {
-            window.App.showToast(data.error || "Erro ao alterar liberação de convidados.", "error");
+          const res = await Api.atualizarConfigPartida(peladaId, { liberar_convidados: novoStatus });
+          if (res && res.error) {
+            window.App.showToast(res.error, "error");
+            return;
           }
-        } catch (e) {
-          console.error('[liberarConvidados]', e);
-          window.App.showToast("Erro ao comunicar com o servidor.", "error");
+          if (window.App.activePelada) window.App.activePelada.liberar_convidados = novoStatus;
+          activePelada.liberar_convidados = novoStatus;
+          localStorage.setItem("activePelada", JSON.stringify(window.App.activePelada));
+          updateBtnLiberarConvidados();
+          window.App.showToast(novoStatus ? "🔓 Convidados liberados para convocar!" : "🔒 Convidados bloqueados.", "success");
+        } catch (err) {
+          console.error("[btn-toggle-liberar-convidados]", err);
+          window.App.showToast("Erro ao alternar status de convidados.", "error");
         }
       };
     };
@@ -3976,7 +3856,8 @@ async function initPartidasPeladaSelect() {
     const btnCorrigir = document.getElementById("btn-corrigir-jogos-excedentes");
     if (btnCorrigir) {
       btnCorrigir.onclick = async () => {
-        const confirmCorrigir = confirm("Deseja remover as partidas excedentes de testes e recalcular a Tabela de Classificação com os 12 jogos reais da Fase de Grupos?");
+        if (!activePelada || !activePelada.id) return;
+        const confirmCorrigir = confirm("Deseja verificar e corrigir os jogos deste torneio para garantir exatamente o número correto de partidas sem duplicidades?");
         if (confirmCorrigir) {
           await window.App.corrigirEJogosExcedentes(activePelada.id);
         }
@@ -3989,17 +3870,6 @@ async function initPartidasPeladaSelect() {
       if (found) {
         window.App.activePelada = found;
         localStorage.setItem("activePelada", JSON.stringify(found));
-
-        // Sincroniza os seletores de formato e turno com a pelada selecionada
-        const selectModo = document.getElementById("partidas-select-pelada-modo");
-        if (selectModo && found.modo) {
-          selectModo.value = found.modo;
-          updatePartidasTurnoVis(found.modo);
-        }
-        const selectTurnoP = document.getElementById("partidas-select-pelada-turno");
-        if (selectTurnoP) {
-          selectTurnoP.value = found.turno_torneio || "ida_volta";
-        }
 
         updateBtnLiberarConvidados();
 
