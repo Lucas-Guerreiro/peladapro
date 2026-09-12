@@ -9,7 +9,15 @@ function getTeamsKey() {
 }
 
 window.App.initFormacao = async function () {
-  const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
+  if (!window.App.activePelada) {
+    try {
+      const savedPelada = JSON.parse(localStorage.getItem("activePelada") || "null");
+      if (savedPelada && (savedPelada.id || savedPelada.pelada_id)) {
+        window.App.activePelada = savedPelada;
+      }
+    } catch (e) { }
+  }
+  const peladaId = window.App.activePelada ? (window.App.activePelada.id || window.App.activePelada.pelada_id) : null;
   if (peladaId && window.Api && window.Api.obterLiveState) {
     try {
       const res = await window.Api.obterLiveState(peladaId);
@@ -208,6 +216,9 @@ function formatarDataPelada(dataStr) {
   if (parts.length === 3) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`; // Retorna DD/MM/YYYY
   }
+  return dataStr;
+}
+
 // Alternancia de abas do fluxo de formacao vs modo de jogo
 function setupFormacaoSubtabs() {
   const btnTimes = document.getElementById("btn-tab-formacao-times");
@@ -225,6 +236,10 @@ function setupFormacaoSubtabs() {
     btnModo.style.borderColor = "#CBD5E1";
     tabTimes.style.display = "block";
     tabModo.style.display = "none";
+    const selPelada = document.getElementById("select-manager-pelada");
+    if (selPelada && (selPelada.options.length === 0 || (selPelada.options.length === 1 && !selPelada.value))) {
+      renderManagerCheckin();
+    }
     if (window.feather) feather.replace();
   };
 
@@ -310,40 +325,52 @@ async function renderManagerCheckin(selectedPeladaId = null) {
   const selectStatus = document.getElementById("select-pelada-status");
   if (!select) return;
   select.innerHTML = "<option>Carregando partidas...</option>";
-  if (!window.App.currentGroup || !window.App.currentGroup.id) {
-    const savedGroup = (window.Auth && window.Auth.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
-    if (savedGroup && savedGroup.id) {
+  if (!window.App.currentGroup || (!window.App.currentGroup.id && !window.App.currentGroup.grupo_id)) {
+    let savedGroup = (window.Auth && window.Auth.currentGroup) || JSON.parse(localStorage.getItem('currentGroup') || 'null');
+    if (savedGroup && (savedGroup.id || savedGroup.grupo_id)) {
+      if (!savedGroup.id) savedGroup.id = savedGroup.grupo_id;
       window.App.currentGroup = savedGroup;
+      if (window.Auth) window.Auth.currentGroup = savedGroup;
     } else if (window.Api && window.Api.getGruposDoGestor) {
       try {
         const grupos = await Api.getGruposDoGestor();
         if (Array.isArray(grupos) && grupos.length > 0) {
-          window.App.currentGroup = grupos[0];
-          if (window.Auth) window.Auth.currentGroup = grupos[0];
-          localStorage.setItem('currentGroup', JSON.stringify(grupos[0]));
+          const g = grupos[0];
+          if (!g.id && g.grupo_id) g.id = g.grupo_id;
+          window.App.currentGroup = g;
+          if (window.Auth) window.Auth.currentGroup = g;
+          localStorage.setItem('currentGroup', JSON.stringify(g));
         }
       } catch (e) { }
     }
   }
 
-  if (!window.App.currentGroup || !window.App.currentGroup.id) {
-    select.innerHTML = "<option value=''>Selecione uma pelada</option>";
-    document.getElementById("checkin-list-container").innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Selecione um grupo primeiro nas configurações.</p>`;
+  const currentGroupId = window.App.currentGroup ? (window.App.currentGroup.id || window.App.currentGroup.grupo_id) : null;
+  if (!currentGroupId) {
+    select.innerHTML = "<option value=''>Selecione um grupo primeiro</option>";
+    const checkinContainer = document.getElementById("checkin-list-container");
+    if (checkinContainer) {
+      checkinContainer.innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Selecione um grupo primeiro nas configurações para carregar as peladas.</p>`;
+    }
     return;
   }
   try {
     // Busca TODAS as datas do grupo (agendadas e realizadas)
-    const peladas = await Api.listarDatasDoGrupo(window.App.currentGroup.id);
+    const peladas = await Api.listarDatasDoGrupo(currentGroupId);
+    const peladasList = Array.isArray(peladas) ? peladas : [];
     select.innerHTML = "";
-    if (peladas.length === 0) {
+    if (peladasList.length === 0) {
       const opt = document.createElement("option");
       opt.value = "";
       opt.textContent = "Nenhuma pelada cadastrada";
       select.appendChild(opt);
-      document.getElementById("checkin-list-container").innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Sem partidas agendadas.</p>`;
+      const checkinContainer = document.getElementById("checkin-list-container");
+      if (checkinContainer) {
+        checkinContainer.innerHTML = `<p class="text-inter" style="text-align:center; font-size:13px; color:var(--text-caption); padding: 12px 0;">Sem partidas agendadas.</p>`;
+      }
       return;
     }
-    peladas.forEach(p => {
+    peladasList.forEach(p => {
       const opt = document.createElement("option");
       opt.value = p.id;
       const dateFormatted = formatarDataPelada(p.data);
@@ -351,13 +378,15 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       opt.textContent = `${dateFormatted} às ${p.horario || ""} (${statusLabel})`;
       select.appendChild(opt);
     });
-    window.App.activeGroupPeladas = peladas;
+    window.App.activeGroupPeladas = peladasList;
     // Define qual pelada está ativa
-    let activePelada = peladas[0];
+    let activePelada = peladasList[0];
     if (selectedPeladaId) {
-      activePelada = peladas.find(p => String(p.id) === String(selectedPeladaId)) || peladas[0];
-    } else if (window.App.activePelada) {
-      activePelada = peladas.find(p => String(p.id) === String(window.App.activePelada.id)) || peladas[0];
+      activePelada = peladasList.find(p => String(p.id) === String(selectedPeladaId)) || peladasList[0];
+    } else if (window.App.activePelada && window.App.activePelada.id) {
+      activePelada = peladasList.find(p => String(p.id) === String(window.App.activePelada.id)) || peladasList[0];
+    } else {
+      activePelada = peladasList.find(p => p.status !== "finalizada") || peladasList[0];
     }
     window.App.activePelada = activePelada;
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
@@ -490,28 +519,36 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     // Puxa a lista de convocados da data selecionada
     await updateCheckinPlayersList(activePelada.id);
     // Carrega os times salvos na nuvem (sincroniza entre dispositivos)
-    window.App.carregarTimesDoServidor(activePelada.id);
+    if (window.App.carregarTimesDoServidor) {
+      await window.App.carregarTimesDoServidor(activePelada.id);
+    }
     renderFormacaoTournamentUI();
     select.onchange = async (e) => {
       if (e.target.value) {
-        const sel = peladas.find(p => String(p.id) === String(e.target.value));
+        const sel = peladasList.find(p => String(p.id) === String(e.target.value));
         window.App.activePelada = sel;
         if (selectStatus) selectStatus.value = sel.status || "agendada";
         if (selectModo) selectModo.value = sel.modo || "normal";
         // Limpa o cache local de times da data anterior para atualizar os cards
         localStorage.removeItem("teams");
         await updateCheckinPlayersList(e.target.value);
-        await window.App.carregarTimesDoServidor(e.target.value);
+        if (window.App.carregarTimesDoServidor) {
+          await window.App.carregarTimesDoServidor(e.target.value);
+        }
         renderFormacaoTournamentUI();
-        window.App.renderDrawnTeams();
-        window.App.updateAcompanhamentoUI();
+        if (window.App.renderDrawnTeams) window.App.renderDrawnTeams();
+        if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
       }
     };
   } catch (err) {
     console.error("[Formacao] Erro ao listar datas para checkin:", err);
     select.innerHTML = "<option value=''>Erro ao carregar</option>";
+    if (window.App && window.App.showToast) {
+      window.App.showToast("Erro ao carregar peladas de referência.", "error");
+    }
   }
 }
+window.App.renderManagerCheckin = renderManagerCheckin;
 function atualizarContadorPresencas() {
   const total = (window.App.confirmadosList || []).length;
   const presentes = (window.App.presentPlayers || []).length;
