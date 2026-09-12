@@ -18,25 +18,7 @@ window.App.initFormacao = async function () {
     } catch (e) { }
   }
   const peladaId = window.App.activePelada ? (window.App.activePelada.id || window.App.activePelada.pelada_id) : null;
-  if (peladaId && window.Api && window.Api.obterLiveState) {
-    try {
-      const res = await window.Api.obterLiveState(peladaId);
-      if (res && res.state) {
-        const teamsKey = `teams_${peladaId}`;
-        const serverTeams = Array.isArray(res.state.teams) ? res.state.teams : [];
-        if (serverTeams.length > 0) {
-          window.App.teams = serverTeams;
-          localStorage.setItem(teamsKey, JSON.stringify(serverTeams));
-          localStorage.setItem("teams", JSON.stringify(serverTeams));
-        } else {
-          // Se o servidor retornar 0 times para a pelada, limpa o estado local
-          window.App.teams = [];
-          localStorage.removeItem(teamsKey);
-          localStorage.removeItem("teams");
-        }
-      }
-    } catch (e) { }
-  }
+  // O carregamento do estado e times da pelada ativa é delegado ao renderManagerCheckin
   await renderManagerCheckin(peladaId);
   const group = (window.Auth && window.Auth.currentGroup) || window.App.currentGroup;
   const groupId = group ? group.id : null;
@@ -339,7 +321,7 @@ function renderConfrontosDatasUI() {
   if (badgeTotal) badgeTotal.textContent = `${allMatches.length} JOGOS`;
 
   let teamsList = [];
-  try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch(e){}
+  try { teamsList = JSON.parse(localStorage.getItem(getTeamsKey())) || window.App.teams || []; } catch(e){}
 
   container.innerHTML = allMatches.map((m, idx) => {
     const numJogo = m.numeroJogo || (idx + 1);
@@ -418,7 +400,7 @@ function updateModoInfoCard() {
   const modo = selectModo.value || "normal";
   const turno = selectTurno ? selectTurno.value : "ida_volta";
   let teams = window.App.teams || [];
-  try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+  try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem(getTeamsKey())) || []; } catch (e) { }
   const nTeams = teams.length >= 2 ? teams.length : 4;
   const nJogosIda = Math.floor((nTeams * (nTeams - 1)) / 2);
   const nJogosTotal = turno === 'ida_volta' ? nJogosIda * 2 : nJogosIda;
@@ -540,6 +522,15 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     window.App.activePelada = activePelada;
     localStorage.setItem("activePelada", JSON.stringify(activePelada));
     select.value = activePelada.id;
+    // Inicializa o estado de times da pelada ativa
+    window.App.teams = [];
+    localStorage.removeItem("teams");
+    const initialKey = `teams_${activePelada.id}`;
+    const initialLocalTeams = JSON.parse(localStorage.getItem(initialKey) || 'null');
+    if (initialLocalTeams && Array.isArray(initialLocalTeams) && initialLocalTeams.length > 0) {
+      window.App.teams = initialLocalTeams;
+      localStorage.setItem("teams", JSON.stringify(initialLocalTeams));
+    }
     const selectModo = document.getElementById("select-pelada-modo");
     const containerTurno = document.getElementById("container-turno-torneio");
     const selectTurno = document.getElementById("select-pelada-turno");
@@ -619,7 +610,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           let liveMatch = window.App.liveMatch || {};
           let tState = liveMatch.tournamentState || (peladaId ? JSON.parse(localStorage.getItem(`tournamentState_${peladaId}`) || 'null') : null);
           let teams = window.App.teams || [];
-          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem(getTeamsKey())) || []; } catch (e) { }
 
           if (teams && teams.length > 0 && window.TournamentEngine && tState) {
             tState.turno = newTurno;
@@ -726,7 +717,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
           let liveMatch = window.App.liveMatch || {};
           let tState = liveMatch.tournamentState || (curPeladaId ? JSON.parse(localStorage.getItem(`tournamentState_${curPeladaId}`) || 'null') : null);
           let teams = window.App.teams || [];
-          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem("teams")) || []; } catch (e) { }
+          try { if (!teams || teams.length === 0) teams = JSON.parse(localStorage.getItem(getTeamsKey())) || []; } catch (e) { }
 
           if (teams && teams.length > 0 && window.TournamentEngine && tState) {
             tState.turno = turnoVal;
@@ -784,14 +775,22 @@ async function renderManagerCheckin(selectedPeladaId = null) {
       if (e.target.value) {
         const sel = peladasList.find(p => String(p.id) === String(e.target.value));
         window.App.activePelada = sel;
+        localStorage.setItem("activePelada", JSON.stringify(sel));
         if (selectStatus) selectStatus.value = sel.status || "agendada";
         if (selectModo) selectModo.value = sel.modo || "normal";
         if (selectTurno) selectTurno.value = sel.turno_torneio || "ida_volta";
         if (selectModoData) selectModoData.value = sel.id;
         updateTurnoVisibility(sel.modo || "normal");
         updateModoInfoCard();
-        // Limpa o cache local de times da data anterior para atualizar os cards
+        // Reset do estado de times da data anterior e carga da nova data
+        window.App.teams = [];
         localStorage.removeItem("teams");
+        const specificKey = `teams_${e.target.value}`;
+        const localTeams = JSON.parse(localStorage.getItem(specificKey) || 'null');
+        if (localTeams && Array.isArray(localTeams) && localTeams.length > 0) {
+          window.App.teams = localTeams;
+          localStorage.setItem("teams", JSON.stringify(localTeams));
+        }
         await updateCheckinPlayersList(e.target.value);
         if (window.App.carregarTimesDoServidor) {
           await window.App.carregarTimesDoServidor(e.target.value);
@@ -1107,6 +1106,7 @@ window.App.renderDrawnTeams = async function () {
   }
   // Se a pelada selecionada estiver finalizada, limpa os times sorteados
   if (activePelada && activePelada.status === "finalizada") {
+    window.App.teams = [];
     localStorage.removeItem("teams");
     container.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1; padding: 32px 16px; text-align: center;">
@@ -1124,6 +1124,8 @@ window.App.renderDrawnTeams = async function () {
   let teams = [];
   try { teams = JSON.parse(localStorage.getItem(teamsKey)) || []; } catch (e) { }
   if (!teams || teams.length === 0) {
+    window.App.teams = [];
+    localStorage.removeItem("teams");
     container.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
         <i data-feather="shuffle" style="width: 48px; height: 48px; display: block; margin: 0 auto 12px auto; color: var(--text-caption);"></i>
@@ -1133,6 +1135,7 @@ window.App.renderDrawnTeams = async function () {
     if (window.feather) feather.replace();
     return;
   }
+  window.App.teams = teams;
   let teamsModificados = false;
   const allPlayersLocais = JSON.parse(localStorage.getItem("players")) || [];
   teams.forEach((team) => {
@@ -1210,17 +1213,9 @@ window.App.renderDrawnTeams = async function () {
     container.appendChild(card);
   });
   if (teamsModificados) {
-    // ===== CORREÇÃO: salva na chave com ID da pelada =====
     localStorage.setItem(teamsKey, JSON.stringify(teams));
-  }
-  // Sincroniza o localStorage "teams_${peladaId}" com os times atuais
-  if (activePelada) {
-    const currentTeams = localStorage.getItem(teamsKey);
-    if (currentTeams) {
-      localStorage.setItem(`teams_${activePelada.id}`, currentTeams);
-    } else {
-      localStorage.removeItem(`teams_${activePelada.id}`);
-    }
+    localStorage.setItem("teams", JSON.stringify(teams));
+    window.App.teams = teams;
   }
 };
 async function syncDrawnTeamsToCloud(showToastMessage) {
@@ -1296,9 +1291,13 @@ window.App.carregarTimesDoServidor = async function (peladaId) {
       window.App.waitingQueue = state.waitingQueue;
     }
     window.App.renderDrawnTeams();
-    window.App.updateAcompanhamentoUI();
+    if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
   } catch (e) {
     console.warn("[carregarTimesDoServidor]", e);
+    const teamsKey = `teams_${peladaId}`;
+    const localTeams = JSON.parse(localStorage.getItem(teamsKey) || '[]');
+    window.App.teams = Array.isArray(localTeams) ? localTeams : [];
+    if (window.App.renderDrawnTeams) window.App.renderDrawnTeams();
   }
 };
 function drag(ev, playerId, teamId) {
@@ -1993,7 +1992,7 @@ function renderFormacaoTournamentUI() {
 
     const isNight = document.body.classList.contains('modo-noturno-ativo');
     let teamsList = [];
-    try { teamsList = JSON.parse(localStorage.getItem("teams")) || window.App.teams || []; } catch (e) { }
+    try { teamsList = JSON.parse(localStorage.getItem(getTeamsKey())) || window.App.teams || []; } catch (e) { }
 
     if (matches.length === 0) {
       matchesList.innerHTML = `<div style="text-align:center; padding: 12px; color:${isNight ? '#CBD5E1' : '#64748B'}; font-size:12px;">Nenhum confronto gerado ainda.</div>`;
