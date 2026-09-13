@@ -613,13 +613,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
     try { localStorage.removeItem("liveMatch"); } catch (e) { }
     try { localStorage.removeItem("waitingQueue"); } catch (e) { }
     try { localStorage.removeItem("tournamentState"); } catch (e) { }
-    const initialKey = `teams_${activePelada.id}`;
-    let initialLocalTeams = [];
-    try { initialLocalTeams = JSON.parse(localStorage.getItem(initialKey) || 'null'); } catch (e) { }
-    if (initialLocalTeams && Array.isArray(initialLocalTeams) && initialLocalTeams.length > 0) {
-      window.App.teams = initialLocalTeams;
-      safeSetStorage("teams", initialLocalTeams);
-    }
+    // Servidor como autoridade: o estado e carregado por carregarTimesDoServidor
     const selectModo = document.getElementById("select-pelada-modo");
     const containerTurno = document.getElementById("container-turno-torneio");
     const selectTurno = document.getElementById("select-pelada-turno");
@@ -878,13 +872,7 @@ async function renderManagerCheckin(selectedPeladaId = null) {
         try { localStorage.removeItem("liveMatch"); } catch (e) { }
         try { localStorage.removeItem("waitingQueue"); } catch (e) { }
         try { localStorage.removeItem("tournamentState"); } catch (e) { }
-        const specificKey = `teams_${e.target.value}`;
-        let localTeams = [];
-        try { localTeams = JSON.parse(localStorage.getItem(specificKey) || 'null'); } catch (e) { }
-        if (localTeams && Array.isArray(localTeams) && localTeams.length > 0) {
-          window.App.teams = localTeams;
-          safeSetStorage("teams", localTeams);
-        }
+        // Servidor como autoridade: o estado e carregado por carregarTimesDoServidor
         updateModoInfoCard();
         await updateCheckinPlayersList(e.target.value);
         if (window.App.carregarTimesDoServidor) {

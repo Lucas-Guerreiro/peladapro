@@ -667,14 +667,6 @@ window.App.initPartidas = async function () {
   }, 50);
 
   window.App.updateAcompanhamentoUI = async function () {
-    const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
-    if (peladaId && window.Api && window.Api.atualizarLiveState) {
-      let teams = window.App.teams || [];
-      if (!teams || teams.length === 0) {
-        try { teams = JSON.parse(localStorage.getItem(`teams_${peladaId}`)) || []; } catch (e) { }
-      }
-      await window.Api.atualizarLiveState(peladaId, window.App.liveMatch, window.App.waitingQueue, teams);
-    }
     renderLiveMatchUI();
     renderWaitingQueue();
     renderTournamentUI();
