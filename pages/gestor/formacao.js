@@ -38,19 +38,15 @@ function safeSetStorage(key, value) {
   }
 }
 
-// Remove fotos base64 e emblemas pesados antes de persistir no storage
+// Remove fotos base64 pesadas de jogadores antes de persistir no storage, preservando emblemas dos times
 function enxugarTimesParaStorage(teams) {
   if (!Array.isArray(teams)) return teams;
   return teams.map(t => {
     const copia = { ...t };
-    delete copia.emblema_url;
-    delete copia.emblemaUrl;
     if (Array.isArray(t.players)) {
       copia.players = t.players.map(p => {
         const leve = { ...p };
         delete leve.foto;
-        delete leve.emblema_url;
-        delete leve.emblemaUrl;
         return leve;
       });
     }
@@ -1595,6 +1591,8 @@ window.selectEmblem = function (emblemaIdx) {
     delete team.emblema_url;
     delete team.emblemaUrl;
     safeSetStorage(teamsKey, enxugarTimesParaStorage(teams));
+    safeSetStorage("teams", enxugarTimesParaStorage(teams));
+    window.App.teams = teams;
     syncDrawnTeamsToCloud(false);
   }
   var token = localStorage.getItem("token");
@@ -1614,6 +1612,7 @@ window.selectEmblem = function (emblemaIdx) {
     emblemEl.innerHTML = window.TeamEmblems.forTeam(team || { emblema: emblemaIdx });
     emblemEl.setAttribute("onclick", "openEmblemSelector('" + teamId + "', " + emblemaIdx + ")");
   }
+  if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
   window.App.showToast("Emblema atualizado!");
 };
 window.selectCustomEmblemFromLibrary = function (emblemaId) {
@@ -1630,6 +1629,8 @@ window.selectCustomEmblemFromLibrary = function (emblemaId) {
     team.emblema_url = item.imagem_url;
     team.emblemaUrl = item.imagem_url;
     safeSetStorage(teamsKey, enxugarTimesParaStorage(teams));
+    safeSetStorage("teams", enxugarTimesParaStorage(teams));
+    window.App.teams = teams;
     syncDrawnTeamsToCloud(false);
   }
   var token = localStorage.getItem("token");
@@ -1648,6 +1649,7 @@ window.selectCustomEmblemFromLibrary = function (emblemaId) {
   if (emblemEl && window.TeamEmblems) {
     emblemEl.innerHTML = window.TeamEmblems.forTeam(team || { emblema_url: item.imagem_url });
   }
+  if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
   window.App.showToast("Emblema gravado selecionado com sucesso!");
 };
 window.deleteCustomEmblemFromLibrary = async function (emblemaId) {
@@ -1698,6 +1700,8 @@ window.handleCustomEmblemUpload = function (event) {
       team.emblema_url = base64;
       team.emblemaUrl = base64;
       safeSetStorage(teamsKey, enxugarTimesParaStorage(teams));
+      safeSetStorage("teams", enxugarTimesParaStorage(teams));
+      window.App.teams = teams;
       syncDrawnTeamsToCloud(false);
     }
     if (token && team && team.db_id) {
@@ -1716,6 +1720,7 @@ window.handleCustomEmblemUpload = function (event) {
     if (emblemEl && window.TeamEmblems) {
       emblemEl.innerHTML = window.TeamEmblems.forTeam(team || { emblema_url: base64 });
     }
+    if (window.App.updateAcompanhamentoUI) window.App.updateAcompanhamentoUI();
     window.App.showToast("Novo emblema gravado no sistema e aplicado ao time! 🛡️");
   });
 };
@@ -1737,8 +1742,11 @@ async function copiarListaPresencaWhatsApp() {
     }
 
     const confirmados = convocados.filter(c => c.status === "confirmado");
-    if (confirmados.length === 0) {
-      window.App.showToast("Nenhum atleta confirmado nesta data.", "warning");
+    const emEspera = convocados.filter(c => c.status === "fila_espera" || c.status === "espera")
+      .sort((a, b) => (a.posicao_fila || 99) - (b.posicao_fila || 99));
+
+    if (confirmados.length === 0 && emEspera.length === 0) {
+      window.App.showToast("Nenhum atleta confirmado ou na fila de espera nesta data.", "warning");
       return;
     }
 
@@ -1753,9 +1761,9 @@ async function copiarListaPresencaWhatsApp() {
     const goleiros = confirmados.filter(c => c.goleiro);
     const linha = confirmados.filter(c => !c.goleiro);
 
-    let texto = `⚽ *LISTA DE CONFIRMADOS — ${groupName.toUpperCase()}*\n`;
+    let texto = `⚽ *LISTA DE CONVOCADOS — ${groupName.toUpperCase()}*\n`;
     texto += `📅 *Data:* ${dataFmt}${horarioFmt}${localFmt}\n`;
-    texto += `👥 *Total:* ${confirmados.length} atleta(s)\n\n`;
+    texto += `👥 *Total de Confirmados:* ${confirmados.length} atleta(s)\n\n`;
 
     if (goleiros.length > 0) {
       texto += `🧤 *GOLEIROS:*\n`;
@@ -1767,20 +1775,23 @@ async function copiarListaPresencaWhatsApp() {
       texto += `\n`;
     }
 
-    texto += `🏃 *JOGADORES DE LINHA:*\n`;
-    linha.forEach((l, idx) => {
-      const nomeStr = l.apelido || l.nome || 'Atleta';
-      const check = l.presenca ? " ✅" : "";
-      texto += `${idx + 1}. ${nomeStr}${check}\n`;
-    });
+    if (linha.length > 0) {
+      texto += `🏃 *JOGADORES DE LINHA:*\n`;
+      linha.forEach((l, idx) => {
+        const nomeStr = l.apelido || l.nome || 'Atleta';
+        const check = l.presenca ? " ✅" : "";
+        texto += `${idx + 1}. ${nomeStr}${check}\n`;
+      });
+    }
 
     // Fila de espera (se houver)
-    const emEspera = convocados.filter(c => c.status === "fila_espera" || c.status === "espera");
     if (emEspera.length > 0) {
-      texto += `\n⏳ *FILA DE ESPERA:*\n`;
+      texto += `\n⏳ *FILA DE ESPERA (${emEspera.length}):*\n`;
       emEspera.forEach((e, idx) => {
         const nomeStr = e.apelido || e.nome || 'Atleta';
-        texto += `${idx + 1}. ${nomeStr}\n`;
+        const luva = e.goleiro ? " 🧤" : "";
+        const pos = e.posicao_fila || (idx + 1);
+        texto += `${pos}. ${nomeStr}${luva}\n`;
       });
     }
 

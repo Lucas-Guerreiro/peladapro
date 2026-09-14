@@ -534,22 +534,39 @@ var Convocacao = {
         const horario = pelada && pelada.horario ? ' às ' + pelada.horario : '';
 
         const confirmed = (Convocacao._lastConvocados || []).filter(c => c.status === 'confirmado');
-        if (confirmed.length === 0) {
-          Utils.toast('Nenhum atleta confirmado nesta data para exportar.', 'warning');
+        const waitlist = (Convocacao._lastConvocados || []).filter(c => c.status === 'espera' || c.status === 'fila_espera')
+          .sort((a, b) => (a.posicao_fila || 99) - (b.posicao_fila || 99));
+
+        if (confirmed.length === 0 && waitlist.length === 0) {
+          Utils.toast('Nenhum atleta confirmado ou na fila de espera nesta data.', 'warning');
           return;
         }
 
-        let txt = `⚽ *LISTA DE CONFIRMADOS — ${dataStr}${horario}*\n\n`;
-        confirmed.forEach((c, idx) => {
-          const pos = c.goleiro ? '🧤' : '🏃';
-          const nome = c.apelido || c.nome || 'Atleta';
-          txt += `${idx + 1}. ${pos} ${nome}\n`;
-        });
+        let txt = `⚽ *LISTA DE CONVOCADOS — ${dataStr}${horario}*\n\n`;
+        if (confirmed.length > 0) {
+          txt += `👥 *CONFIRMADOS (${confirmed.length}):*\n`;
+          confirmed.forEach((c, idx) => {
+            const pos = c.goleiro ? '🧤' : '🏃';
+            const nome = c.apelido || c.nome || 'Atleta';
+            txt += `${idx + 1}. ${pos} ${nome}\n`;
+          });
+        }
+
+        if (waitlist.length > 0) {
+          txt += `\n⏳ *FILA DE ESPERA (${waitlist.length}):*\n`;
+          waitlist.forEach((w, idx) => {
+            const pos = w.posicao_fila || (idx + 1);
+            const luva = w.goleiro ? ' 🧤' : '';
+            const nome = w.apelido || w.nome || 'Atleta';
+            txt += `${pos}. ${nome}${luva}\n`;
+          });
+        }
+
         txt += `\nTotal: ${confirmed.length} confirmados ✅`;
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(txt).then(() => {
-            Utils.toast('Lista de confirmados da data copiada para a área de transferência! 📋', 'success');
+            Utils.toast('Lista de convocados da data copiada para a área de transferência! 📋', 'success');
           }).catch(() => {
             Utils.toast('Erro ao copiar lista.', 'warning');
           });
