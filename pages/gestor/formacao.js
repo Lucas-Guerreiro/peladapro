@@ -1434,6 +1434,12 @@ function renameTeam(teamId, newName) {
     safeSetStorage(teamsKey, enxutosRename);
     safeSetStorage("teams", enxutosRename);
     window.App.teams = teams;
+    if (!window.App.liveMatch || typeof window.App.liveMatch !== 'object') {
+      window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, timerSeconds: 0, isPlaying: false, consecutiveWinsA: 0, consecutiveWinsB: 0, goals: [] };
+    }
+    if (!window.App.waitingQueue || !Array.isArray(window.App.waitingQueue)) {
+      window.App.waitingQueue = [];
+    }
     if (window.App.waitingQueue.includes(oldName)) {
       window.App.waitingQueue[window.App.waitingQueue.indexOf(oldName)] = team.nome;
     }
@@ -1482,8 +1488,12 @@ function criarTimeManual() {
   safeSetStorage("teams", enxutosManual);
   window.App.teams = teams;
   // 2. Adiciona o time à fila de espera das partidas do dia
-  // Se já temos pelo menos 2 times na partida ao vivo, os novos times criados entram na fila de espera!
-  // Se não temos times ativos no liveMatch, alimentamos a partida ativa primeiro!
+  if (!window.App.liveMatch || typeof window.App.liveMatch !== 'object') {
+    window.App.liveMatch = { teamA: 'Time A', teamB: 'Time B', scoreA: 0, scoreB: 0, timerSeconds: 0, isPlaying: false, consecutiveWinsA: 0, consecutiveWinsB: 0, goals: [] };
+  }
+  if (!window.App.waitingQueue || !Array.isArray(window.App.waitingQueue)) {
+    window.App.waitingQueue = [];
+  }
   if (teams.length === 1) {
     window.App.liveMatch.teamA = novoTime.nome;
     window.App.liveMatch.scoreA = 0;

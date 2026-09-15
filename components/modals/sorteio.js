@@ -459,16 +459,27 @@ function handleExecuteSorteio() {
   const peladaId = window.App.activePelada ? window.App.activePelada.id : null;
   const teamsKey = peladaId ? `teams_${peladaId}` : "teams";
 
-  // Enxuga: remove emblemas e fotos base64 dos times — só o essencial para o sorteio
+  // Garante que liveMatch está instanciado antes de atribuir teamA, teamB ou tournamentState
+  if (!window.App.liveMatch || typeof window.App.liveMatch !== 'object') {
+    window.App.liveMatch = {
+      teamA: 'Time A',
+      teamB: 'Time B',
+      scoreA: 0,
+      scoreB: 0,
+      timerSeconds: 0,
+      isPlaying: false,
+      consecutiveWinsA: 0,
+      consecutiveWinsB: 0,
+      goals: []
+    };
+  }
+
+  // Preserva os emblemas dos times e remove apenas fotos pesadas dos atletas para salvar no storage
   const teamsParaSalvar = drawnTeams.map(t => {
     const copia = { ...t };
-    delete copia.emblema_url;
-    delete copia.emblemaUrl;
     copia.players = t.players.map(p => {
       const leve = { ...p };
       delete leve.foto;          // foto base64 pesada
-      delete leve.emblema_url;
-      delete leve.emblemaUrl;
       return leve;
     });
     return copia;
@@ -498,9 +509,12 @@ function handleExecuteSorteio() {
 
   // Cópia genérica (fallback para outras telas): melhor esforço, NÃO bloqueia o sorteio se falhar
   try { localStorage.setItem("teams", JSON.stringify(teamsParaSalvar)); } catch (e) { }
-  window.App.teams = teamsParaSalvar;
+  window.App.teams = drawnTeams;
 
   // Reset e alimentação da fila de espera global
+  if (!window.App.waitingQueue || !Array.isArray(window.App.waitingQueue)) {
+    window.App.waitingQueue = [];
+  }
   window.App.waitingQueue.length = 0;
 
   if (type === "necessarios" && waitingQueue.length > 0) {
@@ -637,8 +651,8 @@ function handleExecuteSorteio() {
   const scoreAEl = document.getElementById("match-control-score-a");
   const scoreBEl = document.getElementById("match-control-score-b");
 
-  if (teamAEl) teamAEl.textContent = window.App.liveMatch.teamA;
-  if (teamBEl) teamBEl.textContent = window.App.liveMatch.teamB;
+  if (teamAEl) teamAEl.textContent = (window.App.liveMatch && window.App.liveMatch.teamA) || "Time A";
+  if (teamBEl) teamBEl.textContent = (window.App.liveMatch && window.App.liveMatch.teamB) || "Time B";
   if (scoreAEl) scoreAEl.textContent = "0";
   if (scoreBEl) scoreBEl.textContent = "0";
 
